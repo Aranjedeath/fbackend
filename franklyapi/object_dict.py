@@ -14,7 +14,7 @@ def user_to_dict(user):
     from app import ADMIN_USERS
     from controllers import get_follower_count, get_following_count, get_answer_count, get_user_like_count
     user_dict = {
-        'id': str(user.id).zfill(24),
+        'id': user.id,
         'email': user.email,
         'username': user.username,
         'facebook_id': user.facebook_id,
@@ -49,7 +49,7 @@ def guest_user_to_dict(user, current_user=None, cur_user_interest_tags=None):
     if user.deleted == True:
         return thumb_user_to_dict(user)
     user_dict = {
-        'id': str(user.id).zfill(24),
+        'id': user.id,
         'username': user.username,
         'first_name': user.first_name,
         'last_name': None,
@@ -75,7 +75,7 @@ def guest_user_to_dict(user, current_user=None, cur_user_interest_tags=None):
 
 def thumb_user_to_dict(user):
     user_dict = {
-        'id':str(user.id).zfill(24),
+        'id':user.id,
         'username': user.username,
         'first_name': user.first_name,
         'last_name': None,

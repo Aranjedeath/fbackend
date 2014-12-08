@@ -22,3 +22,10 @@ DATABASE_URI = 'mysql://{username}:{password}@{host}/{db_name}'.format(username=
                                                                         password=MYSQL_PASSWORD, 
                                                                         host=MYSQL_HOST,
                                                                         db_name=MYSQL_DATABASE_NAME)
+
+
+ALLOWED_PICTURE_FORMATS = ['jpg', 'jpeg', 'png']
+ALLOWED_VIDEO_FORMATS = ['mp4']
+ALLOWED_AUDIO_FORMATS = ['mp3', 'ogg', 'wav', 'aac', '3gp']
+
+ADMIN_USERS = []

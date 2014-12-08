@@ -15,7 +15,7 @@ class Question(Base):
     is_ignored      = Column(Boolean(), default=False)
     public          = Column(Boolean(), default=False)
     deleted         = Column(Boolean(), default=False)
-    moderated_by    = Column(Integer(), ForeignKey('users.id'))
+    moderated_by    = Column(CHAR(32), ForeignKey('users.id'))
 
     lat             = Column(Float())
     lon             = Column(Float())

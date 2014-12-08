@@ -52,7 +52,7 @@ def load_header(header_vals):
             return User.query.get(int(user_id)) if user_id else None
 
         result = engine.execute(text("""SELECT user from access_tokens 
-                                        where access_token=:access_token"""), **{'access_token':access_token})
+                                        where access_token=:access_token LIMIT 1"""), **{'access_token':access_token})
 
         row = result.fetchone()
         if row:

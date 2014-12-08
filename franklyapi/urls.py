@@ -4,6 +4,15 @@ from app import api, app
 
 
 api.add_resource(UserProfile, '/user/profile/<user_id>')
+api.add_resource(UserUpdateForm, '/user/update_profile/<user_id>')
+api.add_resource(UserProfileUsername, '/user/profile/username/<username>')
+
+api.add_resource(UserFollow, '/user/follow')
+api.add_resource(UserUnfollow, '/user/unfollow')
+api.add_resource(UserBlock, '/user/block')
+api.add_resource(UserUnblock, '/user/unblock')
+api.add_resource(UserBlockList, '/user/blocklist')
+
 
 '''
 api.add_resource(RegisterEmail, '/reg/email')
@@ -12,9 +21,9 @@ api.add_resource(LoginEmail, '/login/email')
 api.add_resource(MergeAccount, '/merge/<int:account_type>')
 api.add_resource(Logout, '/logout')
 
-api.add_resource(UserProfile, '/user/profile/<user_id>')
-api.add_resource(UserUpdateForm, '/user/update_profile/<user_id>')
-api.add_resource(UserProfileUsername, '/user/profile/username/<username>')
+#api.add_resource(UserProfile, '/user/profile/<user_id>')
+#api.add_resource(UserUpdateForm, '/user/update_profile/<user_id>')
+#api.add_resource(UserProfileUsername, '/user/profile/username/<username>')
 
 #api.add_resource(UserFollowers, '/user/followers/<user_id>')
 #api.add_resource(UserFollowing, '/user/following/<user_id>')
@@ -26,11 +35,7 @@ api.add_resource(ResetPassword, '/forgotpassword/reset/<token>')
 api.add_resource(ChangeUsername, '/user/change_username')
 api.add_resource(ChangePassword, '/user/change_password')
 
-api.add_resource(UserFollow, '/user/follow')
-api.add_resource(UserUnfollow, '/user/unfollow')
-api.add_resource(UserBlock, '/user/block')
-api.add_resource(UserBlockList, '/user/blocklist')
-api.add_resource(UserUnblock, '/user/unblock')
+
 
 api.add_resource(UserExists, '/user/exists')
 api.add_resource(UserSettings, '/user/settings')

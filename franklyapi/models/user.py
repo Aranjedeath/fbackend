@@ -8,6 +8,7 @@ class User(Base):
     id                        = Column(CHAR(32), primary_key=True, default=get_item_id)
     username                  = Column(String(30), nullable=False, unique=True)
     email                     = Column(String(120), nullable=False, unique=True)
+    registered_with           = Column(String(15), nullable=False)
     first_name                = Column(String(250))
     
     facebook_id               = Column(String(120), unique=True)
@@ -49,7 +50,7 @@ class User(Base):
     timezone                  = Column(Integer(), default=0)
 
 
-    def __init__(self, email, username, first_name, password=None, facebook_id=None, twitter_id=None, google_id=None,
+    def __init__(self, email, username, first_name, registered_with, password=None, facebook_id=None, twitter_id=None, google_id=None,
                         bio=None, gender='M', profile_picture=None, profile_video=None, cover_picture=None,
                         facebook_token=None, facebook_write_permission=False, twitter_token=None,
                         twitter_secret=None, twitter_write_permission=False, google_token=None, deleted=False,
@@ -61,7 +62,8 @@ class User(Base):
         self.id                        = id
         self.email                     = email
         self.first_name                = first_name
-        self.username                  = username 
+        self.username                  = username
+        self.registered_with           = registered_with
         self.password                  = password
         self.facebook_id               = facebook_id 
         self.twitter_id                = twitter_id
@@ -148,5 +150,30 @@ class Block(Base):
     def __repr__(self):
         return '<Block %r:%r>' % (self.user, self.blocked_user)
 
+
+class UserArchive(Base):
+    __tablename__   = 'user_archives'
+    id              = Column(Integer, primary_key=True)
+    user            = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
+    username        = Column(String(30), nullable=False)
+    first_name      = Column(String(250))
+    profile_picture = Column(String(250))
+    profile_video   = Column(String(250))
+    cover_picture   = Column(String(250))
+    bio             = Column(String(200))
+    timestamp       = Column(DateTime(), onupdate=datetime.datetime.now)
+
+
+    def __init__(self, user, username, first_name, profile_picture, profile_video, cover_picture, bio):
+        self.user            = user
+        self.username        = username
+        self.first_name      = first_name
+        self.profile_picture = profile_picture
+        self.profile_video   = profile_video
+        self.cover_picture   = cover_picture
+        self.bio             = bio
+
+    def __repr__(self):
+        return '<UserArchive %r>' % (self.user)
 
 
