@@ -17,10 +17,11 @@ class User(Base):
     password                  = Column(String(50))
     
     bio                       = Column(String(200))
-    gender                    = Column(Enum('M', 'F'), default='M')
-    profile_picture           = Column(String(250))
-    profile_video             = Column(String(250))
-    cover_picture             = Column(String(250))
+    gender                    = Column(Enum('M', 'F'))
+    profile_picture           = Column(String(300))
+    profile_video             = Column(String(300))
+
+    cover_picture             = Column(String(300))
     facebook_token            = Column(String(400))
     facebook_write_permission = Column(Boolean(), default=False)
     twitter_token             = Column(String(400))
@@ -37,7 +38,7 @@ class User(Base):
     location_name             = Column(String(50))
     country_name              = Column(String(50))
     country_code              = Column(String(2))    
-    user_since                = Column(DateTime(), default=datetime.datetime.now)
+    user_since                = Column(DateTime(), server_default=datetime.datetime.now)
     last_updated              = Column(DateTime(), onupdate=datetime.datetime.now)   
     last_seen                 = Column(DateTime(), onupdate=datetime.datetime.now)
     allow_anonymous_question  = Column(Boolean(), default=True)
@@ -51,7 +52,7 @@ class User(Base):
 
 
     def __init__(self, email, username, first_name, registered_with, password=None, facebook_id=None, twitter_id=None, google_id=None,
-                        bio=None, gender='M', profile_picture=None, profile_video=None, cover_picture=None,
+                        bio=None, gender=None, profile_picture=None, profile_video=None, cover_picture=None,
                         facebook_token=None, facebook_write_permission=False, twitter_token=None,
                         twitter_secret=None, twitter_write_permission=False, google_token=None, deleted=False,
                         monkness=-1, user_type=0, user_title=None, lat=None, lon=None, location_name=None, country_name=None, country_code=None,

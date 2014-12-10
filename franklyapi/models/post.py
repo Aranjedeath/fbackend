@@ -4,26 +4,26 @@ from database import Base
 from database import get_item_id
 
 class Post(Base):
-    __tablename__   = 'posts'
-    id              = Column(CHAR(32), primary_key=True, default=get_item_id)
-    question        = Column(CHAR(32), ForeignKey('questions.id'), nullable=False, unique=True)
-    question_author = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
-    answer_author   = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
-    media_url       = Column(String(300), nullable=False)
-    thumbnail_url   = Column(String(300), nullable=False)
-    client_id       = Column(String(15), nullable=False)
-
-    timestamp       = Column(DateTime(), default=datetime.datetime.now)
-    answer_type     = Column(Enum('video', 'text', 'picture'), default='video')
-    score           = Column(Integer(), default=0)
-    deleted         = Column(Boolean(), default=False)
-    ready           = Column(Boolean(), default=False)
-    popular         = Column(Boolean(), default=False)
-    lat             = Column(Float())
-    lon             = Column(Float())
-    location_name   = Column(String(50))
-    country_name    = Column(String(50))
-    country_code    = Column(String(2))
+    __tablename__       = 'posts'
+    id                  = Column(CHAR(32), primary_key=True, default=get_item_id)
+    question            = Column(CHAR(32), ForeignKey('questions.id'), nullable=False, unique=True)
+    question_author     = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
+    answer_author       = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
+    media_url           = Column(String(300), nullable=False)
+    thumbnail_url       = Column(String(300), nullable=False)
+    client_id           = Column(String(15), nullable=False)
+    
+    timestamp           = Column(DateTime(), default=datetime.datetime.now)
+    answer_type         = Column(Enum('video', 'text', 'picture'), default='video')
+    score               = Column(Integer(), default=0)
+    deleted             = Column(Boolean(), default=False)
+    ready               = Column(Boolean(), default=False)
+    popular             = Column(Boolean(), default=False)
+    lat                 = Column(Float())
+    lon                 = Column(Float())
+    location_name       = Column(String(50))
+    country_name        = Column(String(50))
+    country_code        = Column(String(2))
 
 
     def __init__(self, question, question_author, answer_author, media_url, thumbnail_url, client_id,

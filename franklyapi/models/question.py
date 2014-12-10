@@ -25,7 +25,7 @@ class Question(Base):
 
     def __init__(self, question_author, question_to, body, timestamp=datetime.datetime.now(),
                         is_answered=False, is_anonymous=False, is_ignored=False, public=False,
-                        deleted=False, moderated_by=None, lat=None, lon=None, location=None, 
+                        deleted=False, moderated_by=None, lat=None, lon=None, location_name=None, 
                         country_name=None, country_code=None, id=get_item_id()):
         self.id              = id
         self.question_author = question_author
@@ -40,7 +40,7 @@ class Question(Base):
         self.moderated_by    = moderated_by
         self.lat             = lat
         self.lon             = lon
-        self.location        = location
+        self.location_name   = location_name
         self.country_name    = country_name
         self.country_code    = country_code
 
