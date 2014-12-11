@@ -1,0 +1,43 @@
+import Image
+import uuid
+
+def toDimensions(image_file,out_file,dim_x,dim_y,allowLow = True):
+    im = Image.open(image_file)
+    im_x = im.size[0]
+    im_y = im.size[1]
+    flag = True
+    if not allowLow:
+        flag = (im_x >= dim_x) and (im_y >= dim_y)
+    if flag:
+        aspectRatioIn = im_x / float(im_y)
+        aspectRatioOut = dim_x / float(dim_y)
+        if(aspectRatioIn > aspectRatioOut):
+            fin_y = im_y
+            fin_x = im_y * aspectRatioOut
+        else:
+            fin_x = im_x
+            fin_y = im_x * aspectRatioOut
+        box = (int((im_x - fin_x)/2) , int((im_y - fin_y)/2) , int((im_x + fin_x)/2) , int((im_y + fin_y)/2) )
+        im = im.crop(box)
+        im = im.resize((dim_x,dim_y))
+        im.save(out_file,"jpeg")
+    else:
+        raise Exception("Small Size")
+
+
+def sanitize_profile_pic(image_file):
+    path = '/tmp/{random_string}.jpeg'.format(random_string=uuid.uuid1().hex)
+    toDimensions(image_file, path, 240, 240)
+    return path
+
+def get_profile_pic_thumb(image_file):
+    path = '/tmp/{random_string}.jpeg'.format(random_string=uuid.uuid1().hex)
+    toDimensions(image_file, path, 50, 50)
+    return path
+
+def sanitize_cover_pic(image_file):
+    path = '/tmp/{random_string}.jpeg'.format(random_string=uuid.uuid1().hex)
+    toDimensions(image_file, path, 320, 560)
+    return path
+
+
