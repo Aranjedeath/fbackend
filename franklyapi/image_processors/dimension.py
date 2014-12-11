@@ -1,4 +1,4 @@
-import Image
+from PIL import Image
 import uuid
 
 def toDimensions(image_file,out_file,dim_x,dim_y,allowLow = True):
