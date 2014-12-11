@@ -31,7 +31,6 @@ class Video(Base):
     opt           = Column(String(300))
     medium        = Column(String(300))
     low           = Column(String(300))
-    ultra_low     = Column(String(300))
     delete        = Column(Boolean(), default=False)
     process_state = Column(Enum('pending', 'running', 'success', 'failed'), default='pending')
     created_at    = Column(DateTime(), default=datetime.datetime.now)

@@ -3,6 +3,7 @@ import random
 import datetime
 import time
 import hashlib
+import uuid
 
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy import or_
@@ -11,20 +12,21 @@ from sqlalchemy.sql import text
 from database import db_session
 
 import CustomExceptions
-import S3Uploader
+import media_uploader
+import async_encoder
+import social_helpers
 
 from configs import config
 from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
-                     Question, Upvote, Comment, ForgotPasswordToken, Install
+                     Question, Upvote, Comment, ForgotPasswordToken, Install, Video
 from app import engine
 from object_dict import user_to_dict, guest_user_to_dict,\
                         thumb_user_to_dict, question_to_dict, post_to_dict, comment_to_dict,\
                         comments_to_dict, posts_to_dict, make_celeb_questions_dict
 
 
-
 def email_available(email):
-    if email.split('@')[1] in config.BLOCKED_EMAIL_DOMAINS:
+    if email.split('@')[1].lower() in config.BLOCKED_EMAIL_DOMAINS:
         return False
     return not bool(User.query.filter(User.email==email).count())
 
@@ -83,29 +85,38 @@ def make_username(email, full_name=None, social_username=None):
     return username
 
 
-
-
-
-
 def generate_access_token(user_id, device_id=None):
     return hashlib.sha1('%s%s' % (user_id, int(time.time()))).hexdigest()
 
 def set_access_token(device_id, device_type, user_id, access_token, push_id=None):
     from app import redis_client
     if device_type == 'web':
-        redis_client.setex(access_token, str(user_id), 3600*24*5)
-    AccessToken._get_collection().update({'device_id':device_id}, {'$set': {'user':ObjectId(str(user_id)), 'access_token':access_token, 'push_id':push_id, 'last_login':datetime.now(), 'device_type':device_type}}, True)
+        redis_client.setex(access_token, str(user_id), 3600*24*10)
+        return 
+    engine.execute(text("""INSERT INTO access_tokens (access_token, user, device_id, device_type, active, push_id, last_login) 
+                            VALUES(:access_token, :user_id, :device_id, :device_type, true, :push_id, :last_login) 
+                            ON DUPLICATE KEY 
+                            UPDATE access_token=:access_token, user=:user_id, active=true, push_id=:push_id, last_login=:last_login"""
+                            ),**{'access_token':access_token, 'user_id':user_id, 'push_id':push_id, 'last_login':datetime.datetime.now()}
+                    )
+    engine.commit()
 
 
-def get_data_from_external_access_token(external_access_token, social_id, social_type, external_token_secret=None):
-    pass
+def get_data_from_external_access_token(social_type, external_access_token, external_token_secret=None):
+    user_data = social_helpers.get_user_data(social_type, external_access_token, external_token_secret)
+    if not user_data:
+        raise CustomExceptions.BadRequestException('Invalid access_tokens')
 
 def get_user_from_social_id(social_type, social_id):
-    pass
-
-
-def user_exists(social_type, social_id):
-    pass
+    try:
+        if social_id == 'facebook':
+            return User.query.filter(User.facebook_id==social_id).one()
+        elif social_id == 'google':
+            return User.query.filter(User.google_id==social_id).one()
+        elif social_id == 'twitter':
+            return User.query.filter(User.twitter_id==social_id).one()
+    except NoResultFound:
+        return None
 
 def get_device_type(device_id):
     if len(device_id)<17:
@@ -115,6 +126,7 @@ def get_device_type(device_id):
     return 'ios'
 
 def new_registration_task(user_id):
+    # add any task that should be done for a first time user
     pass
 
 def register_email_user(email, password, full_name, device_id, username=None, phone_num=None,
@@ -174,15 +186,17 @@ def login_user_social(social_type, social_id, external_access_token, device_id, 
     else:
         username = make_username(user_data['email'], user_data.get('full_name'), user_data.get('social_username'))
         registered_with = '%s_%s'%(device_type, social_type) 
-        
-        profile_picture_url = None
-        if user_data.get('profile_picture'):
-            profile_picture_url = upload_image(user_data['profile_picture'])
-
+                
         new_user = User(email=user_data['email'], username=username, first_name=user_data['full_name'], 
                 registered_with=registered_with, user_type=user_type, gender=user_data.get('gender'), user_title=user_title,
                 location_name=user_data.get('location_name'), country_name=user_data.get('country_name'),
                 country_code=user_data.get('country_code'))
+        
+        if user_data.get('profile_picture'):
+            new_user.profile_picture = media_uploader.upload_user_image(user_id=new_user.id, 
+                                                        image_url=user_data['profile_picture'], 
+                                                        image_type='profile_picture')
+        
         if social_type == 'facebook':
             new_user.facebook_id = social_id
             new_user.facebook_token = external_access_token
@@ -306,8 +320,7 @@ def get_thumb_users(user_ids):
                                 'profile_picture':row[3],
                                 'deleted':row[4],
                                 'location':{
-                                            'lat':row[5],
-                                            'lon':row[6],
+                                            'coordinate_point':[row[5],row[6]],
                                             'location_name':row[7],
                                             'country_name':row[8],
                                             'country_code':row[9]
@@ -346,7 +359,7 @@ def user_view_profile(current_user_id, user_id, username=None):
         raise CustomExceptions.UserNotFoundException
 
 
-def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture=None, profile_video=None, cover_picture=None):
+def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture=None, profile_video=None, cover_picture=None, user_type=None, user_title=None, phone_num=None):
     update_dict = {}
 
     #user = User.objects.only('id').get(id=user_id)
@@ -376,22 +389,25 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
         user.bio = bio
 
     if profile_video:
-        profile_video_url, cover_picture_url = upload_video(profile_picture, cover_picture)
-
+        profile_video_url, cover_picture_url = media_uploader.upload_user_video(user_id=user_id, video_file=profile_video, video_thumbnail_file=cover_picture, video_type='profile_video')
         update_dict.update({'profile_video':profile_video_url, 'cover_picture':cover_picture_url})
         user.profile_video = profile_video_url
         user.cover_picture = cover_picture_url
+        add_video_to_db(profile_video_url, cover_picture_url)
+        async_encoder.encode_video_task.delay(profile_video_url)
 
     if not profile_video and cover_picture:
-        cover_picture_url = upload_image(cover_picture)
+        cover_picture_url = media_uploader.upload_user_image(user_id=user_id, image_file=cover_picture, image_type='cover_picture')
         update_dict.update({'cover_picture':cover_picture_url})
         user.cover_picture = cover_picture_url
 
-
     if profile_picture:
-        profile_picture_url = upload_image(cover_picture)
+        tmp_path = '/tmp/request/{random_string}.jpeg'.format(random_string=uuid.uuid1().hex)
+        profile_picture.save(tmp_path)
+        profile_picture_url = media_uploader.upload_user_image(user_id=user_id, image_file_path=tmp_path, image_type='profile_picture')
         update_dict.update({'profile_picture':profile_picture_url})
         user.profile_picture = profile_picture_url
+        os.remove(tmp_path)
 
     if not update_dict:
         raise CustomExceptions.BadRequestException('Nothing to update')
@@ -421,6 +437,7 @@ def user_follow(cur_user_id, user_id):
                             UPDATE unfollowed = false"""), **{'cur_user_id':cur_user_id,
                                                                             'user_id':user_id}
                     )
+    engine.commit()
     '''
     notify_args = {'user1_id': cur_user_id,'user2_id': user_id}
     cel_tasks.notify_mongo.delay('follow', **notify_args)
@@ -573,8 +590,8 @@ def update_push_id(cur_user_id, device_id, push_id):
 def user_update_access_token(user_id, acc_type, token):
     try:
         if acc_type=='facebook':
-            Social.facebook.validate_external_token(token, user.facebook_id, 'facebook')
-            User.query.filter(User.id==user_id).update({'facebook_token':token, 'facebook_write_permission':True})
+            user_data = get_data_from_external_access_token('facebook', token, external_token_secret=None)
+            User.query.filter(User.id==user_id, User.facebook_id==user_data['social_id']).update({'facebook_token':token, 'facebook_write_permission':True})
             return {'success':True}
     
     except CustomExceptions.InvalidTokenException:
@@ -1099,8 +1116,8 @@ def add_video_post(cur_user_id, question_id, video, video_thumbnail, answer_type
         if has_blocked(answer_author, question.question_author):
             raise CustomExceptions.BlockedUserException("Question not available for action")
 
-        video_url, thumbnail_url = upload_video(video, video_thumnail)
-
+        video_url, thumbnail_url = media_uploader.upload_user_video(user_id=cur_user_id, video_file=video, video_thumbnail_file=video_thumbnail, video_type='answer')
+        add_video_to_db(video_url, thumbnail_url)
         post = Post(question=question_id,
                     question_author=question.question_author, 
                     answer_author=answer_author,                    
@@ -1113,6 +1130,7 @@ def add_video_post(cur_user_id, question_id, video, video_thumbnail, answer_type
 
         db_session(post)
         db_session.commit()
+        async_encoder.encode_video_task(video_url)
 
         Question.query.filter(Question.id==question_id).update({'is_answered':True})
 
@@ -1123,11 +1141,47 @@ def add_video_post(cur_user_id, question_id, video, video_thumbnail, answer_type
 
 
 
+def get_notifications(cur_user_id, notification_category, offset, limit):
+    #TODO: Fix this dummy function.
+    return {'notifications':[], 'count':0, 'next_index':-1}
+
+def get_notification_count(cur_user_id):
+    return 0
+
+def logout(access_token, device_id):
+    from app import redis_client
+    device_type = get_device_type(device_id)
+    if device_type=='web':
+        redis_client.delete(device_id)
+        return True
+    count = AccessToken.query.filter(AccessToken.access_token==access_token, AccessToken.device_id==device_id).update({'active':False})
+    return bool(count)
 
 
+def add_video_to_db(video_url, thumbnail_url):
+    db_session.add(Video(url=video_url, thumbnail=thumbnail_url))
+    db_session.commit()
 
+def update_video_state(video_url, result={}):
+    video_exists = bool(Video.query.filter(Video.url==video_url).count())
+    if result and video_exists:
+        result.update({'process_state':'success'})
+        Video.query.filter(Video.url==video_url).update(result)
+    
+    elif result and not video_exists:
+            result.update({'url':'video_url','process_state':'success'})
+            video_object = Video(**result)
+            db_session.add(video_object)
+            db_session.commit()
+    
+    elif not result and video_exists:
+        Video.query.filter(Video.url==video_url).update({'process_state':'failed'})
 
-
+    else:
+        result.update({'url':'video_url','process_state':'failed'})
+        video_object = Video(**result)
+        db_session.add(video_object)
+        db_session.commit()
 
 
 

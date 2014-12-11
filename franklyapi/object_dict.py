@@ -3,8 +3,7 @@ import time
 
 def location_dict(lat, lon, location_name, country_name, country_code):
     return {
-            'lat':lat,
-            'lon':lon,
+            'coordinate_point':[lat, lon],
             'location_name':location_name,
             'country_name':country_name,
             'country_code':country_code

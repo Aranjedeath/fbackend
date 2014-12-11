@@ -118,7 +118,12 @@ class LoginEmail(restful.Resource):
                 id_type = 'email'
             else:
                 id_type = 'username'
-            return controllers.login_email_new(args['username'], id_type, args['password'], args['device_id'], args['push_id'])
+            return controllers.login_email_new( user_id = args['username'],
+                                                id_type = id_type, 
+                                                password = args['password'],
+                                                device_id = args['device_id'],
+                                                push_id = args['push_id']
+                                                )
         except CustomExceptions.UserNotFoundException as e:
             print traceback.format_exc(e)
             abort(403, message='Wrong username/email or password')
@@ -446,10 +451,10 @@ class UserLocation(restful.Resource):
 class UpdatePushId(restful.Resource):
     @login_required
     def post(self):
-        update_gcm_parser = reqparse.RequestParser()
-        update_gcm_parser.add_argument('X-Deviceid', type=str, required=True, location = 'headers', dest='device_id')
-        update_gcm_parser.add_argument('push_id', type=str, location='json', required=True)
-        args = update_gcm_parser.parse_args()
+        update_push_id_parser = reqparse.RequestParser()
+        update_push_id_parser.add_argument('X-Deviceid', type=str, required=True, location = 'headers', dest='device_id')
+        update_push_id_parser.add_argument('push_id', type=str, location='json', required=True)
+        args = update_push_id_parser.parse_args()
         try:
             controllers.update_push_id(current_user.id, device_id=args['device_id'], push_id=args['push_id'])
             return {'success' : True}
@@ -592,7 +597,7 @@ class QuestionIgnore(restful.Resource):
             abort(500, message="Internal Server Error")
 
 
-class MediaPostAdd(restful.Resource):
+class PostAdd(restful.Resource):
     @login_required
     def post(self):
         answer_parser = reqparse.RequestParser()
@@ -838,7 +843,7 @@ class TimelineHome(restful.Resource):
 
 
 
-class DiscoverPostMultiType(restful.Resource):
+class DiscoverPost(restful.Resource):
     def get(self):
         discover_post_parser = reqparse.RequestParser()
         discover_post_parser.add_argument('offset', type=int, default=0, location='args')
@@ -958,3 +963,57 @@ class BadUsernames(restful.Resource):
             raygun.send(err[0],err[1],err[2])
             print traceback.format_exc(e)
             abort(500, message='Error')
+
+
+
+class Notifications(restful.Resource):
+    @login_required
+    def get(self):
+        get_notifications_parser = reqparse.RequestParser()
+        get_notifications_parser.add_argument('offset', type=int, default=0, location='args')
+        get_notifications_parser.add_argument('limit', type=int, default=10, location='args')
+        get_notifications_parser.add_argument('type', type=str, default='me', location='args')
+        args = get_notifications_parser.parse_args()
+        try:
+            resp = controllers.get_notifications(current_user.id,
+                                                    notification_category=args['type'],
+                                                    offset = args['offset'],
+                                                    limit = args['limit'])
+            return resp
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message='Internal Server Error')
+
+
+class NotificationCount(restful.Resource):
+    @login_required
+    def get(self):
+        try:
+            count = controllers.get_notification_count(current_user.id)
+            return {'count': count}
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message='Internal Server Error')
+
+class Logout(restful.Resource):
+    @login_required
+    def post(self):
+        logout_parser = reqparse.RequestParser()
+        logout_parser.add_argument('X-Deviceid', dest='device_id', type=str, required=True, location='headers')
+        logout_parser.add_argument('X-Token', dest='access_token', type=str, required=True, location='headers')
+        args = logout_parser.parse_args()
+        
+        try:
+            success = controllers.logout(access_token=args['access_token'], device_id=args['device_id'])
+            return {'success': success}
+
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            return {'success': False}
+

@@ -38,7 +38,7 @@ class User(Base):
     location_name             = Column(String(50))
     country_name              = Column(String(50))
     country_code              = Column(String(2))    
-    user_since                = Column(DateTime(), server_default=datetime.datetime.now)
+    user_since                = Column(DateTime(), default=datetime.datetime.now)
     last_updated              = Column(DateTime(), onupdate=datetime.datetime.now)   
     last_seen                 = Column(DateTime(), onupdate=datetime.datetime.now)
     allow_anonymous_question  = Column(Boolean(), default=True)
