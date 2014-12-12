@@ -11,7 +11,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy import or_
 from sqlalchemy.sql import func
 from sqlalchemy.sql import text
-from database import db_session
+from database import db_session, engine
 
 import CustomExceptions
 import media_uploader
@@ -21,7 +21,7 @@ import social_helpers
 from configs import config
 from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
                      Question, Upvote, Comment, ForgotPasswordToken, Install, Video
-from app import engine, redis_client, raygun
+from app import redis_client, raygun
 from object_dict import user_to_dict, guest_user_to_dict,\
                         thumb_user_to_dict, question_to_dict, post_to_dict, comment_to_dict,\
                         comments_to_dict, posts_to_dict, make_celeb_questions_dict
