@@ -4,6 +4,8 @@ import datetime
 import time
 import hashlib
 import uuid
+import traceback
+import sys
 
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy import or_
@@ -19,10 +21,34 @@ import social_helpers
 from configs import config
 from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
                      Question, Upvote, Comment, ForgotPasswordToken, Install, Video
-from app import engine
+from app import engine, redis_client, raygun
 from object_dict import user_to_dict, guest_user_to_dict,\
                         thumb_user_to_dict, question_to_dict, post_to_dict, comment_to_dict,\
                         comments_to_dict, posts_to_dict, make_celeb_questions_dict
+
+
+def check_access_token(access_token, device_id):
+    try:
+        device_type = get_device_type(device_id)
+        user_id = None
+        if device_type == 'web':
+            user_id = redis_client.get(access_token)
+            return User.query.get(user_id) if user_id else None
+
+        access_token_object = AccessToken.query.filter(AccessToken.token==access_token,
+                                                        AccessToken.device_id==device_id,
+                                                        AccessToken.active==True).one()
+
+        user_id = access_token_object.user
+        user = User.query.get(user_id)
+        return user
+    except NoResultFound:
+        return None
+    except Exception as e:
+        err = sys.exc_info()
+        raygun.send(err[0],err[1],err[2])
+        print traceback.format_exc(e)
+        raise e
 
 
 def email_available(email):

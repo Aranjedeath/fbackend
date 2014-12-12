@@ -24,11 +24,11 @@ def get_fb_data(access_token):
 			user_data['bio'] = None
 		if(profile.get('location').get('name')):
 			user_data['location_name'] = profile.get('location').get('name')
-		pic = graph.get_object("me/picture?type=large")
-		if(pic['url']):
-			user_data['profile_picture'] = pic['url']
-		else:
-			user_data['profile_picture'] = None
+		#pic = graph.get_object("me/picture?type=large")
+		#if(pic['url']):
+		#	user_data['profile_picture'] = pic['url']
+		#else:
+		#	user_data['profile_picture'] = None
 		return user_data
 	except Exception as e:
 		print traceback.format_exc(e)
