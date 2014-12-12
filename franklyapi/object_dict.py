@@ -2,8 +2,12 @@ import time
 
 
 def location_dict(lat, lon, location_name, country_name, country_code):
+    if not lat or lon:
+        coordinate_point = None
+    else:
+        coordinate_point = [lat, lon]
     return {
-            'coordinate_point':[lat, lon],
+            'coordinate_point':coordinate_point,
             'location_name':location_name,
             'country_name':country_name,
             'country_code':country_code
@@ -16,7 +20,7 @@ def media_dict(media_url, thumbnail_url):
             }
 
 def user_to_dict(user):
-    from app import ADMIN_USERS
+    from configs import config
     from controllers import get_follower_count, get_following_count, get_answer_count, get_user_like_count
     user_dict = {
         'id': user.id,
@@ -39,11 +43,13 @@ def user_to_dict(user):
         'likes_count': get_user_like_count(user.id),
         'location': location_dict(user.lat, user.lon, user.location_name, user.country_name, user.country_code),
         'last_updated': int(time.mktime(user.last_updated.timetuple())),
-        'fb_perm' : str(user.facebook_token_type),
-        'admin_level':1 if user.id in ADMIN_USERS else 0,
+        'fb_write_perm' : user.facebook_write_permission,
+        'fb_perm':'none',
+        'admin_level':1 if user.id in config.ADMIN_USERS else 0,
         
         'user_type':user.user_type,
         'user_title':user.user_title,
+        'interests':[]
     }
     return user_dict
 

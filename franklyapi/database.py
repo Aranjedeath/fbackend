@@ -2,12 +2,13 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
+
 from configs import config
 #from flask.ext.script import Manager
 #from flask.ext.migrate import Migrate, MigrateCommand
 
 engine = create_engine(config.DATABASE_URI, convert_unicode=True)
-db_session = scoped_session(sessionmaker(autocommit=True,
+db_session = scoped_session(sessionmaker(autocommit=False,
                                          autoflush=False,
                                          bind=engine))
 
