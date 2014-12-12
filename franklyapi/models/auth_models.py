@@ -1,9 +1,12 @@
 import datetime
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, CHAR
+
 from database import Base
+from app import db
 
 
-class AccessToken(Base):
+
+class AccessToken(db.Model):
     __tablename__ = 'access_tokens'
     access_token  = Column(String(100), nullable=False, primary_key=True)
     device_id     = Column(String(50), nullable=False, unique=True)
@@ -26,7 +29,7 @@ class AccessToken(Base):
         return '<AccessToken %r:%r>' % (self.access_token, self.device_id)
 
 
-class ForgotPasswordToken(Base):
+class ForgotPasswordToken(db.Model):
     __tablename__ = 'forgot_password_tokens'
     token         = Column(String(100), nullable=False, primary_key=True)
     user          = Column(CHAR(), ForeignKey('users.id'), nullable=False, unique=True)

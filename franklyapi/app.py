@@ -4,7 +4,7 @@ from flask import Flask
 from flask.ext import restful
 from flask.ext.login import LoginManager
 from raygun4py import raygunprovider
-
+from flask.ext.sqlalchemy import SQLAlchemy
 
 from configs import config
 
@@ -14,6 +14,7 @@ class FlaskConfig():
     MULTIPLE_AUTH_HEADERS = config.MULTIPLE_AUTH_HEADERS
     PORT = config.PORT
     PROPOGATE_EXCEPTIONS = config.PROPOGATE_EXCEPTIONS
+    SQLALCHEMY_DATABASE_URI = config.DATABASE_URI
 
 
 app = Flask(__name__)
@@ -23,6 +24,7 @@ app.config.from_object(FlaskConfig)
 login_manager = LoginManager()
 login_manager.init_app(app)
 
+db = SQLAlchemy(app)
 api = restful.Api(app)
 
 raygun = raygunprovider.RaygunSender(config.RAYGUN_KEY)

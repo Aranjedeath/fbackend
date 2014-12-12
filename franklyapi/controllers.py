@@ -11,7 +11,6 @@ from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy import or_
 from sqlalchemy.sql import func
 from sqlalchemy.sql import text
-from database import db_session, engine
 
 import CustomExceptions
 import media_uploader
@@ -21,7 +20,8 @@ import social_helpers
 from configs import config
 from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
                      Question, Upvote, Comment, ForgotPasswordToken, Install, Video
-from app import redis_client, raygun
+from app import redis_client, raygun, db
+
 from object_dict import user_to_dict, guest_user_to_dict,\
                         thumb_user_to_dict, question_to_dict, post_to_dict, comment_to_dict,\
                         comments_to_dict, posts_to_dict, make_celeb_questions_dict
@@ -119,17 +119,18 @@ def set_access_token(device_id, device_type, user_id, access_token, push_id=None
     if device_type == 'web':
         redis_client.setex(access_token, str(user_id), 3600*24*10)
         return 
-    engine.execute(text("""INSERT INTO access_tokens (access_token, user, device_id, device_type, active, push_id, last_login) 
+    db.engine.execute(text("""INSERT INTO access_tokens (access_token, user, device_id, device_type, active, push_id, last_login) 
                             VALUES(:access_token, :user_id, :device_id, :device_type, true, :push_id, :last_login) 
                             ON DUPLICATE KEY 
                             UPDATE access_token=:access_token, user=:user_id, active=true, push_id=:push_id, last_login=:last_login"""
                             ),**{'access_token':access_token, 'user_id':user_id, 'push_id':push_id, 'last_login':datetime.datetime.now()}
                     )
-    engine.commit()
+    db.engine.commit()
 
 
 def get_data_from_external_access_token(social_type, external_access_token, external_token_secret=None):
     user_data = social_helpers.get_user_data(social_type, external_access_token, external_token_secret)
+    print user_data
     if not user_data:
         raise CustomExceptions.BadRequestException('Invalid access_tokens')
 
@@ -174,8 +175,8 @@ def register_email_user(email, password, full_name, device_id, username=None, ph
                 registered_with=registered_with, user_type=user_type, gender=gender, user_title=user_title,
                 phone_num=phone_num, lat=lat, lon=lon, location_name=location_name, country_name=country_name,
                 country_code=country_code)
-    db_session.add(new_user)
-    db_session.commit()
+    db.session.add(new_user)
+    db.session.commit()
     access_token = generate_access_token(new_user.id, device_id)
     set_access_token(device_id, device_type, new_user.id, access_token, push_id)
     new_registration_task(new_user.id)
@@ -234,8 +235,8 @@ def login_user_social(social_type, social_id, external_access_token, device_id, 
             new_user.google_id = social_id
             new_user.google_token = external_access_token
 
-        db_session.add(new_user)
-        db_session.commit()
+        db.session.add(new_user)
+        db.session.commit()
         access_token = generate_access_token(user.id, device_id)
         set_access_token(device_id, device_type, user.id, access_token, push_id)
         new_registration_task(new_user.id)
@@ -275,7 +276,7 @@ def get_answer_count(user_id):
     return Post.query.filter(Post.answer_author==user_id, Post.deleted==False).count()
 
 def get_user_like_count(user_id):
-    result = engine.execute(text("""SELECT COUNT(post_likes.id) FROM post_likes WHERE post_likes.post IN (SELECT posts.id from posts WHERE posts.answer_author=:user_id) AND post_likes.unliked=false;"""), **{'user_id':user_id})
+    result = db.engine.execute(text("""SELECT COUNT(post_likes.id) FROM post_likes WHERE post_likes.post IN (SELECT posts.id from posts WHERE posts.answer_author=:user_id) AND post_likes.unliked=false;"""), **{'user_id':user_id})
     count = 0
     for row in result:
         count = row[0]
@@ -322,7 +323,7 @@ def user_is_inactive(user_id):
     return bool(User.query.filter(User.id==user_id, User.monkness==-2).count())
 
 def get_user_status(user_id):
-    result = engine.execute(text("""SELECT allow_anonymous_question, monkness, user_type 
+    result = db.engine.execute(text("""SELECT allow_anonymous_question, monkness, user_type 
                                     FROM users 
                                     WHERE id=:user_id LIMIT 1"""), **{'user_id':user_id}
                             )
@@ -331,7 +332,7 @@ def get_user_status(user_id):
 
 
 def get_thumb_users(user_ids):
-    result = engine.execute(text("""SELECT id, username, first_name, profile_picture, deleted,
+    result = db.engine.execute(text("""SELECT id, username, first_name, profile_picture, deleted,
                                             lat, lon, location_name, country_name, country_code,
                                             gender, bio, allow_anonymous_question, user_type, user_title 
                                     FROM users 
@@ -390,7 +391,7 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
 
     #user = User.objects.only('id').get(id=user_id)
     '''
-    result = engine.execute(text("""SELECT username, first_name, bio, profile_picture, cover_picture, profile_video from access_tokens 
+    result = db.engine.execute(text("""SELECT username, first_name, bio, profile_picture, cover_picture, profile_video from access_tokens 
                                         where id=:user_id LIMIT 1"""), **{'user_id':user_id})
     row = result.fetchone()
     '''
@@ -438,7 +439,7 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
     if not update_dict:
         raise CustomExceptions.BadRequestException('Nothing to update')
 
-    db_session.add(UserArchive(user=user,
+    db.session.add(UserArchive(user=user,
                                 username=update_dict['username'] if update_dict.get('username') else existing_values['username'],
                                 first_name=update_dict['first_name'] if update_dict.get('first_name') else existing_values['first_name'],
                                 profile_picture=update_dict['profile_picture'] if update_dict.get('profile_picture') else existing_values['profile_picture'],
@@ -448,7 +449,7 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
                     )
     User.query.filter(User.id==user_id).update(update_dict)
 
-    db_session.commit()
+    db.session.commit()
 
     return user_to_dict(user)
 
@@ -457,13 +458,13 @@ def user_follow(cur_user_id, user_id):
     if cur_user_id == user_id:
         raise CustomExceptions.BadRequestException("Cannot follow yourself")
 
-    engine.execute(text("""INSERT INTO user_follows (user, followed, unfollowed) 
+    db.engine.execute(text("""INSERT INTO user_follows (user, followed, unfollowed) 
                             VALUES(:cur_user_id, :user_id, false) 
                             ON DUPLICATE KEY 
                             UPDATE unfollowed = false"""), **{'cur_user_id':cur_user_id,
                                                                             'user_id':user_id}
                     )
-    engine.commit()
+    db.engine.commit()
     '''
     notify_args = {'user1_id': cur_user_id,'user2_id': user_id}
     cel_tasks.notify_mongo.delay('follow', **notify_args)
@@ -481,7 +482,7 @@ def user_unfollow(cur_user_id, user_id):
 def user_block(cur_user_id, user_id):
     if cur_user_id == user_id:
         return {'user_id': str(cur_user_id)}
-    with engine.begin() as connection:
+    with db.engine.begin() as connection:
         connection.execute(text("""UPDATE user_follows SET user_follows.unfollowed=true
                                                             WHERE (user_follows.user=:user_id AND user_follows.follows=:cur_user_id)
                                                                 OR (user_follows.user=:cur_user_id AND user_follows.follows=:user_id)
@@ -503,7 +504,7 @@ def user_unblock(cur_user_id, user_id):
     return {'user_id': user_id}
 
 def user_block_list(user_id):
-    result = engine.execute(text("""SELECT id, username, first_name, profile_picture, deleted, gender, bio, allow_anonymous_question, user_title from users 
+    result = db.engine.execute(text("""SELECT id, username, first_name, profile_picture, deleted, gender, bio, allow_anonymous_question, user_title from users 
                                     WHERE id in (SELECT blocked_user from user_blocks WHERE user=:user_id)"""), **{'user_id':user_id})
 
     blocked_users = [User(id=row[0], username=row[1], first_name=row[2], 
@@ -546,7 +547,7 @@ def user_exists(username=None, email=None, phone_number=None):
 
 
 def user_get_settings(user_id):
-    result = engine.execute(text("""SELECT allow_anonymous_question, notify_like, notify_follow, notify_question, 
+    result = db.engine.execute(text("""SELECT allow_anonymous_question, notify_like, notify_follow, notify_question, 
                                             notify_comments, notify_mention, notify_answer, timezone 
                                     FROM users 
                                     WHERE id=:user_id LIMIT 1"""), **{'user_id':user_id}
@@ -638,8 +639,8 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous):
     question = Question(question_author=cur_user_id, question_to=question_to, 
                 body=body.capitalize(), is_anonymous=is_anonymous, public=public, lat=lat, lon=lon)
 
-    db_session.add(question)
-    db_session.commit()
+    db.session.add(question)
+    db.session.commit()
     '''
     if not bot and q.show_in_list and not user_id == kwargs['question_to']:
         notify_args = {
@@ -700,7 +701,7 @@ def question_upvote(cur_user_id, question_id):
                             Question.deleted==False
                             ).count():
 
-        engine.execute(text("""INSERT INTO question_upvotes (user, question, downvoted) 
+        db.engine.execute(text("""INSERT INTO question_upvotes (user, question, downvoted) 
                             VALUES(:cur_user_id, :question_id, false) 
                             ON DUPLICATE KEY 
                             UPDATE downvoted = false"""), **{'cur_user_id':cur_user_id,
@@ -728,7 +729,7 @@ def question_ignore(user_id, question_id):
     return {"question_id":question_id, "success":bool(result)}
 
 def post_like(cur_user_id, post_id):
-    result = engine.execute(text("""SELECT answer_author, question_author
+    result = db.engine.execute(text("""SELECT answer_author, question_author
                                     FROM posts
                                     WHERE id=:post_id, deleted=false LIMIT 1"""), **{'post_id':post_id}
                         )
@@ -739,7 +740,7 @@ def post_like(cur_user_id, post_id):
     answer_author, question_author= row
 
     if not (has_blocked(cur_user_id, answer_author) or has_blocked(cur_user_id, answer_author)):
-        engine.execute(text("""INSERT INTO post_likes (user, post, unliked) 
+        db.engine.execute(text("""INSERT INTO post_likes (user, post, unliked) 
                         VALUES(:cur_user_id, :post_id, false) 
                         ON DUPLICATE KEY 
                         UPDATE unliked = false"""), **{'cur_user_id':cur_user_id,
@@ -776,7 +777,7 @@ def post_view(cur_user_id, post_id, client_id=None):
 
 
 def comment_add(cur_user_id, post_id, body, lat, lon):
-    result = engine.execute(text("""SELECT answer_author, question_author
+    result = db.engine.execute(text("""SELECT answer_author, question_author
                                 FROM posts
                                 WHERE id=:post_id, deleted=false LIMIT 1"""), **{'post_id':post_id}
                     )
@@ -788,8 +789,8 @@ def comment_add(cur_user_id, post_id, body, lat, lon):
 
     if not (has_blocked(cur_user_id, answer_author) or has_blocked(cur_user_id, answer_author)):
         comment = Comment(on_post=post_id, body=body, comment_author=cur_user_id, lat=lat, lon=lon)
-        db_session.add(comment)
-        db_session.commit()
+        db.session.add(comment)
+        db.session.commit()
     
         user_update_location(cur_user_id, lat, lon, country=None, country_code=None, loc_name=None)
         '''
@@ -832,7 +833,7 @@ def comment_delete(cur_user_id, comment_id):
 
 
 def comment_list(cur_user_id, post_id, offset, limit):
-        result = engine.execute(text("""SELECT answer_author, question_author
+        result = db.engine.execute(text("""SELECT answer_author, question_author
                                 FROM posts
                                 WHERE id=:post_id, deleted=false LIMIT 1"""), **{'post_id':post_id}
                     )
@@ -1011,7 +1012,7 @@ def create_forgot_password_token(username=None, email=None):
         token = hashlib.sha256(token_string).hexdigest()
         now_time = datetime.datetime.now()
 
-        engine.execute(text("""INSERT INTO forgot_password_tokens (user, token, email, created_at) 
+        db.engine.execute(text("""INSERT INTO forgot_password_tokens (user, token, email, created_at) 
                                 VALUES(:user_id, :token, :email, :cur_time) 
                                 ON DUPLICATE KEY 
                                 UPDATE token = :token, created_at=:cur_time"""), **{'user_id':user.id,
@@ -1019,7 +1020,7 @@ def create_forgot_password_token(username=None, email=None):
                                                                             'email':user.email,
                                                                             'cur_time':now_time}
                             )
-        engine.commit()
+        db.engine.commit()
 
         body = '''Hi <b>{0}</b>,<br>
 Click on the link below to reset your password and start asking questions and answering them yourself.
@@ -1108,8 +1109,8 @@ def install_ref(device_id, url):
         pass
     device_type = 'android' if len(device_id)<=16 else 'ios'
     i = Install(device_id=device_id, url=url, device_type=device_type, ref_data=ref_string)
-    db_session(i)
-    db_session.commit()
+    db.session(i)
+    db.session.commit()
 
 
 def get_new_client_id():
@@ -1154,8 +1155,8 @@ def add_video_post(cur_user_id, question_id, video, video_thumbnail, answer_type
                     lat=lat,
                     lon=lon)
 
-        db_session(post)
-        db_session.commit()
+        db.session(post)
+        db.session.commit()
         async_encoder.encode_video_task(video_url)
 
         Question.query.filter(Question.id==question_id).update({'is_answered':True})
@@ -1185,8 +1186,8 @@ def logout(access_token, device_id):
 
 
 def add_video_to_db(video_url, thumbnail_url):
-    db_session.add(Video(url=video_url, thumbnail=thumbnail_url))
-    db_session.commit()
+    db.session.add(Video(url=video_url, thumbnail=thumbnail_url))
+    db.session.commit()
 
 def update_video_state(video_url, result={}):
     video_exists = bool(Video.query.filter(Video.url==video_url).count())
@@ -1197,8 +1198,8 @@ def update_video_state(video_url, result={}):
     elif result and not video_exists:
             result.update({'url':'video_url','process_state':'success'})
             video_object = Video(**result)
-            db_session.add(video_object)
-            db_session.commit()
+            db.session.add(video_object)
+            db.session.commit()
     
     elif not result and video_exists:
         Video.query.filter(Video.url==video_url).update({'process_state':'failed'})
@@ -1206,8 +1207,8 @@ def update_video_state(video_url, result={}):
     else:
         result.update({'url':'video_url','process_state':'failed'})
         video_object = Video(**result)
-        db_session.add(video_object)
-        db_session.commit()
+        db.session.add(video_object)
+        db.session.commit()
 
 
 

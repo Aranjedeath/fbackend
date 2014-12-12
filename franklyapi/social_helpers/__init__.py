@@ -13,5 +13,5 @@ def get_user_data(social_type, access_token, access_secret=None):
 
 		elif social_type == 'google':
 			return get_gplus_data(access_token)
-	except:
+	except Exception as e:
 		pass
