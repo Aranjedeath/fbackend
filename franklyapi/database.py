@@ -1,8 +1,8 @@
 from app import db
-#from flask.ext.script import Manager
-#from flask.ext.migrate import Migrate, MigrateCommand
+
 
 Base = db.Model
+
 
 def get_item_id(id=0):
 	import uuid

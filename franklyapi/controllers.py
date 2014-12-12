@@ -29,18 +29,20 @@ from object_dict import user_to_dict, guest_user_to_dict,\
 
 def check_access_token(access_token, device_id):
     try:
+        print access_token, device_id
         device_type = get_device_type(device_id)
         user_id = None
         if device_type == 'web':
             user_id = redis_client.get(access_token)
             return User.query.get(user_id) if user_id else None
 
-        access_token_object = AccessToken.query.filter(AccessToken.token==access_token,
+        access_token_object = AccessToken.query.filter(AccessToken.access_token==access_token,
                                                         AccessToken.device_id==device_id,
                                                         AccessToken.active==True).one()
 
         user_id = access_token_object.user
         user = User.query.get(user_id)
+        print 'LOGGED IN USER', user.username
         return user
     except NoResultFound:
         return None
@@ -50,6 +52,10 @@ def check_access_token(access_token, device_id):
         print traceback.format_exc(e)
         raise e
 
+def password_is_valid(password):
+    if len(password)<6:
+        return False
+    return True
 
 def email_available(email):
     if email.split('@')[1].lower() in config.BLOCKED_EMAIL_DOMAINS:
@@ -59,6 +65,9 @@ def email_available(email):
 def username_available(username):
     if len(username)<6 or len(username)>30 or username in config.UNAVAILABLE_USERNAMES:
         return False
+    for char in username:
+        if char not in config.ALLOWED_CHARACTERS:
+            return False
     return not bool(User.query.filter(User.username==username).count())
 
 def sanitize_username(username):
@@ -123,16 +132,17 @@ def set_access_token(device_id, device_type, user_id, access_token, push_id=None
                             VALUES(:access_token, :user_id, :device_id, :device_type, true, :push_id, :last_login) 
                             ON DUPLICATE KEY 
                             UPDATE access_token=:access_token, user=:user_id, active=true, push_id=:push_id, last_login=:last_login"""
-                            ),**{'access_token':access_token, 'user_id':user_id, 'push_id':push_id, 'last_login':datetime.datetime.now()}
+                            ),**{'device_id':device_id, 'device_type':device_type ,'access_token':access_token, 'user_id':user_id, 'push_id':push_id, 'last_login':datetime.datetime.now()}
                     )
     db.engine.commit()
 
-
 def get_data_from_external_access_token(social_type, external_access_token, external_token_secret=None):
+    print external_access_token
     user_data = social_helpers.get_user_data(social_type, external_access_token, external_token_secret)
     print user_data
     if not user_data:
         raise CustomExceptions.BadRequestException('Invalid access_tokens')
+    return user_data
 
 def get_user_from_social_id(social_type, social_id):
     try:
@@ -193,7 +203,7 @@ def login_user_social(social_type, social_id, external_access_token, device_id, 
     user = get_user_from_social_id(social_type, social_id)
     device_type = get_device_type(device_id)
 
-    update_dict = {'deleted':False, '%s_token':external_access_token, '%s_id':social_id}
+    update_dict = {'deleted':False, '%s_token'%(social_type):external_access_token, '%s_id'%(social_type):social_id}
 
     if social_type == 'twitter':
             update_dict.update({'twitter_secret':external_token_secret})
@@ -237,11 +247,11 @@ def login_user_social(social_type, social_id, external_access_token, device_id, 
 
         db.session.add(new_user)
         db.session.commit()
-        access_token = generate_access_token(user.id, device_id)
-        set_access_token(device_id, device_type, user.id, access_token, push_id)
+        access_token = generate_access_token(new_user.id, device_id)
+        set_access_token(device_id, device_type, new_user.id, access_token, push_id)
         new_registration_task(new_user.id)
 
-        return {'access_token': access_token, 'id':user.id, 'username':user.username, 'activated_now':False, 'new_user' : True} 
+        return {'access_token': access_token, 'id':new_user.id, 'username':new_user.username, 'activated_now':False, 'new_user' : True} 
 
 def login_email_new(user_id, id_type, password, device_id, push_id=None):
     try:
@@ -310,7 +320,7 @@ def is_upvoted(question_id, user_id):
     return bool(Upvote.query.filter(Upvote.question==question_id, Upvote.user==user_id, Upvote.downvoted==False).count())
 
 def get_upvoters(question_id, count=4):
-    upvotes = Upvote.query.filter(Upvote.question==question_id, Upvote.downvoted==False).order_by(Upvote.timestamp).desc().limit(count)
+    upvotes = Upvote.query.filter(Upvote.question==question_id, Upvote.downvoted==False).order_by(Upvote.timestamp.desc()).limit(count)
     return [upvote.user for upvote in upvotes]
 
 def has_enabled_anonymous_question(user_id):
@@ -332,33 +342,40 @@ def get_user_status(user_id):
 
 
 def get_thumb_users(user_ids):
-    result = db.engine.execute(text("""SELECT id, username, first_name, profile_picture, deleted,
-                                            lat, lon, location_name, country_name, country_code,
-                                            gender, bio, allow_anonymous_question, user_type, user_title 
-                                    FROM users 
-                                    WHERE id in :user_ids)"""), **{'user_ids':user_ids})
     data = {}
-    for row in result:
-        data.update({
-                        row[0]:{
-                                'id':row[0],
-                                'username':row[1],
-                                'first_name':row[2],
-                                'profile_picture':row[3],
-                                'deleted':row[4],
-                                'location':{
-                                            'coordinate_point':[row[5],row[6]],
-                                            'location_name':row[7],
-                                            'country_name':row[8],
-                                            'country_code':row[9]
-                                            },
-                                'gender':row[10],
-                                'bio':row[11],
-                                'allow_anonymous_question':bool(row[12]),
-                                'user_type':row[13],
-                                'user_title':row[14]
-                                }
-                    })
+    if user_ids:
+        result = db.engine.execute(text("""SELECT id, username, first_name, profile_picture, deleted,
+                                                lat, lon, location_name, country_name, country_code,
+                                                gender, bio, allow_anonymous_question, user_type, user_title 
+                                        FROM users 
+                                        WHERE id in :user_ids)"""), **{'user_ids':user_ids})
+        
+        for row in result:
+            if not row[5] or not row[6]:
+                coordinate_point = None
+            else:
+                coordinate_point = [row[5],row[6]]
+
+            data.update({
+                            row[0]:{
+                                    'id':row[0],
+                                    'username':row[1],
+                                    'first_name':row[2],
+                                    'profile_picture':row[3],
+                                    'deleted':row[4],
+                                    'location':{
+                                                'coordinate_point':coordinate_point,
+                                                'location_name':row[7],
+                                                'country_name':row[8],
+                                                'country_code':row[9]
+                                                },
+                                    'gender':row[10],
+                                    'bio':row[11],
+                                    'allow_anonymous_question':bool(row[12]),
+                                    'user_type':row[13],
+                                    'user_title':row[14]
+                                    }
+                        })
     return data
 
 def user_view_profile(current_user_id, user_id, username=None):
@@ -367,6 +384,7 @@ def user_view_profile(current_user_id, user_id, username=None):
         if current_user_id:
             cur_user = User.query.get(current_user_id)
             if (username and cur_user.username.lower() == username.lower()) or (current_user_id == user_id):
+                print user_to_dict(cur_user)
                 return {'user': user_to_dict(cur_user)}
 
         if username:
@@ -377,10 +395,9 @@ def user_view_profile(current_user_id, user_id, username=None):
         if cur_user:
             if has_blocked(cur_user.id, user.id):
                 raise CustomExceptions.BlockedUserException()
-                
         if str(current_user_id) in config.ADMIN_USERS:
             return {'user': user_to_dict(user)}
-        return {'user': guest_user_to_dict(user, cur_user.id)}
+        return {'user': guest_user_to_dict(user, current_user_id)}
     
     except NoResultFound:
         raise CustomExceptions.UserNotFoundException
@@ -444,7 +461,8 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
                                 first_name=update_dict['first_name'] if update_dict.get('first_name') else existing_values['first_name'],
                                 profile_picture=update_dict['profile_picture'] if update_dict.get('profile_picture') else existing_values['profile_picture'],
                                 cover_picture=update_dict['cover_picture'] if update_dict.get('cover_picture') else existing_values['cover_picture'],
-                                profile_video=update_dict['profile_video'] if update_dict.get('profile_video') else existing_values['profile_video']
+                                profile_video=update_dict['profile_video'] if update_dict.get('profile_video') else existing_values['profile_video'],
+                                bio=update_dict['bio'] if update_dict.get('profile_video') else existing_values['bio']
                                 )
                     )
     User.query.filter(User.id==user_id).update(update_dict)
@@ -516,14 +534,14 @@ def user_block_list(user_id):
     return {'users': blocked_list}
 
 def user_change_username(user_id, new_username):
-    if User.check_uname_avail(new_username):
+    if username_available(new_username):
         User.query.filter(User.id==user_id).update({'username':new_username})
         return {'username':new_username, 'status':'success', 'id':str(user_id)}
     else:
         raise CustomExceptions.UnameUnavailableException('Username invalid or not available')
 
 def user_change_password(user_id, new_password):
-    if User.password_is_valid(new_password):
+    if password_is_valid(new_password):
         User.query.filter(User.id==user_id).update({'password':new_password})
         return {'status':'success', 'id':user_id}
     else:
@@ -531,17 +549,10 @@ def user_change_password(user_id, new_password):
 
 
 def user_exists(username=None, email=None, phone_number=None):
-    exists = False
     if username:
-        if username.lower() in config.UNAVAILABLE_USERNAMES:
-            exists = True
-        if User.query.filter(User.username==username).count():
-            exists = True
-        return {'exists': exists, 'username':username}
+        return {'exists': not username_available(username), 'username':username}
     elif email:
-        if User.query.filter(User.email==email).count():
-            exists = True
-        return {'exists': exists, 'email':email}
+        return {'exists': not email_available(email), 'email':email}
     else:
         raise CustomExceptions.BadRequestException()
 
@@ -668,10 +679,10 @@ def question_list(user_id, offset, limit):
                                             Question.deleted==False,
                                             Question.is_answered==False,
                                             Question.is_ignored==False
-                                            ).order_by(Question.timestamp).desc().offset(offset)
+                                            ).order_by(Question.timestamp.desc()).offset(offset)
     
     questions = [{'question':question_to_dict(question), 'type':'question'} for question in questions_query.limit(limit)]
-    next_index = str(offset+limit) if question else "-1"
+    next_index = str(offset+limit) if questions else "-1"
     return {'questions': questions, 'count': len(questions),  'next_index' : next_index}
 
 
@@ -686,7 +697,7 @@ def question_list_public(current_user_id, user_id, offset, limit):
                                             Question.public==True
                                             ).outerjoin(Upvote
                                             ).group_by(Question.id
-                                            ).order_by(func.count(Upvote.id)).desc(
+                                            ).order_by(func.count(Upvote.id).desc()
                                             ).offset(offset)
 
     questions = [{'question':question_to_dict(question), 'type':'question'} for question in questions_query.limit(limit)]
@@ -854,7 +865,7 @@ def comment_list(cur_user_id, post_id, offset, limit):
                 blocked_users.add(block.user)
         comments = Comment.query.filter(Comment.on_post==post_id, Comment.deleted==False
                                         ).filter(~Comment.comment_author.in_(blocked_users)
-                                        ).order_by(Comment.timestamp).desc(
+                                        ).order_by(Comment.timestamp.desc()
                                         ).offset(offset
                                         ).limit(limit).all()
         comments = comments_to_dict(comments)
@@ -897,8 +908,7 @@ def home_feed(cur_user_id, offset, limit, web):
         skip = skip+celeb_limit+1
 
     celeb_users = User.query.filter(User.id.in_(followers+[cur_user_id]), User.deleted==False, User.profile_video!=None
-                    ).order_by(User.user_since).desc(
-                    ).skip(skip
+                    ).order_by(User.user_since.desc()).offset(skip
                     ).limit(celeb_limit)
     
     for user in celeb_users:
@@ -959,8 +969,7 @@ def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None):
 
     celeb_users = User.query.filter(~User.id.in_(followers)
                                 ).filter(User.deleted==False, User.profile_video!=None
-                                ).order_by(User.user_since).desc(
-                                ).skip(skip
+                                ).order_by(User.user_since.desc()).offset(skip
                                 ).limit(celeb_limit)
     
     for user in celeb_users:
