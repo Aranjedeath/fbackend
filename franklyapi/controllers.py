@@ -362,7 +362,7 @@ def get_video_states(video_urls={}):
                                 'promo':video.promo,
                                 'thumb':video_urls[video.url]
                             }
-    for video_url, thumbnail_url in video_urls.items:
+    for video_url, thumbnail_url in video_urls.items():
         video_obj = result.get(video_url)
         if not video_obj:
             result[video_url] = {'original':video_url, 'thumb':thumbnail_url}
