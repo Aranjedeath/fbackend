@@ -434,33 +434,27 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
 
     if first_name:
         update_dict.update({'first_name':first_name})
-        user.first_name = first_name
 
     if bio:
         bio.replace('\n', ' ')
         bio = bio[:200]
         update_dict.update({'bio':bio})
-        user.bio = bio
 
     if profile_video:
         profile_video_url, cover_picture_url = media_uploader.upload_user_video(user_id=user_id, video_file=profile_video, video_thumbnail_file=cover_picture, video_type='profile_video')
         update_dict.update({'profile_video':profile_video_url, 'cover_picture':cover_picture_url})
-        user.profile_video = profile_video_url
-        user.cover_picture = cover_picture_url
         add_video_to_db(profile_video_url, cover_picture_url)
         async_encoder.encode_video_task.delay(profile_video_url)
 
     if not profile_video and cover_picture:
         cover_picture_url = media_uploader.upload_user_image(user_id=user_id, image_file=cover_picture, image_type='cover_picture')
         update_dict.update({'cover_picture':cover_picture_url})
-        user.cover_picture = cover_picture_url
 
     if profile_picture:
         tmp_path = '/tmp/request/{random_string}.jpeg'.format(random_string=uuid.uuid1().hex)
         profile_picture.save(tmp_path)
         profile_picture_url = media_uploader.upload_user_image(user_id=user_id, image_file_path=tmp_path, image_type='profile_picture')
         update_dict.update({'profile_picture':profile_picture_url})
-        user.profile_picture = profile_picture_url
         os.remove(tmp_path)
 
     if not update_dict:
