@@ -21,7 +21,7 @@ def media_dict(media_url, thumbnail_url):
 
 def user_to_dict(user):
     from configs import config
-    from controllers import get_follower_count, get_following_count, get_answer_count, get_user_like_count
+    from controllers import get_video_states, get_follower_count, get_following_count, get_answer_count, get_user_like_count
     user_dict = {
         'id': user.id,
         'email': user.email,
@@ -35,7 +35,7 @@ def user_to_dict(user):
         'bio': user.bio,
         'profile_picture': user.profile_picture,
         'cover_picture': user.cover_picture,
-        'profile_video': user.profile_video,
+        'profile_video': user.profile_videos,
         'gender': user.gender,
         'follower_count': get_follower_count(user.id),
         'following_count': get_following_count(user.id),
@@ -49,13 +49,14 @@ def user_to_dict(user):
         
         'user_type':user.user_type,
         'user_title':user.user_title,
-        'interests':[]
+        'interests':[],
+        'profile_videos':get_video_states({user.profile_video:user.cover_picture})[user.profile_video] if user.profile_video else None
     }
     return user_dict
 
 
 def guest_user_to_dict(user, current_user_id, cur_user_interest_tags=None):
-    from controllers import get_follower_count, get_following_count, get_answer_count,\
+    from controllers import get_video_states, get_follower_count, get_following_count, get_answer_count,\
                             get_user_like_count, is_follower, is_following, get_user_view_count
     if user.deleted == True:
         return thumb_user_to_dict(user)
@@ -79,7 +80,8 @@ def guest_user_to_dict(user, current_user_id, cur_user_interest_tags=None):
         'allow_anonymous_question': user.allow_anonymous_question,
         'view_count' : get_user_view_count(user.id),
         'user_type':user.user_type,
-        'user_title':user.user_title
+        'user_title':user.user_title,
+        'profile_videos':get_video_states({user.profile_video:user.cover_picture})[user.profile_video] if user.profile_video else None
     }
     
     return user_dict
@@ -197,7 +199,7 @@ def question_to_dict(question, current_user_id=None):
     return ques_dict
 
 def post_to_dict(post, cur_user_id=None, distance=None):
-    from controllers import is_liked, get_post_like_count, is_following, get_follower_count, get_thumb_users, get_comment_count, get_post_view_count
+    from controllers import get_video_states, is_liked, get_post_like_count, is_following, get_follower_count, get_thumb_users, get_comment_count, get_post_view_count
     users = get_thumb_users([post.question_author, post.answer_author])
 
     post_dict = {
@@ -240,7 +242,9 @@ def post_to_dict(post, cur_user_id=None, distance=None):
             'type': post.answer_type,
             'timestamp': int(time.mktime(post.timestamp.timetuple())),
             'tags': [],
+            'media_urls':get_video_states({post.media_url:post.media_thumb_url})[post.media_url]
         },
+
         'liked_count': get_post_like_count(post.id),
         # to store count and list of user ids
         'comment_count': get_comment_count(post.id),
@@ -260,12 +264,16 @@ def post_to_dict(post, cur_user_id=None, distance=None):
 
 
 def posts_to_dict(posts, cur_user_id=None, distance=None):
-    from controllers import is_liked, get_post_like_count, is_following, get_follower_count, get_thumb_users, get_comment_count, get_post_view_count
+    from controllers import get_video_states, is_liked, get_post_like_count, is_following, get_follower_count, get_thumb_users, get_comment_count, get_post_view_count
     user_list = set()
+    answer_media_urls = {}
     for p in posts:
         user_list.add(p.question_author)
         user_list.add(p.answer_author)
+        answer_media_urls[p.media_url] = p.media_thumb_url
     users = get_thumb_users(user_list)
+    media_urls = get_video_states(answer_media_urls)
+
 
     posts_dict = []
     for post in posts:
@@ -309,6 +317,7 @@ def posts_to_dict(posts, cur_user_id=None, distance=None):
                 'type': post.answer_type,
                 'timestamp': int(time.mktime(post.timestamp.timetuple())),
                 'tags': [],
+                'media_urls':media_urls[post.media_url]
             },
             'liked_count': get_post_like_count(post.id),
             # to store count and list of user ids

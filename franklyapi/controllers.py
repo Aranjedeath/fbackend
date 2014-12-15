@@ -350,6 +350,25 @@ def get_user_status(user_id):
     return {'allow_anonymous_question':bool(row[0]), 'monkness':row[1], 'user_type':row[2]}
 
 
+def get_video_states(video_urls={}):
+    result = {}
+    videos = Video.query.filter(Video.url.in_(video_urls.keys())).all()
+    for video in videos:
+        result[video.url] = {'original':video.url,
+                                0: video.ultralow,
+                                200:video.low,
+                                400:video.medium,
+                                900:video.opt,
+                                'promo':video.promo,
+                                'thumb':video_urls[video.url]
+                            }
+    for video_url, thumbnail_url in video_urls.items:
+        video_obj = result.get(video_url)
+        if not video_obj:
+            result[video_url] = {'original':video_url, 'thumb':thumbnail_url}
+    return result
+
+
 def get_thumb_users(user_ids):
     data = {}
     if user_ids:

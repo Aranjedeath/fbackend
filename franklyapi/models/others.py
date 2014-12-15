@@ -28,9 +28,11 @@ class Video(Base):
     __tablename__ = 'videos'
     url           = Column(String(300), primary_key=True)
     thumbnail     = Column(String(300))
-    opt           = Column(String(300))
-    medium        = Column(String(300))
-    low           = Column(String(300))
+    opt           = Column(String(300)) # 700
+    medium        = Column(String(300)) # 300
+    low           = Column(String(300)) # 150
+    ultralow     = Column(String(300)) # 45
+    promo         = Column(String(300)) # promo
     delete        = Column(Boolean(), default=False)
     process_state = Column(Enum('pending', 'running', 'success', 'failed'), default='pending')
     created_at    = Column(DateTime(), default=datetime.datetime.now)
