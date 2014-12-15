@@ -1,7 +1,7 @@
-from app import db
+from app import dbs
 
 
-Base = db.Model
+Base = dbs.Model
 
 
 def get_item_id(id=0):

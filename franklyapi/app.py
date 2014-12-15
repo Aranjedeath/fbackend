@@ -24,7 +24,7 @@ app.config.from_object(FlaskConfig)
 login_manager = LoginManager()
 login_manager.init_app(app)
 
-db = SQLAlchemy(app)
+dbs = SQLAlchemy(app)
 api = restful.Api(app)
 
 raygun = raygunprovider.RaygunSender(config.RAYGUN_KEY)
