@@ -127,14 +127,17 @@ def set_access_token(device_id, device_type, user_id, access_token, push_id=None
     from app import redis_client
     if device_type == 'web':
         redis_client.setex(access_token, str(user_id), 3600*24*10)
-        return 
+        return
+    print {'device_id':device_id, 'device_type':device_type ,'access_token':access_token, 'user_id':user_id, 'push_id':push_id, 'last_login':datetime.datetime.now()}
     db.session.execute(text("""INSERT INTO access_tokens (access_token, user, device_id, device_type, active, push_id, last_login) 
-                            VALUES(:access_token, :user_id, :device_id, :device_type, true, :push_id, :last_login) 
-                            ON DUPLICATE KEY 
-                            UPDATE access_token=:access_token, user=:user_id, active=true, push_id=:push_id, last_login=:last_login"""
-                            ),**{'device_id':device_id, 'device_type':device_type ,'access_token':access_token, 'user_id':user_id, 'push_id':push_id, 'last_login':datetime.datetime.now()}
-                    )
+                                VALUES(:access_token, :user_id, :device_id, :device_type, true, :push_id, :last_login) 
+                                ON DUPLICATE KEY 
+                                UPDATE access_token=:access_token, user=:user_id, active=true, push_id=:push_id, last_login=:last_login"""
+                                ),
+                        params={'device_id':device_id, 'device_type':device_type ,'access_token':access_token, 'user_id':user_id, 'push_id':push_id, 'last_login':datetime.datetime.now()}
+                        )
     db.session.commit()
+
 
 def get_data_from_external_access_token(social_type, external_access_token, external_token_secret=None):
     print external_access_token
@@ -167,7 +170,7 @@ def new_registration_task(user_id):
     pass
 
 def register_email_user(email, password, full_name, device_id, username=None, phone_num=None,
-                        push_id=None, push_num=None, gender=None, user_type=0, user_title=None, 
+                        push_id=None, gender=None, user_type=0, user_title=None, 
                         lat=None, lon=None, location_name=None, country_name=None, country_code=None):
     
     if not email_available(email):
@@ -286,7 +289,12 @@ def get_answer_count(user_id):
     return Post.query.filter(Post.answer_author==user_id, Post.deleted==False).count()
 
 def get_user_like_count(user_id):
-    result = db.session.execute(text("""SELECT COUNT(post_likes.id) FROM post_likes WHERE post_likes.post IN (SELECT posts.id from posts WHERE posts.answer_author=:user_id) AND post_likes.unliked=false;"""), **{'user_id':user_id})
+    result = db.session.execute(text("""SELECT COUNT(post_likes.id) FROM post_likes
+                                        WHERE post_likes.post 
+                                        IN (SELECT posts.id from posts 
+                                            WHERE posts.answer_author=:user_id) 
+                                            AND post_likes.unliked=false;"""),
+                                params={'user_id':user_id})
     count = 0
     for row in result:
         count = row[0]
@@ -295,10 +303,10 @@ def get_user_like_count(user_id):
 def get_user_view_count(user_id):
     return random.randint(0, 100)
 
-def is_follower(user_id, current_user_id):
+def is_following(user_id, current_user_id):
     return bool(Follow.query.filter(Follow.user==current_user_id, Follow.followed==user_id, Follow.unfollowed==False).limit(1).count())
 
-def is_following(user_id, current_user_id):
+def is_follower(user_id, current_user_id):
     return bool(Follow.query.filter(Follow.user==user_id, Follow.followed==current_user_id, Follow.unfollowed==False).limit(1).count())
 
 def get_post_like_count(post_id):
@@ -334,8 +342,9 @@ def user_is_inactive(user_id):
 
 def get_user_status(user_id):
     result = db.session.execute(text("""SELECT allow_anonymous_question, monkness, user_type 
-                                    FROM users 
-                                    WHERE id=:user_id LIMIT 1"""), **{'user_id':user_id}
+                                        FROM users 
+                                        WHERE id=:user_id LIMIT 1"""),
+                                    params={'user_id':user_id}
                             )
     row = result.fetchone()
     return {'allow_anonymous_question':bool(row[0]), 'monkness':row[1], 'user_type':row[2]}
@@ -347,8 +356,9 @@ def get_thumb_users(user_ids):
         result = db.session.execute(text("""SELECT id, username, first_name, profile_picture, deleted,
                                                 lat, lon, location_name, country_name, country_code,
                                                 gender, bio, allow_anonymous_question, user_type, user_title 
-                                        FROM users 
-                                        WHERE id in :user_ids)"""), **{'user_ids':user_ids})
+                                            FROM users 
+                                            WHERE id in (:user_ids)"""),
+                                        params={'user_ids':set(user_ids)})
         
         for row in result:
             if not row[5] or not row[6]:
@@ -409,7 +419,7 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
     #user = User.objects.only('id').get(id=user_id)
     '''
     result = db.session.execute(text("""SELECT username, first_name, bio, profile_picture, cover_picture, profile_video from access_tokens 
-                                        where id=:user_id LIMIT 1"""), **{'user_id':user_id})
+                                        where id=:user_id LIMIT 1"""), params={'user_id':user_id})
     row = result.fetchone()
     '''
     user = User.query.get(user_id)
@@ -455,7 +465,6 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
 
     if not update_dict:
         raise CustomExceptions.BadRequestException('Nothing to update')
-
     db.session.add(UserArchive(user=user,
                                 username=update_dict['username'] if update_dict.get('username') else existing_values['username'],
                                 first_name=update_dict['first_name'] if update_dict.get('first_name') else existing_values['first_name'],
@@ -465,9 +474,12 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
                                 bio=update_dict['bio'] if update_dict.get('profile_video') else existing_values['bio']
                                 )
                     )
+    print update_dict
+    
     User.query.filter(User.id==user_id).update(update_dict)
-
     db.session.commit()
+
+    
 
     return user_to_dict(user)
 
@@ -477,10 +489,10 @@ def user_follow(cur_user_id, user_id):
         raise CustomExceptions.BadRequestException("Cannot follow yourself")
 
     db.session.execute(text("""INSERT INTO user_follows (user, followed, unfollowed) 
-                            VALUES(:cur_user_id, :user_id, false) 
-                            ON DUPLICATE KEY 
-                            UPDATE unfollowed = false"""), **{'cur_user_id':cur_user_id,
-                                                                            'user_id':user_id}
+                                VALUES(:cur_user_id, :user_id, false) 
+                                ON DUPLICATE KEY 
+                                UPDATE unfollowed = false"""),
+                        params={'cur_user_id':cur_user_id, 'user_id':user_id}
                     )
     db.session.commit()
     '''
@@ -500,19 +512,21 @@ def user_unfollow(cur_user_id, user_id):
 def user_block(cur_user_id, user_id):
     if cur_user_id == user_id:
         return {'user_id': str(cur_user_id)}
-    with db.session.begin() as connection:
-        connection.execute(text("""UPDATE user_follows SET user_follows.unfollowed=true
-                                                            WHERE (user_follows.user=:user_id AND user_follows.follows=:cur_user_id)
-                                                                OR (user_follows.user=:cur_user_id AND user_follows.follows=:user_id)
-                                    """), **{'user_id':user_id, 'cur_user_id':user_id})
+    db.session.execute(text("""UPDATE user_follows 
+                                SET user_follows.unfollowed=true
+                                WHERE (user_follows.user=:user_id 
+                                AND user_follows.follows=:cur_user_id)
+                                OR (user_follows.user=:cur_user_id 
+                                    AND user_follows.follows=:user_id)"""),
+                        params={'user_id':user_id, 'cur_user_id':user_id})
 
-        connection.execute(text(""" INSERT INTO user_blocks (user, blocked_user, unblocked)
-                                            VALUES(:cur_user_id, :user_id, false)
-                                            ON DUPLICATE KEY 
-                                            UPDATE unblocked = false"""), **{'cur_user_id':cur_user_id,
-                                                                                'user_id':user_id
-                                                                            }
-                                )
+    db.session.execute(text(""" INSERT INTO user_blocks (user, blocked_user, unblocked)
+                                VALUES(:cur_user_id, :user_id, false)
+                                ON DUPLICATE KEY 
+                                UPDATE unblocked = false"""),
+                        params={'cur_user_id':cur_user_id, 'user_id':user_id}
+                        )
+    db.session.commit()
     return {'user_id': user_id}
 
 def user_unblock(cur_user_id, user_id):
@@ -522,8 +536,12 @@ def user_unblock(cur_user_id, user_id):
     return {'user_id': user_id}
 
 def user_block_list(user_id):
-    result = db.session.execute(text("""SELECT id, username, first_name, profile_picture, deleted, gender, bio, allow_anonymous_question, user_title from users 
-                                    WHERE id in (SELECT blocked_user from user_blocks WHERE user=:user_id)"""), **{'user_id':user_id})
+    result = db.session.execute(text("""SELECT id, username, first_name, profile_picture, deleted, gender, bio, allow_anonymous_question, user_title 
+                                        FROM users 
+                                        WHERE id IN (SELECT blocked_user 
+                                                    FROM user_blocks 
+                                                    WHERE user=:user_id)"""),
+                                params={'user_id':user_id})
 
     blocked_users = [User(id=row[0], username=row[1], first_name=row[2], 
                             profile_picture=row[3], deleted=row[4], 
@@ -560,9 +578,10 @@ def user_exists(username=None, email=None, phone_number=None):
 def user_get_settings(user_id):
     result = db.session.execute(text("""SELECT allow_anonymous_question, notify_like, notify_follow, notify_question, 
                                             notify_comments, notify_mention, notify_answer, timezone 
-                                    FROM users 
-                                    WHERE id=:user_id LIMIT 1"""), **{'user_id':user_id}
-                            )
+                                        FROM users 
+                                        WHERE id=:user_id 
+                                        LIMIT 1"""),
+                                params={'user_id':user_id})
     row = result.fetchone()
     if row:
         return {"allow_anonymous_question":row[0],
@@ -713,10 +732,10 @@ def question_upvote(cur_user_id, question_id):
                             ).count():
 
         db.session.execute(text("""INSERT INTO question_upvotes (user, question, downvoted) 
-                            VALUES(:cur_user_id, :question_id, false) 
-                            ON DUPLICATE KEY 
-                            UPDATE downvoted = false"""), **{'cur_user_id':cur_user_id,
-                                                            'question_id':question_id}
+                                    VALUES(:cur_user_id, :question_id, false) 
+                                    ON DUPLICATE KEY 
+                                    UPDATE downvoted = false"""),
+                            params={'cur_user_id':cur_user_id, 'question_id':question_id}
                         )
     else:
         raise CustomExceptions.BadRequestException("Question is not available for upvote")
@@ -741,8 +760,10 @@ def question_ignore(user_id, question_id):
 
 def post_like(cur_user_id, post_id):
     result = db.session.execute(text("""SELECT answer_author, question_author
-                                    FROM posts
-                                    WHERE id=:post_id, deleted=false LIMIT 1"""), **{'post_id':post_id}
+                                        FROM posts
+                                        WHERE id=:post_id, deleted=false
+                                        LIMIT 1"""),
+                                params={'post_id':post_id}
                         )
     row = result.fetchone()
     if not row:
@@ -752,11 +773,11 @@ def post_like(cur_user_id, post_id):
 
     if not (has_blocked(cur_user_id, answer_author) or has_blocked(cur_user_id, answer_author)):
         db.session.execute(text("""INSERT INTO post_likes (user, post, unliked) 
-                        VALUES(:cur_user_id, :post_id, false) 
-                        ON DUPLICATE KEY 
-                        UPDATE unliked = false"""), **{'cur_user_id':cur_user_id,
-                                                        'post_id':post_id}
-                    )
+                                    VALUES(:cur_user_id, :post_id, false) 
+                                    ON DUPLICATE KEY 
+                                    UPDATE unliked = false"""),
+                            params={'cur_user_id':cur_user_id, 'post_id':post_id}
+                            )
         #send notification
         return {'id': post_id, 'success':True}
 
@@ -789,9 +810,11 @@ def post_view(cur_user_id, post_id, client_id=None):
 
 def comment_add(cur_user_id, post_id, body, lat, lon):
     result = db.session.execute(text("""SELECT answer_author, question_author
-                                FROM posts
-                                WHERE id=:post_id, deleted=false LIMIT 1"""), **{'post_id':post_id}
-                    )
+                                        FROM posts
+                                        WHERE id=:post_id, deleted=false 
+                                        LIMIT 1"""),
+                                params={'post_id':post_id}
+                                )
     row = result.fetchone()
     if not row:
         raise CustomExceptions.PostNotFoundException('Post not available for action')
@@ -845,9 +868,11 @@ def comment_delete(cur_user_id, comment_id):
 
 def comment_list(cur_user_id, post_id, offset, limit):
         result = db.session.execute(text("""SELECT answer_author, question_author
-                                FROM posts
-                                WHERE id=:post_id, deleted=false LIMIT 1"""), **{'post_id':post_id}
-                    )
+                                            FROM posts
+                                            WHERE id=:post_id, deleted=false 
+                                            LIMIT 1"""),
+                                    params={'post_id':post_id}
+                                    )
         row = result.fetchone()
         if not row:
             raise CustomExceptions.PostNotFoundException("Comments for this post is not available")
@@ -907,9 +932,10 @@ def home_feed(cur_user_id, offset, limit, web):
     if offset != 0:
         skip = skip+celeb_limit+1
 
-    celeb_users = User.query.filter(User.id.in_(followers+[cur_user_id]), User.deleted==False, User.profile_video!=None
-                    ).order_by(User.user_since.desc()).offset(skip
-                    ).limit(celeb_limit)
+    celeb_users = User.query.filter(User.id.in_(followers+[cur_user_id]),
+                                    User.deleted==False, User.user_type==2
+                                    ).order_by(User.user_since.desc()).offset(skip
+                                    ).limit(celeb_limit)
     
     for user in celeb_users:
         questions_query = Question.query.filter(Question.question_to==user.id, 
@@ -931,7 +957,7 @@ def home_feed(cur_user_id, offset, limit, web):
             questions_feed = [{'type':'questions', 'questions':make_celeb_questions_dict(celeb_users[0], questions.all, cur_user_id)}]
         
         extra_feed = [{'type':'user', 'user':guest_user_to_dict(user, cur_user_id)}]
-
+        print extra_feed
         if questions_feed:
             extra_feed.extend(questions_feed)
 
@@ -948,9 +974,9 @@ def home_feed(cur_user_id, offset, limit, web):
 
 def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None):
     follows = Follow.query.filter(Follow.user==cur_user_id, Follow.unfollowed==False)
-    followers = [follow.followed for follow in follows]
+    followings = [follow.followed for follow in follows]
 
-    posts = Post.query.filter(~Post.answer_author.in_(followers+[cur_user_id])
+    posts = Post.query.filter(~Post.answer_author.in_(followings+[cur_user_id])
                     ).filter(Post.deleted==False, Post.popular==True
                     ).order_by(Post.timestamp
                     ).offset(offset
@@ -966,9 +992,10 @@ def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None):
     
     if offset != 0:
         skip = skip+celeb_limit+1
-
-    celeb_users = User.query.filter(~User.id.in_(followers)
-                                ).filter(User.deleted==False, User.profile_video!=None
+    print 'DISCOVER USERS OFFSET/LIMIT:', skip, celeb_limit
+    print 'followings', followings
+    celeb_users = User.query.filter(~User.id.in_(followings+[cur_user_id])
+                                ).filter(User.deleted==False
                                 ).order_by(User.user_since.desc()).offset(skip
                                 ).limit(celeb_limit)
     
@@ -1000,7 +1027,7 @@ def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None):
         for item in extra_feed:
             feeds.insert(random_index, item)
             random_index +=1
-
+    print feeds
     next_index = offset+limit if feeds else -1
 
     return {'stream': feeds, 'count':len(feeds), 'next_index':next_index}
@@ -1020,16 +1047,12 @@ def create_forgot_password_token(username=None, email=None):
         token_string = '%s+%s+%s'%(str(user.id), token_salt, time.time())
         token = hashlib.sha256(token_string).hexdigest()
         now_time = datetime.datetime.now()
-
         db.session.execute(text("""INSERT INTO forgot_password_tokens (user, token, email, created_at) 
-                                VALUES(:user_id, :token, :email, :cur_time) 
-                                ON DUPLICATE KEY 
-                                UPDATE token = :token, created_at=:cur_time"""), **{'user_id':user.id,
-                                                                            'token':token,
-                                                                            'email':user.email,
-                                                                            'cur_time':now_time}
+                                    VALUES(:user_id, :token, :email, :cur_time) 
+                                    ON DUPLICATE KEY 
+                                    UPDATE token = :token, created_at=:cur_time"""),
+                            params={'user_id':user.id, 'token':token, 'email':user.email, 'cur_time':now_time}
                             )
-        db.session.commit()
 
         body = '''Hi <b>{0}</b>,<br>
 Click on the link below to reset your password and start asking questions and answering them yourself.

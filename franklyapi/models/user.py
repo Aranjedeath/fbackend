@@ -32,6 +32,7 @@ class User(Base):
     monkness                  = Column(Integer(), default=-1)
     user_type                 = Column(Integer(), default=0)
     user_title                = Column(String(20))
+    phone_num                 = Column(String(20))
     
     lat                       = Column(Float())
     lon                       = Column(Float())
@@ -59,7 +60,7 @@ class User(Base):
                         user_since=datetime.datetime.now(), last_updated=datetime.datetime.now(),
                         last_seen=datetime.datetime.now(), allow_anonymous_question=True,
                         notify_like=True, notify_follow=True, notify_question=True, notify_comments=True,
-                        notify_mention=None, notify_answer=None, timezone=0, id=get_item_id()):
+                        notify_mention=None, notify_answer=None, timezone=0, id=get_item_id(), phone_num=None):
         self.id                        = id
         self.email                     = email
         self.first_name                = first_name
@@ -101,7 +102,8 @@ class User(Base):
         self.notify_comments           = notify_comments          
         self.notify_mention            = notify_mention           
         self.notify_answer             = notify_answer            
-        self.timezone                  = timezone                 
+        self.timezone                  = timezone  
+        self.phone_num                 = phone_num               
 
 
     def is_authenticated(self):
