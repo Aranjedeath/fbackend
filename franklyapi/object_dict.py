@@ -156,7 +156,7 @@ def make_celeb_questions_dict(celeb, questions, current_user_id=None):
     return celeb_dict
 
 
-def question_to_dict(question, current_user_id):
+def question_to_dict(question, current_user_id=None):
     from controllers import get_question_upvote_count, is_upvoted, get_upvoters,  get_thumb_users
     
     upvoters = get_upvoters(question.id, count=5)

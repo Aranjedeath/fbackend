@@ -45,12 +45,12 @@ class RegisterEmail(restful.Resource):
         new_email_reg_parser.add_argument('push_id', type=str, location='json')
         args = new_email_reg_parser.parse_args()
         try:
-            return controllers.register_email_new(  email=args['email'],
+            return controllers.register_email_user(  email=args['email'],
                                                     password=args['password'],
                                                     full_name=args['full_name'],
                                                     device_id=args.get('device_id'),
                                                     push_id=args.get('push_id'),
-                                                    push_num=args.get('phone_num'),
+                                                    phone_num=args.get('phone_num'),
                                                     username=args.get('username'),
                                                     gender=args.get('gender'),
                                                     user_type=args['user_type'],
@@ -198,9 +198,9 @@ class UserUpdateForm(restful.Resource):
             abort(400, message=str(e))
 
         except Exception as e:
+            print traceback.format_exc(e)
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])
-            print traceback.format_exc(e)
             abort(500, message="Internal Server Error")
 
 
