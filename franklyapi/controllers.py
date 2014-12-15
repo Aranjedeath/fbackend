@@ -422,6 +422,7 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
                                         where id=:user_id LIMIT 1"""), params={'user_id':user_id})
     row = result.fetchone()
     '''
+    
     user = User.query.get(user_id)
     
     existing_values = {'username': user.username,
@@ -431,6 +432,7 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
                         'cover_picture':user.cover_picture,
                         'profile_video':user.profile_video
                         }
+    
 
     if first_name:
         update_dict.update({'first_name':first_name})
@@ -459,7 +461,9 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
 
     if not update_dict:
         raise CustomExceptions.BadRequestException('Nothing to update')
-    db.session.add(UserArchive(user=user,
+    
+    
+    user_archive =  UserArchive(user=user_id,
                                 username=update_dict['username'] if update_dict.get('username') else existing_values['username'],
                                 first_name=update_dict['first_name'] if update_dict.get('first_name') else existing_values['first_name'],
                                 profile_picture=update_dict['profile_picture'] if update_dict.get('profile_picture') else existing_values['profile_picture'],
@@ -467,13 +471,10 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
                                 profile_video=update_dict['profile_video'] if update_dict.get('profile_video') else existing_values['profile_video'],
                                 bio=update_dict['bio'] if update_dict.get('profile_video') else existing_values['bio']
                                 )
-                    )
-    print update_dict
-    
+
+    db.session.add(user_archive)
     User.query.filter(User.id==user_id).update(update_dict)
     db.session.commit()
-
-    
 
     return user_to_dict(user)
 
