@@ -238,11 +238,11 @@ def post_to_dict(post, cur_user_id=None, distance=None):
         },
         'answer': {
             'body': post.body,
-            'media': media_dict(post.media_url, post.media_thumb_url),
+            'media': media_dict(post.media_url, post.thumbnail_url),
             'type': post.answer_type,
             'timestamp': int(time.mktime(post.timestamp.timetuple())),
             'tags': [],
-            'media_urls':get_video_states({post.media_url:post.media_thumb_url})[post.media_url]
+            'media_urls':get_video_states({post.media_url:post.thumbnail_url})[post.media_url]
         },
 
         'liked_count': get_post_like_count(post.id),
@@ -270,7 +270,7 @@ def posts_to_dict(posts, cur_user_id=None, distance=None):
     for p in posts:
         user_list.add(p.question_author)
         user_list.add(p.answer_author)
-        answer_media_urls[p.media_url] = p.media_thumb_url
+        answer_media_urls[p.media_url] = p.thumbnail_url
     users = get_thumb_users(user_list)
     media_urls = get_video_states(answer_media_urls)
 
@@ -313,7 +313,7 @@ def posts_to_dict(posts, cur_user_id=None, distance=None):
             },
             'answer': {
                 'body': post.body,
-                'media': media_dict(post.media_url, post.media_thumb_url),
+                'media': media_dict(post.media_url, post.thumbnail_url),
                 'type': post.answer_type,
                 'timestamp': int(time.mktime(post.timestamp.timetuple())),
                 'tags': [],
