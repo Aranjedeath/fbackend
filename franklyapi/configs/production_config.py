@@ -28,8 +28,8 @@ DATABASE_URI = 'mysql://{username}:{password}@{host}/{db_name}'.format(username=
                                                                         host=MYSQL_HOST,
                                                                         db_name=MYSQL_DATABASE_NAME)
 
-ASYNC_ENCODER_BROKER_URL = "redis://{redis_host}/14".format(redis_host=REDIS_HOST)
-ASYNC_ENCODER_BACKEND_URL = "redis://{redis_host}/14".format(redis_host=REDIS_HOST)
+ASYNC_ENCODER_BROKER_URL = "redis://{redis_host}/8".format(redis_host=REDIS_HOST)
+ASYNC_ENCODER_BACKEND_URL = "redis://{redis_host}/8".format(redis_host=REDIS_HOST)
 
 ALLOWED_PICTURE_FORMATS = ['jpg', 'jpeg', 'png']
 ALLOWED_VIDEO_FORMATS = ['mp4']
