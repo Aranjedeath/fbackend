@@ -1263,35 +1263,33 @@ def update_video_state(video_url, result={}):
         Video.query.filter(Video.url==video_url).update({'process_state':'failed'})
 
 def get_question_authors_image(question_id):
-    try:
-        from image_processors import make_collage
-        
-        upvoters = get_upvoters(question_id, count=10)
+    from image_processors import make_collage
+    
+    upvoters = get_upvoters(question_id, count=10)
 
-        result = db.session.execute(text("""SELECT profile_picture 
-                                            FROM users
-                                            WHERE id in (SELECT question_author
-                                                        FROM questions
-                                                        WHERE question_id=:question_id)"""),
-                                    params={'question_id':question_id})
-        question_author_image = None
-        for row in result:
-            question_author_image = row[0]
-        
-        
+    result = db.session.execute(text("""SELECT profile_picture 
+                                        FROM users
+                                        WHERE id in (SELECT question_author
+                                                    FROM questions
+                                                    WHERE id=:question_id)"""),
+                                params={'question_id':question_id})
+    question_author_image = None
+    for row in result:
+        question_author_image = row[0]
+    
+    upvoters_image = []
+    if upvoters:
         result = db.session.execute(text("""SELECT profile_picture
                                             FROM users
                                             WHERE id in :user_ids"""),
                                 params={'user_ids':upvoters})
-        upvoters_image = []
+    
         for row in result:
             upvoters_image.append(row[0])
 
-        all_image_urls = [item for item in upvoters_image+[question_author_image] if item]
+    all_image_urls = [item for item in [question_author_image]+upvoters_image if item]
 
-        path = make_collage(all_image_urls[:8])
-        
-        f = open(path)
-        return f
-    except Question.DoesNotExist:
-        raise CustomExceptions.ObjectNotFoundException('No image')
+    path = make_collage(all_image_urls[:8])
+    
+    f = open(path)
+    return f

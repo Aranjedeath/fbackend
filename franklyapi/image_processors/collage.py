@@ -46,7 +46,7 @@ def make_collage(image_urls):
         image_path = download_file(url)
         if image_path:
             images.append(image_path)
-    path = '/tmp/collage/{random.string}.jpeg'.format(random_string=uuid.uuid1().hex)
+    path = '/tmp/collage/{random_string}.jpeg'.format(random_string=uuid.uuid1().hex)
     toCollage(images, out_file = path, collage_x = 640, collage_y = 490)
     [os.remove(image_path) for image_path in images]
     return path

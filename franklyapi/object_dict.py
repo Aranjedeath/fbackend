@@ -192,7 +192,7 @@ def question_to_dict(question, current_user_id=None):
         'is_anonymous' : question.is_anonymous,
         'ask_count': get_question_upvote_count(question.id),
         'askers': [{'id':users[upvoter]['id'], 'profile_picture':users[upvoter]['profile_picture'], 'gender':users[upvoter]['gender']} for upvoter in upvoters],
-        'background_image':"http://api.frankly.me/question/bg_image/%s"%(str(question.id)),
+        'background_image':"http://dev.frankly.me/question/bg_image/%s"%(str(question.id)),
         'is_voted': is_upvoted(question.id, current_user_id) if current_user_id else False,
         'web_link':'http://www.facebook.com'
     }
