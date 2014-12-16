@@ -12,7 +12,7 @@ def encode_video_task(video_url, thumbnail_url):
     controllers.add_video_to_db(video_url, thumbnail_url)
     file_path = media_uploader.download_file(video_url)
     for profile_name in video_encoder.VIDEO_ENCODING_PROFILES.keys():
-        _encode_video_to_profile.delay(file_path, video_url, profile_name)    
+        _encode_video_to_profile(file_path, video_url, profile_name)    
 
 
 @cel.task(queue='new_encoding')

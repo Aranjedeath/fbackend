@@ -76,7 +76,7 @@ def get_transpose_command(file_path):
     return transpose_command
 
 
-def encode_video_to_video_profile(file_path, video_url, profile_name):
+def encode_video_to_profile(file_path, video_url, profile_name):
     transpose_command = get_transpose_command(file_path)
     result = {}
     profile = VIDEO_ENCODING_PROFILES[profile_name]
