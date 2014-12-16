@@ -9,14 +9,33 @@ import media_uploader
 from raygun4py import raygunprovider
 
 raygun = raygunprovider.RaygunSender(config.RAYGUN_KEY)
-
+#key is network speed
+# 45 kbps - 150kbps   => ultralow
+# 150 kbps - 300kbps  => low
+# 300 kbps - 700kbps  => med
+# 700 kbps - 1500kbps => opt
 
 VIDEO_ENCODING_PROFILES = {
-                                'wifi':{
-                                        'command' : 'avconv -y -i {input_file} -strict experimental -r 25 {transpose_command} -vb 250k -c:v libx264 -profile:v baseline -ar 22050 -ac 1 -ab 44k {output_file}',
-                                        'file_prefix': '_wifi',
+                                'opt':{
+                                        'command' : 'avconv -y -i {input_file} -r 25 {transpose_command} -vf scale=480:-2 -preset veryslow -b:v 636k -pass 1 -c:v libx264  -ar 22050 -ac 1 -ab 64k -f mp4 /dev/null && avconv -y -i {input_file} -r 25 {transpose_command} -vf scale=480:-2 -preset veryslow -b:v 636k -pass 2 -c:v libx264  -ar 22050 -ac 1 -ab 64k {output_file}',
+                                        'file_prefix': '_opt',
                                         'file_extension': 'mp4'
-                                    }
+                                    },
+                                'med':{
+                                        'command' : 'avconv -y -i {input_file} -r 25 {transpose_command} -vf scale=480:-2 -preset veryslow -b:v 256k -pass 1 -c:v libx264  -ar 22050 -ac 1 -ab 44k -f mp4 /dev/null && avconv -y -i {input_file} -r 25 {transpose_command} -vf scale=480:-2 -preset veryslow -b:v 256k -pass 2 -c:v libx264  -ar 22050 -ac 1 -ab 44k {output_file}',
+                                        'file_prefix': '_med',
+                                        'file_extension': 'mp4'
+                                },
+                                'low':{
+                                        'command' : 'avconv -y -i {input_file} -r 25 {transpose_command} -vf scale=480:-2 -preset veryslow -b:v 125k -pass 1 -c:v libx264  -ar 22050 -ac 1 -ab 24k -f mp4 /dev/null && avconv -y -i {input_file} -r 25 {transpose_command} -vf scale=480:-2 -preset veryslow -b:v 125k -pass 2 -c:v libx264  -ar 22050 -ac 1 -ab 25k {output_file}',
+                                        'file_prefix': '_low',
+                                        'file_extension': 'mp4'
+                                },
+                                'ultralow':{
+                                        'command' : 'avconv -y -i {input_file} -r 25 {transpose_command} -vf scale=480:-2 -preset veryslow -b:v 25k -pass 1 -c:v libx264  -ar 22050 -ac 1 -ab 20k -f mp4 /dev/null && avconv -y -i {input_file} -r 25 {transpose_command} -vf scale=480:-2 -preset veryslow -b:v 25k -pass 2 -c:v libx264  -ar 22050 -ac 1 -ab 20k {output_file}',
+                                        'file_prefix': '_ultralow',
+                                        'file_extension': 'mp4'
+                                }
                         }
 
 def get_key_name_from_url(url):
@@ -57,27 +76,21 @@ def get_transpose_command(file_path):
     return transpose_command
 
 
-def encode_video(video_url):
-    file_path = media_uploader.download_file(video_url)
+def encode_video_to_video_profile(file_path, video_url, profile_name):
     transpose_command = get_transpose_command(file_path)
     result = {}
-    for name, profile in VIDEO_ENCODING_PROFILES.items():
-        try:
-            output_file_path = '/tmp/{random_string}.mp4'.format(random_string=uuid.uuid1().hex)
-            command = profile['command'].format(input_file=file_path, output_file=output_file_path, transpose_command = transpose_command)
-
-            subprocess.call(command, shell=True)
-            print 'converting video to with command:', profile['command']
-            make_psuedo_streamable(output_file_path)
-            
-            new_s3_key = get_key_name_for_profile(video_url, profile)
-
-            with open(output_file_path, 'rb') as f:
-                result['name'] = media_uploader.upload_to_s3(f, new_s3_key)
-            os.remove(file_path)
-            os.remove(output_file_path)
-        
-        except Exception as e:
+    profile = VIDEO_ENCODING_PROFILES[profile_name]
+    try:
+        output_file_path = '/tmp/{random_string}.mp4'.format(random_string=uuid.uuid1().hex)
+        command = profile['command'].format(input_file=file_path, output_file=output_file_path, transpose_command = transpose_command)
+        subprocess.call(command, shell=True)
+        print 'converting video to with command:', profile['command']
+        make_psuedo_streamable(output_file_path)
+        new_s3_key = get_key_name_for_profile(video_url, profile)
+        with open(output_file_path, 'rb') as f:
+                result[profile_name] = media_uploader.upload_to_s3(f, new_s3_key)
+        os.remove(output_file_path)
+    except Exception as e:
             print traceback.format_exc(e)
     return result
 

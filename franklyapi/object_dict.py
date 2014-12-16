@@ -35,7 +35,7 @@ def user_to_dict(user):
         'bio': user.bio,
         'profile_picture': user.profile_picture,
         'cover_picture': user.cover_picture,
-        'profile_video': user.profile_videos,
+        'profile_video': user.profile_video,
         'gender': user.gender,
         'follower_count': get_follower_count(user.id),
         'following_count': get_following_count(user.id),
@@ -50,7 +50,7 @@ def user_to_dict(user):
         'user_type':user.user_type,
         'user_title':user.user_title,
         'interests':[],
-        'profile_videos':get_video_states({user.profile_video:user.cover_picture})[user.profile_video] if user.profile_video else None
+        'profile_videos':get_video_states({user.profile_video:user.cover_picture})[user.profile_video] if user.profile_video else {}
     }
     return user_dict
 
@@ -81,7 +81,7 @@ def guest_user_to_dict(user, current_user_id, cur_user_interest_tags=None):
         'view_count' : get_user_view_count(user.id),
         'user_type':user.user_type,
         'user_title':user.user_title,
-        'profile_videos':get_video_states({user.profile_video:user.cover_picture})[user.profile_video] if user.profile_video else None
+        'profile_videos':get_video_states({user.profile_video:user.cover_picture})[user.profile_video] if user.profile_video else {}
     }
     
     return user_dict

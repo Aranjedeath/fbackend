@@ -465,7 +465,7 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
         profile_video_url, cover_picture_url = media_uploader.upload_user_video(user_id=user_id, video_file=profile_video, video_thumbnail_file=cover_picture, video_type='profile_video')
         update_dict.update({'profile_video':profile_video_url, 'cover_picture':cover_picture_url})
         add_video_to_db(profile_video_url, cover_picture_url)
-        async_encoder.encode_video_task.delay(profile_video_url)
+        async_encoder.encode_video_task.delay(profile_video_url, cover_picture_url)
 
     if not profile_video and cover_picture:
         cover_picture_url = media_uploader.upload_user_image(user_id=user_id, image_file=cover_picture, image_type='cover_picture')
@@ -1203,7 +1203,7 @@ def add_video_post(cur_user_id, question_id, video, video_thumbnail, answer_type
 
         db.session(post)
         db.session.commit()
-        async_encoder.encode_video_task(video_url)
+        async_encoder.encode_video_task(video_url, thumbnail_url)
 
         Question.query.filter(Question.id==question_id).update({'is_answered':True})
 
@@ -1232,42 +1232,17 @@ def logout(access_token, device_id):
 
 
 def add_video_to_db(video_url, thumbnail_url):
-    db.session.add(Video(url=video_url, thumbnail=thumbnail_url))
-    db.session.commit()
-
-def update_video_state(video_url, result={}):
-    video_exists = bool(Video.query.filter(Video.url==video_url).count())
-    if result and video_exists:
-        result.update({'process_state':'success'})
-        Video.query.filter(Video.url==video_url).update(result)
-    
-    elif result and not video_exists:
-            result.update({'url':'video_url','process_state':'success'})
-            video_object = Video(**result)
-            db.session.add(video_object)
-            db.session.commit()
-    
-    elif not result and video_exists:
-        Video.query.filter(Video.url==video_url).update({'process_state':'failed'})
-
-    else:
-        result.update({'url':'video_url','process_state':'failed'})
-        video_object = Video(**result)
-        db.session.add(video_object)
+    if not Video.query.filter(Video.url==video_url).count():
+        db.session.add(Video(url=video_url, thumbnail=thumbnail_url))
         db.session.commit()
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+def update_video_state(video_url, result={}):
+    if result:
+        result.update({'process_state':'success'})
+        Video.query.filter(Video.url==video_url).update(result)
+    
+    else:
+        Video.query.filter(Video.url==video_url).update({'process_state':'failed'})
 
 
