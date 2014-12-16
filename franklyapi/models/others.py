@@ -11,7 +11,7 @@ class Install(Base):
     url           = Column(String(250))
     ref_data      = Column(String(250))
     uninstalled   = Column(Boolean(), default=False)
-    timestamp     = Column(DateTime(), onupdate=datetime.datetime.now)
+    timestamp     = Column(DateTime(), onupdate=datetime.datetime.now, default=datetime.datetime.now())
 
     def __init__(self, device_id, device_type, url=None, ref_data=None, uninstalled=False):
         self.device_id   = device_id
@@ -60,7 +60,7 @@ class ReportAbuse(Base):
     entity_type   = Column(Enum('post', 'user', 'question', 'comment'), nullable=False)
     entity_id     = Column(CHAR(32), nullable=False)
     reason        = Column(String(300))
-    timestamp     = Column(DateTime(), onupdate=datetime.datetime.now)
+    timestamp     = Column(DateTime(), onupdate=datetime.datetime.now, default=datetime.datetime.now())
 
     def __init__(self, user, entity_type, entity_id, reason=None):
         self.user        = user
@@ -78,7 +78,7 @@ class Email(Base):
     email         = Column(String(120), nullable=False, unique=True)
     email_status  = Column(Enum("invalid","bounce","complaint","unsubscribe"), nullable=False)
     message       = Column(String(200))
-    timestamp     = Column(DateTime(), onupdate=datetime.datetime.now)
+    timestamp     = Column(DateTime(), onupdate=datetime.datetime.now, default=datetime.datetime.now())
 
     def __init__(self, email, email_status, message=None):
         self.email        = email
@@ -96,7 +96,7 @@ class Feedback(Base):
     message       = Column(String(300))
     email         = Column(String(120))
     version       = Column(String(10))
-    timestamp     = Column(DateTime(), onupdate=datetime.datetime.now)
+    timestamp     = Column(DateTime(), onupdate=datetime.datetime.now, default=datetime.datetime.now())
 
     def __init__(self, user, medium, message=None, email=None, version=None):
         self.user    = user
@@ -118,7 +118,7 @@ class Interest(Base):
     score          = Column(Float(), default=0)
     source         = Column(String(20))
     category       = Column(String(20))
-    timestamp      = Column(DateTime(), onupdate=datetime.datetime.now)
+    timestamp      = Column(DateTime(), onupdate=datetime.datetime.now, default=datetime.datetime.now())
 
     def __init__(self, user, interest, score=0, source=None, category=None):
         self.user     = user
@@ -167,7 +167,7 @@ class Contact(Base):
     contact        = Column(String(120), nullable=False)
     contact_type   = Column(String(20), nullable=False)
     contact_name   = Column(String(120))
-    timestamp      = Column(DateTime(), onupdate=datetime.datetime.now)
+    timestamp      = Column(DateTime(), onupdate=datetime.datetime.now, default=datetime.datetime.now())
 
     def __init__(self, contact, contact_type, contact_name=None, user=None):
         self.user         = user
@@ -186,7 +186,7 @@ class Package(Base):
     user           = Column(CHAR(32), ForeignKey('users.id'))
     device_id      = Column(String(50), nullable=False)
     package_name   = Column(String(100), nullable=False)
-    timestamp      = Column(DateTime(), onupdate=datetime.datetime.now)
+    timestamp      = Column(DateTime(), onupdate=datetime.datetime.now, default=datetime.datetime.now())
     platform_type  = Column(String(20), default='android')
 
     def __init__(self, device_id, package_name, user=None, platform_type='android'):
@@ -206,7 +206,7 @@ class UserAccount(Base):
     device_id        = Column(String(50), nullable=False)
     account_pname    = Column(String(100), nullable=False)
     account_username = Column(String(50), nullable=False)
-    timestamp        = Column(DateTime(), onupdate=datetime.datetime.now)
+    timestamp        = Column(DateTime(), onupdate=datetime.datetime.now, default=datetime.datetime.now())
 
     def __init__(self, device_id, account_pname, account_username, user=None):
         self.device_id        = device_id

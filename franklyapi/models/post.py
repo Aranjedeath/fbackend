@@ -60,7 +60,7 @@ class Like(Base):
     id             = Column(Integer, primary_key=True)
     user           = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
     post           = Column(CHAR(32), ForeignKey('posts.id'), nullable=False)
-    timestamp      = Column(DateTime(), onupdate=datetime.datetime.now)
+    timestamp      = Column(DateTime(), onupdate=datetime.datetime.now, default=datetime.datetime.now())
     unliked        = Column(Boolean(), default=False)
 
     def __init__(self, user, post, unliked=False):
@@ -79,7 +79,7 @@ class View(Base):
     user           = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
     post           = Column(CHAR(32), ForeignKey('posts.id'), nullable=False)
     first_seen_at  = Column(DateTime(), default=datetime.datetime.now)
-    last_seen_at   = Column(DateTime(), onupdate=datetime.datetime.now)
+    last_seen_at   = Column(DateTime(), onupdate=datetime.datetime.now, default=datetime.datetime.now())
     count          = Column(Integer(), default=1)
     
     def __init__(self, user, post, count=1):

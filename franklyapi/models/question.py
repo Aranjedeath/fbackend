@@ -54,7 +54,7 @@ class Upvote(Base):
     id             = Column(Integer, primary_key=True)
     user           = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
     question       = Column(CHAR(32), ForeignKey('questions.id'), nullable=False)
-    timestamp      = Column(DateTime(), onupdate=datetime.datetime.now)
+    timestamp      = Column(DateTime(), onupdate=datetime.datetime.now, default=datetime.datetime.now())
     downvoted      = Column(Boolean(), default=False)
 
 
