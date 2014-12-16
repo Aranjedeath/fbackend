@@ -39,7 +39,7 @@ VIDEO_ENCODING_PROFILES = {
                         }
 
 def get_key_name_from_url(url):
-    domain = 's3.amazonaws.com/{bucket_name}/'.format(media_uploader.BUCKET_NAME)
+    domain = 's3.amazonaws.com/{bucket_name}/'.format(bucket_name=media_uploader.BUCKET_NAME)
     if domain not in url:
         raise Exception("Invalid Url")
     return url.split(domain)[1]
