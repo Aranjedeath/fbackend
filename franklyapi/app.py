@@ -17,22 +17,22 @@ class FlaskConfig():
     SQLALCHEMY_DATABASE_URI = config.DATABASE_URI
 
 
-appf = Flask(__name__)
+app = Flask(__name__)
 
-appf.config.from_object(FlaskConfig)
+app.config.from_object(FlaskConfig)
 
 login_manager = LoginManager()
-login_manager.init_app(appf)
+login_manager.init_app(app)
 
-dbs = SQLAlchemy(appf)
-api = restful.Api(appf)
+db = SQLAlchemy(app)
+api = restful.Api(app)
 
 raygun = raygunprovider.RaygunSender(config.RAYGUN_KEY)
 redis_client = redis.Redis(config.REDIS_HOST)
 
 login_manager.login_view = '/login/email'
 
-@appf.after_request
+@app.after_request
 def add_access_control_headers(response):
     """Adds the required access control headers"""
     response.headers['Access-Control-Allow-Origin'] = '*'

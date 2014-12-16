@@ -1,7 +1,7 @@
-from appff import dbs
+from app import db
 
 
-Base = dbs.Model
+Base = db.Model
 
 
 def get_item_id(id=0):
@@ -13,4 +13,4 @@ def init_db():
     # they will be registered properly on the metadata.  Otherwise
     # you will have to import them first before calling init_db()
     import models
-    dbs.create_all()
+    db.create_all()
