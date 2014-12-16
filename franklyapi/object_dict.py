@@ -7,7 +7,7 @@ def location_dict(lat, lon, location_name, country_name, country_code):
     else:
         coordinate_point = [lat, lon]
     return {
-            'coordinate_point':coordinate_point,
+            'coordinate_point':{'coordinates':coordinate_point},
             'location_name':location_name,
             'country_name':country_name,
             'country_code':country_code
@@ -35,7 +35,7 @@ def user_to_dict(user):
         'bio': user.bio,
         'profile_picture': user.profile_picture,
         'cover_picture': user.cover_picture,
-        'profile_video': user.profile_videos,
+        'profile_video': user.profile_video,
         'gender': user.gender,
         'follower_count': get_follower_count(user.id),
         'following_count': get_following_count(user.id),
@@ -50,7 +50,7 @@ def user_to_dict(user):
         'user_type':user.user_type,
         'user_title':user.user_title,
         'interests':[],
-        'profile_videos':get_video_states({user.profile_video:user.cover_picture})[user.profile_video] if user.profile_video else None
+        'profile_videos':get_video_states({user.profile_video:user.cover_picture})[user.profile_video] if user.profile_video else {}
     }
     return user_dict
 
@@ -81,7 +81,7 @@ def guest_user_to_dict(user, current_user_id, cur_user_interest_tags=None):
         'view_count' : get_user_view_count(user.id),
         'user_type':user.user_type,
         'user_title':user.user_title,
-        'profile_videos':get_video_states({user.profile_video:user.cover_picture})[user.profile_video] if user.profile_video else None
+        'profile_videos':get_video_states({user.profile_video:user.cover_picture})[user.profile_video] if user.profile_video else {}
     }
     
     return user_dict
@@ -199,18 +199,19 @@ def question_to_dict(question, current_user_id=None):
     return ques_dict
 
 def post_to_dict(post, cur_user_id=None, distance=None):
-    from controllers import get_video_states, is_liked, get_post_like_count, is_following, get_follower_count, get_thumb_users, get_comment_count, get_post_view_count
+    from controllers import get_video_states, is_liked, get_questions, get_post_like_count, is_following, get_follower_count, get_thumb_users, get_comment_count, get_post_view_count
     users = get_thumb_users([post.question_author, post.answer_author])
+    questions = get_questions([post.question])
 
     post_dict = {
         'id': post.id,
         'question_author': {
             'id':users[post.question_author]['id'],
-            'username': users[post.question_author]['username'] if not post.question.is_anonymous else 'Anonymous',
-            'first_name': users[post.question_author]['first_name'] if not post.question.is_anonymous else 'Anonymous',
+            'username': users[post.question_author]['username'] if not questions[post.question]['is_anonymous'] else 'Anonymous',
+            'first_name': users[post.question_author]['first_name'] if not questions[post.question]['is_anonymous'] else 'Anonymous',
             'last_name': None,
             'gender': users[post.question_author]['gender'],
-            'profile_picture': users[post.question_author]['profile_picture'] if not post.question.is_anonymous else None,
+            'profile_picture': users[post.question_author]['profile_picture'] if not questions[post.question]['is_anonymous'] else None,
         },
         'answer_author': {
             'id':users[post.answer_author]['id'],
@@ -229,15 +230,15 @@ def post_to_dict(post, cur_user_id=None, distance=None):
 
         },
         'question': {
-            'body': post.question.body,
-            'media': media_dict(post.question.media) if post.question.media else None,
-            'question_type': post.question.question_type,
-            'timestamp': int(time.mktime(post.question.timestamp.timetuple())),
-            'tags': [],
-            'is_anonymous': True if post.question.is_anonymous is True else False
+                'id':questions[post.question]['id'],
+                'body': questions[post.question]['body'],
+                'question_type': 'text',
+                'timestamp': int(time.mktime(questions[post.question]['timestamp'].timetuple())),
+                'tags': [],
+                'is_anonymous': True if questions[post.question]['is_anonymous'] is True else False
         },
         'answer': {
-            'body': post.body,
+            'body': '',
             'media': media_dict(post.media_url, post.thumbnail_url),
             'type': post.answer_type,
             'timestamp': int(time.mktime(post.timestamp.timetuple())),
@@ -264,15 +265,20 @@ def post_to_dict(post, cur_user_id=None, distance=None):
 
 
 def posts_to_dict(posts, cur_user_id=None, distance=None):
-    from controllers import get_video_states, is_liked, get_post_like_count, is_following, get_follower_count, get_thumb_users, get_comment_count, get_post_view_count
+    from controllers import get_video_states, get_questions, is_liked, get_post_like_count, is_following, get_follower_count, get_thumb_users, get_comment_count, get_post_view_count
     user_list = set()
     answer_media_urls = {}
+    question_ids = []
+    
     for p in posts:
         user_list.add(p.question_author)
         user_list.add(p.answer_author)
         answer_media_urls[p.media_url] = p.thumbnail_url
+        question_ids.append(p.question)
+
     users = get_thumb_users(user_list)
     media_urls = get_video_states(answer_media_urls)
+    questions = get_questions(question_ids)
 
 
     posts_dict = []
@@ -281,11 +287,11 @@ def posts_to_dict(posts, cur_user_id=None, distance=None):
             'id': post.id,
             'question_author': {
                 'id':users[post.question_author]['id'],
-                'username': users[post.question_author]['username'] if not post.question.is_anonymous else 'Anonymous',
-                'first_name': users[post.question_author]['first_name'] if not post.question.is_anonymous else 'Anonymous',
+                'username': users[post.question_author]['username'] if not questions[post.question]['is_anonymous'] else 'Anonymous',
+                'first_name': users[post.question_author]['first_name'] if not questions[post.question]['is_anonymous'] else 'Anonymous',
                 'last_name': None,
                 'gender': users[post.question_author]['gender'],
-                'profile_picture': users[post.question_author]['profile_picture'] if not post.question.is_anonymous else None,
+                'profile_picture': users[post.question_author]['profile_picture'] if not questions[post.question]['is_anonymous'] else None,
             },
             'answer_author': {
                 'id':users[post.answer_author]['id'],
@@ -304,15 +310,15 @@ def posts_to_dict(posts, cur_user_id=None, distance=None):
 
             },
             'question': {
-                'body': post.question.body,
-                'media': media_dict(post.question.media) if post.question.media else None,
-                'question_type': post.question.question_type,
-                'timestamp': int(time.mktime(post.question.timestamp.timetuple())),
+                'id':questions[post.question]['id'],
+                'body': questions[post.question]['body'],
+                'question_type': 'text',
+                'timestamp': int(time.mktime(questions[post.question]['timestamp'].timetuple())),
                 'tags': [],
-                'is_anonymous': True if post.question.is_anonymous is True else False
+                'is_anonymous': True if questions[post.question]['is_anonymous'] is True else False
             },
             'answer': {
-                'body': post.body,
+                'body': '',
                 'media': media_dict(post.media_url, post.thumbnail_url),
                 'type': post.answer_type,
                 'timestamp': int(time.mktime(post.timestamp.timetuple())),
@@ -342,7 +348,7 @@ def posts_to_dict(posts, cur_user_id=None, distance=None):
 
 def comment_to_dict(comment):
     from controllers import get_thumb_users
-    users = get_thumb_users(comment.comment_author)
+    users = get_thumb_users([comment.comment_author])    
     comment_dict =  {
                         'id': comment.id,
                         'body': comment.body,

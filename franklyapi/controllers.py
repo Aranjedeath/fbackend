@@ -376,9 +376,8 @@ def get_thumb_users(user_ids):
                                                 lat, lon, location_name, country_name, country_code,
                                                 gender, bio, allow_anonymous_question, user_type, user_title 
                                             FROM users 
-                                            WHERE id in (:user_ids)"""),
-                                        params={'user_ids':set(user_ids)})
-        
+                                            WHERE id in :user_ids"""),
+                                        params={'user_ids':list(user_ids)})
         for row in result:
             if not row[5] or not row[6]:
                 coordinate_point = None
@@ -393,7 +392,7 @@ def get_thumb_users(user_ids):
                                     'profile_picture':row[3],
                                     'deleted':row[4],
                                     'location':{
-                                                'coordinate_point':coordinate_point,
+                                                'coordinate_point':{'coordinates':coordinate_point},
                                                 'location_name':row[7],
                                                 'country_name':row[8],
                                                 'country_code':row[9]
@@ -407,13 +406,31 @@ def get_thumb_users(user_ids):
                         })
     return data
 
+def get_questions(question_ids):
+    data = {}
+    if question_ids:
+        result = db.session.execute(text("""SELECT id, body, is_anonymous, timestamp
+                                            FROM questions
+                                            WHERE id in :question_ids"""),
+                                        params={'question_ids':list(question_ids)})
+        for row in result:
+            data.update({
+                            row[0]:{'id':row[0],
+                                    'body':row[1],
+                                    'is_anonymous':row[2],
+                                    'timestamp':row[3]
+                                    }
+                        })
+    return data
+                                    
+
+
 def user_view_profile(current_user_id, user_id, username=None):
     try:
         cur_user = None
         if current_user_id:
             cur_user = User.query.get(current_user_id)
             if (username and cur_user.username.lower() == username.lower()) or (current_user_id == user_id):
-                print user_to_dict(cur_user)
                 return {'user': user_to_dict(cur_user)}
 
         if username:
@@ -465,7 +482,7 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
         profile_video_url, cover_picture_url = media_uploader.upload_user_video(user_id=user_id, video_file=profile_video, video_thumbnail_file=cover_picture, video_type='profile_video')
         update_dict.update({'profile_video':profile_video_url, 'cover_picture':cover_picture_url})
         add_video_to_db(profile_video_url, cover_picture_url)
-        async_encoder.encode_video_task.delay(profile_video_url)
+        async_encoder.encode_video_task.delay(profile_video_url, cover_picture_url)
 
     if not profile_video and cover_picture:
         cover_picture_url = media_uploader.upload_user_image(user_id=user_id, image_file=cover_picture, image_type='cover_picture')
@@ -775,7 +792,7 @@ def question_ignore(user_id, question_id):
 def post_like(cur_user_id, post_id):
     result = db.session.execute(text("""SELECT answer_author, question_author
                                         FROM posts
-                                        WHERE id=:post_id, deleted=false
+                                        WHERE id=:post_id AND deleted=false
                                         LIMIT 1"""),
                                 params={'post_id':post_id}
                         )
@@ -799,7 +816,7 @@ def post_like(cur_user_id, post_id):
         raise CustomExceptions.PostNotFoundException('Post not available for action')
 
 def post_unlike(cur_user_id, post_id):
-    result = Like.query.filter(Like.user==cur_user_id, Like.post==post_id).update({'downvoted':True})
+    result = Like.query.filter(Like.user==cur_user_id, Like.post==post_id).update({'unliked':True})
     return {'id':post_id, 'success':bool(result)}
 
 def post_delete(cur_user_id, post_id):
@@ -825,7 +842,7 @@ def post_view(cur_user_id, post_id, client_id=None):
 def comment_add(cur_user_id, post_id, body, lat, lon):
     result = db.session.execute(text("""SELECT answer_author, question_author
                                         FROM posts
-                                        WHERE id=:post_id, deleted=false 
+                                        WHERE id=:post_id AND deleted=false 
                                         LIMIT 1"""),
                                 params={'post_id':post_id}
                                 )
@@ -883,7 +900,7 @@ def comment_delete(cur_user_id, comment_id):
 def comment_list(cur_user_id, post_id, offset, limit):
         result = db.session.execute(text("""SELECT answer_author, question_author
                                             FROM posts
-                                            WHERE id=:post_id, deleted=false 
+                                            WHERE id=:post_id AND deleted=false 
                                             LIMIT 1"""),
                                     params={'post_id':post_id}
                                     )
@@ -892,7 +909,7 @@ def comment_list(cur_user_id, post_id, offset, limit):
             raise CustomExceptions.PostNotFoundException("Comments for this post is not available")
         answer_author, question_author= row
         
-        if not (has_blocked(cur_user_id, answer_author) or has_blocked(cur_user_id, answer_author)):
+        if (has_blocked(cur_user_id, answer_author) or has_blocked(cur_user_id, answer_author)):
             raise CustomExceptions.BlockedUserException("Comments for this post is not available")
 
         blocks = Block.query.filter(or_(Block.user==cur_user_id, Block.blocked_user==cur_user_id)).all()
@@ -927,9 +944,9 @@ def get_user_timeline(cur_user_id, user_id, offset, limit):
 
 def home_feed(cur_user_id, offset, limit, web):
     follows = Follow.query.filter(Follow.user==cur_user_id, Follow.unfollowed==False)
-    followers = [follow.followed for follow in follows]
+    followings = [follow.followed for follow in follows]
 
-    posts = Post.query.filter(or_(Post.answer_author.in_(followers), Post.question_author==cur_user_id)
+    posts = Post.query.filter(or_(Post.answer_author.in_(followings), Post.question_author==cur_user_id)
                     ).filter(Post.deleted==False
                     ).order_by(Post.timestamp
                     ).offset(offset
@@ -946,8 +963,8 @@ def home_feed(cur_user_id, offset, limit, web):
     if offset != 0:
         skip = skip+celeb_limit+1
 
-    celeb_users = User.query.filter(User.id.in_(followers+[cur_user_id]),
-                                    User.deleted==False, User.user_type==2
+    celeb_users = User.query.filter(User.id.in_(followings+[cur_user_id]),
+                                    User.deleted==False, User.user_type==2, User.profile_video!=None
                                     ).order_by(User.user_since.desc()).offset(skip
                                     ).limit(celeb_limit)
     
@@ -971,7 +988,6 @@ def home_feed(cur_user_id, offset, limit, web):
             questions_feed = [{'type':'questions', 'questions':make_celeb_questions_dict(celeb_users[0], questions.all, cur_user_id)}]
         
         extra_feed = [{'type':'user', 'user':guest_user_to_dict(user, cur_user_id)}]
-        print extra_feed
         if questions_feed:
             extra_feed.extend(questions_feed)
 
@@ -1007,9 +1023,8 @@ def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None):
     if offset != 0:
         skip = skip+celeb_limit+1
     print 'DISCOVER USERS OFFSET/LIMIT:', skip, celeb_limit
-    print 'followings', followings
-    celeb_users = User.query.filter(~User.id.in_(followings+[cur_user_id])
-                                ).filter(User.deleted==False
+    celeb_users = User.query.filter(~User.id.in_([cur_user_id])
+                                ).filter(User.deleted==False, User.user_type==2, User.profile_video!=None
                                 ).order_by(User.user_since.desc()).offset(skip
                                 ).limit(celeb_limit)
     
@@ -1041,8 +1056,9 @@ def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None):
         for item in extra_feed:
             feeds.insert(random_index, item)
             random_index +=1
-    print feeds
     next_index = offset+limit if feeds else -1
+    print 'DISCOVER NEXT INDEX', next_index
+    print 'DISCOVER FEEDS LEN', len(feeds)
 
     return {'stream': feeds, 'count':len(feeds), 'next_index':next_index}
 
@@ -1203,7 +1219,7 @@ def add_video_post(cur_user_id, question_id, video, video_thumbnail, answer_type
 
         db.session(post)
         db.session.commit()
-        async_encoder.encode_video_task(video_url)
+        async_encoder.encode_video_task(video_url, thumbnail_url)
 
         Question.query.filter(Question.id==question_id).update({'is_answered':True})
 
@@ -1232,42 +1248,49 @@ def logout(access_token, device_id):
 
 
 def add_video_to_db(video_url, thumbnail_url):
-    db.session.add(Video(url=video_url, thumbnail=thumbnail_url))
-    db.session.commit()
-
-def update_video_state(video_url, result={}):
-    video_exists = bool(Video.query.filter(Video.url==video_url).count())
-    if result and video_exists:
-        result.update({'process_state':'success'})
-        Video.query.filter(Video.url==video_url).update(result)
-    
-    elif result and not video_exists:
-            result.update({'url':'video_url','process_state':'success'})
-            video_object = Video(**result)
-            db.session.add(video_object)
-            db.session.commit()
-    
-    elif not result and video_exists:
-        Video.query.filter(Video.url==video_url).update({'process_state':'failed'})
-
-    else:
-        result.update({'url':'video_url','process_state':'failed'})
-        video_object = Video(**result)
-        db.session.add(video_object)
+    if not Video.query.filter(Video.url==video_url).count():
+        db.session.add(Video(url=video_url, thumbnail=thumbnail_url))
         db.session.commit()
 
 
+def update_video_state(video_url, result={}):
+    if result:
+        result.update({'process_state':'success'})
+        Video.query.filter(Video.url==video_url).update(result)
+    
+    else:
+        Video.query.filter(Video.url==video_url).update({'process_state':'failed'})
 
+def get_question_authors_image(question_id):
+    try:
+        from image_processors import make_collage
+        
+        upvoters = get_upvoters(question_id, count=10)
 
+        result = db.session.execute(text("""SELECT profile_picture 
+                                            FROM users
+                                            WHERE id in (SELECT question_author
+                                                        FROM questions
+                                                        WHERE question_id=:question_id)"""),
+                                    params={'question_id':question_id})
+        question_author_image = None
+        for row in result:
+            question_author_image = row[0]
+        
+        
+        result = db.session.execute(text("""SELECT profile_picture
+                                            FROM users
+                                            WHERE id in :user_ids"""),
+                                params={'user_ids':upvoters})
+        upvoters_image = []
+        for row in result:
+            upvoters_image.append(row[0])
 
+        all_image_urls = [item for item in upvoters_image+[question_author_image] if item]
 
-
-
-
-
-
-
-
-
-
-
+        path = make_collage(all_image_urls[:8])
+        
+        f = open(path)
+        return f
+    except Question.DoesNotExist:
+        raise CustomExceptions.ObjectNotFoundException('No image')
