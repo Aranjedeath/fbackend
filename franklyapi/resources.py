@@ -1017,3 +1017,20 @@ class Logout(restful.Resource):
             print traceback.format_exc(e)
             return {'success': False}
 
+
+class QuestionImageCreator(restful.Resource):
+    def get(self, question_id):
+        try:
+            from flask import send_file
+            question_image = controllers.get_question_authors_image(question_id)
+
+            return send_file(question_image, as_attachment=True, attachment_filename='%s.jpg'%(question_id))
+        
+        except CustomExceptions.ObjectNotFoundException:
+            abort(404, message='Image not Found')
+
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message=str(traceback.format_exc(e)))

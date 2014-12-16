@@ -65,7 +65,7 @@ api.add_resource(BadUsernames, '/utils/badusernames')
 
 api.add_resource(Logout, '/logout')
 
-
+api.add_resource(QuestionImageCreator, '/question/bg_image/<question_id>')
 
 
 
