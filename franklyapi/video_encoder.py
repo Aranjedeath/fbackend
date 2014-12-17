@@ -97,7 +97,7 @@ def encode_video_to_profile(file_path, video_url, profile_name):
         with open(output_file_path, 'rb') as f:
                 result[profile_name] = media_uploader.upload_to_s3(f, new_s3_key)
         os.remove(output_file_path)
-        print_output('RESULT: '+ result)
+        print_output('RESULT: '+ str(result))
     except Exception as e:
             print traceback.format_exc(e)
     return result
