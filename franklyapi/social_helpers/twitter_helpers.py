@@ -15,6 +15,7 @@ def get_twitter_data(access_token, access_secret, app_token=app_token,app_secret
 			user_data['full_name'] = tuser.name if tuser.name else None
 			user_data['profile_picture'] = tuser.profile_image_url if tuser.profile_image_url else None
 			user_data['location_name'] = tuser.location if tuser.location else None
+			user_data['bio'] = tuser.description if tuser.description else None
 		return user_data
 	except Exception as e:
 		print traceback.format_exc(e)
