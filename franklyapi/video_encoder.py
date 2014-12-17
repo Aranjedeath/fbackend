@@ -24,7 +24,7 @@ VIDEO_ENCODING_PROFILES = {
                                     },
                                 'medium':{
                                         'command' : 'avconv -y -i {input_file} -r 25 -vf {transpose_command}scale="320:-1",scale="trunc(in_w/2)*2:trunc(in_h/2)*2" -strict experimental -preset veryslow -b:v 256k -pass 1 -c:v libx264  -ar 22050 -ac 1 -ab 44k -f mp4 /dev/null && avconv -y -i {input_file} -r 25 -vf {transpose_command}scale="320:-1",scale="trunc(in_w/2)*2:trunc(in_h/2)*2" -strict experimental -preset veryslow -b:v 256k -pass 2 -c:v libx264  -ar 22050 -ac 1 -ab 25k {output_file}',
-                                        'file_prefix': '_med',
+                                        'file_prefix': '_medium',
                                         'file_extension': 'mp4'
                                 },
                                 'low':{
@@ -48,7 +48,7 @@ def get_key_name_from_url(url):
 def get_key_name_for_profile(url, profile):
     original_key = get_key_name_from_url(url)
     non_extension_key = original_key.split('.')[0]
-    new_key = '{base_key}_{prefix}.{extention}'.format(base_key=non_extension_key,
+    new_key = '{base_key}{prefix}.{extention}'.format(base_key=non_extension_key,
                                                         prefix=profile['file_prefix'],
                                                         extention=profile['file_extension']
                                                         )
