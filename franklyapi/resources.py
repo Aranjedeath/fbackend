@@ -97,7 +97,7 @@ class LoginSocial(restful.Resource):
                                                  )
         
         except CustomExceptions.InvalidTokenException as e:
-            abort(404, message=str(e))
+            abort(400, message=str(e))
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])

@@ -113,7 +113,7 @@ def make_celeb_questions_dict(celeb, questions, current_user_id=None):
     celeb_dict =   {   
                     'id': celeb.id,
                     'username': celeb.username,
-                    'first_name': users.first_name,
+                    'first_name': celeb.first_name,
                     'last_name': None,
                     'profile_picture': celeb.profile_picture,
                     'gender': celeb.gender,
@@ -133,14 +133,14 @@ def make_celeb_questions_dict(celeb, questions, current_user_id=None):
                             'gender':users[question.question_author]['gender']
                             },
         'question_to':{
-                        'id':users[question.question_to]['id'],
-                        'username': users[question.question_to]['username'],
-                        'first_name': users[question.question_to]['first_name'],
+                        'id':celeb.id,
+                        'username': celeb.username,
+                        'first_name': celeb.first_name,
                         'last_name': None,
-                        'profile_picture': users[question.question_to]['profile_picture'],
-                        'gender': users[question.question_to]['gender'],
-                        'user_type': users[question.question_to]['user_type'],
-                        'user_title': users[question.question_to]['user_title']
+                        'profile_picture': celeb.profile_picture,
+                        'gender': celeb.gender,
+                        'user_type': celeb.user_type,
+                        'user_title': celeb.user_title
 
                         },
         'tags': [],
@@ -206,7 +206,7 @@ def post_to_dict(post, cur_user_id=None, distance=None):
     post_dict = {
         'id': post.id,
         'question_author': {
-            'id':users[post.question_author]['id'],
+            'id':users[post.question_author]['id'] if not questions[post.question]['is_anonymous'] else '',
             'username': users[post.question_author]['username'] if not questions[post.question]['is_anonymous'] else 'Anonymous',
             'first_name': users[post.question_author]['first_name'] if not questions[post.question]['is_anonymous'] else 'Anonymous',
             'last_name': None,
@@ -235,7 +235,7 @@ def post_to_dict(post, cur_user_id=None, distance=None):
                 'question_type': 'text',
                 'timestamp': int(time.mktime(questions[post.question]['timestamp'].timetuple())),
                 'tags': [],
-                'is_anonymous': True if questions[post.question]['is_anonymous'] is True else False
+                'is_anonymous': bool(questions[post.question]['is_anonymous'])
         },
         'answer': {
             'body': '',
@@ -286,7 +286,7 @@ def posts_to_dict(posts, cur_user_id=None, distance=None):
         p_dict = {
             'id': post.id,
             'question_author': {
-                'id':users[post.question_author]['id'],
+                'id':users[post.question_author]['id'] if not questions[post.question]['is_anonymous'] else '',
                 'username': users[post.question_author]['username'] if not questions[post.question]['is_anonymous'] else 'Anonymous',
                 'first_name': users[post.question_author]['first_name'] if not questions[post.question]['is_anonymous'] else 'Anonymous',
                 'last_name': None,

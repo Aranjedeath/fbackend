@@ -196,11 +196,22 @@ def register_email_user(email, password, full_name, device_id, username=None, ph
     
     return {'access_token': access_token, 'username': username, 'id':new_user.id, 'new_user' : True}
 
+def get_twitter_email(twitter_id):
+    return '{twitter_id}@twitter.com'.format(twitter_id)
+
 
 def login_user_social(social_type, social_id, external_access_token, device_id, push_id=None, 
                         external_token_secret = None, user_type=0, user_title=None):
     user_data = get_data_from_external_access_token(social_type, external_access_token, external_token_secret)
-    if user_data['social_id']!=social_id:
+    print social_id
+    print user_data['social_id']
+    
+    if social_type=='twitter':
+        token_valid = str(user_data['social_id'])!=str(social_id)
+    else:
+        token_valid = user_data['social_id']!=social_id
+    
+    if not token_valid:    
         raise CustomExceptions.InvalidTokenException("Could not verify %s token"%social_type)
 
     user = get_user_from_social_id(social_type, social_id)
@@ -210,6 +221,7 @@ def login_user_social(social_type, social_id, external_access_token, device_id, 
 
     if social_type == 'twitter':
             update_dict.update({'twitter_secret':external_token_secret})
+            user_data['email'] = get_twitter_email(user_data['social_id'])
 
     if social_type in ['facebook', 'google']:
         try:
@@ -585,6 +597,7 @@ def user_block_list(user_id):
 def user_change_username(user_id, new_username):
     if username_available(new_username):
         User.query.filter(User.id==user_id).update({'username':new_username})
+        db.session.commit()
         return {'username':new_username, 'status':'success', 'id':str(user_id)}
     else:
         raise CustomExceptions.UnameUnavailableException('Username invalid or not available')
@@ -699,25 +712,9 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous):
 
     question = Question(question_author=cur_user_id, question_to=question_to, 
                 body=body.capitalize(), is_anonymous=is_anonymous, public=public, lat=lat, lon=lon)
-
+    print question
     db.session.add(question)
     db.session.commit()
-    '''
-    if not bot and q.show_in_list and not user_id == kwargs['question_to']:
-        notify_args = {
-                        'user1_id': user.id,
-                        'user2_id': question_to.id,
-                        'question_id': q.id
-                        }
-        cel_tasks.notify_mongo.delay('question_ask', **notify_args)
-    if q.question_author.monkness==-1:
-            cel_tasks.remind_question.apply_async(kwargs={'question_id':q.id}, countdown=3600*72)
-
-    if user_status['monkness']==-2:
-        send_mail_to_inactive_user(question=q , friend = friend)
-        return
-
-    '''
 
     resp = {'success':True, 'id':str(question.id)}
     return resp
@@ -985,7 +982,7 @@ def home_feed(cur_user_id, offset, limit, web):
             questions_feed = [{'type':'question', 'questions':question_to_dict(q, cur_user_id)} for q in questions.all()]
             
         elif questions.count()==2:
-            questions_feed = [{'type':'questions', 'questions':make_celeb_questions_dict(celeb_users[0], questions.all, cur_user_id)}]
+            questions_feed = [{'type':'questions', 'questions':make_celeb_questions_dict(user, questions.all(), cur_user_id)}]
         
         extra_feed = [{'type':'user', 'user':guest_user_to_dict(user, cur_user_id)}]
         if questions_feed:
@@ -1045,7 +1042,7 @@ def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None):
             questions_feed = [{'type':'question', 'questions':question_to_dict(q, cur_user_id)} for q in questions.all()]
             
         elif questions.count()==2:
-            questions_feed = [{'type':'questions', 'questions':make_celeb_questions_dict(celeb_users[0], questions.all, cur_user_id)}]
+            questions_feed = [{'type':'questions', 'questions':make_celeb_questions_dict(user, questions.all(), cur_user_id)}]
         
         extra_feed = [{'type':'user', 'user':guest_user_to_dict(user, cur_user_id)}]
 

@@ -22,7 +22,7 @@ def get_fb_data(access_token):
 			user_data['bio'] = str(profile.get('bio')).replace('\n',' ')
 		else:
 			user_data['bio'] = None
-		if(profile.get('location').get('name')):
+		if profile.get('location') and profile.get('location').get('name'):
 			user_data['location_name'] = profile.get('location').get('name')
 		#pic = graph.get_object("me/picture?type=large")
 		#if(pic['url']):
