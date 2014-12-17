@@ -1,9 +1,9 @@
 ## for z in * ; do q=$(echo $z | sed 's/end_vid_0\+//'); mv $z $q; done; mv .png 0.png
 from subprocess import check_output
 from subprocess import call
-import Image
-import ImageFont
-import ImageDraw
+from PIL import Image
+from PIL import ImageFont
+from PIL import ImageDraw
 import shutil
 import os
 
