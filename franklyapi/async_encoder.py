@@ -18,7 +18,7 @@ def encode_video_task(video_url, thumbnail_url):
 @cel.task(queue='new_encoding')
 def _encode_video_to_profile(file_path, video_url, profile, username=''):
     import controllers
-  	result = video_encoder.encode_video_to_profile(file_path, video_url, profile, username)
+    result = video_encoder.encode_video_to_profile(file_path, video_url, profile, username)
     controllers.update_video_state(video_url, result)
 
 
