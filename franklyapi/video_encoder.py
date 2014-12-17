@@ -17,22 +17,22 @@ raygun = raygunprovider.RaygunSender(config.RAYGUN_KEY)
 
 VIDEO_ENCODING_PROFILES = {
                                 'opt':{
-                                        'command' : 'avconv -y -i {input_file} -r 25 {transpose_command} -vf scale=480:-2 -preset veryslow -b:v 636k -pass 1 -c:v libx264  -ar 22050 -ac 1 -ab 64k -f mp4 /dev/null && avconv -y -i {input_file} -r 25 {transpose_command} -vf scale=480:-2 -preset veryslow -b:v 636k -pass 2 -c:v libx264  -ar 22050 -ac 1 -ab 64k {output_file}',
+                                        'command' : 'avconv -y -i {input_file} -r 25 {transpose_command} -vf scale=480:-1 -strict experimental -preset veryslow -b:v 636k -pass 1 -c:v libx264  -ar 22050 -ac 1 -ab 64k -f mp4 /dev/null && avconv -y -i {input_file} -r 25 {transpose_command} -vf scale=480:-1 -strict experimental -preset veryslow -b:v 636k -pass 2 -c:v libx264  -ar 22050 -ac 1 -ab 25k {output_file}',
                                         'file_prefix': '_opt',
                                         'file_extension': 'mp4'
                                     },
-                                'med':{
-                                        'command' : 'avconv -y -i {input_file} -r 25 {transpose_command} -vf scale=480:-2 -preset veryslow -b:v 256k -pass 1 -c:v libx264  -ar 22050 -ac 1 -ab 44k -f mp4 /dev/null && avconv -y -i {input_file} -r 25 {transpose_command} -vf scale=480:-2 -preset veryslow -b:v 256k -pass 2 -c:v libx264  -ar 22050 -ac 1 -ab 44k {output_file}',
+                                'medium':{
+                                        'command' : 'avconv -y -i {input_file} -r 25 {transpose_command} -vf scale=480:-1 -strict experimental -preset veryslow -b:v 256k -pass 1 -c:v libx264  -ar 22050 -ac 1 -ab 44k -f mp4 /dev/null && avconv -y -i {input_file} -r 25 {transpose_command} -vf scale=480:-1 -strict experimental -preset veryslow -b:v 256k -pass 2 -c:v libx264  -ar 22050 -ac 1 -ab 25k {output_file}',
                                         'file_prefix': '_med',
                                         'file_extension': 'mp4'
                                 },
                                 'low':{
-                                        'command' : 'avconv -y -i {input_file} -r 25 {transpose_command} -vf scale=480:-2 -preset veryslow -b:v 125k -pass 1 -c:v libx264  -ar 22050 -ac 1 -ab 24k -f mp4 /dev/null && avconv -y -i {input_file} -r 25 {transpose_command} -vf scale=480:-2 -preset veryslow -b:v 125k -pass 2 -c:v libx264  -ar 22050 -ac 1 -ab 25k {output_file}',
+                                        'command' : 'avconv -y -i {input_file} -r 25 {transpose_command} -vf scale=480:-1 -strict experimental -preset veryslow -b:v 125k -pass 1 -c:v libx264  -ar 22050 -ac 1 -ab 24k -f mp4 /dev/null && avconv -y -i {input_file} -r 25 {transpose_command} -vf scale=480:-1 -strict experimental -preset veryslow -b:v 125k -pass 2 -c:v libx264  -ar 22050 -ac 1 -ab 25k {output_file}',
                                         'file_prefix': '_low',
                                         'file_extension': 'mp4'
                                 },
                                 'ultralow':{
-                                        'command' : 'avconv -y -i {input_file} -r 25 {transpose_command} -vf scale=480:-2 -preset veryslow -b:v 25k -pass 1 -c:v libx264  -ar 22050 -ac 1 -ab 20k -f mp4 /dev/null && avconv -y -i {input_file} -r 25 {transpose_command} -vf scale=480:-2 -preset veryslow -b:v 25k -pass 2 -c:v libx264  -ar 22050 -ac 1 -ab 20k {output_file}',
+                                        'command' : 'avconv -y -i {input_file} -r 25 {transpose_command} -vf scale=480:-1 -strict experimental -preset veryslow -b:v 25k -pass 1 -c:v libx264  -ar 22050 -ac 1 -ab 20k -f mp4 /dev/null && avconv -y -i {input_file} -r 25 {transpose_command} -vf scale=480:-1 -strict experimental -preset veryslow -b:v 25k -pass 2 -c:v libx264  -ar 22050 -ac 1 -ab 20k {output_file}',
                                         'file_prefix': '_ultralow',
                                         'file_extension': 'mp4'
                                 }
@@ -76,23 +76,37 @@ def get_transpose_command(file_path):
     return transpose_command
 
 
-def encode_video_to_video_profile(file_path, video_url, profile_name):
+def encode_video_to_profile(file_path, video_url, profile_name):
+    print_output('BEGINNING: '+file_path+' '+video_url )
     transpose_command = get_transpose_command(file_path)
     result = {}
     profile = VIDEO_ENCODING_PROFILES[profile_name]
     try:
         output_file_path = '/tmp/{random_string}.mp4'.format(random_string=uuid.uuid1().hex)
         command = profile['command'].format(input_file=file_path, output_file=output_file_path, transpose_command = transpose_command)
+        
+        print_output('COMMAND: '+command)
         subprocess.call(command, shell=True)
-        print 'converting video to with command:', profile['command']
+        
+        print_output('MAKING STREAMABLE: '+command)
         make_psuedo_streamable(output_file_path)
+        
         new_s3_key = get_key_name_for_profile(video_url, profile)
+        print_output('NEW_KEY: '+new_s3_key)
+        
         with open(output_file_path, 'rb') as f:
                 result[profile_name] = media_uploader.upload_to_s3(f, new_s3_key)
         os.remove(output_file_path)
+        print_output('RESULT: '+ str(result))
     except Exception as e:
             print traceback.format_exc(e)
     return result
+
+
+def print_output(statement):
+    print ''
+    print statement
+    print '-----------------------'
 
 
 

@@ -14,7 +14,6 @@ from sqlalchemy.sql import text
 
 import CustomExceptions
 import media_uploader
-import async_encoder
 import social_helpers
 
 from configs import config
@@ -462,6 +461,7 @@ def user_view_profile(current_user_id, user_id, username=None):
 
 
 def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture=None, profile_video=None, cover_picture=None, user_type=None, user_title=None, phone_num=None):
+    import async_encoder
     update_dict = {}
 
     #user = User.objects.only('id').get(id=user_id)
@@ -1184,6 +1184,7 @@ def get_new_client_id():
 
 def add_video_post(cur_user_id, question_id, video, video_thumbnail, answer_type,
                         lat=None, lon=None, client_id=get_new_client_id()):
+    import async_encoder
     try:
         if cur_user_id in config.ADMIN_USERS:
             question = Question.query.filter(Question.id==question_id,

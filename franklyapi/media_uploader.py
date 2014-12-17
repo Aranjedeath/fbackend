@@ -54,7 +54,7 @@ def upload_to_s3(file_to_upload, key_name, public=True):
     key.set_contents_from_file(file_to_upload)
     if public:
         key.make_public()
-    return BASE_URL+key
+    return BASE_URL+key_name
 
 def upload_user_image(user_id, image_type, image_url=None, image_file_path=None):
     random_string = uuid.uuid1().hex
