@@ -21,7 +21,7 @@ VIDEO_ENCODING_PROFILES = {
                                         'file_prefix': '_opt',
                                         'file_extension': 'mp4'
                                     },
-                                'med':{
+                                'medium':{
                                         'command' : 'avconv -y -i {input_file} -r 25 {transpose_command} -vf scale=480:-1 -strict experimental -preset veryslow -b:v 256k -pass 1 -c:v libx264  -ar 22050 -ac 1 -ab 44k -f mp4 /dev/null && avconv -y -i {input_file} -r 25 {transpose_command} -vf scale=480:-1 -strict experimental -preset veryslow -b:v 256k -pass 2 -c:v libx264  -ar 22050 -ac 1 -ab 25k {output_file}',
                                         'file_prefix': '_med',
                                         'file_extension': 'mp4'
