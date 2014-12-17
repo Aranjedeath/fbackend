@@ -18,22 +18,22 @@ raygun = raygunprovider.RaygunSender(config.RAYGUN_KEY)
 
 VIDEO_ENCODING_PROFILES = {
                                 'opt':{
-                                        'command' : 'avconv -y -i {input_file} -r 25 {transpose_command} -vf scale=480:-1 -vf scale="trunc(in_w/2)*2:trunc(in_h/2)*2" -strict experimental -preset veryslow -b:v 636k -pass 1 -c:v libx264  -ar 22050 -ac 1 -ab 64k -f mp4 /dev/null && avconv -y -i {input_file} -r 25 {transpose_command} -vf scale=480:-1 -vf scale="trunc(in_w/2)*2:trunc(in_h/2)*2" -strict experimental -preset veryslow -b:v 636k -pass 2 -c:v libx264  -ar 22050 -ac 1 -ab 25k {output_file}',
+                                        'command' : 'avconv -y -i {input_file} -r 25 -vf {transpose_command}scale="480:-1",scale="trunc(in_w/2)*2:trunc(in_h/2)*2" -strict experimental -preset veryslow -b:v 636k -pass 1 -c:v libx264  -ar 22050 -ac 1 -ab 64k -f mp4 /dev/null && avconv -y -i {input_file} -r 25 -vf {transpose_command}scale="480:-1",scale="trunc(in_w/2)*2:trunc(in_h/2)*2" -strict experimental -preset veryslow -b:v 636k -pass 2 -c:v libx264  -ar 22050 -ac 1 -ab 25k {output_file}',
                                         'file_prefix': '_opt',
                                         'file_extension': 'mp4'
                                     },
                                 'medium':{
-                                        'command' : 'avconv -y -i {input_file} -r 25 {transpose_command} -vf scale=320:-1 -vf scale="trunc(in_w/2)*2:trunc(in_h/2)*2" -strict experimental -preset veryslow -b:v 256k -pass 1 -c:v libx264  -ar 22050 -ac 1 -ab 44k -f mp4 /dev/null && avconv -y -i {input_file} -r 25 {transpose_command} -vf scale=320:-1 -vf scale="trunc(in_w/2)*2:trunc(in_h/2)*2" -strict experimental -preset veryslow -b:v 256k -pass 2 -c:v libx264  -ar 22050 -ac 1 -ab 25k {output_file}',
+                                        'command' : 'avconv -y -i {input_file} -r 25 -vf {transpose_command}scale="320:-1",scale="trunc(in_w/2)*2:trunc(in_h/2)*2" -strict experimental -preset veryslow -b:v 256k -pass 1 -c:v libx264  -ar 22050 -ac 1 -ab 44k -f mp4 /dev/null && avconv -y -i {input_file} -r 25 -vf {transpose_command}scale="320:-1",scale="trunc(in_w/2)*2:trunc(in_h/2)*2" -strict experimental -preset veryslow -b:v 256k -pass 2 -c:v libx264  -ar 22050 -ac 1 -ab 25k {output_file}',
                                         'file_prefix': '_med',
                                         'file_extension': 'mp4'
                                 },
                                 'low':{
-                                        'command' : 'avconv -y -i {input_file} -r 16 {transpose_command} -vf scale=320:-1 -vf scale="trunc(in_w/2)*2:trunc(in_h/2)*2" -strict experimental -preset veryslow -b:v 125k -pass 1 -c:v libx264  -ar 22050 -ac 1 -ab 24k -f mp4 /dev/null && avconv -y -i {input_file} -r 16 {transpose_command} -vf scale=320:-1 -vf scale="trunc(in_w/2)*2:trunc(in_h/2)*2" -strict experimental -preset veryslow -b:v 125k -pass 2 -c:v libx264  -ar 22050 -ac 1 -ab 25k {output_file}',
+                                        'command' : 'avconv -y -i {input_file} -r 16 -vf {transpose_command}scale="320:-1",scale="trunc(in_w/2)*2:trunc(in_h/2)*2" -strict experimental -preset veryslow -b:v 125k -pass 1 -c:v libx264  -ar 22050 -ac 1 -ab 24k -f mp4 /dev/null && avconv -y -i {input_file} -r 16 -vf {transpose_command}scale="320:-1",scale="trunc(in_w/2)*2:trunc(in_h/2)*2" -strict experimental -preset veryslow -b:v 125k -pass 2 -c:v libx264  -ar 22050 -ac 1 -ab 25k {output_file}',
                                         'file_prefix': '_low',
                                         'file_extension': 'mp4'
                                 },
                                 'ultralow':{
-                                        'command' : 'avconv -y -i {input_file} -r 10 {transpose_command} -vf scale=240:-1 -vf scale="trunc(in_w/2)*2:trunc(in_h/2)*2" -strict experimental -preset veryslow -b:v 25k -pass 1 -c:v libx264  -ar 22050 -ac 1 -ab 20k -f mp4 /dev/null && avconv -y -i {input_file} -r 10 {transpose_command} -vf scale=240:-1 -vf scale="trunc(in_w/2)*2:trunc(in_h/2)*2" -strict experimental -preset veryslow -b:v 25k -pass 2 -c:v libx264  -ar 22050 -ac 1 -ab 20k {output_file}',
+                                        'command' : 'avconv -y -i {input_file} -r 10 -vf {transpose_command}scale="240:-1",scale="trunc(in_w/2)*2:trunc(in_h/2)*2" -strict experimental -preset veryslow -b:v 25k -pass 1 -c:v libx264  -ar 22050 -ac 1 -ab 20k -f mp4 /dev/null && avconv -y -i {input_file} -r 10 -vf {transpose_command}scale="240:-1",scale="trunc(in_w/2)*2:trunc(in_h/2)*2" -strict experimental -preset veryslow -b:v 25k -pass 2 -c:v libx264  -ar 22050 -ac 1 -ab 20k {output_file}',
                                         'file_prefix': '_ultralow',
                                         'file_extension': 'mp4'
                                 }
@@ -71,9 +71,9 @@ def get_rotation(file_path):
 def get_transpose_command(file_path):
     transpose_command = ''
     if get_rotation(file_path) == 270:
-        transpose_command = '-vf "transpose=2"'
+        transpose_command = 'transpose=2,'
     if get_rotation(file_path) == 90:
-        transpose_command = '-vf "transpose=1"'
+        transpose_command = 'transpose=1,'
     return transpose_command
 
 
