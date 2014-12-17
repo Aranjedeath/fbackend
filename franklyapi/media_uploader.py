@@ -33,10 +33,12 @@ def save_file_from_request(file_to_save):
     return path
 
 def file_is_valid(file_to_check, file_type):
-    if type(file_to_check) == type(''):
-        mimes = mimetypes.guess_type(file_to_check)
+    if type(file_to_check) in [type(str()), type(unicode())] :
+        mimes = [item.lower() for item in mimetypes.guess_type(file_to_check) if item]
     else:
-        mimes = [file_to_check.mimetype]
+        mimes = [file_to_check.mimetype.lower()]
+
+    print mimes
     
     if file_type=='image':
         if set(ALLOWED_IMAGE_TYPES).intersection(set(mimes)):
@@ -60,13 +62,19 @@ def upload_user_image(user_id, image_type, image_url=None, image_file_path=None)
     random_string = uuid.uuid1().hex
     key_name = '{user_id}/photos/{random_string}.jpeg'.format(user_id=user_id, random_string=random_string)
     
+    final_image_path = None
+    
     if image_url and file_is_valid(image_url, 'image'):
-        image_file_path = download_file(image_url)
+        final_image_path = download_file(image_url)
+
+    elif image_file_path and file_is_valid(image_file_path, 'image'):
+        final_image_path = image_file_path
         
 
-    if image_file_path and file_is_valid(image_file_path, 'image'):
+    if final_image_path:
         if image_type=='profile_picture':
-            new_image = image_processors.sanitize_profile_pic(image_file_path)
+            print image_type
+            new_image = image_processors.sanitize_profile_pic(final_image_path)
             new_image_thumb = image_processors.get_profile_pic_thumb(new_image)
             with open(new_image_thumb) as f:
                 thumb_key_name = '{user_id}/photos/{random_string}_thumb.jpeg'.format(user_id=user_id, random_string=random_string)
@@ -75,15 +83,16 @@ def upload_user_image(user_id, image_type, image_url=None, image_file_path=None)
                 url = upload_to_s3(f, key_name)
             os.remove(new_image)
             os.remove(new_image_thumb)
-            os.remove(image_file_path)
+            os.remove(final_image_path)
             return url
 
         elif image_type=='cover':
-            new_image = image_processors.sanitize_cover_pic(image_file_path)
+            print image_type
+            new_image = image_processors.sanitize_cover_pic(final_image_path)
             with open(new_image) as f:
                 url = upload_to_s3(f, key_name)
             os.remove(new_image)
-            os.remove(image_file_path)
+            os.remove(final_image_path)
             return url
 
 
