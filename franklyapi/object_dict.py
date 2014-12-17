@@ -315,7 +315,7 @@ def posts_to_dict(posts, cur_user_id=None, distance=None):
                 'question_type': 'text',
                 'timestamp': int(time.mktime(questions[post.question]['timestamp'].timetuple())),
                 'tags': [],
-                'is_anonymous': True if questions[post.question]['is_anonymous'] is True else False
+                'is_anonymous': bool(questions[post.question]['is_anonymous'])
             },
             'answer': {
                 'body': '',

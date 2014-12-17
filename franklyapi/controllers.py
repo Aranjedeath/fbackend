@@ -14,11 +14,12 @@ from sqlalchemy.sql import text
 
 import CustomExceptions
 import media_uploader
+import async_encoder
 import social_helpers
 
 from configs import config
 from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
-                     Question, Upvote, Comment, ForgotPasswordToken, Install, Video
+                    Question, Upvote, Comment, ForgotPasswordToken, Install, Video
 from app import redis_client, raygun, db
 
 from object_dict import user_to_dict, guest_user_to_dict,\
@@ -182,11 +183,12 @@ def register_email_user(email, password, full_name, device_id, username=None, ph
 
     device_type = get_device_type(device_id)
     registered_with = device_type + '_email'
+    from database import get_item_id
 
-    new_user = User(email=email, username=username, first_name=full_name, password=password, 
-                registered_with=registered_with, user_type=user_type, gender=gender, user_title=user_title,
-                phone_num=phone_num, lat=lat, lon=lon, location_name=location_name, country_name=country_name,
-                country_code=country_code)
+    new_user = User(id=get_item_id(), email=email, username=username, first_name=full_name, password=password, 
+                    registered_with=registered_with, user_type=user_type, gender=gender, user_title=user_title,
+                    phone_num=phone_num, lat=lat, lon=lon, location_name=location_name, country_name=country_name,
+                    country_code=country_code)
     db.session.add(new_user)
     db.session.commit()
     access_token = generate_access_token(new_user.id, device_id)
@@ -196,19 +198,14 @@ def register_email_user(email, password, full_name, device_id, username=None, ph
     return {'access_token': access_token, 'username': username, 'id':new_user.id, 'new_user' : True}
 
 def get_twitter_email(twitter_id):
-    return '{twitter_id}@twitter.com'.format(twitter_id)
+    return '{twitter_id}@twitter.com'.format(twitter_id=twitter_id)
 
 
 def login_user_social(social_type, social_id, external_access_token, device_id, push_id=None, 
                         external_token_secret = None, user_type=0, user_title=None):
     user_data = get_data_from_external_access_token(social_type, external_access_token, external_token_secret)
-    print social_id
-    print user_data['social_id']
     
-    if social_type=='twitter':
-        token_valid = str(user_data['social_id'])!=str(social_id)
-    else:
-        token_valid = user_data['social_id']!=social_id
+    token_valid = str(user_data['social_id']).strip()==str(social_id).strip()
     
     if not token_valid:    
         raise CustomExceptions.InvalidTokenException("Could not verify %s token"%social_type)
@@ -237,11 +234,12 @@ def login_user_social(social_type, social_id, external_access_token, device_id, 
     else:
         username = make_username(user_data['email'], user_data.get('full_name'), user_data.get('social_username'))
         registered_with = '%s_%s'%(device_type, social_type) 
-                
-        new_user = User(email=user_data['email'], username=username, first_name=user_data['full_name'], 
-                registered_with=registered_with, user_type=user_type, gender=user_data.get('gender'), user_title=user_title,
-                location_name=user_data.get('location_name'), country_name=user_data.get('country_name'),
-                country_code=user_data.get('country_code'))
+        from database import get_item_id
+
+        new_user = User(id=get_item_id(), email=user_data['email'], username=username, first_name=user_data['full_name'], 
+                        registered_with=registered_with, user_type=user_type, gender=user_data.get('gender'), user_title=user_title,
+                        location_name=user_data.get('location_name'), country_name=user_data.get('country_name'),
+                        country_code=user_data.get('country_code'))
         
         if user_data.get('profile_picture'):
             new_user.profile_picture = media_uploader.upload_user_image(user_id=new_user.id, 
@@ -461,7 +459,6 @@ def user_view_profile(current_user_id, user_id, username=None):
 
 
 def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture=None, profile_video=None, cover_picture=None, user_type=None, user_title=None, phone_num=None):
-    import async_encoder
     update_dict = {}
 
     #user = User.objects.only('id').get(id=user_id)
@@ -505,11 +502,14 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
         profile_picture.save(tmp_path)
         profile_picture_url = media_uploader.upload_user_image(user_id=user_id, image_file_path=tmp_path, image_type='profile_picture')
         update_dict.update({'profile_picture':profile_picture_url})
-        os.remove(tmp_path)
+        print profile_picture_url
+        try:
+            os.remove(tmp_path)
+        except:
+            pass
 
     if not update_dict:
         raise CustomExceptions.BadRequestException('Nothing to update')
-    
     
     user_archive =  UserArchive(user=user_id,
                                 username=update_dict['username'] if update_dict.get('username') else existing_values['username'],
@@ -709,8 +709,9 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous):
         raise CustomExceptions.NoPermissionException('Anonymous question not allowed for the user')
 
     public = True if user_status['user_type']==2 else False #if user is celeb
-
-    question = Question(question_author=cur_user_id, question_to=question_to, 
+    from database import get_item_id
+    
+    question = Question(id=get_item_id(), question_author=cur_user_id, question_to=question_to, 
                 body=body.capitalize(), is_anonymous=is_anonymous, public=public, lat=lat, lon=lon)
     print question
     db.session.add(question)
@@ -850,7 +851,8 @@ def comment_add(cur_user_id, post_id, body, lat, lon):
     answer_author, question_author= row
 
     if not (has_blocked(cur_user_id, answer_author) or has_blocked(cur_user_id, answer_author)):
-        comment = Comment(on_post=post_id, body=body, comment_author=cur_user_id, lat=lat, lon=lon)
+        from database import get_item_id
+        comment = Comment(id=get_item_id(), on_post=post_id, body=body, comment_author=cur_user_id, lat=lat, lon=lon)
         db.session.add(comment)
         db.session.commit()
     
@@ -929,7 +931,9 @@ def comment_list(cur_user_id, post_id, offset, limit):
 def get_user_timeline(cur_user_id, user_id, offset, limit):
     if cur_user_id and has_blocked(cur_user_id, user_id):
         raise CustomExceptions.UserNotFoundException('User does not exist')
-    posts_query = Post.query.filter(Post.answer_author==user_id, Post.deleted==False)
+    posts_query = Post.query.filter(Post.answer_author==user_id, Post.deleted==False
+                                    ).order_by(Post.timestamp.desc())
+    
     total_count = posts_query.count()
     posts = posts_query.offset(offset).limit(limit).all()
     posts = posts_to_dict(posts)
@@ -945,7 +949,7 @@ def home_feed(cur_user_id, offset, limit, web):
 
     posts = Post.query.filter(or_(Post.answer_author.in_(followings), Post.question_author==cur_user_id)
                     ).filter(Post.deleted==False
-                    ).order_by(Post.timestamp
+                    ).order_by(Post.timestamp.desc()
                     ).offset(offset
                     ).limit(limit
                     ).all()
@@ -958,7 +962,7 @@ def home_feed(cur_user_id, offset, limit, web):
     celeb_limit = 2
     
     if offset != 0:
-        skip = skip+celeb_limit+1
+        skip = skip+celeb_limit
 
     celeb_users = User.query.filter(User.id.in_(followings+[cur_user_id]),
                                     User.deleted==False, User.user_type==2, User.profile_video!=None
@@ -1005,7 +1009,7 @@ def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None):
 
     posts = Post.query.filter(~Post.answer_author.in_(followings+[cur_user_id])
                     ).filter(Post.deleted==False, Post.popular==True
-                    ).order_by(Post.timestamp
+                    ).order_by(Post.timestamp.desc()
                     ).offset(offset
                     ).limit(limit
                     ).all()
@@ -1018,7 +1022,7 @@ def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None):
     celeb_limit = 2
     
     if offset != 0:
-        skip = skip+celeb_limit+1
+        skip = skip+celeb_limit
     print 'DISCOVER USERS OFFSET/LIMIT:', skip, celeb_limit
     celeb_users = User.query.filter(~User.id.in_([cur_user_id])
                                 ).filter(User.deleted==False, User.user_type==2, User.profile_video!=None
@@ -1184,7 +1188,6 @@ def get_new_client_id():
 
 def add_video_post(cur_user_id, question_id, video, video_thumbnail, answer_type,
                         lat=None, lon=None, client_id=get_new_client_id()):
-    import async_encoder
     try:
         if cur_user_id in config.ADMIN_USERS:
             question = Question.query.filter(Question.id==question_id,
