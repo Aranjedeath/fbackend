@@ -12,8 +12,8 @@ REGION_NAME = 'us-east-1'
 BUCKET_NAME = 'franklyapp'
 CONN = S3Connection(config.AWS_KEY, config.AWS_SECRET)
 
-ALLOWED_VIDEO_TYPES = ['video/mp4']
-ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpeg', 'image/png', 'image/gif']
+ALLOWED_VIDEO_TYPES = ['video/mp4', 'application/octet-stream']
+ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpeg', 'image/png', 'image/gif', 'application/octet-stream']
 
 BASE_URL = "https://s3.amazonaws.com/{bucket_name}/".format(bucket_name=BUCKET_NAME)
 
@@ -33,6 +33,7 @@ def save_file_from_request(file_to_save):
     return path
 
 def file_is_valid(file_to_check, file_type):
+    return True
     if type(file_to_check) in [type(str()), type(unicode())] :
         mimes = [item.lower() for item in mimetypes.guess_type(file_to_check) if item]
     else:

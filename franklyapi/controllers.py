@@ -216,8 +216,14 @@ def login_user_social(social_type, social_id, external_access_token, device_id, 
     update_dict = {'deleted':False, '%s_token'%(social_type):external_access_token, '%s_id'%(social_type):social_id}
 
     if social_type == 'twitter':
-            update_dict.update({'twitter_secret':external_token_secret})
-            user_data['email'] = get_twitter_email(user_data['social_id'])
+        update_dict.update({'twitter_secret':external_token_secret})
+        user_data['email'] = get_twitter_email(user_data['social_id'])
+        user_data['social_id'] = str(user_data['social_id']).strip()
+        try:
+            user = User.query.filter(User.twitter_id==user_data['social_id']).one()
+        except:
+            pass
+        print 'USER', user
 
     if social_type in ['facebook', 'google']:
         try:
@@ -489,6 +495,7 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
 
     if profile_video:
         profile_video_url, cover_picture_url = media_uploader.upload_user_video(user_id=user_id, video_file=profile_video, video_thumbnail_file=cover_picture, video_type='profile_video')
+        print profile_video_url, cover_picture_url
         update_dict.update({'profile_video':profile_video_url, 'cover_picture':cover_picture_url})
         add_video_to_db(profile_video_url, cover_picture_url)
         async_encoder.encode_video_task.delay(profile_video_url, cover_picture_url)
@@ -517,7 +524,7 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
                                 profile_picture=update_dict['profile_picture'] if update_dict.get('profile_picture') else existing_values['profile_picture'],
                                 cover_picture=update_dict['cover_picture'] if update_dict.get('cover_picture') else existing_values['cover_picture'],
                                 profile_video=update_dict['profile_video'] if update_dict.get('profile_video') else existing_values['profile_video'],
-                                bio=update_dict['bio'] if update_dict.get('profile_video') else existing_values['bio']
+                                bio=update_dict['bio'] if update_dict.get('bio') else existing_values.get('bio')
                                 )
 
     db.session.add(user_archive)
