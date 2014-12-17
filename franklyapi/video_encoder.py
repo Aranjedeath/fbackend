@@ -77,22 +77,36 @@ def get_transpose_command(file_path):
 
 
 def encode_video_to_profile(file_path, video_url, profile_name):
+    print_output('BEGINNING: '+file_path+' '+video_url )
     transpose_command = get_transpose_command(file_path)
     result = {}
     profile = VIDEO_ENCODING_PROFILES[profile_name]
     try:
         output_file_path = '/tmp/{random_string}.mp4'.format(random_string=uuid.uuid1().hex)
         command = profile['command'].format(input_file=file_path, output_file=output_file_path, transpose_command = transpose_command)
+        
+        print_output('COMMAND: '+command)
         subprocess.call(command, shell=True)
-        print 'converting video to with command:', profile['command']
+        
+        print_output('MAKING STREAMABLE: '+command)
         make_psuedo_streamable(output_file_path)
+        
         new_s3_key = get_key_name_for_profile(video_url, profile)
+        print_output('NEW_KEY: '+new_s3_key)
+        
         with open(output_file_path, 'rb') as f:
                 result[profile_name] = media_uploader.upload_to_s3(f, new_s3_key)
         os.remove(output_file_path)
+        print_output('RESULT: '+ result)
     except Exception as e:
             print traceback.format_exc(e)
     return result
+
+
+def print_output(statement):
+    print ''
+    print statement
+    print '-----------------------'
 
 
 
