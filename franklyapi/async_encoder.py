@@ -8,8 +8,7 @@ cel = Celery(broker=config.ASYNC_ENCODER_BROKER_URL, backend=config.ASYNC_ENCODE
 
 @cel.task(queue='new_encoding')
 def encode_video_task(video_url, thumbnail_url):
-    import controllers
-    controllers.add_video_to_db(video_url, thumbnail_url)
+    video_encoder.add_video_to_db(video_url, thumbnail_url)
     file_path = media_uploader.download_file(video_url)
     for profile_name in video_encoder.VIDEO_ENCODING_PROFILES.keys():
         _encode_video_to_profile(file_path, video_url, profile_name)    
@@ -17,9 +16,8 @@ def encode_video_task(video_url, thumbnail_url):
 
 @cel.task(queue='new_encoding')
 def _encode_video_to_profile(file_path, video_url, profile, username=''):
-    import controllers
     result = video_encoder.encode_video_to_profile(file_path, video_url, profile, username)
-    controllers.update_video_state(video_url, result)
+    video_encoder.update_video_state(video_url, result)
 
 
 @cel.task(queue='retry_queue')

@@ -3,7 +3,7 @@ import uuid
 import traceback
 import os
 import shutil
-import promo_video
+#import promo_video
 
 from configs import config
 import media_uploader
@@ -37,12 +37,17 @@ VIDEO_ENCODING_PROFILES = {
                                         'command' : 'ffmpeg -y -i {input_file} -r 10 -vf {transpose_command}scale="240:-1",scale="trunc(in_w/2)*2:trunc(in_h/2)*2" -strict experimental -preset veryslow -b:v 25k -pass 1 -c:v libx264  -ar 22050 -ac 1 -ab 20k -f mp4 /dev/null && ffmpeg -y -i {input_file} -r 10 -vf {transpose_command}scale="240:-1",scale="trunc(in_w/2)*2:trunc(in_h/2)*2" -strict experimental -preset veryslow -b:v 25k -pass 2 -c:v libx264  -ar 22050 -ac 1 -ab 20k {output_file}',
                                         'file_prefix': '_ultralow',
                                         'file_extension': 'mp4'
-                                },
-                                'promo':{
-                                        'file_prefix' : '_promo',
-                                        'file_extension' : 'mp4'
                                 }
+
                         }
+
+'''
+                                
+'promo':{
+    'file_prefix' : '_promo',
+    'file_extension' : 'mp4'
+}
+'''
 
 def get_key_name_from_url(url):
     domain = 's3.amazonaws.com/{bucket_name}/'.format(bucket_name=media_uploader.BUCKET_NAME)
@@ -129,4 +134,5 @@ def print_output(statement):
     print '-----------------------'
 
 
+from controllers import add_video_to_db, update_video_state
 
