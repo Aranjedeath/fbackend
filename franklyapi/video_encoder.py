@@ -8,6 +8,7 @@ import shutil
 from configs import config
 import media_uploader
 
+
 from raygun4py import raygunprovider
 
 raygun = raygunprovider.RaygunSender(config.RAYGUN_KEY)
@@ -132,7 +133,3 @@ def print_output(statement):
     print ''
     print statement
     print '-----------------------'
-
-
-from controllers import add_video_to_db, update_video_state
-

@@ -26,6 +26,7 @@ from object_dict import user_to_dict, guest_user_to_dict,\
                         thumb_user_to_dict, question_to_dict, post_to_dict, comment_to_dict,\
                         comments_to_dict, posts_to_dict, make_celeb_questions_dict
 
+from video_db import add_video_to_db
 
 def check_access_token(access_token, device_id):
     try:
@@ -1279,20 +1280,6 @@ def logout(access_token, device_id):
     count = AccessToken.query.filter(AccessToken.access_token==access_token, AccessToken.device_id==device_id).update({'active':False})
     return bool(count)
 
-
-def add_video_to_db(video_url, thumbnail_url):
-    if not Video.query.filter(Video.url==video_url).count():
-        db.session.add(Video(url=video_url, thumbnail=thumbnail_url))
-        db.session.commit()
-
-
-def update_video_state(video_url, result={}):
-    if result:
-        result.update({'process_state':'success'})
-        Video.query.filter(Video.url==video_url).update(result)
-    
-    else:
-        Video.query.filter(Video.url==video_url).update({'process_state':'failed'})
 
 def get_question_authors_image(question_id):
     from image_processors import make_collage
