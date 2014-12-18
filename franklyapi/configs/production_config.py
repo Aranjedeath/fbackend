@@ -38,4 +38,4 @@ ALLOWED_AUDIO_FORMATS = ['mp3', 'ogg', 'wav', 'aac', '3gp']
 BLOCKED_EMAIL_DOMAINS = ['mailinator.com']
 ALLOWED_CHARACTERS = [ chr(item) for item in range(48,58)+range(65,91)+[95]+range(97,123)]
 
-ADMIN_USERS = []
+ADMIN_USERS = ['cab4132c53c6b197df310373dba38e5f','cab4132c53c6a513df310374a482ef4e']
