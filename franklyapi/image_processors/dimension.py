@@ -20,7 +20,7 @@ def toDimensions(image_file,out_file,dim_x,dim_y,allowLow = True):
         box = (int((im_x - fin_x)/2) , int((im_y - fin_y)/2) , int((im_x + fin_x)/2) , int((im_y + fin_y)/2) )
         im = im.crop(box)
         im = im.resize((dim_x,dim_y))
-        im.save(out_file,"jpeg")
+        im.convert('RGB').save(out_file,"jpeg")
     else:
         raise Exception("Small Size")
 

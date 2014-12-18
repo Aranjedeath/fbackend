@@ -204,7 +204,6 @@ def get_twitter_email(twitter_id):
 def login_user_social(social_type, social_id, external_access_token, device_id, push_id=None, 
                         external_token_secret = None, user_type=0, user_title=None):
     user_data = get_data_from_external_access_token(social_type, external_access_token, external_token_secret)
-    
     token_valid = str(user_data['social_id']).strip()==str(social_id).strip()
     
     if not token_valid:    
@@ -274,11 +273,13 @@ def login_user_social(social_type, social_id, external_access_token, device_id, 
 def login_email_new(user_id, id_type, password, device_id, push_id=None):
     try:
         if id_type=='email':
-            user = User.query.filter(User.email==user_id).one()
+            user = User.query.filter(User.email==user_id, User.password==password).one()
         elif id_type=='username':
-            user = User.query.filter(User.username==user_id).one()
+            user = User.query.filter(User.username==user_id, User.password==password).one()
         else:
             raise Exception("id_type should be in ['email', 'username']")
+        if not user:
+            raise NoResultFound()
         
         access_token = generate_access_token(user.id, device_id)
         device_type = get_device_type(device_id)
@@ -556,6 +557,7 @@ def user_unfollow(cur_user_id, user_id):
     if cur_user_id == user_id:
         raise CustomExceptions.BadRequestException("Cannot unfollow yourself")
     Follow.query.filter(Follow.user==cur_user_id, Follow.followed==user_id).update({'unfollowed':True})
+    db.session.commit()
     return {'user_id': user_id}
 
 
@@ -755,7 +757,7 @@ def question_list_public(current_user_id, user_id, offset, limit):
                                             ).order_by(func.count(Upvote.id).desc()
                                             ).offset(offset)
 
-    questions = [{'question':question_to_dict(question), 'type':'question'} for question in questions_query.limit(limit)]
+    questions = [{'question':question_to_dict(question, current_user_id), 'type':'question'} for question in questions_query.limit(limit)]
     next_index = str(offset+limit) if questions else "-1"
     return {'questions': questions, 'count': len(questions),  'next_index' : next_index}
 
@@ -773,6 +775,7 @@ def question_upvote(cur_user_id, question_id):
                                     UPDATE downvoted = false"""),
                             params={'cur_user_id':cur_user_id, 'question_id':question_id}
                         )
+        db.session.commit()
     else:
         raise CustomExceptions.BadRequestException("Question is not available for upvote")
     
@@ -782,6 +785,7 @@ def question_downvote(cur_user_id, question_id):
     if Question.query.filter(Question.id==question_id, Question.question_author==cur_user_id).count():
         raise CustomExceptions.BadRequestException("You cannot downvote your own question")
     result = Upvote.query.filter(Upvote.user==cur_user_id, Upvote.question==question_id).update({'downvoted':True})
+    db.session.commit()
     return {'id':question_id, 'success':bool(result)}
 
 
@@ -791,7 +795,7 @@ def question_ignore(user_id, question_id):
                             Question.is_answered==False,
                             Question.deleted==False
                         ).update({'is_ignored':True})
-
+    db.session.commit()
     return {"question_id":question_id, "success":bool(result)}
 
 def post_like(cur_user_id, post_id):
@@ -814,6 +818,7 @@ def post_like(cur_user_id, post_id):
                                     UPDATE unliked = false"""),
                             params={'cur_user_id':cur_user_id, 'post_id':post_id}
                             )
+        db.session.commit()
         #send notification
         return {'id': post_id, 'success':True}
 
@@ -822,10 +827,12 @@ def post_like(cur_user_id, post_id):
 
 def post_unlike(cur_user_id, post_id):
     result = Like.query.filter(Like.user==cur_user_id, Like.post==post_id).update({'unliked':True})
+    db.session.commit()
     return {'id':post_id, 'success':bool(result)}
 
 def post_delete(cur_user_id, post_id):
     result = Post.query.filter(Post.id==post_id, Post.answer_author==cur_user_id, Post.deleted==False).update({'deleted':True})
+    db.session.commit()
     return {'id':post_id, 'success':bool(result)}
 
 def post_view(cur_user_id, post_id, client_id=None):
@@ -837,7 +844,7 @@ def post_view(cur_user_id, post_id, client_id=None):
 
         if cur_user_id and (has_blocked(cur_user_id, post.answer_author) or has_blocked(cur_user_id, post.question_author)):
             raise CustomExceptions.BlockedUserException()
-
+        db.session.commit()
         {'post': post_to_dict(post, cur_user_id)}
     except NoResultFound:
         raise CustomExceptions.PostNotFoundException()
@@ -896,6 +903,7 @@ def comment_delete(cur_user_id, comment_id):
                                     Comment.deleted==False,
                                     Comment.comment_author==cur_user_id
                                     ).update({'deleted':False})
+            db.session.commit()
             return {'success': True}
         else:
             raise CustomExceptions.ObjectNotFoundException('Comment Not available for action')
@@ -1074,12 +1082,16 @@ def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None):
 def create_forgot_password_token(username=None, email=None):
     try:
         import hashlib
+        user = None
         if username:
             user = User.query.filter(User.username==username).one()
         elif email:
             user = User.query.filter(User.email==email).one()
         else:
             raise CustomExceptions.BadRequestException()
+        if not user:
+            CustomExceptions.UserNotFoundException()
+
 
         token_salt = 'ANDjdnbsjKDND=skjkhd94bwi20284HFJ22u84'
         token_string = '%s+%s+%s'%(str(user.id), token_salt, time.time())
@@ -1111,7 +1123,7 @@ Regards<br>
 Franksters'''.format(user.first_name if user.first_name else user.username, token)
         subject = 'Reset your password and get back in action on Frankly.me'
         
-        email_wrapper.sendMail('letstalk@frankly.me', user.email, subject, body)
+        #email_wrapper.sendMail('letstalk@frankly.me', user.email, subject, body)
         return {'success':True}
     except NoResultFound:
         raise CustomExceptions.UserNotFoundException()
@@ -1213,23 +1225,26 @@ def add_video_post(cur_user_id, question_id, video, video_thumbnail, answer_type
         if has_blocked(answer_author, question.question_author):
             raise CustomExceptions.BlockedUserException("Question not available for action")
 
+        from database import get_item_id
+
         video_url, thumbnail_url = media_uploader.upload_user_video(user_id=cur_user_id, video_file=video, video_thumbnail_file=video_thumbnail, video_type='answer')
         add_video_to_db(video_url, thumbnail_url)
-        post = Post(question=question_id,
+        post = Post(id=get_item_id(),
+                    question=question_id,
                     question_author=question.question_author, 
                     answer_author=answer_author,                    
                     answer_type=answer_type,
                     media_url=video_url,
-                    thumnail_url=thumbnail_url,
+                    thumbnail_url=thumbnail_url,
                     client_id=client_id,
                     lat=lat,
                     lon=lon)
 
-        db.session(post)
-        db.session.commit()
-        async_encoder.encode_video_task(video_url, thumbnail_url)
-
+        db.session.add(post)
         Question.query.filter(Question.id==question_id).update({'is_answered':True})
+        db.session.commit()
+        async_encoder.encode_video_task.delay(video_url, thumbnail_url)
+
 
         return {'success': True, 'id': str(post.id)}
 
