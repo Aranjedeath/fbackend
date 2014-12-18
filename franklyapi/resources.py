@@ -182,6 +182,7 @@ class UserUpdateForm(restful.Resource):
         user_update_profile_form = reqparse.RequestParser()
         user_update_profile_form.add_argument('first_name', type=str, location='form')
         user_update_profile_form.add_argument('bio', type=str, location='form')
+        user_update_profile_form.add_argument('user_title', type=str, location='form')
         user_update_profile_form.add_argument('profile_picture', location='files')
         user_update_profile_form.add_argument('cover_picture', location='files')
         user_update_profile_form.add_argument('profile_video', location='files')
@@ -191,10 +192,18 @@ class UserUpdateForm(restful.Resource):
             if user_id == 'me':
                 user_id = current_user.id
             
-            if (str(current_user.id) not in config.ADMIN_USERS) and user_id != current_user.id:
+            if (current_user.id not in config.ADMIN_USERS) and user_id != current_user.id:
                 raise CustomExceptions.BadRequestException()
+            if current_user.id not in config.ADMIN_USERS:
+                args['user_title'] = None
             
-            new_profile = controllers.user_update_profile_form(user_id, **args)
+            new_profile = controllers.user_update_profile_form(user_id,
+                                                                first_name=args['first_name'],
+                                                                bio=args['bio'],
+                                                                user_title=args['user_title'],
+                                                                profile_picture=args['profile_picture'],
+                                                                cover_picture=['cover_picture'],
+                                                                profile_video=['profile_video'])
             return new_profile
 
         except CustomExceptions.BadRequestException, e:

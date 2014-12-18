@@ -496,6 +496,9 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
                         'profile_video':user.profile_video
                         }
     
+    if user_title:
+        update_dict.update({'user_title':user_title})
+
 
     if first_name:
         update_dict.update({'first_name':first_name})
