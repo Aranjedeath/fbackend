@@ -329,10 +329,15 @@ class ChangeUsername(restful.Resource):
     def post(self):
         user_change_username_parser = reqparse.RequestParser()
         user_change_username_parser.add_argument('username', required=True, type=str, location='json')
+        user_change_username_parser.add_argument('id', type=str, location='json')
         args = user_change_username_parser.parse_args()
         
         try:
-            resp = controllers.user_change_username(current_user.id, new_username=args['username'])
+            if current_user.id in config.ADMIN_USERS:
+                user_id = args['id']
+            else:
+                user_id = current_user.id
+            resp = controllers.user_change_username(user_id, new_username=args['username'])
             return resp
 
         except CustomExceptions.UnameUnavailableException, e:
