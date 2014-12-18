@@ -152,7 +152,7 @@ def make_celeb_questions_dict(celeb, questions, current_user_id=None):
         'askers': [{'id':users[upvoter]['id'], 'profile_picture':users[upvoter]['profile_picture'], 'gender':users[upvoter]['gender']} for upvoter in upvoters],
         'background_image':"http://api.frankly.me/question/bg_image/%s"%(str(question.id)),
         'is_voted': is_upvoted(question.id, current_user_id) if current_user_id else False,
-        'web_link':'http://www.facebook.com'
+        'web_link':'http://frankly.me'
         }
         celeb_dict['questions'].append(ques_dict)
     return celeb_dict
@@ -194,7 +194,7 @@ def question_to_dict(question, current_user_id=None):
         'askers': [{'id':users[upvoter]['id'], 'profile_picture':users[upvoter]['profile_picture'], 'gender':users[upvoter]['gender']} for upvoter in upvoters],
         'background_image':"http://dev.frankly.me/question/bg_image/%s"%(str(question.id)),
         'is_voted': is_upvoted(question.id, current_user_id) if current_user_id else False,
-        'web_link':'http://www.facebook.com'
+        'web_link':'http://frankly.me'
     }
     return ques_dict
 
@@ -258,7 +258,7 @@ def post_to_dict(post, cur_user_id=None, distance=None):
         'ready':post.ready,
         'popular':post.popular,
         'view_count':get_post_view_count(post.id),
-        'web_link':'http://www.facebook.com'
+        'web_link':'http://frankly.me/p/{client_id}'.format(client_id=post.client_id)
     }
     return post_dict
 
@@ -337,7 +337,7 @@ def posts_to_dict(posts, cur_user_id=None, distance=None):
             'ready':post.ready,
             'popular':post.popular,
             'view_count':get_post_view_count(post.id),
-            'web_link':'http://www.facebook.com'
+            'web_link':'http://frankly.me/p/{client_id}'.format(client_id=post.client_id)
         }
         posts_dict.append(p_dict)
     return posts_dict

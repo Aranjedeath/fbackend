@@ -34,6 +34,7 @@ def check_access_token(access_token, device_id):
         user_id = None
         if device_type == 'web':
             user_id = redis_client.get(access_token)
+            print 'REDIS USER', user_id
             return User.query.get(user_id) if user_id else None
 
         access_token_object = AccessToken.query.filter(AccessToken.access_token==access_token,
@@ -161,6 +162,7 @@ def get_user_from_social_id(social_type, social_id):
 def get_device_type(device_id):
     if len(device_id)<17:
         if 'web' in device_id:
+            print 'DEVICE TYPE', device_id
             return 'web'
         return 'android'
     return 'ios'
@@ -370,14 +372,20 @@ def get_video_states(video_urls={}):
     result = {}
     videos = Video.query.filter(Video.url.in_(video_urls.keys())).all()
     for video in videos:
-        result[video.url] = {'original':video.url,
-                                0: video.ultralow,
-                                200:video.low,
-                                400:video.medium,
-                                900:video.opt,
-                                'promo':video.promo,
-                                'thumb':video_urls[video.url]
-                            }
+        result['original'] = video.url
+        result['thumb'] = video_urls[video.url]
+        
+        if video.ultralow:
+            result[0] = video.ultralow
+        if video.low:
+            result[200] = video.low
+        if video.medium:
+            result[400] = video.medium
+        if video.opt:
+            result[900] = video.opt
+        if video.promo:
+            result['promo'] = video.promo
+
     for video_url, thumbnail_url in video_urls.items():
         video_obj = result.get(video_url)
         if not video_obj:
@@ -453,6 +461,8 @@ def user_view_profile(current_user_id, user_id, username=None):
             user = User.query.filter(User.username==username).one()
         else:
             user = User.query.get(user_id)
+        if not user:
+            raise NoResultFound()
 
         if cur_user:
             if has_blocked(cur_user.id, user.id):
@@ -462,7 +472,7 @@ def user_view_profile(current_user_id, user_id, username=None):
         return {'user': guest_user_to_dict(user, current_user_id)}
     
     except NoResultFound:
-        raise CustomExceptions.UserNotFoundException
+        raise CustomExceptions.UserNotFoundException('No user with this username/userid found')
 
 
 def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture=None, profile_video=None, cover_picture=None, user_type=None, user_title=None, phone_num=None):
@@ -845,7 +855,7 @@ def post_view(cur_user_id, post_id, client_id=None):
         if cur_user_id and (has_blocked(cur_user_id, post.answer_author) or has_blocked(cur_user_id, post.question_author)):
             raise CustomExceptions.BlockedUserException()
         db.session.commit()
-        {'post': post_to_dict(post, cur_user_id)}
+        return {'post': post_to_dict(post, cur_user_id)}
     except NoResultFound:
         raise CustomExceptions.PostNotFoundException()
 

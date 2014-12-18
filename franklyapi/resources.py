@@ -106,6 +106,10 @@ class LoginSocial(restful.Resource):
 
 
 class LoginEmail(restful.Resource):
+    def get(self):
+        abort(403, message='Your Accesstoken has expired, Please login again')
+
+
     def post(self):
         new_email_login_parser = reqparse.RequestParser()
         new_email_login_parser.add_argument('username', type=str, required=True, location='json')
@@ -143,7 +147,7 @@ class UserProfile(restful.Resource):
     def get(self, user_id):
         try:
             username = None
-            if user_id<32 and not user_id == 'me':
+            if len(user_id)<32 and not user_id == 'me':
                 username = user_id
                 user_id = None
 
@@ -422,7 +426,6 @@ class UserSettings(restful.Resource):
 
 class UserLocation(restful.Resource):
 
-    @login_required
     def post(self):
         update_location_parser = reqparse.RequestParser()
         update_location_parser.add_argument('coordinate_point' , required=True, location='json', type=list)
@@ -432,6 +435,7 @@ class UserLocation(restful.Resource):
         args = update_location_parser.parse_args()
         
         try:
+            return {'success' : True}
             controllers.user_update_location(user_id = current_user.id,
                                             lon = args['coordinate_point'][0],
                                             lat = args['coordinate_point'][1],
