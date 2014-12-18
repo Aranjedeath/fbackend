@@ -27,7 +27,7 @@ class Install(Base):
 class Video(Base):
     __tablename__ = 'videos'
     url           = Column(String(300), primary_key=True)
-    thumbnail     = Column(String(300))
+    thumbnail     = Column(String(300), nullable=False)
     opt           = Column(String(300)) # 700
     medium        = Column(String(300)) # 300
     low           = Column(String(300)) # 150
