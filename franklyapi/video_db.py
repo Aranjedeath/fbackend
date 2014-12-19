@@ -1,7 +1,7 @@
 from models import Video
 from app import db
 
-def add_video_to_db(video_url, thumbnail_url):
+def add_video_to_db(video_url, thumbnail_url=None):
     if not Video.query.filter(Video.url==video_url).count():
         db.session.add(Video(url=video_url, thumbnail=thumbnail_url))
         db.session.commit()
