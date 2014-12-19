@@ -374,19 +374,19 @@ def get_video_states(video_urls={}):
     result = {}
     videos = Video.query.filter(Video.url.in_(video_urls.keys())).all()
     for video in videos:
-        result['original'] = video.url
-        result['thumb'] = video_urls[video.url]
+        result[video]['original'] = video.url
+        result[video]['thumb'] = video_urls[video.url]
         
         if video.ultralow:
-            result[0] = video.ultralow
+            result[video][0] = video.ultralow
         if video.low:
-            result[200] = video.low
+            result[video][200] = video.low
         if video.medium:
-            result[400] = video.medium
+            result[video][400] = video.medium
         if video.opt:
-            result[900] = video.opt
+            result[video][900] = video.opt
         if video.promo:
-            result['promo'] = video.promo
+            result[video]['promo'] = video.promo
 
     for video_url, thumbnail_url in video_urls.items():
         video_obj = result.get(video_url)
