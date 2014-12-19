@@ -94,7 +94,7 @@ def encode_video_to_profile(file_path, video_url, profile_name, username):
     result = {}
     profile = VIDEO_ENCODING_PROFILES[profile_name]
     try:
-        if(profile_name == 'thumb'):
+        if(profile_name == 'thumbnail'):
             temp_path = '/tmp/{random_string}'.format(random_string=uuid.uuid1().hex)
             print_output("Making thumbnail")
             transpose_command2 = ''
