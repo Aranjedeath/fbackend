@@ -374,6 +374,7 @@ def get_video_states(video_urls={}):
     result = {}
     videos = Video.query.filter(Video.url.in_(video_urls.keys())).all()
     for video in videos:
+        result[video.url] = {}
         result[video.url]['original'] = video.url
         result[video.url]['thumb'] = video_urls[video.url]
         
