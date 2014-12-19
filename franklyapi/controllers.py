@@ -1318,3 +1318,22 @@ def get_question_authors_image(question_id):
     
     f = open(path)
     return f
+
+def interview_media_controller(offset, limit):
+    media = Video.query.filter().offset(offset).limit(limit).all()
+    res = {'data' : []}
+    if len(media):
+        for obj in media:
+            media_obj = object_dict.media_dict(obj.url, obj.thumbnail_url)
+            res['data'].append(media_obj)
+        if len(media) < limit:
+            res['next_offset'] = -1
+        else:
+            res['next_offset'] = offset + limit -1
+        res['count'] = len(media)
+   else:
+       res['count'] = 0
+       res['next_offset'] = -1
+   return res
+
+
