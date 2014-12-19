@@ -1331,9 +1331,9 @@ def interview_media_controller(offset, limit):
         else:
             res['next_offset'] = offset + limit -1
         res['count'] = len(media)
-   else:
-       res['count'] = 0
-       res['next_offset'] = -1
-   return res
+    else:
+        res['count'] = 0
+        res['next_offset'] = -1
+    return res
 
 
