@@ -697,7 +697,7 @@ def user_update_location(user_id, lat, lon, country=None, country_code=None, loc
         User.query.filter(User.id==user_id).update({   "lat":lat,
                                                         "lon":lon,
                                                     })
-
+    '''
     Post.query.filter(Post.answer_author==user_id, 
                         or_(Post.lat==None, (Post.lat==0.0, Post.lon==0.0))
                         ).update({  "lat":lat,
@@ -706,6 +706,7 @@ def user_update_location(user_id, lat, lon, country=None, country_code=None, loc
                                     "country_code":country_code,
                                     "country_name":country
                                 })
+    '''
 
 def update_push_id(cur_user_id, device_id, push_id):
     AccessToken.query.filter(   AccessToken.user==cur_user_id,
