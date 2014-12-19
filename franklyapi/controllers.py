@@ -19,7 +19,8 @@ import social_helpers
 
 from configs import config
 from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
-                    Question, Upvote, Comment, ForgotPasswordToken, Install, Video
+                    Question, Upvote, Comment, ForgotPasswordToken, Install, Video,\
+                    UserFeed
 from app import redis_client, raygun, db
 
 from object_dict import user_to_dict, guest_user_to_dict,\
@@ -972,6 +973,32 @@ def get_user_timeline(cur_user_id, user_id, offset, limit):
     return {'stream': posts, 'count':len(posts), 'next_index':next_index, 'total':total_count}
     
 
+def get_celeb_users_for_feed(offset, limit, cur_user_id=None, users=[], feed_type='home'):
+    #for home feed only users will be included
+    #for discover feed users will be excluded
+    user_day = 0
+    if cur_user_id:
+        result = db.session.execute(text('SELECT user_since from users where id=:user_id'),
+                                                    params={'user_id':cur_user_id})
+        for row in result:
+            user_time_diff = datetime.datetime.now()-row[0]
+            user_day = user_time_diff.days
+
+    if feed_type=='home':
+        celeb_user_query = User.query.join(UserFeed).filter(User.id.in_(users))
+    else:
+        celeb_user_query = User.query.join(UserFeed).filter(~User.id.in_(users))
+
+    celeb_user_query = celeb_user_query.filter( User.deleted==False,
+                                                User.user_type==2,
+                                                User.profile_video!=None,
+                                                UserFeed.day<=user_day,
+                                                UserFeed.day!=-1
+                                            ).order_by(UserFeed.day.desc()
+                                            ).order_by(UserFeed.score.desc()
+                                            ).offset(offset
+                                            ).limit(limit)
+    return celeb_user_query.all()
 
 def home_feed(cur_user_id, offset, limit, web):
     follows = Follow.query.filter(Follow.user==cur_user_id, Follow.unfollowed==False)
@@ -994,10 +1021,7 @@ def home_feed(cur_user_id, offset, limit, web):
     if offset != 0:
         skip = skip+celeb_limit-1
 
-    celeb_users = User.query.filter(User.id.in_(followings),
-                                    User.deleted==False, User.user_type==2, User.profile_video!=None
-                                    ).order_by(User.user_since.desc()).offset(skip
-                                    ).limit(celeb_limit)
+    celeb_users = get_celeb_users_for_feed(skip, celeb_limit, cur_user_id=cur_user_id, users=followings, feed_type='home')
     
     for user in celeb_users:
         questions_query = Question.query.filter(Question.question_to==user.id, 
@@ -1054,12 +1078,11 @@ def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None):
     if offset != 0:
         skip = skip+celeb_limit-1
     print 'DISCOVER USERS OFFSET/LIMIT:', skip, celeb_limit
-    celeb_users = User.query.filter(User.deleted==False, User.user_type==2, User.profile_video!=None
-                                )
-
+    
+    users_to_ignore = []
     if cur_user_id:
-        celeb_users = celeb_users.filter(~User.id.in_([cur_user_id]))
-    celeb_users = celeb_users.order_by(User.user_since.desc()).offset(skip).limit(celeb_limit)
+        users_to_ignore.append(cur_user_id)
+    celeb_users = get_celeb_users_for_feed(skip, celeb_limit, cur_user_id=cur_user_id, users=users_to_ignore, feed_type='discover')
     
     for user in celeb_users:
         questions_query = Question.query.filter(Question.question_to==user.id, 
