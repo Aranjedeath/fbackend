@@ -25,7 +25,7 @@ from app import redis_client, raygun, db
 
 from object_dict import user_to_dict, guest_user_to_dict,\
                         thumb_user_to_dict, question_to_dict, post_to_dict, comment_to_dict,\
-                        comments_to_dict, posts_to_dict, make_celeb_questions_dict
+                        comments_to_dict, posts_to_dict, make_celeb_questions_dict, media_dict
 
 from video_db import add_video_to_db
 
@@ -1341,3 +1341,22 @@ def get_question_authors_image(question_id):
     
     f = open(path)
     return f
+
+def interview_media_controller(offset, limit):
+    media = Video.query.filter().offset(offset).limit(limit).all()
+    res = {'data' : []}
+    if len(media):
+        for obj in media:
+            media_obj = media_dict(obj.url, obj.thumbnail)
+            res['data'].append(media_obj)
+        if len(media) < limit:
+            res['next_offset'] = -1
+        else:
+            res['next_offset'] = offset + limit
+        res['count'] = len(media)
+    else:
+        res['count'] = 0
+        res['next_offset'] = -1
+    return res
+
+

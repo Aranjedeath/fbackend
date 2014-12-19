@@ -1053,3 +1053,18 @@ class QuestionImageCreator(restful.Resource):
             raygun.send(err[0],err[1],err[2])
             print traceback.format_exc(e)
             abort(500, message=str(traceback.format_exc(e)))
+
+class InterviewVideoResource(restful.Resource):
+    def get(self):
+        parser = reqparse.RequestParser()
+        parser.add_argument('offset', type=int, location = 'args', default = 0)
+        parser.add_argument('limit', type=int, location = 'args', default = 10)
+        args = parser.parse_args()
+        try:
+            from controllers import interview_media_controller
+            return interview_media_controller(args['offset'], args['limit'])
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message=str(traceback.format_exc(e)))        
