@@ -994,7 +994,7 @@ def home_feed(cur_user_id, offset, limit, web):
     if offset != 0:
         skip = skip+celeb_limit-1
 
-    celeb_users = User.query.filter(User.id.in_(followings+[cur_user_id]),
+    celeb_users = User.query.filter(User.id.in_(followings),
                                     User.deleted==False, User.user_type==2, User.profile_video!=None
                                     ).order_by(User.user_since.desc()).offset(skip
                                     ).limit(celeb_limit)
