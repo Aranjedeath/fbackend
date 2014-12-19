@@ -187,6 +187,7 @@ class UserUpdateForm(restful.Resource):
         user_update_profile_form.add_argument('cover_picture', location='files')
         user_update_profile_form.add_argument('profile_video', location='files')
         args = user_update_profile_form.parse_args()
+        print args
                
         try:
             if user_id == 'me':
@@ -202,8 +203,8 @@ class UserUpdateForm(restful.Resource):
                                                                 bio=args['bio'],
                                                                 user_title=args['user_title'],
                                                                 profile_picture=args['profile_picture'],
-                                                                cover_picture=['cover_picture'],
-                                                                profile_video=['profile_video'])
+                                                                cover_picture=args['cover_picture'],
+                                                                profile_video=args['profile_video'])
             return new_profile
 
         except CustomExceptions.BadRequestException, e:

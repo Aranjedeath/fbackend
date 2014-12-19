@@ -509,6 +509,7 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
         update_dict.update({'bio':bio})
 
     if profile_video:
+        print profile_video
         profile_video_url, cover_picture_url = media_uploader.upload_user_video(user_id=user_id, video_file=profile_video, video_thumbnail_file=cover_picture, video_type='profile_video')
         print profile_video_url, cover_picture_url
         update_dict.update({'profile_video':profile_video_url, 'cover_picture':cover_picture_url})
@@ -991,7 +992,7 @@ def home_feed(cur_user_id, offset, limit, web):
     celeb_limit = 2
     
     if offset != 0:
-        skip = skip+celeb_limit
+        skip = skip+celeb_limit-1
 
     celeb_users = User.query.filter(User.id.in_(followings+[cur_user_id]),
                                     User.deleted==False, User.user_type==2, User.profile_video!=None
@@ -1033,8 +1034,8 @@ def home_feed(cur_user_id, offset, limit, web):
 
 
 def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None):
-    follows = Follow.query.filter(Follow.user==cur_user_id, Follow.unfollowed==False)
-    followings = [follow.followed for follow in follows]
+    followings = Follow.query.filter(Follow.user==cur_user_id, Follow.unfollowed==False)
+    followings = [follow.followed for follow in followings]
 
     posts = Post.query.filter(~Post.answer_author.in_(followings+[cur_user_id])
                     ).filter(Post.deleted==False, Post.popular==True
@@ -1051,12 +1052,14 @@ def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None):
     celeb_limit = 2
     
     if offset != 0:
-        skip = skip+celeb_limit
+        skip = skip+celeb_limit-1
     print 'DISCOVER USERS OFFSET/LIMIT:', skip, celeb_limit
-    celeb_users = User.query.filter(~User.id.in_([cur_user_id])
-                                ).filter(User.deleted==False, User.user_type==2, User.profile_video!=None
-                                ).order_by(User.user_since.desc()).offset(skip
-                                ).limit(celeb_limit)
+    celeb_users = User.query.filter(User.deleted==False, User.user_type==2, User.profile_video!=None
+                                )
+
+    if cur_user_id:
+        celeb_users = celeb_users.filter(~User.id.in_([cur_user_id]))
+    celeb_users = celeb_users.order_by(User.user_since.desc()).offset(skip).limit(celeb_limit)
     
     for user in celeb_users:
         questions_query = Question.query.filter(Question.question_to==user.id, 
