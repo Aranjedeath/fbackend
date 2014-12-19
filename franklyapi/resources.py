@@ -187,6 +187,7 @@ class UserUpdateForm(restful.Resource):
         user_update_profile_form.add_argument('cover_picture', location='files')
         user_update_profile_form.add_argument('profile_video', location='files')
         args = user_update_profile_form.parse_args()
+        print args
                
         try:
             if user_id == 'me':
@@ -202,8 +203,8 @@ class UserUpdateForm(restful.Resource):
                                                                 bio=args['bio'],
                                                                 user_title=args['user_title'],
                                                                 profile_picture=args['profile_picture'],
-                                                                cover_picture=['cover_picture'],
-                                                                profile_video=['profile_video'])
+                                                                cover_picture=args['cover_picture'],
+                                                                profile_video=args['profile_video'])
             return new_profile
 
         except CustomExceptions.BadRequestException, e:
@@ -1052,3 +1053,18 @@ class QuestionImageCreator(restful.Resource):
             raygun.send(err[0],err[1],err[2])
             print traceback.format_exc(e)
             abort(500, message=str(traceback.format_exc(e)))
+
+class InterviewVideoResource(restful.Resource):
+    def get(self):
+        parser = reqparse.RequestParser()
+        parser.add_argument('offset', type=int, location = 'args', default = 0)
+        parser.add_argument('limit', type=int, location = 'args', default = 10)
+        args = parser.parse_args()
+        try:
+            from controllers import interview_media_controller
+            return interview_media_controller(args['offset'], args['limit'])
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message=str(traceback.format_exc(e)))        
