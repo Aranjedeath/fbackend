@@ -1285,7 +1285,7 @@ def add_video_post(cur_user_id, question_id, video, video_thumbnail, answer_type
         db.session.add(post)
         Question.query.filter(Question.id==question_id).update({'is_answered':True})
         db.session.commit()
-        async_encoder.encode_video_task.delay(video_url, curruser.username)
+        async_encoder.encode_video_task(video_url, curruser.username)
 
 
         return {'success': True, 'id': str(post.id)}

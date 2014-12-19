@@ -87,6 +87,22 @@ def get_transpose_command(file_path):
         transpose_command = 'transpose="1",'
     return transpose_command
 
+def make_thumbnail(file_path):
+    cdir = os.getcwd()
+    transpose_command = get_transpose_command(file_path)
+    profile = VIDEO_ENCODING_PROFILES['thumbnail']
+    temp_path = '/tmp/{random_string}'.format(random_string=uuid.uuid1().hex)
+    print_output("Making thumbnail")
+    transpose_command2 = ''
+    if(transpose_command != ''):
+        transpose_command2 = '-vf '+transpose_command[:-1]
+    command = profile['command'].format(input_file=file_path,transpose_command2=transpose_command2,output_file=temp_path+".jpg")
+    print_output('COMMAND: '+command)
+    subprocess.call(command,shell=True)
+    output_file_path = temp_path + ".jpg"
+    os.chdir(cdir)
+    return output_file_path
+
 def encode_video_to_profile(file_path, video_url, profile_name, username):
     cdir = os.getcwd()
     print_output('BEGINNING: '+file_path+' '+video_url )
