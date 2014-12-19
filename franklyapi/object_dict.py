@@ -21,7 +21,7 @@ def media_dict(media_url, thumbnail_url):
 
 def user_to_dict(user):
     from configs import config
-    from controllers import get_video_states, get_follower_count, get_following_count, get_answer_count, get_user_like_count
+    from controllers import get_video_states, get_user_view_count, get_follower_count, get_following_count, get_answer_count, get_user_like_count
     user_dict = {
         'id': user.id,
         'email': user.email,
@@ -46,6 +46,7 @@ def user_to_dict(user):
         'fb_write_perm' : user.facebook_write_permission,
         'fb_perm':'none',
         'admin_level':1 if user.id in config.ADMIN_USERS else 0,
+        'view_count' : get_user_view_count(user.id),
         
         'user_type':user.user_type,
         'user_title':user.user_title,
