@@ -31,6 +31,14 @@ def overlay(bg_file,ov_bg_file,ov_static_file,ov_black_line_file,ov_black_line_r
     ov3_im = ov3_im.resize((int(ov_w),int(ov_h)))
     canvas.paste(ov3_im,(ov_x,ov_y),ov3_im)
     if(text and text_font and text_color):
+        if(len(text)>15 and len(text)<=30):
+            nfont_size = max(71 - font_size,34)
+            diffRatio = (font_size - nfont_size)/float(1280)
+            font_size = nfont_size
+        elif (len(text) > 30):
+            nfont_size = 34
+            diffRatio = (font_size - nfont_size)/float(1280)
+            font_size = nfont_size
         sfont = ImageFont.truetype(stext_font,int(sfont_size*ov_h/float(1280)))
         font = ImageFont.truetype(text_font,int(font_size*ov_h/float(1280)))
         draw = ImageDraw.Draw(canvas)
@@ -39,15 +47,17 @@ def overlay(bg_file,ov_bg_file,ov_static_file,ov_black_line_file,ov_black_line_r
         stext_x = (bg_w - (stext_w + text_w))/2
         text_x = stext_x + stext_w
         draw.text((stext_x,int(ov_h*stext_y_ratio)),stext,stext_color,sfont)
-        draw.text((text_x,int(ov_h*text_y_ratio)),text,text_color,font)
+        draw.text((text_x,int(ov_h*(text_y_ratio+diffRatio))),text,text_color,font)
     #canvas.save(out_dir+"/"+out_file+".png","PNG")
     canvas.save(out_dir+"/"+out_file+".jpeg","jpeg")
 
-def promo_video(in_file = "kiran.mp4",out_file = "kiran.jpg",end_file = "kiran_end.mp4",final_file = "kiran_final.mp4",stext = "www.frankly.me",stext_y_ratio = 1118/float(1280),text = "/kiranbedi",text_y_ratio = 1100/float(1280),color = (220,92,80),scolor = (255,255,255),n = 85,n2 = 54,infold1 = 'overlay_png1',infold2 = 'overlay_png2',infold3 = 'overlay_png3',final_fold = 'final',overlay_ratio=9/float(16)):
-    in_width = int(check_output("ffprobe -v error -show_format -show_streams "+in_file+" | grep \"width\" | awk -F= '/width/{print $NF}'",shell=True))
-    in_height = int(check_output("ffprobe -v error -show_format -show_streams "+in_file+" | grep \"height\" | awk -F= '/height/{print $NF}'",shell=True))
+def promo_video(in_file = "",out_file = "out.jpg",end_file = "end.mp4",final_file = "final.mp4",stext = "www.frankly.me",stext_y_ratio = 1118/float(1280),text = "/",text_y_ratio = 1100/float(1280),color = (220,92,80),scolor = (255,255,255),n = 85,n2 = 54,infold1 = 'overlay_png1',infold2 = 'overlay_png2',infold3 = 'overlay_png3',final_fold = 'final',overlay_ratio=9/float(16),transpose_command=''):
+    if(transpose_command == ''):
+        transpose_command2 = ''
+    else:
+        transpose_command2 = '-vf '+transpose_command[:-1]
     in_duration = float(check_output("ffprobe -v error -show_format "+in_file+" | grep \"duration\" | awk -F= '/duration/{print $NF}'",shell=True))
-    conv = call("ffmpeg -loglevel 0 -ss "+str(int(in_duration))+" -i "+in_file+" -t 1 -s "+str(in_width)+"x"+str(in_height)+" "+out_file,shell=True)
+    conv = call("ffmpeg -loglevel 0 -ss "+str(int(in_duration))+" -i "+in_file+" -t 1 "+transpose_command2+" -update 1 -f image2 "+out_file,shell=True)
     rdir = call('rm -rf '+final_fold,shell=True)
     mdir = call('mkdir '+final_fold,shell=True)
     i = 0
@@ -66,21 +76,21 @@ def promo_video(in_file = "kiran.mp4",out_file = "kiran.jpg",end_file = "kiran_e
             overlay(out_file,infold1+"/"+str(i)+".png",infold2+"/"+str(i)+".png",infold3+"/"+str(i)+".png",1100/float(1280),final_fold,j,overlay_ratio,stext,stext_y_ratio,scolor,text,text_y_ratio,color)
         i = i + 1
     newvid = call("ffmpeg -loglevel 0 -i "+final_fold+"/img%03d.jpeg -c:v libx264 "+end_file,shell=True)
-    i1_vid = call("ffmpeg -loglevel 0 -i "+in_file+" -qscale:v 1 intermediate1.mpg",shell=True)
+    i1_vid = call("ffmpeg -loglevel 0 -i "+in_file+" "+transpose_command2+" -qscale:v 1 intermediate1.mpg",shell=True)
     i2_vid = call("ffmpeg -loglevel 0 -i "+end_file+" -qscale:v 1 intermediate2.mpg",shell=True)
     fvid = call("ffmpeg -loglevel 0 -i concat:\"intermediate1.mpg|intermediate2.mpg\" -c copy final.mpg",shell=True)
     print final_file
     finalvid = call("ffmpeg -loglevel 0 -i final.mpg -qscale:v 2 "+final_file,shell=True)
-    rimage = call('rm '+out_file,shell=True)
-    rinter = call('rm intermediate1.mpg intermediate2.mpg final.mpg',shell=True)
-    rdir = call('rm -rf '+final_fold,shell=True)
-    rend = call('rm '+end_file,shell=True)
+    #rimage = call('rm '+out_file,shell=True)
+    #rinter = call('rm intermediate1.mpg intermediate2.mpg final.mpg',shell=True)
+    #rdir = call('rm -rf '+final_fold,shell=True)
+    #rend = call('rm '+end_file,shell=True)
     pass
 
-def make_promo(path,in_file,out_file_name,container,infold1,infold2,infold3,font_file,username):
+def make_promo(path,in_file,out_file_name,container,infold1,infold2,infold3,font_file,username,transpose_command):
     shutil.copytree(container+infold1,path+"/"+infold1)
     shutil.copytree(container+infold2,path+"/"+infold2)
     shutil.copytree(container+infold3,path+"/"+infold3)
     shutil.copy(container+font_file,path+"/"+font_file)
     os.chdir(path)
-    promo_video(in_file,text=('/'+username),out_file='temp.jpg',end_file='end.mp4',final_file=(out_file_name+'.mp4'),infold1=infold1,infold3=infold3,infold2=infold2)
+    promo_video(in_file,text=('/'+username),out_file='temp.jpg',end_file='end.mp4',final_file=(out_file_name+'.mp4'),infold1=infold1,infold3=infold3,infold2=infold2,transpose_command=transpose_command)
