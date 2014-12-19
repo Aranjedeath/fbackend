@@ -1054,8 +1054,8 @@ class QuestionImageCreator(restful.Resource):
             print traceback.format_exc(e)
             abort(500, message=str(traceback.format_exc(e)))
 
-class InterviewVideoResource(restful.resource):
-    def get(self, offset, limit):
+class InterviewVideoResource(restful.Resource):
+    def get(self):
         parser = reqparse.RequestParser()
         parser.add_argument('offset', type=int, location = 'args', default = 0)
         parser.add_argument('limit', type=int, location = 'args', default = 10)
