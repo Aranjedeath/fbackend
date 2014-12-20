@@ -1014,7 +1014,7 @@ def home_feed(cur_user_id, offset, limit, web):
                     ).limit(limit
                     ).all()
 
-    posts = posts_to_dict(posts)
+    posts = posts_to_dict(posts, cur_user_id)
     feeds = [{'type':'post', 'post':post} for post in posts]
     next_index = offset+limit if posts else -1
 
