@@ -1009,8 +1009,9 @@ def home_feed(cur_user_id, offset, limit, web):
     follows = Follow.query.filter(Follow.user==cur_user_id, Follow.unfollowed==False)
     followings = [follow.followed for follow in follows]
 
-    posts = Post.query.filter(or_(Post.answer_author.in_(followings), Post.question_author==cur_user_id)
-                    ).filter(Post.deleted==False
+    posts = Post.query.filter(or_(Post.answer_author.in_(followings),
+                                    Post.question_author==cur_user_id)
+                    ).filter(Post.deleted==False, Post.answer_author!=cur_user_id
                     ).order_by(Post.timestamp.desc()
                     ).offset(offset
                     ).limit(limit
@@ -1019,42 +1020,6 @@ def home_feed(cur_user_id, offset, limit, web):
     posts = posts_to_dict(posts)
     feeds = [{'type':'post', 'post':post} for post in posts]
     next_index = offset+limit if posts else -1
-    
-    skip = offset/10
-    celeb_limit = 2
-    
-    if offset != 0:
-        skip = skip+celeb_limit-1
-
-    celeb_users = get_celeb_users_for_feed(skip, celeb_limit, cur_user_id=cur_user_id, users=followings, feed_type='home')
-    
-    for user in celeb_users:
-        questions_query = Question.query.filter(Question.question_to==user.id, 
-                                        Question.deleted==False,
-                                        Question.is_answered==False,
-                                        Question.is_ignored==False,
-                                        Question.public==True
-                                        )
-        count = questions_query.count()
-        max_limit = count-2 if count>2 else count
-        question_offset = random.randint(0, max_limit)
-        questions = questions_query.offset(question_offset
-                                    ).limit(2)
-        questions_feed = []
-        if web:
-            questions_feed = [{'type':'question', 'questions':question_to_dict(q, cur_user_id)} for q in questions.all()]
-            
-        elif questions.count()==2:
-            questions_feed = [{'type':'questions', 'questions':make_celeb_questions_dict(user, questions.all(), cur_user_id)}]
-        
-        extra_feed = [{'type':'user', 'user':guest_user_to_dict(user, cur_user_id)}]
-        if questions_feed:
-            extra_feed.extend(questions_feed)
-
-        random_index = random.randint(0, len(feeds))
-        for item in extra_feed:
-            feeds.insert(random_index, item)
-            random_index +=1
 
     next_index = offset+limit if feeds else -1
 
@@ -1090,6 +1055,7 @@ def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None):
     celeb_users = get_celeb_users_for_feed(skip, celeb_limit, cur_user_id=cur_user_id, users=users_to_ignore, feed_type='discover')
     
     for user in celeb_users:
+        last_extra_feed_position = 0
         questions_query = Question.query.filter(Question.question_to==user.id, 
                                         Question.deleted==False,
                                         Question.is_answered==False,
@@ -1113,10 +1079,12 @@ def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None):
         if questions_feed:
             extra_feed.extend(questions_feed)
 
-        random_index = random.randint(0, len(feeds))
+        random_index = random.randint(last_extra_feed_position, len(feeds))
         for item in extra_feed:
             feeds.insert(random_index, item)
             random_index +=1
+        last_extra_feed_position = random_index
+    
     next_index = offset+limit if feeds else -1
     print 'DISCOVER NEXT INDEX', next_index
     print 'DISCOVER FEEDS LEN', len(feeds)
