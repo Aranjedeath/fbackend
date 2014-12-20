@@ -481,7 +481,7 @@ def user_view_profile(current_user_id, user_id, username=None):
         raise CustomExceptions.UserNotFoundException('No user with this username/userid found')
 
 
-def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture=None, profile_video=None, cover_picture=None, user_type=None, user_title=None, phone_num=None):
+def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture=None, profile_video=None, user_type=None, user_title=None, phone_num=None):
     update_dict = {}
 
     #user = User.objects.only('id').get(id=user_id)
@@ -515,15 +515,12 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
 
     if profile_video:
         print profile_video
-        profile_video_url, cover_picture_url = media_uploader.upload_user_video(user_id=user_id, video_file=profile_video, video_thumbnail_file=cover_picture, video_type='profile_video')
+        profile_video_url, cover_picture_url = media_uploader.upload_user_video(user_id=user_id, video_file=profile_video, video_type='profile_video')
         print profile_video_url, cover_picture_url
         update_dict.update({'profile_video':profile_video_url, 'cover_picture':cover_picture_url})
         add_video_to_db(profile_video_url, cover_picture_url)
         async_encoder.encode_video_task.delay(profile_video_url, user.username)
 
-    if not profile_video and cover_picture:
-        cover_picture_url = media_uploader.upload_user_image(user_id=user_id, image_file=cover_picture, image_type='cover_picture')
-        update_dict.update({'cover_picture':cover_picture_url})
 
     if profile_picture:
         tmp_path = '/tmp/request/{random_string}.jpeg'.format(random_string=uuid.uuid1().hex)
@@ -1218,7 +1215,7 @@ def get_new_client_id():
     return get_new_client_id()
 
 
-def add_video_post(cur_user_id, question_id, video, video_thumbnail, answer_type,
+def add_video_post(cur_user_id, question_id, video, answer_type,
                         lat=None, lon=None, client_id=get_new_client_id()):
     try:
         if cur_user_id in config.ADMIN_USERS:
@@ -1240,7 +1237,7 @@ def add_video_post(cur_user_id, question_id, video, video_thumbnail, answer_type
 
         from database import get_item_id
 
-        video_url, thumbnail_url = media_uploader.upload_user_video(user_id=cur_user_id, video_file=video, video_thumbnail_file=video_thumbnail, video_type='answer')
+        video_url, thumbnail_url = media_uploader.upload_user_video(user_id=cur_user_id, video_file=video, video_type='answer')
         curruser = User.query.filter(User.id == cur_user_id).one()
         add_video_to_db(video_url, thumbnail_url)
         post = Post(id=get_item_id(),
