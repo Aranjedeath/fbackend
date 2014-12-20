@@ -516,7 +516,7 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
         print profile_video_url, cover_picture_url
         update_dict.update({'profile_video':profile_video_url, 'cover_picture':cover_picture_url})
         add_video_to_db(profile_video_url, cover_picture_url)
-        async_encoder.encode_video_task.delay(profile_video_url, cover_picture_url)
+        async_encoder.encode_video_task.delay(profile_video_url, user.username)
 
     if not profile_video and cover_picture:
         cover_picture_url = media_uploader.upload_user_image(user_id=user_id, image_file=cover_picture, image_type='cover_picture')
@@ -697,7 +697,7 @@ def user_update_location(user_id, lat, lon, country=None, country_code=None, loc
         User.query.filter(User.id==user_id).update({   "lat":lat,
                                                         "lon":lon,
                                                     })
-
+    '''
     Post.query.filter(Post.answer_author==user_id, 
                         or_(Post.lat==None, (Post.lat==0.0, Post.lon==0.0))
                         ).update({  "lat":lat,
@@ -706,6 +706,7 @@ def user_update_location(user_id, lat, lon, country=None, country_code=None, loc
                                     "country_code":country_code,
                                     "country_name":country
                                 })
+    '''
 
 def update_push_id(cur_user_id, device_id, push_id):
     AccessToken.query.filter(   AccessToken.user==cur_user_id,
@@ -1269,6 +1270,7 @@ def add_video_post(cur_user_id, question_id, video, video_thumbnail, answer_type
         from database import get_item_id
 
         video_url, thumbnail_url = media_uploader.upload_user_video(user_id=cur_user_id, video_file=video, video_thumbnail_file=video_thumbnail, video_type='answer')
+        curruser = User.query.filter(User.id == cur_user_id).one()
         add_video_to_db(video_url, thumbnail_url)
         post = Post(id=get_item_id(),
                     question=question_id,
@@ -1284,7 +1286,7 @@ def add_video_post(cur_user_id, question_id, video, video_thumbnail, answer_type
         db.session.add(post)
         Question.query.filter(Question.id==question_id).update({'is_answered':True})
         db.session.commit()
-        async_encoder.encode_video_task.delay(video_url, thumbnail_url)
+        async_encoder.encode_video_task(video_url, curruser.username)
 
 
         return {'success': True, 'id': str(post.id)}
