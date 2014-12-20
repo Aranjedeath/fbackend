@@ -1236,7 +1236,7 @@ def install_ref(device_id, url):
         pass
     device_type = 'android' if len(device_id)<=16 else 'ios'
     i = Install(device_id=device_id, url=url, device_type=device_type, ref_data=ref_string)
-    db.session(i)
+    db.session.add(i)
     db.session.commit()
 
 
