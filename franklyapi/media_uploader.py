@@ -107,7 +107,7 @@ def upload_user_video(user_id, video_type, video_file):
     video_file_new.write(video_file.read())
     video_file_new.close()
     video_key_name = '{user_id}/videos/{random_string}.mp4'.format(user_id=user_id, random_string=random_string)
-    thumb_key_name = '{user_id}/videos/{random_string}.jpg'.format(user_id=user_id, random_string=random_string)
+    thumb_key_name = '{user_id}/videos/{random_string}.jpeg'.format(user_id=user_id, random_string=random_string)
     video_thumbnail_path = make_thumbnail("/tmp/"+random_string+".mp4")
     video_thumbnail_file = open(video_thumbnail_path,"rb")
     if file_is_valid(video_file, 'video') and file_is_valid(video_thumbnail_file, 'image'):

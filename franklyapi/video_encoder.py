@@ -96,10 +96,10 @@ def make_thumbnail(file_path):
     transpose_command2 = ''
     if(transpose_command != ''):
         transpose_command2 = '-vf '+transpose_command[:-1]
-    command = profile['command'].format(input_file=file_path,transpose_command2=transpose_command2,output_file=temp_path+".jpg")
+    command = profile['command'].format(input_file=file_path,transpose_command2=transpose_command2,output_file=temp_path+".jpeg")
     print_output('COMMAND: '+command)
     subprocess.call(command,shell=True)
-    output_file_path = temp_path + ".jpg"
+    output_file_path = temp_path + ".jpeg"
     os.chdir(cdir)
     return output_file_path
 
