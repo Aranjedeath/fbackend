@@ -512,7 +512,7 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
 
     if profile_video:
         print profile_video
-        profile_video_url, cover_picture_url = media_uploader.upload_user_video(user_id=user_id, video_file=profile_video, video_thumbnail_file=cover_picture, video_type='profile_video')
+        profile_video_url, cover_picture_url = media_uploader.upload_user_video(user_id=user_id, video_file=profile_video, video_type='profile_video')
         print profile_video_url, cover_picture_url
         update_dict.update({'profile_video':profile_video_url, 'cover_picture':cover_picture_url})
         add_video_to_db(profile_video_url, cover_picture_url)
@@ -1269,7 +1269,7 @@ def add_video_post(cur_user_id, question_id, video, video_thumbnail, answer_type
 
         from database import get_item_id
 
-        video_url, thumbnail_url = media_uploader.upload_user_video(user_id=cur_user_id, video_file=video, video_thumbnail_file=video_thumbnail, video_type='answer')
+        video_url, thumbnail_url = media_uploader.upload_user_video(user_id=cur_user_id, video_file=video, video_type='answer')
         curruser = User.query.filter(User.id == cur_user_id).one()
         add_video_to_db(video_url, thumbnail_url)
         post = Post(id=get_item_id(),
