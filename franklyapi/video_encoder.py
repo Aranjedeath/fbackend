@@ -18,6 +18,7 @@ raygun = raygunprovider.RaygunSender(config.RAYGUN_KEY)
 # 300 kbps - 700kbps  => med
 # 700 kbps - 1500kbps => opt
 
+
 VIDEO_ENCODING_PROFILES = {
                                 'promo':{
                                         'file_prefix' : '_promo',
@@ -26,7 +27,7 @@ VIDEO_ENCODING_PROFILES = {
                                 'thumbnail':{
                                         'command' : 'ffmpeg -loglevel 0 -ss 0 -i "{input_file}" {transpose_command2} -t 1 -update 1 -f image2 {output_file}',
                                         'file_prefix' : '_thumb',
-                                        'file_extension' : 'jpg'
+                                        'file_extension' : 'jpeg'
                                 },
                                 'opt':{
                                         'command' : 'avconv -y -i "{input_file}" -r 25 -vf {transpose_command}scale="480:trunc(ow/a/2)*2" -strict experimental -preset veryslow -b:v 636k -pass 1 -c:v libx264  -ar 22050 -ac 1 -ab 64k -f mp4 /dev/null && avconv -y -i "{input_file}" -r 25 -vf {transpose_command}scale="480:trunc(ow/a/2)*2" -strict experimental -preset veryslow -b:v 636k -pass 2 -c:v libx264  -ar 22050 -ac 1 -ab 25k {output_file}',
@@ -100,10 +101,10 @@ def encode_video_to_profile(file_path, video_url, profile_name, username):
             transpose_command2 = ''
             if(transpose_command != ''):
                 transpose_command2 = '-vf '+transpose_command[:-1]
-            command = profile['command'].format(input_file=file_path,transpose_command2=transpose_command2,output_file=temp_path+".jpg")
+            command = profile['command'].format(input_file=file_path,transpose_command2=transpose_command2,output_file=temp_path+".jpeg")
             print_output('COMMAND: '+command)
             subprocess.call(command,shell=True)
-            output_file_path = temp_path + ".jpg"
+            output_file_path = temp_path + ".jpeg"
         else:
             if profile_name=='promo':
                 temp_path, output_file_name = make_promo_video(file_path,username,transpose_command)
