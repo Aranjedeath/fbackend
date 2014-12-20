@@ -16,7 +16,7 @@ def overlay(bg_file,ov_bg_file,ov_static_file,ov_black_line_file,ov_black_line_r
         ov_w = bg_h * overlay_ratio
     else:
         ov_w = bg_w
-        ov_h = bg_w * overlay_ratio
+        ov_h = bg_w / overlay_ratio
     ov_x,ov_y = int((bg_w - ov_w)/2) , int((bg_h - ov_h)/2)
     canvas = Image.new("RGBA",(bg_w,bg_h))
     #bg_im = bg_im.resize((bg_x,bg_y))
@@ -31,6 +31,7 @@ def overlay(bg_file,ov_bg_file,ov_static_file,ov_black_line_file,ov_black_line_r
     ov3_im = ov3_im.resize((int(ov_w),int(ov_h)))
     canvas.paste(ov3_im,(ov_x,ov_y),ov3_im)
     if(text and text_font and text_color):
+	diffRatio = float(0)
         if(len(text)>15 and len(text)<=30):
             nfont_size = max(71 - font_size,34)
             diffRatio = (font_size - nfont_size)/float(1280)
@@ -46,8 +47,8 @@ def overlay(bg_file,ov_bg_file,ov_static_file,ov_black_line_file,ov_black_line_r
         text_w = draw.textsize(text,font=font)[0]
         stext_x = (bg_w - (stext_w + text_w))/2
         text_x = stext_x + stext_w
-        draw.text((stext_x,int(ov_h*stext_y_ratio)),stext,stext_color,sfont)
-        draw.text((text_x,int(ov_h*(text_y_ratio+diffRatio))),text,text_color,font)
+        draw.text((stext_x,int(ov_y + ov_h*stext_y_ratio)),stext,stext_color,sfont)
+        draw.text((text_x,int(ov_y + ov_h*(text_y_ratio+diffRatio))),text,text_color,font)
     #canvas.save(out_dir+"/"+out_file+".png","PNG")
     canvas.save(out_dir+"/"+out_file+".jpeg","jpeg")
 
@@ -57,7 +58,13 @@ def promo_video(in_file = "",out_file = "out.jpg",end_file = "end.mp4",final_fil
     else:
         transpose_command2 = '-vf '+transpose_command[:-1]
     in_duration = float(check_output("ffprobe -v error -show_format "+in_file+" | grep \"duration\" | awk -F= '/duration/{print $NF}'",shell=True))
-    conv = call("ffmpeg -loglevel 0 -ss "+str(int(in_duration))+" -i "+in_file+" -t 1 "+transpose_command2+" -update 1 -f image2 "+out_file,shell=True)
+    conv = call("ffmpeg -loglevel 0 -ss "+str(int(in_duration - 0.5))+" -i "+in_file+" -t 1 "+transpose_command2+" -update 1 -f image2 "+out_file,shell=True)
+    #in_frame = int(check_output("ffprobe -show_frames -i "+in_file+" 2>&1| grep -c \"FRAME\"",shell=True))/2
+    #if(in_frame > 0 ):
+    #    in_frame = in_frame - 1
+    #conv = call("ffmpeg -loglevel 0 -ss "+str(in_duration - 0.2)+" -i "+in_file+" -t 1 "+transpose_command2+" -update 1 -f image2 "+out_file,shell=True)
+    #print "ffmpeg -i "+in_file+" -t 1 -vf "+transpose_command+"select=\"eq(n,"+str(in_frame)+")\" -update 1 -f image2 "+out_file
+    #conv = call("ffmpeg -i "+in_file+" -t 1 -vf "+transpose_command+"select=\"eq(n,"+str(in_frame)+")\" -update 1 -f image2 "+out_file,shell=True)
     rdir = call('rm -rf '+final_fold,shell=True)
     mdir = call('mkdir '+final_fold,shell=True)
     i = 0
@@ -79,12 +86,14 @@ def promo_video(in_file = "",out_file = "out.jpg",end_file = "end.mp4",final_fil
     i1_vid = call("ffmpeg -loglevel 0 -i "+in_file+" "+transpose_command2+" -qscale:v 1 intermediate1.mpg",shell=True)
     i2_vid = call("ffmpeg -loglevel 0 -i "+end_file+" -qscale:v 1 intermediate2.mpg",shell=True)
     fvid = call("ffmpeg -loglevel 0 -i concat:\"intermediate1.mpg|intermediate2.mpg\" -c copy final.mpg",shell=True)
-    print final_file
-    finalvid = call("ffmpeg -loglevel 0 -i final.mpg -qscale:v 2 "+final_file,shell=True)
-    #rimage = call('rm '+out_file,shell=True)
-    #rinter = call('rm intermediate1.mpg intermediate2.mpg final.mpg',shell=True)
-    #rdir = call('rm -rf '+final_fold,shell=True)
-    #rend = call('rm '+end_file,shell=True)
+    #finalvid = call("ffmpeg -loglevel 0 -i final.mpg -qscale:v 2 "+final_file,shell=True)
+    fcall = 'avconv -y -i "final.mpg" -r 25 -vf scale="320:trunc(ow/a/2)*2" -strict experimental -preset veryslow -b:v 256k -pass 1 -c:v libx264  -ar 22050 -ac 1 -ab 44k -f mp4 /dev/null && avconv -y -i "final.mpg" -r 25 -vf scale="320:trunc(ow/a/2)*2" -strict experimental -preset veryslow -b:v 256k -pass 2 -c:v libx264  -ar 22050 -ac 1 -ab 25k '+final_file
+    print fcall
+    finalvid = call(fcall,shell=True)
+    rimage = call('rm '+out_file,shell=True)
+    rinter = call('rm intermediate1.mpg intermediate2.mpg final.mpg',shell=True)
+    rdir = call('rm -rf '+final_fold,shell=True)
+    rend = call('rm '+end_file,shell=True)
     pass
 
 def make_promo(path,in_file,out_file_name,container,infold1,infold2,infold3,font_file,username,transpose_command):

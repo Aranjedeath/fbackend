@@ -148,7 +148,8 @@ def encode_video_to_profile(file_path, video_url, profile_name, username):
         print_output('RESULT: '+ str(result))
         os.chdir(cdir)
     except Exception as e:
-            print traceback.format_exc(e)
+        os.chdir(cdir)
+        print traceback.format_exc(e)
     return result
 
 def make_promo_video(file_path,username,transpose_command):

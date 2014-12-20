@@ -1,5 +1,5 @@
-import video_encoder
 import media_uploader
+import video_encoder
 from configs import config
 from celery import Celery
 import video_db
