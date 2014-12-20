@@ -393,6 +393,9 @@ def get_video_states(video_urls={}):
         video_obj = result.get(video_url)
         if not video_obj:
             result[video_url] = {'original':video_url, 'thumb':thumbnail_url}
+    for key, value in result.items():
+        for bitrate, url in value.items():
+            result[key][bitrate]=url.replace('https://s3.amazonaws.com/franklyapp/', 'http://d35wlof4jnjr70.cloudfront.net/')
     return result
 
 
