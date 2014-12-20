@@ -393,6 +393,9 @@ def get_video_states(video_urls={}):
         video_obj = result.get(video_url)
         if not video_obj:
             result[video_url] = {'original':video_url, 'thumb':thumbnail_url}
+    for key, value in result.items():
+        for bitrate, url in value.items():
+            result[key][bitrate]=url.replace('https://s3.amazonaws.com/franklyapp/', 'http://d35wlof4jnjr70.cloudfront.net/')
     return result
 
 
@@ -478,7 +481,7 @@ def user_view_profile(current_user_id, user_id, username=None):
         raise CustomExceptions.UserNotFoundException('No user with this username/userid found')
 
 
-def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture=None, profile_video=None, cover_picture=None, user_type=None, user_title=None, phone_num=None):
+def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture=None, profile_video=None, user_type=None, user_title=None, phone_num=None):
     update_dict = {}
 
     #user = User.objects.only('id').get(id=user_id)
@@ -518,9 +521,6 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
         add_video_to_db(profile_video_url, cover_picture_url)
         async_encoder.encode_video_task.delay(profile_video_url, user.username)
 
-    if not profile_video and cover_picture:
-        cover_picture_url = media_uploader.upload_user_image(user_id=user_id, image_file=cover_picture, image_type='cover_picture')
-        update_dict.update({'cover_picture':cover_picture_url})
 
     if profile_picture:
         tmp_path = '/tmp/request/{random_string}.jpeg'.format(random_string=uuid.uuid1().hex)
@@ -1006,8 +1006,9 @@ def home_feed(cur_user_id, offset, limit, web):
     follows = Follow.query.filter(Follow.user==cur_user_id, Follow.unfollowed==False)
     followings = [follow.followed for follow in follows]
 
-    posts = Post.query.filter(or_(Post.answer_author.in_(followings), Post.question_author==cur_user_id)
-                    ).filter(Post.deleted==False
+    posts = Post.query.filter(or_(Post.answer_author.in_(followings),
+                                    Post.question_author==cur_user_id)
+                    ).filter(Post.deleted==False, Post.answer_author!=cur_user_id
                     ).order_by(Post.timestamp.desc()
                     ).offset(offset
                     ).limit(limit
@@ -1016,42 +1017,6 @@ def home_feed(cur_user_id, offset, limit, web):
     posts = posts_to_dict(posts)
     feeds = [{'type':'post', 'post':post} for post in posts]
     next_index = offset+limit if posts else -1
-    
-    skip = offset/10
-    celeb_limit = 2
-    
-    if offset != 0:
-        skip = skip+celeb_limit-1
-
-    celeb_users = get_celeb_users_for_feed(skip, celeb_limit, cur_user_id=cur_user_id, users=followings, feed_type='home')
-    
-    for user in celeb_users:
-        questions_query = Question.query.filter(Question.question_to==user.id, 
-                                        Question.deleted==False,
-                                        Question.is_answered==False,
-                                        Question.is_ignored==False,
-                                        Question.public==True
-                                        )
-        count = questions_query.count()
-        max_limit = count-2 if count>2 else count
-        question_offset = random.randint(0, max_limit)
-        questions = questions_query.offset(question_offset
-                                    ).limit(2)
-        questions_feed = []
-        if web:
-            questions_feed = [{'type':'question', 'questions':question_to_dict(q, cur_user_id)} for q in questions.all()]
-            
-        elif questions.count()==2:
-            questions_feed = [{'type':'questions', 'questions':make_celeb_questions_dict(user, questions.all(), cur_user_id)}]
-        
-        extra_feed = [{'type':'user', 'user':guest_user_to_dict(user, cur_user_id)}]
-        if questions_feed:
-            extra_feed.extend(questions_feed)
-
-        random_index = random.randint(0, len(feeds))
-        for item in extra_feed:
-            feeds.insert(random_index, item)
-            random_index +=1
 
     next_index = offset+limit if feeds else -1
 
@@ -1087,6 +1052,7 @@ def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None):
     celeb_users = get_celeb_users_for_feed(skip, celeb_limit, cur_user_id=cur_user_id, users=users_to_ignore, feed_type='discover')
     
     for user in celeb_users:
+        last_extra_feed_position = 0
         questions_query = Question.query.filter(Question.question_to==user.id, 
                                         Question.deleted==False,
                                         Question.is_answered==False,
@@ -1110,10 +1076,12 @@ def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None):
         if questions_feed:
             extra_feed.extend(questions_feed)
 
-        random_index = random.randint(0, len(feeds))
+        random_index = random.randint(last_extra_feed_position, len(feeds))
         for item in extra_feed:
             feeds.insert(random_index, item)
             random_index +=1
+        last_extra_feed_position = random_index
+    
     next_index = offset+limit if feeds else -1
     print 'DISCOVER NEXT INDEX', next_index
     print 'DISCOVER FEEDS LEN', len(feeds)
@@ -1233,7 +1201,7 @@ def install_ref(device_id, url):
         pass
     device_type = 'android' if len(device_id)<=16 else 'ios'
     i = Install(device_id=device_id, url=url, device_type=device_type, ref_data=ref_string)
-    db.session(i)
+    db.session.add(i)
     db.session.commit()
 
 
@@ -1247,7 +1215,7 @@ def get_new_client_id():
     return get_new_client_id()
 
 
-def add_video_post(cur_user_id, question_id, video, video_thumbnail, answer_type,
+def add_video_post(cur_user_id, question_id, video, answer_type,
                         lat=None, lon=None, client_id=get_new_client_id()):
     try:
         if cur_user_id in config.ADMIN_USERS:
@@ -1286,7 +1254,7 @@ def add_video_post(cur_user_id, question_id, video, video_thumbnail, answer_type
         db.session.add(post)
         Question.query.filter(Question.id==question_id).update({'is_answered':True})
         db.session.commit()
-        async_encoder.encode_video_task(video_url, curruser.username)
+        async_encoder.encode_video_task.delay(video_url, curruser.username)
 
 
         return {'success': True, 'id': str(post.id)}

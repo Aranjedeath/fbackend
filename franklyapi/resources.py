@@ -184,7 +184,6 @@ class UserUpdateForm(restful.Resource):
         user_update_profile_form.add_argument('bio', type=str, location='form')
         user_update_profile_form.add_argument('user_title', type=str, location='form')
         user_update_profile_form.add_argument('profile_picture', location='files')
-        user_update_profile_form.add_argument('cover_picture', location='files')
         user_update_profile_form.add_argument('profile_video', location='files')
         args = user_update_profile_form.parse_args()
         print args
@@ -203,7 +202,6 @@ class UserUpdateForm(restful.Resource):
                                                                 bio=args['bio'],
                                                                 user_title=args['user_title'],
                                                                 profile_picture=args['profile_picture'],
-                                                                cover_picture=args['cover_picture'],
                                                                 profile_video=args['profile_video'])
             return new_profile
 
@@ -622,7 +620,6 @@ class PostAdd(restful.Resource):
         answer_parser = reqparse.RequestParser()
         answer_parser.add_argument('question_id', type=str, required=True, location='form')
         answer_parser.add_argument('video_media', required=True, location='files')
-        answer_parser.add_argument('video_media_thumbnail', required=True, location='files')
         answer_parser.add_argument('answer_type', type=str, default='video', location='form', choices=['picture', 'video', 'text'])
         answer_parser.add_argument('tags', type=list, default=[], location='form')
         answer_parser.add_argument('lat', type=float, default=0.0, location='form')
@@ -635,7 +632,6 @@ class PostAdd(restful.Resource):
             resp = controllers.add_video_post(current_user.id, 
                                                 question_id=args['question_id'],
                                                 video=args['video_media'],
-                                                video_thumbnail=args['video_media_thumbnail'],
                                                 answer_type=args['answer_type'],
                                                 lat=args['lat'],
                                                 lon=args['lon'],
