@@ -1,0 +1,8 @@
+[program:celery_encoder]
+command=/bin/bash start_celery
+directory=/home/ubuntu/franklysql/
+user=ubuntu
+autostart=true
+autorestart=true
+redirect_stderr=true
+

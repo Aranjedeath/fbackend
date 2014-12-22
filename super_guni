@@ -1,0 +1,8 @@
+[program:gunicorn]
+command=/bin/bash guni
+directory=/home/ubuntu/franklysql/
+user=ubuntu
+autostart=true
+autorestart=true
+redirect_stderr=true
+
