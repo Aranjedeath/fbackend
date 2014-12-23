@@ -1361,10 +1361,10 @@ def web_hiring_form(name, email, phone_num, role):
     cur_datetime = cur_datetime.strftime('%d/%m/%Y %H:%M:%S')
 
     row_data = {
-                'Name': name or '',
-                'Email': email or '',
-                'Phone': phone_num or '',
-                'Role': role or '',
+                'Name': name,
+                'Email': email,
+                'Phone': phone_num or '-NA-',
+                'Role': role or '-NA-',
                 'SubmittedAt': cur_datetime
         }
     spr_client.InsertRow(row_data, spreadsheet_key, worksheet_id)
