@@ -1331,3 +1331,43 @@ def interview_media_controller(offset, limit):
     return res
 
 
+
+def web_hiring_form(name, email, phone_num, role):
+
+    import gdata.spreadsheet.service
+    import gdata.docs
+    import gdata.docs.service
+    import gdata.spreadsheet.service
+    import datetime
+    import pytz
+
+    email = config.SPREADSHEET_EMAIL
+    password = config.SPREADSHEET_PASSWORD
+
+    spreadsheet_key = '1ZPZL_GFY6G8ARuvtrnpv8bM2IKs8WK61x21c5jb4I98'
+    # All spreadsheets have worksheets. I think worksheet #1 by default always
+    # has a value of 'od6'
+    worksheet_id = 'od6'
+
+    spr_client = gdata.spreadsheet.service.SpreadsheetsService()
+    spr_client.debug = True
+    spr_client.email = email
+    spr_client.password = password
+    spr_client.source = 'Frankly Hiring Form'
+    spr_client.ProgrammaticLogin()
+
+
+    cur_datetime = datetime.datetime.now(pytz.timezone('Asia/Kolkata'))
+    cur_datetime = cur_datetime.strftime('%d/%m/%Y %H:%M:%S')
+
+    row_data = {
+                'Name': name or '',
+                'Email': email or '',
+                'Phone': phone_num or '',
+                'Role': role or '',
+                'SubmittedAt': cur_datetime
+        }
+    spr_client.InsertRow(row_data, spreadsheet_key, worksheet_id)
+    return {'success':True}
+            
+
