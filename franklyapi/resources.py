@@ -1065,7 +1065,7 @@ class InterviewVideoResource(restful.Resource):
             print traceback.format_exc(e)
             abort(500, message=str(traceback.format_exc(e)))        
 
-class WebHiringForm(restful.Restful):
+class WebHiringForm(restful.Resource):
     def post(self):
         parser = reqparse.RequestParser()
         parser.add_argument('name', type=str, location='form', required=True)
