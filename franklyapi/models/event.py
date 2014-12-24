@@ -2,7 +2,16 @@ import datetime
 from sqlalchemy import Column, Integer, String, Boolean, Float, DateTime, Enum, ForeignKey, CHAR, UniqueConstraint
 from database import Base
 from database import get_item_id
-from notification import consider_for_notification
+
+
+consider_for_notification = {
+                            'follow':True,
+                            'like':True,
+                            'upvote':True,
+                            'answer':True,
+                            'question':True,
+                            'comment':True
+                            }
 
 class Event(Base):
     __tablename__     = 'events'
