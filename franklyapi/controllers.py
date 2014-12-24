@@ -29,6 +29,12 @@ from object_dict import user_to_dict, guest_user_to_dict,\
 
 from video_db import add_video_to_db
 
+def create_event(user, action, foreign_data, event_date=datetime.date.today()):
+    if not Event.query.filter(user=user, action=action, foreign_data=foreign_data, event_date=event_date).count():
+        from database import get_item_id
+        return Event(id=get_item_id(), user=user, action=action, foreign_data=foreign_data, event_date=event_date)
+    return
+
 def check_access_token(access_token, device_id):
     try:
         print access_token, device_id
@@ -562,10 +568,11 @@ def user_follow(cur_user_id, user_id):
                                 UPDATE unfollowed = false"""),
                         params={'cur_user_id':cur_user_id, 'user_id':user_id}
                     )
-    from database import get_item_id
-    event = Event(id=get_item_id(), user=cur_user_id, action='follow', foreign_data=user_id)
+
+    event = create_event(user=cur_user_id, action='follow', foreign_data=user_id)
+    if event:
+        db.session.add(event)
     
-    db.session.add(event)
     db.session.commit()
 
     return {'user_id': user_id}
@@ -741,9 +748,13 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous):
     question = Question(id=get_item_id(), question_author=cur_user_id, question_to=question_to, 
                 body=body.capitalize(), is_anonymous=is_anonymous, public=public, lat=lat, lon=lon)
     
-    event = Event(id=get_item_id(), user=cur_user_id, action='question', foreign_data=question.id)
+
     db.session.add(question)
-    db.session.add(event)
+
+    event = create_event(user=cur_user_id, action='question', foreign_data=question.id)
+    if event:
+        db.session.add(event)
+
     db.session.commit()
 
     resp = {'success':True, 'id':str(question.id)}
@@ -794,10 +805,10 @@ def question_upvote(cur_user_id, question_id):
                                     UPDATE downvoted = false"""),
                             params={'cur_user_id':cur_user_id, 'question_id':question_id}
                         )
-        from database import get_item_id
 
-        event = Event(id=get_item_id(), user=cur_user_id, action='upvote', foreign_data=question_id)
-        db.session.add(event)
+        event = create_event(user=cur_user_id, action='upvote', foreign_data=question_id)
+        if event:
+            db.session.add(event)
         db.session.commit()
     else:
         raise CustomExceptions.BadRequestException("Question is not available for upvote")
@@ -841,10 +852,10 @@ def post_like(cur_user_id, post_id):
                                     UPDATE unliked = false"""),
                             params={'cur_user_id':cur_user_id, 'post_id':post_id}
                             )
-        from database import get_item_id
 
-        event = Event(id=get_item_id(), user=cur_user_id, action='like', foreign_data=post_id)
-        db.session.add(event)
+        event = create_event(user=cur_user_id, action='like', foreign_data=post_id)
+        if event:
+            db.session.add(event)
         db.session.commit()
         #send notification
         return {'id': post_id, 'success':True}
@@ -894,29 +905,16 @@ def comment_add(cur_user_id, post_id, body, lat, lon):
     if not (has_blocked(cur_user_id, answer_author) or has_blocked(cur_user_id, answer_author)):
         from database import get_item_id
         comment = Comment(id=get_item_id(), on_post=post_id, body=body, comment_author=cur_user_id, lat=lat, lon=lon)
-        
-        event = Event(id=get_item_id(), user=cur_user_id, action='comment', foreign_data=comment.id)
         db.session.add(comment)
-        db.session.add(event)
+
+        event = create_event(user=cur_user_id, action='comment', foreign_data=comment.id)
+        if event:
+            db.session.add(event)
+
         db.session.commit()
     
         user_update_location(cur_user_id, lat, lon, country=None, country_code=None, loc_name=None)
-        '''
-        notify_args = {
-            'user_id': user.id,
-            'comment_id': c.id,
-            'mentioned_in_comment': mentions
-        }
 
-        cel_tasks.notify_mongo.delay('comment_add', **notify_args)
-
-        try:
-            if c.comment_author.facebook_token:
-                fb = FBActionPublisher()
-                fb.post_action_comment(c.comment_author.facebook_token, str(c.on_post.id))
-        except Exception as e:
-            print e
-        '''
         return {'comment': comment_to_dict(comment), 'id':comment.id, 'success':True}
     else:
         CustomExceptions.PostNotFoundException('Post not available for action')
@@ -1263,11 +1261,14 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
                     client_id=client_id,
                     lat=lat,
                     lon=lon)
-        event = Event(id=get_item_id(), user=cur_user_id, action='answer', foreign_data=post.id)
-        
         db.session.add(post)
-        db.session.add(event)
+
         Question.query.filter(Question.id==question_id).update({'is_answered':True})
+
+        event = create_event(user=cur_user_id, action='answer', foreign_data=post.id)
+        if event:
+            db.session.add(event)
+        
         db.session.commit()
         async_encoder.encode_video_task.delay(video_url, curruser.username)
 
