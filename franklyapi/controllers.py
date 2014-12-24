@@ -74,7 +74,7 @@ def username_available(username):
     return not bool(User.query.filter(User.username==username).count())
 
 def sanitize_username(username):
-    username = username.replace(' ', '_')
+    username = username.title().replace(' ', '')
     for char in username:
         if char not in config.ALLOWED_CHARACTERS:
             username = username.replace(char, '') 
