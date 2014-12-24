@@ -1070,13 +1070,13 @@ class WebHiringForm(restful.Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('name', type=str, location='form', required=True)
         parser.add_argument('email', type=str, location='form', required=True)
-        parser.add_argument('phone_num', type=str, location='form', default=None)
+        parser.add_argument('phone', type=str, location='form', default=None)
         parser.add_argument('role', type=str, location='form', default=None)
 
         args = parser.parse_args()
         try:
             from controllers import web_hiring_form
-            return web_hiring_form(args['name'], args['email'], args['phone_num'], args['role'])
+            return web_hiring_form(args['name'], args['email'], args['phone'], args['role'])
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])
