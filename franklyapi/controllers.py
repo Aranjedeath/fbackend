@@ -1379,8 +1379,8 @@ def web_hiring_form(name, email, phone_num, role):
     row_data = {
                 'name': name,
                 'email': email,
-                'phone': phone_num or '-NA-',
-                'role': role or '-NA-',
+                'phone': phone_num,
+                'role': role,
                 'submitted': cur_datetime
         }
 
