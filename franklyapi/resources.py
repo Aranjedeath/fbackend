@@ -1064,3 +1064,28 @@ class InterviewVideoResource(restful.Resource):
             raygun.send(err[0],err[1],err[2])
             print traceback.format_exc(e)
             abort(500, message=str(traceback.format_exc(e)))        
+
+class WebHiringForm(restful.Resource):
+    def post(self):
+        parser = reqparse.RequestParser()
+        parser.add_argument('name', type=str, location='form', required=True)
+        parser.add_argument('email', type=str, location='form', required=True)
+        parser.add_argument('phone_num', type=str, location='form', default=None)
+        parser.add_argument('role', type=str, location='form', default=None)
+
+        args = parser.parse_args()
+        try:
+            from controllers import web_hiring_form
+            return web_hiring_form(args['name'], args['email'], args['phone_num'], args['role'])
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message=str(traceback.format_exc(e)))
+
+
+
+
+
+
+
