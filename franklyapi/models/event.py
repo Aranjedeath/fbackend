@@ -8,16 +8,16 @@ class Event(Base):
     id                        = Column(CHAR(32), primary_key=True, default=get_item_id)
     user                      = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
     action                    = Column(Enum('follow','like','upvote','answer','question','comment'), nullable=False)
-    foriegn_data              = Column(CHAR(32), nullable=False)
+    foreign_data              = Column(CHAR(32), nullable=False)
     event_time                = Column(DateTime(), default=datetime.datetime.now)
     for_notification          = Column(Boolean(), default=True)
     notification_sent         = Column(Boolean(), default=False)
 
-    def __init__(self, user, action, foriegn_data, even_time=datetime.datetime.now(), for_notification=True, notification_sent=True):
+    def __init__(self, user, action, foreign_data, even_time=datetime.datetime.now(), for_notification=True, notification_sent=True):
         self.id                        = id
         self.user                      = user
         self.action                    = action
-        self.foriegn_data              = foriegn_data
+        self.foreign_data              = foreign_data
         self.event_time                = event_time 
         self.for_notification          = for_notification
         self.notification_sent         = notification_sent
