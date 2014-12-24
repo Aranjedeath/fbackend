@@ -1,5 +1,5 @@
 import datetime
-from sqlalchemy import Column, Integer, String, Boolean, Float, DateTime, Enum, ForeignKey, CHAR, UniqueConstraint
+from sqlalchemy import Column, Boolean, DateTime, Date, Enum, ForeignKey, CHAR, UniqueConstraint
 from database import Base
 from database import get_item_id
 
@@ -21,7 +21,7 @@ class Event(Base):
     action            = Column(Enum('follow','like','upvote','answer','question','comment'), nullable=False)
     foreign_data      = Column(CHAR(32), nullable=False)
     event_time        = Column(DateTime(), default=datetime.datetime.now)
-    event_date        = Column(Date(), default=datatime.date.today)
+    event_date        = Column(Date(), default=datetime.date.today)
     for_notification  = Column(Boolean(), default=True)
     notification_sent = Column(Boolean(), default=False)
 
@@ -33,6 +33,7 @@ class Event(Base):
         self.event_time        = event_time 
         self.for_notification  = for_notification or consider_for_notification[action]
         self.notification_sent = notification_sent
+        self.event_date        = event_date
 
     def get_id(self):
         return unicode(self.id)
