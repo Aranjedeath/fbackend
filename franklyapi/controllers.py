@@ -1341,8 +1341,8 @@ def web_hiring_form(name, email, phone_num, role):
     import datetime
     import pytz
 
-    email = config.SPREADSHEET_EMAIL
-    password = config.SPREADSHEET_PASSWORD
+    login_email = config.SPREADSHEET_EMAIL
+    login_password = config.SPREADSHEET_PASSWORD
 
     spreadsheet_key = '1ZPZL_GFY6G8ARuvtrnpv8bM2IKs8WK61x21c5jb4I98'
     # All spreadsheets have worksheets. I think worksheet #1 by default always
@@ -1351,8 +1351,8 @@ def web_hiring_form(name, email, phone_num, role):
 
     spr_client = gdata.spreadsheet.service.SpreadsheetsService()
     spr_client.debug = True
-    spr_client.email = email
-    spr_client.password = password
+    spr_client.email = login_email
+    spr_client.password = login_password
     spr_client.source = 'Frankly Hiring Form'
     spr_client.ProgrammaticLogin()
 
@@ -1361,12 +1361,14 @@ def web_hiring_form(name, email, phone_num, role):
     cur_datetime = cur_datetime.strftime('%d/%m/%Y %H:%M:%S')
 
     row_data = {
-                'Name': name,
-                'Email': email,
-                'Phone': phone_num or '-NA-',
-                'Role': role or '-NA-',
-                'SubmittedAt': cur_datetime
+                'name': name,
+                'email': email,
+                'phone': phone_num or '-NA-',
+                'role': role or '-NA-',
+                'submitted_at': cur_datetime
         }
+
+    print row_data
     spr_client.InsertRow(row_data, spreadsheet_key, worksheet_id)
     return {'success':True}
             
