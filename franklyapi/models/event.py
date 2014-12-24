@@ -7,7 +7,7 @@ class Event(Base):
     __tablename__             = 'events'
     id                        = Column(CHAR(32), primary_key=True, default=get_item_id)
     user                      = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
-    action                    = Column(mysql.ENUM('follow','like','upvote','answer','question','comment'), nullable=False)
+    action                    = Column(Enum('follow','like','upvote','answer','question','comment'), nullable=False)
     foriegn_data              = Column(CHAR(32), nullable=False)
     event_time                = Column(DateTime(), default=datetime.datetime.now)
     for_notification          = Column(Boolean(), default=True)
