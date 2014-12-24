@@ -30,7 +30,7 @@ from object_dict import user_to_dict, guest_user_to_dict,\
 from video_db import add_video_to_db
 
 def create_event(user, action, foreign_data, event_date=datetime.date.today()):
-    if not Event.query.filter(user=user, action=action, foreign_data=foreign_data, event_date=event_date).count():
+    if not Event.query.filter(Event.user==user, Event.action==action, Event.foreign_data==foreign_data, Event.event_date==event_date).count():
         from database import get_item_id
         return Event(id=get_item_id(), user=user, action=action, foreign_data=foreign_data, event_date=event_date)
     return
