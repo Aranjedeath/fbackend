@@ -562,8 +562,8 @@ def user_follow(cur_user_id, user_id):
                                 UPDATE unfollowed = false"""),
                         params={'cur_user_id':cur_user_id, 'user_id':user_id}
                     )
-    
-    event = Event(user=cur_user_id, action='follow', foreign_data=user_id)
+    from database import get_item_id
+    event = Event(id=get_item_id(), user=cur_user_id, action='follow', foreign_data=user_id)
     
     db.session.add(event)
     db.session.commit()
@@ -741,7 +741,7 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous):
     question = Question(id=get_item_id(), question_author=cur_user_id, question_to=question_to, 
                 body=body.capitalize(), is_anonymous=is_anonymous, public=public, lat=lat, lon=lon)
     
-    event = Event(user=cur_user_id, action='question', foreign_data=question.id)
+    event = Event(id=get_item_id(), user=cur_user_id, action='question', foreign_data=question.id)
     db.session.add(question)
     db.session.add(event)
     db.session.commit()
@@ -794,7 +794,9 @@ def question_upvote(cur_user_id, question_id):
                                     UPDATE downvoted = false"""),
                             params={'cur_user_id':cur_user_id, 'question_id':question_id}
                         )
-        event = Event(user=cur_user_id, action='upvote', foreign_data=question_id)
+        from database import get_item_id
+
+        event = Event(id=get_item_id(), user=cur_user_id, action='upvote', foreign_data=question_id)
         db.session.add(event)
         db.session.commit()
     else:
@@ -839,8 +841,9 @@ def post_like(cur_user_id, post_id):
                                     UPDATE unliked = false"""),
                             params={'cur_user_id':cur_user_id, 'post_id':post_id}
                             )
+        from database import get_item_id
 
-        event = Event(user=cur_user_id, action='like', foreign_data=post_id)
+        event = Event(id=get_item_id(), user=cur_user_id, action='like', foreign_data=post_id)
         db.session.add(event)
         db.session.commit()
         #send notification
@@ -892,7 +895,7 @@ def comment_add(cur_user_id, post_id, body, lat, lon):
         from database import get_item_id
         comment = Comment(id=get_item_id(), on_post=post_id, body=body, comment_author=cur_user_id, lat=lat, lon=lon)
         
-        event = Event(user=cur_user_id, action='comment', foreign_data=comment.id)
+        event = Event(id=get_item_id(), user=cur_user_id, action='comment', foreign_data=comment.id)
         db.session.add(comment)
         db.session.add(event)
         db.session.commit()
@@ -1260,7 +1263,7 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
                     client_id=client_id,
                     lat=lat,
                     lon=lon)
-        event = Event(user=cur_user_id, action='answer', foreign_data=post.id)
+        event = Event(id=get_item_id(), user=cur_user_id, action='answer', foreign_data=post.id)
         
         db.session.add(post)
         db.session.add(event)
