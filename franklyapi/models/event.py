@@ -29,7 +29,7 @@ class Event(Base):
         self.action            = action
         self.foreign_data      = foreign_data
         self.event_time        = event_time 
-        self.for_notification  = for_notification or consider_for_notification['action']
+        self.for_notification  = for_notification or consider_for_notification[action]
         self.notification_sent = notification_sent
 
     def get_id(self):
