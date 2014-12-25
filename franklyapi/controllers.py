@@ -629,7 +629,12 @@ def user_block_list(user_id):
     return {'users': blocked_list}
 
 def user_change_username(user_id, new_username):
-    if username_available(new_username):
+    user = User.query.filter(User.id==user_id).one()
+    
+    if user.username.lower() == new_username.lower():
+        User.query.filter(User.id==user_id).update({'username':new_username})
+    
+    elif username_available(new_username):
         User.query.filter(User.id==user_id).update({'username':new_username})
         db.session.commit()
         return {'username':new_username, 'status':'success', 'id':str(user_id)}
