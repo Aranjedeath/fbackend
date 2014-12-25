@@ -1,0 +1,1 @@
+from config import consider_for_notification
