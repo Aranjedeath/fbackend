@@ -1031,10 +1031,7 @@ def home_feed(cur_user_id, offset, limit, web):
 
     posts = posts_to_dict(posts, cur_user_id)
     feeds = [{'type':'post', 'post':post} for post in posts]
-    if offset == 0 and feeds:
-        celeb_users = get_celeb_users_for_feed(0, 2, cur_user_id=cur_user_id, feed_type='discover')
-        feeds.insert(0, {'type':'user', 'user':guest_user_to_dict(celeb_users[0], cur_user_id)})
-    
+
     next_index = offset+limit if posts else -1
 
     next_index = offset+limit if feeds else -1
