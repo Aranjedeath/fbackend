@@ -1000,7 +1000,7 @@ def comment_list(cur_user_id, post_id, offset, limit):
         return {'comments': comments, 'post': post_id, 'next_index':next_index}
 
 
-def get_user_timeline(cur_user_id, user_id, offset, limit, include_reshares=True):
+def get_user_timeline(cur_user_id, user_id, offset, limit, include_reshares=False):
     if cur_user_id and has_blocked(cur_user_id, user_id):
         raise CustomExceptions.UserNotFoundException('User does not exist')
 

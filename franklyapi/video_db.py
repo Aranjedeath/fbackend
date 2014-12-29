@@ -9,9 +9,9 @@ def add_video_to_db(video_url, thumbnail_url=None):
 
 def update_video_state(video_url, result={}):
     if result:
-	print result
+        print result
         result.update({'process_state':'success'})
         Video.query.filter(Video.url==video_url).update(result)
     else:
         Video.query.filter(Video.url==video_url).update({'process_state':'failed'})
-    db.session.commit()
+        db.session.commit()
