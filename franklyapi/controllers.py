@@ -1049,7 +1049,7 @@ def get_celeb_users_for_feed(offset, limit, cur_user_id=None, users=[], feed_typ
                                                 UserFeed.day<=user_day,
                                                 UserFeed.day!=-1
                                             ).order_by(UserFeed.day.desc()
-                                            ).order_by(UserFeed.score.desc()
+                                            ).order_by(UserFeed.score
                                             ).offset(offset
                                             ).limit(limit)
     return celeb_user_query.all()
