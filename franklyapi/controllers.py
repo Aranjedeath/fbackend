@@ -1004,20 +1004,23 @@ def get_user_timeline(cur_user_id, user_id, offset, limit, include_reshares=True
     if cur_user_id and has_blocked(cur_user_id, user_id):
         raise CustomExceptions.UserNotFoundException('User does not exist')
 
-    if include_reshares:
-        reshares_post_ids = Reshare.query.filter(Reshare.user==user_id).all()
-    
-        posts_query = Post.query.filter(or_(Post.answer_author==user_id,
-                                            Post.id.in_(reshares_post_ids)
-                                        ))
-    else:
-        posts_query = Post.query.filter(Post.answer_author==user_id)
 
-    posts_query.filter(Post.deleted==False).order_by(Post.timestamp.desc())
+
+
+    if include_reshares:    
+        posts_query = Post.query.filter(or_(Post.answer_author==user_id,
+                                            Post.id.in_(Reshare.query.filter(Reshare.user==user_id))
+                                            ), Post.deleted==False
+                                        ).join(Reshare
+                                        ).order_by(Reshare.timestamp.desc()
+                                        ).order_by(Post.timestamp.desc())
+
+    else:
+        posts_query = Post.query.filter(Post.answer_author==user_id, Post.deleted==False)
 
     total_count = posts_query.count()
     posts = posts_query.offset(offset).limit(limit).all()
-    posts = posts_to_dict(posts)
+    posts = posts_to_dict(posts, cur_user_id)
     posts = [{'type':'post', 'post':post} for post in posts]
     next_index = offset+limit if posts else -1
     return {'stream': posts, 'count':len(posts), 'next_index':next_index, 'total':total_count}
@@ -1084,7 +1087,7 @@ def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None):
                     ).limit(limit
                     ).all()
 
-    posts = posts_to_dict(posts)
+    posts = posts_to_dict(posts, cur_user_id)
     feeds = [{'type':'post', 'post':post} for post in posts]
     next_index = offset+limit if posts else -1
     
