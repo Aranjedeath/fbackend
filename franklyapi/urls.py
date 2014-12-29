@@ -41,6 +41,8 @@ api.add_resource(PostAdd, '/post/media/add', '/post/add')
 api.add_resource(PostLike, '/post/like')
 api.add_resource(PostUnLike, '/post/unlike')
 api.add_resource(PostDelete, '/post/delete')
+api.add_resource(PostReshare, '/post/reshare')
+
 
 api.add_resource(PostView, '/post/view/<post_id>', '/post/view/p/<post_id>')
 

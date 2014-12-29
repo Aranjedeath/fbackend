@@ -3,7 +3,7 @@ import requests
 import uuid
 from boto.s3.connection import S3Connection
 import os
-from video_encoder import make_thumbnail
+from video_encoder import make_thumbnail, make_psuedo_streamable
 
 import CustomExceptions
 from configs import config
@@ -103,13 +103,24 @@ def upload_user_image(user_id, image_type, image_url=None, image_file_path=None)
 
 def upload_user_video(user_id, video_type, video_file):
     random_string = uuid.uuid1().hex
-    video_file_new = open('/tmp/'+random_string+".mp4","w")
+    video_file_path = '/tmp/'+random_string+".mp4"
+    video_file_new = open(video_file_path, "w")
     video_file_new.write(video_file.read())
     video_file_new.close()
-    video_key_name = '{user_id}/videos/{random_string}.mp4'.format(user_id=user_id, random_string=random_string)
-    thumb_key_name = '{user_id}/videos/{random_string}.jpeg'.format(user_id=user_id, random_string=random_string)
+    
     video_thumbnail_path = make_thumbnail("/tmp/"+random_string+".mp4")
     video_thumbnail_file = open(video_thumbnail_path,"rb")
+    try:
+        video_file_path = make_psuedo_streamable("/tmp/"+random_string+".mp4")
+    except:
+        print 'err'
+
+    video_file = open(video_file_path, 'rb')
+
+    video_key_name = '{user_id}/videos/{random_string}.mp4'.format(user_id=user_id, random_string=random_string)
+    thumb_key_name = '{user_id}/videos/{random_string}.jpeg'.format(user_id=user_id, random_string=random_string)
+    
+    
     if file_is_valid(video_file, 'video') and file_is_valid(video_thumbnail_file, 'image'):
         video_url = upload_to_s3(video_file, video_key_name)
         thumb_url = upload_to_s3(video_thumbnail_file, thumb_key_name)

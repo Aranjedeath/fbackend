@@ -72,6 +72,22 @@ class Like(Base):
         return '<Like %r:%r>' % (self.user, self.post)
 
 
+class Reshare(Base):
+    __tablename__  = 'post_reshares'
+    __table_args__ = ( UniqueConstraint('user', 'post'), )
+    id             = Column(Integer, primary_key=True)
+    user           = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
+    post           = Column(CHAR(32), ForeignKey('posts.id'), nullable=False)
+    timestamp      = Column(DateTime(), onupdate=datetime.datetime.now, default=datetime.datetime.now)
+
+    def __init__(self, user, post, timestamp=datetime.datetime.now):
+        self.user      = user
+        self.post      = post
+        self.timestamp = timestamp
+    def __repr__(self):
+        return '<Reshare %r:%r>' % (self.user, self.post)
+
+
 class View(Base):
     __tablename__  = 'post_views'
     __table_args__ = ( UniqueConstraint('user', 'post'), )

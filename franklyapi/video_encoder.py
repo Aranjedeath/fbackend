@@ -71,6 +71,7 @@ def make_psuedo_streamable(path):
     command = 'qtfaststart {path}'.format(path=path)
     process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
     print process.stdout.read()
+    return path
 
 def get_rotation(file_path):
     command = "mediainfo '--Inform=Video;%Rotation%' {path}".format(path=file_path)

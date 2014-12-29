@@ -669,6 +669,7 @@ class PostLike(restful.Resource):
             print traceback.format_exc(e)
             abort(500, message="Failed")
 
+
 class PostUnLike(restful.Resource):
     @login_required
     def post(self):
@@ -684,6 +685,39 @@ class PostUnLike(restful.Resource):
             print traceback.format_exc(e)
             abort(500, message="Failed")
 
+
+class PostReshare(restful.Resource):
+    @login_required
+    def post(self):
+        post_like_parser = reqparse.RequestParser()
+        post_like_parser.add_argument('post_id', type=str, required=True, location='json')
+        args = post_like_parser.parse_args()
+        try:
+            resp = controllers.post_reshare(current_user.id, post_id=args['post_id'])
+            return resp
+
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message="Failed")
+
+
+class PostReshareDelete(restful.Resource):
+    @login_required
+    def post(self):
+        post_like_parser = reqparse.RequestParser()
+        post_like_parser.add_argument('post_id', type=str, required=True, location='json')
+        args = post_like_parser.parse_args()
+        try:
+            resp = controllers.post_reshare_delete(current_user.id, post_id=args['post_id'])
+            return resp
+
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message="Failed")
 
 class PostDelete(restful.Resource):
     @login_required

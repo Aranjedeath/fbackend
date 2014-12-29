@@ -20,7 +20,7 @@ import social_helpers
 from configs import config
 from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
                     Question, Upvote, Comment, ForgotPasswordToken, Install, Video,\
-                    UserFeed, Event
+                    UserFeed, Event, Reshare
 from app import redis_client, raygun, db
 
 from object_dict import user_to_dict, guest_user_to_dict,\
@@ -341,6 +341,12 @@ def get_post_like_count(post_id):
 def is_liked(post_id, user_id):
     return bool(Like.query.filter(Like.post==post_id, Like.user==user_id, Like.unliked==False).count())
 
+def get_post_reshare_count(post_id):
+    return bool(Reshare.query.filter(Reshare.post==post_id).count())
+
+def is_reshared(post_id, user_id):
+    return bool(Reshare.query.filter(Reshare.post==post_id, Reshare.user==user_id).count())
+
 def get_comment_count(post_id):
     return Comment.query.filter(Comment.on_post==post_id, Comment.deleted==False).count()
 
@@ -515,7 +521,7 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
         update_dict.update({'first_name':first_name})
 
     if bio:
-        bio.replace('\n', ' ')
+        bio = bio.replace('\n', ' ').strip()
         bio = bio[:200]
         update_dict.update({'bio':bio})
 
@@ -633,10 +639,13 @@ def user_change_username(user_id, new_username):
     
     if user.username.lower() == new_username.lower():
         User.query.filter(User.id==user_id).update({'username':new_username})
+        db.session.commit()
+        return {'username':new_username, 'status':'success', 'id':str(user_id)}
     
     elif username_available(new_username):
         User.query.filter(User.id==user_id).update({'username':new_username})
         db.session.commit()
+        async_encoder.encode_video_task.delay(user.profile_video, username=new_username, profiles=['promo'])
         return {'username':new_username, 'status':'success', 'id':str(user_id)}
     else:
         raise CustomExceptions.UnameUnavailableException('Username invalid or not available')
@@ -644,6 +653,7 @@ def user_change_username(user_id, new_username):
 def user_change_password(user_id, new_password):
     if password_is_valid(new_password):
         User.query.filter(User.id==user_id).update({'password':new_password})
+        db.session.commit()
         return {'status':'success', 'id':user_id}
     else:
         raise CustomExceptions.UnameUnavailableException('Password is invalid')
@@ -837,6 +847,20 @@ def question_ignore(user_id, question_id):
     db.session.commit()
     return {"question_id":question_id, "success":bool(result)}
 
+
+def post_reshare(cur_user_id, post_id):
+    reshare = Reshare(post=post_id, user=cur_user_id)
+    db.session.add(reshare)
+    db.session.commit()
+    return {'success':True}
+
+
+def post_reshare_delete(cur_user_id, post_id):
+    Reshare.query.filter(Reshare.post==post_id, Reshare.user==cur_user_id).delete()
+    db.session.commit()
+    return {'success':True}
+
+
 def post_like(cur_user_id, post_id):
     result = db.session.execute(text("""SELECT answer_author, question_author
                                         FROM posts
@@ -976,12 +1000,21 @@ def comment_list(cur_user_id, post_id, offset, limit):
         return {'comments': comments, 'post': post_id, 'next_index':next_index}
 
 
-def get_user_timeline(cur_user_id, user_id, offset, limit):
+def get_user_timeline(cur_user_id, user_id, offset, limit, include_reshares=True):
     if cur_user_id and has_blocked(cur_user_id, user_id):
         raise CustomExceptions.UserNotFoundException('User does not exist')
-    posts_query = Post.query.filter(Post.answer_author==user_id, Post.deleted==False
-                                    ).order_by(Post.timestamp.desc())
+
+    if include_reshares:
+        reshares_post_ids = Reshare.query.filter(Reshare.user==user_id).all()
     
+        posts_query = Post.query.filter(or_(Post.answer_author==user_id,
+                                            Post.id.in_(reshares_post_ids)
+                                        ))
+    else:
+        posts_query = Post.query.filter(Post.answer_author==user_id)
+
+    posts_query.filter(Post.deleted==False).order_by(Post.timestamp.desc())
+
     total_count = posts_query.count()
     posts = posts_query.offset(offset).limit(limit).all()
     posts = posts_to_dict(posts)

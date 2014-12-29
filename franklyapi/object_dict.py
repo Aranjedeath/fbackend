@@ -200,7 +200,7 @@ def question_to_dict(question, current_user_id=None):
     return ques_dict
 
 def post_to_dict(post, cur_user_id=None, distance=None):
-    from controllers import get_video_states, is_liked, get_questions, get_post_like_count, is_following, get_follower_count, get_thumb_users, get_comment_count, get_post_view_count
+    from controllers import get_video_states, is_liked, is_reshared, get_questions, get_post_like_count, is_following, get_follower_count, get_thumb_users, get_comment_count, get_post_view_count
     users = get_thumb_users([post.question_author, post.answer_author])
     questions = get_questions([post.question])
 
@@ -248,6 +248,7 @@ def post_to_dict(post, cur_user_id=None, distance=None):
         },
 
         'liked_count': get_post_like_count(post.id),
+        'is_reshared': is_reshared(post.id, cur_user_id),
         # to store count and list of user ids
         'comment_count': get_comment_count(post.id),
         'is_liked': is_liked(post.id, cur_user_id),
@@ -266,7 +267,7 @@ def post_to_dict(post, cur_user_id=None, distance=None):
 
 
 def posts_to_dict(posts, cur_user_id=None, distance=None):
-    from controllers import get_video_states, get_questions, is_liked, get_post_like_count, is_following, get_follower_count, get_thumb_users, get_comment_count, get_post_view_count
+    from controllers import get_video_states, get_questions, is_liked, is_reshared, get_post_like_count, is_following, get_follower_count, get_thumb_users, get_comment_count, get_post_view_count
     user_list = set()
     answer_media_urls = {}
     question_ids = []
@@ -330,6 +331,7 @@ def posts_to_dict(posts, cur_user_id=None, distance=None):
             # to store count and list of user ids
             'comment_count': get_comment_count(post.id),
             'is_liked': is_liked(post.id, cur_user_id),
+            'is_reshared': is_reshared(post.id, cur_user_id),
             'deleted': post.deleted,
             'tags':[],
             'location': location_dict(post.lat, post.lon, post.location_name, post.country_name, post.country_code),
