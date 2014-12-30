@@ -29,7 +29,7 @@ api = restful.Api(app)
 
 raygun = raygunprovider.RaygunSender(config.RAYGUN_KEY)
 redis_client = redis.Redis(config.REDIS_HOST)
-redis_data_client = redis.Redis(config.REDIS_HOST, 7)
+redis_data_client = redis.Redis(config.REDIS_HOST, db=7)
 
 login_manager.login_view = '/login/email'
 
