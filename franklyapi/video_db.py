@@ -19,11 +19,13 @@ def update_video_state(video_url, result={}):
 
 
 def update_view_count_to_db(url):
+    count = redis_data_client.get(url)
+    
     url = url.replace('http://d35wlof4jnjr70.cloudfront.net/', 'https://s3.amazonaws.com/franklyapp/')
     types = ['_ultralow', '_low', '_medium', '_opt', '_promo']
     for suffix in types:
         url = url.replace(suffix, '')
-    count = redis_data_client.get(url)
+    
     if count:
         db.session.execute(text("""UPDATE users 
                                     SET view_count=view_count+:count, total_view_count=total_view_count+:count
