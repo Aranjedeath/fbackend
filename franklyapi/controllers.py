@@ -354,7 +354,7 @@ def get_post_view_count(post_id):
     return random.randint(0, 100)
 
 def get_question_upvote_count(question_id):
-    return Upvote.query.filter(Upvote.question==question_id, Upvote.downvoted==False).count()
+    return Upvote.query.filter(Upvote.question==question_id, Upvote.downvoted==False).count()+1
 
 def is_upvoted(question_id, user_id):
     return bool(Upvote.query.filter(Upvote.question==question_id, Upvote.user==user_id, Upvote.downvoted==False).count())
