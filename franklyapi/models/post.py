@@ -24,11 +24,11 @@ class Post(Base):
     location_name       = Column(String(50))
     country_name        = Column(String(50))
     country_code        = Column(String(2))
-
+    view_count          = Column(Integer(), default=0)
 
     def __init__(self, question, question_author, answer_author, media_url, thumbnail_url, client_id,
                     timestamp=datetime.datetime.now(), answer_type='video', score=0, deleted=False, ready=True,
-                    popular=False, lat=None, lon=None, location_name=None, country_name=None, country_code=None, id=get_item_id()):
+                    popular=False, lat=None, lon=None, location_name=None, country_name=None, country_code=None, id=get_item_id(), view_count=0):
         self.id              = id
         self.question        = question
         self.question_author = question_author
@@ -49,6 +49,7 @@ class Post(Base):
         self.location_name   = location_name
         self.country_name    = country_name
         self.country_code    = country_code
+        self.view_count      = 0
 
     def __repr__(self):
         return '<Post %r>' % (self.id)

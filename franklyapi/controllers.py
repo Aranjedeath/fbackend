@@ -21,7 +21,7 @@ from configs import config
 from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
                     Question, Upvote, Comment, ForgotPasswordToken, Install, Video,\
                     UserFeed, Event, Reshare
-from app import redis_client, raygun, db
+from app import redis_client, raygun, db, redis_data_client
 
 from object_dict import user_to_dict, guest_user_to_dict,\
                         thumb_user_to_dict, question_to_dict, post_to_dict, comment_to_dict,\
@@ -327,7 +327,7 @@ def get_user_like_count(user_id):
     return count
 
 def get_user_view_count(user_id):
-    return random.randint(0, 100)
+    return get_follower_count(user_id)*3
 
 def is_following(user_id, current_user_id):
     return bool(Follow.query.filter(Follow.user==current_user_id, Follow.followed==user_id, Follow.unfollowed==False).limit(1).count())
@@ -1430,5 +1430,14 @@ def web_hiring_form(name, email, phone_num, role):
     print row_data
     spr_client.InsertRow(row_data, spreadsheet_key, worksheet_id)
     return {'success':True}
+
+
+def view_video(url):
+    url = url.replace('http://d35wlof4jnjr70.cloudfront.net/', 'https://s3.amazonaws.com/franklyapp/')
+    redis_data_client.incr(url, 1)
+
+
+
+
             
 

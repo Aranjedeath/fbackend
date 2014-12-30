@@ -1091,8 +1091,7 @@ class InterviewVideoResource(restful.Resource):
         parser.add_argument('limit', type=int, location = 'args', default = 10)
         args = parser.parse_args()
         try:
-            from controllers import interview_media_controller
-            return interview_media_controller(args['offset'], args['limit'])
+            return controllers.interview_media_controller(args['offset'], args['limit'])
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])
@@ -1109,8 +1108,7 @@ class WebHiringForm(restful.Resource):
 
         args = parser.parse_args()
         try:
-            from controllers import web_hiring_form
-            return web_hiring_form(args['name'], args['email'], args['phone'], args['role'])
+            return controllers.web_hiring_form(args['name'], args['email'], args['phone'], args['role'])
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])
@@ -1118,8 +1116,20 @@ class WebHiringForm(restful.Resource):
             abort(500, message=str(traceback.format_exc(e)))
 
 
-
-
+class VideoView(restful.Resource):
+    def get(self):
+        parser = reqparse.RequestParser()
+        parser.add_argument('url', type=str, location='args', required=True)
+        args = parser.parse_args()
+        try:
+            from flask import redirect
+            controllers.view_video(args['url'])
+            return redirect(args['url'])
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            return redirect(args['url'])
 
 
 

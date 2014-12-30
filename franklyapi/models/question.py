@@ -22,11 +22,12 @@ class Question(Base):
     location_name   = Column(String(50))
     country_name    = Column(String(50))
     country_code    = Column(String(2))
+    score           = Column(Integer(), default=0)
 
     def __init__(self, question_author, question_to, body, timestamp=datetime.datetime.now(),
                         is_answered=False, is_anonymous=False, is_ignored=False, public=False,
                         deleted=False, moderated_by=None, lat=None, lon=None, location_name=None, 
-                        country_name=None, country_code=None, id=get_item_id()):
+                        country_name=None, country_code=None, id=get_item_id(), score=0):
         self.id              = id
         self.question_author = question_author
         self.question_to     = question_to
@@ -43,6 +44,7 @@ class Question(Base):
         self.location_name   = location_name
         self.country_name    = country_name
         self.country_code    = country_code
+        self.score           = score
 
     def __repr__(self):
         return '<Question %r:%r>' % (self.id, self.body)
