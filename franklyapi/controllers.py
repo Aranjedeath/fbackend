@@ -1123,7 +1123,7 @@ def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None):
             count = questions_query.count()
         
         max_limit = count-2 if count>2 else count
-        question_offset = random.random(0, max_limit)
+        question_offset = random.randint(0, max_limit)
         
         questions = questions_query.order_by(Question.score.desc()
                                     ).offset(question_offset
