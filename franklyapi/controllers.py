@@ -803,6 +803,7 @@ def question_list_public(current_user_id, user_id, offset, limit):
                                             Question.public==True
                                             ).outerjoin(Upvote
                                             ).group_by(Question.id
+                                            ).order_by(Question.score.desc()
                                             ).order_by(func.count(Upvote.id).desc()
                                             ).offset(offset)
 
@@ -1118,7 +1119,8 @@ def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None):
         count = questions_query.count()
         max_limit = count-2 if count>2 else count
         question_offset = random.randint(0, max_limit)
-        questions = questions_query.offset(question_offset
+        questions = questions_query.order_by(Question.score.desc()
+                                    ).offset(question_offset
                                     ).limit(2)
         questions_feed = []
         if web:
@@ -1133,10 +1135,12 @@ def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None):
             extra_feed.extend(questions_feed)
 
         random_index = random.randint(last_extra_feed_position, len(feeds))
+        count = 0
         for item in extra_feed:
             feeds.insert(random_index, item)
             random_index +=1
-        last_extra_feed_position = random_index
+            count +=1
+        last_extra_feed_position = random_index+count
     
     next_index = offset+limit if feeds else -1
     print 'DISCOVER NEXT INDEX', next_index
