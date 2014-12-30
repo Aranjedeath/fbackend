@@ -326,8 +326,8 @@ def get_user_like_count(user_id):
         count = row[0]
     return count
 
-def get_user_view_count(user_id):
-    return get_follower_count(user_id)*3
+def get_user_view_count(user_id, user_view_count=None):
+    return 100
 
 def is_following(user_id, current_user_id):
     return bool(Follow.query.filter(Follow.user==current_user_id, Follow.followed==user_id, Follow.unfollowed==False).limit(1).count())
@@ -408,6 +408,9 @@ def get_video_states(video_urls={}):
     for key, value in result.items():
         for bitrate, url in value.items():
             result[key][bitrate]=url.replace('https://s3.amazonaws.com/franklyapp/', 'http://d35wlof4jnjr70.cloudfront.net/')
+            if bitrate is not 'thumb':
+                result[key][bitrate] = 'http://api.frankly.me/videoview?url={vid_url}'.format(vid_url=result[key][bitrate])
+    
     return result
 
 

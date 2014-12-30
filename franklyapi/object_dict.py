@@ -46,7 +46,7 @@ def user_to_dict(user):
         'fb_write_perm' : user.facebook_write_permission,
         'fb_perm':'none',
         'admin_level':1 if user.id in config.ADMIN_USERS else 0,
-        'view_count' : get_user_view_count(user.id),
+        'view_count' : user.total_view_count,
         
         'user_type':user.user_type,
         'user_title':user.user_title,
@@ -79,7 +79,7 @@ def guest_user_to_dict(user, current_user_id, cur_user_interest_tags=None):
         'is_follower':is_follower(user.id, current_user_id) if current_user_id else False,
         'is_following':is_following(user.id, current_user_id) if current_user_id else False,
         'allow_anonymous_question': user.allow_anonymous_question,
-        'view_count' : get_user_view_count(user.id),
+        'view_count' : user.total_view_count,
         'user_type':user.user_type,
         'user_title':user.user_title,
         'profile_videos':get_video_states({user.profile_video:user.cover_picture})[user.profile_video] if user.profile_video else {}
@@ -259,7 +259,7 @@ def post_to_dict(post, cur_user_id=None, distance=None):
         'client_id':post.client_id,
         'ready':post.ready,
         'popular':post.popular,
-        'view_count':get_post_view_count(post.id),
+        'view_count':post.view_count,
         'web_link':'http://frankly.me/p/{client_id}'.format(client_id=post.client_id)
     }
     return post_dict
@@ -339,7 +339,7 @@ def posts_to_dict(posts, cur_user_id=None, distance=None):
             'client_id':post.client_id,
             'ready':post.ready,
             'popular':post.popular,
-            'view_count':get_post_view_count(post.id),
+            'view_count':post.view_count,
             'web_link':'http://frankly.me/p/{client_id}'.format(client_id=post.client_id)
         }
         posts_dict.append(p_dict)

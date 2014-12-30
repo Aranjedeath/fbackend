@@ -51,6 +51,7 @@ class User(Base):
     notify_answer             = Column(Boolean(), default=True)
     timezone                  = Column(Integer(), default=0)
     view_count                = Column(Integer(), default=0)
+    total_view_count          = Column(Integer(), default=0)
 
 
     def __init__(self, email, username, first_name, registered_with, password=None, facebook_id=None, twitter_id=None, google_id=None,
@@ -61,7 +62,7 @@ class User(Base):
                         user_since=datetime.datetime.now(), last_updated=datetime.datetime.now(),
                         last_seen=datetime.datetime.now(), allow_anonymous_question=True,
                         notify_like=True, notify_follow=True, notify_question=True, notify_comments=True,
-                        notify_mention=None, notify_answer=None, timezone=0, id=get_item_id(), phone_num=None, view_count=0):
+                        notify_mention=None, notify_answer=None, timezone=0, id=get_item_id(), phone_num=None, view_count=0, total_view_count=0):
         self.id                        = id
         self.email                     = email
         self.first_name                = first_name
@@ -105,7 +106,8 @@ class User(Base):
         self.notify_answer             = notify_answer            
         self.timezone                  = timezone  
         self.phone_num                 = phone_num 
-        self.view_count                = view_count              
+        self.view_count                = view_count 
+        self.total_view_count          = total_view_count             
 
 
     def is_authenticated(self):
