@@ -1140,7 +1140,7 @@ def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None):
         if questions_feed:
             extra_feed.extend(questions_feed)
 
-        random_index = random.randint(last_extra_feed_position, len(feeds))
+        random_index = last_extra_feed_position + 2
         count = 0
         for item in extra_feed:
             feeds.insert(random_index, item)
