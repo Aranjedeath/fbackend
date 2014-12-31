@@ -123,6 +123,7 @@ def make_celeb_questions_dict(celeb, questions, current_user_id=None):
                     'profile_picture': celeb.profile_picture,
                     'gender': celeb.gender,
                     'user_title': celeb.user_title,
+                    'user_type':celeb.user_type,
                     'is_following': is_following(celeb.id, current_user_id),
                     'questions':[]
                 }
