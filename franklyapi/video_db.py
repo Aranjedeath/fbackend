@@ -19,6 +19,7 @@ def update_video_state(video_url, result={}):
 
 
 def update_view_count_to_db(url):
+    original_url = url
     count = redis_data_client.get(url)
     
     url = url.replace('http://d35wlof4jnjr70.cloudfront.net/', 'https://s3.amazonaws.com/franklyapp/')
@@ -40,7 +41,7 @@ def update_view_count_to_db(url):
                             params = {"url":url, "count":int(count)}
                         )
         db.session.commit()
-    redis_data_client.delete(url)
+    redis_data_client.delete(original_url)
 
 def update_total_view_count(user_ids):    
     result = db.session.execute(text("""SELECT answer_author, sum(posts.view_count)
