@@ -1108,8 +1108,8 @@ def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None):
         users_to_ignore.append(cur_user_id)
     celeb_users = get_celeb_users_for_feed(skip, celeb_limit, cur_user_id=cur_user_id, users=users_to_ignore, feed_type='discover')
     
+    last_extra_feed_position = 0
     for user in celeb_users:
-        last_extra_feed_position = 0
         questions_query = Question.query.filter(Question.question_to==user.id, 
                                         Question.deleted==False,
                                         Question.is_answered==False,
