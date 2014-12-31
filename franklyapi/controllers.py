@@ -297,7 +297,7 @@ def login_email_new(user_id, id_type, password, device_id, push_id=None):
         activated_now = user.deleted
         if activated_now:
             User.query.filter(User.id==user.id).update({'deleted':False})
-        return {'access_token': access_token, 'username': user.username, 'activated_now': activated_now, 'id':user.id, 'new_user':True}
+        return {'access_token': access_token, 'username': user.username, 'activated_now': activated_now, 'id':user.id, 'new_user':False}
     except NoResultFound:
         raise CustomExceptions.UserNotFoundException("No user with the given %s found"%(id_type))
 
