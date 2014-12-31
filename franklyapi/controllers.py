@@ -1038,7 +1038,7 @@ def get_celeb_users_for_feed(offset, limit, cur_user_id=None, users=[], feed_typ
         result = db.session.execute(text('SELECT user_since from users where id=:user_id'),
                                                     params={'user_id':cur_user_id})
         for row in result:
-            user_since = max(datetime.datetime.now()-datetime.timedelta(days=1), row[0])
+            user_since = max(datetime.datetime(2014, 12, 28, 18, 32, 35, 270652), row[0])
             user_time_diff = datetime.datetime.now()-user_since
             user_day = user_time_diff.days
 
