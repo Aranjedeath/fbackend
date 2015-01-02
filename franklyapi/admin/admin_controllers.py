@@ -11,10 +11,10 @@ def user_list(user_type, deleted=False, offset=0, limit=10, order_by='user_since
 
 
 def question_list(offset, limit, user_to=[], user_from=[], public=True, deleted=False):
-    questions = Question.query.filter(Question.deleted==deleted, Question.public==public
+    questions = Question.query.filter(Question.deleted==deleted, Question.public==public,
+                                    ).order_by(Question.timestamp.desc()
                                     ).offset(offset
                                     ).limit(limit
-                                    ).order_by(Question.timestamp.desc()
                                     ).all()
     return {'questions': [question_to_dict(question) for question in questions], 'next_index':offset+limit}
 
