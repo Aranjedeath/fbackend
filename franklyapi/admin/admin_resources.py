@@ -35,14 +35,19 @@ class AdminQuestionList(AdminProtectedResource):
         arg_parser.add_argument('limit', type=int, default=10, location='args')
         arg_parser.add_argument('public', type=int, default=1, location='args')
         arg_parser.add_argument('deleted', type=int, default=0, location='args')
+        try:
+
+            args = arg_parser.parse_args()
         
-        args = arg_parser.parse_args()
-        
-        return admin_controllers.question_list(offset=args['offset'],
-                                        limit=args['limit'],
-                                        public=args['public'],
-                                        deleted=args['deleted']
-                                        )
+            return admin_controllers.question_list(offset=args['offset'],
+                                                    limit=args['limit'],
+                                                    public=bool(args['public']),
+                                                    deleted=bool(args['deleted'])
+                                                    )
+        except Exception as e:
+            print traceback.format_exc(e)
+            abort(500, message=traceback.format_exc(e))
+
 
 
 class AdminQuestionDeleted(AdminProtectedResource):
