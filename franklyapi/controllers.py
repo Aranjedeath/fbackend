@@ -1100,7 +1100,7 @@ def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None):
     celeb_limit = limit-len()
     
     if offset != 0:
-        skip = skip+celeb_limit-1
+        skip = 2
     print 'DISCOVER USERS OFFSET/LIMIT:', skip, celeb_limit
     
     users_to_ignore = []
