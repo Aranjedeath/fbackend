@@ -11,24 +11,24 @@ def user_list(user_type, deleted=False, offset=0, limit=10, order_by='user_since
 
 
 def question_list(offset, limit, user_to=[], user_from=[], public=True, deleted=False):
-    questions = Question.query.filter(Question.deleted==deleted, Question.public==public,
+    questions = Question.query.filter(Question.deleted==deleted, Question.public==public, Question.is_answered==False, Question.is_ignored
                                     ).order_by(Question.timestamp.desc()
                                     ).offset(offset
                                     ).limit(limit
                                     ).all()
     return {'questions': [question_to_dict(question) for question in questions], 'next_index':offset+limit}
 
-def delete_question(question_id):
+def question_delete(question_id):
     Question.query.filter(Question.id==question_id).update({'deleted':True})
     db.session.commit()
     return {'success':True, 'question_id':question_id}
 
-def undelete_question(question_id):
+def question_undelete(question_id):
     Question.query.filter(Question.id==question_id).update({'deleted':False})
     db.session.commit()
     return {'success':True, 'question_id':question_id}
 
-def edit_question(question_id, body):
-    Question.query.filter(Question.id==question_id).update({'body':body.capitlize()})
+def question_edit(question_id, body):
+    Question.query.filter(Question.id==question_id).update({'body':body.capitalize()})
     db.session.commit()
     return {'success':True, 'question_id':question_id}

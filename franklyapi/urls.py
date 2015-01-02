@@ -116,9 +116,9 @@ def elbtest():
 import admin
 
 api.add_resource(admin.AdminQuestionList, '/admin/question/list')
-#api.add_resource(admin.QuestionDelete, '/admin/question/delete')
-#api.add_resource(admin.QuestionUndelete, '/admin/question/undelete')
-#api.add_resource(admin.QuestionEdit, '/admin/question/edit')
+api.add_resource(admin.QuestionDelete, '/admin/question/delete')
+api.add_resource(admin.QuestionUndelete, '/admin/question/undelete')
+api.add_resource(admin.QuestionEdit, '/admin/question/edit')
 
 
 

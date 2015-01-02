@@ -54,18 +54,26 @@ class AdminQuestionDeleted(AdminProtectedResource):
     @login_required
     def get():
         arg_parser = reqparse.RequestParser()
-        arg_parser.add_argument('question_id', type=int, default=0, location='args')
-        arg_parser.add_argument('limit', type=int, default=10, location='args')
-        arg_parser.add_argument('public', type=int, default=1, location='args')
-        arg_parser.add_argument('deleted', type=int, default=0, location='args')
-        
+        arg_parser.add_argument('question_id', type=str, default=0, location='json')
         args = arg_parser.parse_args()
         
-        return admin_controllers.question_list(offset=args['offset'],
-                                        limit=args['limit'],
-                                        public=args['public'],
-                                        deleted=args['deleted']
-                                        )
+        return admin_controllers.question_delete(question_id=args['question_id'])
 
+class AdminQuestionUndeleted(AdminProtectedResource):
+    @login_required
+    def get():
+        arg_parser = reqparse.RequestParser()
+        arg_parser.add_argument('question_id', type=str, default=0, location='json')
+        args = arg_parser.parse_args()
+        
+        return admin_controllers.question_undelete(question_id=args['question_id'])
 
-
+class AdminQuestionEdit(AdminProtectedResource):
+    @login_required
+    def get():
+        arg_parser = reqparse.RequestParser()
+        arg_parser.add_argument('question_id', type=str, default=0, location='json')
+        arg_parser.add_argument('body', type=str, default=0, location='json')
+        args = arg_parser.parse_args()
+        
+        return admin_controllers.question_edit(question_id=args['question_id'], body=args['body'])
