@@ -50,7 +50,7 @@ class AdminQuestionList(AdminProtectedResource):
 
 
 
-class AdminQuestionDeleted(AdminProtectedResource):
+class AdminQuestionDelete(AdminProtectedResource):
     @login_required
     def post(self):
         arg_parser = reqparse.RequestParser()
@@ -59,7 +59,7 @@ class AdminQuestionDeleted(AdminProtectedResource):
         
         return admin_controllers.question_delete(question_id=args['question_id'])
 
-class AdminQuestionUndeleted(AdminProtectedResource):
+class AdminQuestionUndelete(AdminProtectedResource):
     @login_required
     def post(self):
         arg_parser = reqparse.RequestParser()
