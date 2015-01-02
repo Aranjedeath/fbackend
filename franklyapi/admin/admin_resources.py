@@ -15,11 +15,15 @@ from functools import wraps
 import admin_controllers
 
 def admin_only(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        if not current_user.id in config.ADMIN_USERS:
-            abort(403, message='Invalid Login')
-        return f(*args, **kwargs)
+    try:
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            if not current_user.id in config.ADMIN_USERS:
+                abort(403, message='Invalid Login')
+            return f(*args, **kwargs)
+    except Exception as e:
+        print traceback.format_exc(e)
+        raise e
     return decorated
 
 
@@ -45,7 +49,7 @@ class AdminQuestionList(AdminProtectedResource):
                                                     deleted=bool(args['deleted'])
                                                     )
         except Exception as e:
-            print traceback.format_exc(e)
+            return traceback.format_exc(e)
             abort(500, message=traceback.format_exc(e))
 
 
