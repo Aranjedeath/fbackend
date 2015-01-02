@@ -2,26 +2,26 @@ from bad_usernames import UNAVAILABLE_USERNAMES_LAST_UPDATED, UNAVAILABLE_USERNA
 
 DEBUG = False
 
-SECRET_KEY = 'franklySpeakingThisIsVeryConfidential'
+SECRET_KEY = 'franklySpeakingThisIsVeryConfid'
 MULTIPLE_AUTH_HEADERS = ['access_token', 'device']
 
 PORT = 8000
 PROPOGATE_EXCEPTIONS = True
 
-RAYGUN_KEY = "7UhM72ttZSLGprISFjVg0Q=="
+RAYGUN_KEY = ""
 
-AWS_KEY = 'AKIAJ72DWIKVJZNTD2VA'
-AWS_SECRET = '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' 
+AWS_KEY = ''
+AWS_SECRET = '' 
 
-TWITTER_APP_TOKEN = 'aaNDJcxdHadQTxBW8P7B42yoy'
-TWITTER_APP_SECRET = 'AAOwvDBHlci4WmJANTmgOLJg28v3HSx0SogBEfQY9TGamsF9CS'
+TWITTER_APP_TOKEN = ''
+TWITTER_APP_SECRET = ''
 
-REDIS_HOST = 'franklyapi.wocnxz.0001.use1.cache.amazonaws.com'
+REDIS_HOST = ''
 
-MYSQL_HOST = 'franklyapi.c0gm6ruawjoo.us-east-1.rds.amazonaws.com:3306'
-MYSQL_USERNAME = 'franklyapi'
-MYSQL_PASSWORD = 'Jack4Jill$'
-MYSQL_DATABASE_NAME = 'frankly'
+MYSQL_HOST = ''
+MYSQL_USERNAME = ''
+MYSQL_PASSWORD = ''
+MYSQL_DATABASE_NAME = ''
 
 DATABASE_URI = 'mysql://{username}:{password}@{host}/{db_name}'.format(username=MYSQL_USERNAME, 
                                                                         password=MYSQL_PASSWORD, 
@@ -38,9 +38,9 @@ ALLOWED_AUDIO_FORMATS = ['mp3', 'ogg', 'wav', 'aac', '3gp']
 BLOCKED_EMAIL_DOMAINS = ['mailinator.com']
 ALLOWED_CHARACTERS = [ chr(item) for item in range(48,58)+range(65,91)+[95]+range(97,123)]
 
-ADMIN_USERS = ['cab4132c53c6b197df310373dba38e5f','cab4132c53c6a513df310374a482ef4e']
+ADMIN_USERS = [] #user_id
 
-SPREADSHEET_EMAIL = 'tempuser@frankly.me'
-SPREADSHEET_PASSWORD = 'franklydocs'
+SPREADSHEET_EMAIL = ''
+SPREADSHEET_PASSWORD = ''
 
 

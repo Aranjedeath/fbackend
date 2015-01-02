@@ -1100,7 +1100,7 @@ def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None):
     celeb_limit = 2
     
     if offset != 0:
-        skip = skip+celeb_limit
+        skip = skip+celeb_limit - 1
     print 'DISCOVER USERS OFFSET/LIMIT:', skip, celeb_limit
     
     users_to_ignore = []
@@ -1452,7 +1452,6 @@ def view_video(url):
 def search(cur_user_id, query, offset, limit):
     users = User.query.filter(or_(  User.username.like('%{query}%'.format(query=query)),
                                     User.first_name.like('%{query}%'.format(query=query)),
-                                    
                                 ),
                                 User.id!=cur_user_id,
                                 User.user_type==2
