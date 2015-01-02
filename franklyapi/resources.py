@@ -1136,11 +1136,19 @@ class Search(restful.Resource):
     def get(self):
         parser = reqparse.RequestParser()
         parser.add_argument('q', type=str, location='args', required = True)
-        parser.add_argument('skip', type=int, location='args', default = 0)
+        parser.add_argument('offset', type=int, location='args', default = 0)
         parser.add_argument('limit', type=int, location='args', default = 10)
         args = parser.parse_args()
         try:
-            return controllers.search(args['q'], args['skip'], args['limit'])
+            if current_user.is_authenticated():
+                current_user_id = current_user.id
+            else:
+                current_user_id = None
+            
+            return controllers.search(cur_user_id=current_user_id,
+                                        query=args['q'],
+                                        offset=args['offset'],
+                                        limit=args['limit'])
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])

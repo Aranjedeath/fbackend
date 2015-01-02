@@ -25,7 +25,7 @@ from app import redis_client, raygun, db, redis_data_client
 
 from object_dict import user_to_dict, guest_user_to_dict,\
                         thumb_user_to_dict, question_to_dict, post_to_dict, comment_to_dict,\
-                        comments_to_dict, posts_to_dict, make_celeb_questions_dict, media_dict
+                        comments_to_dict, posts_to_dict, make_celeb_questions_dict, media_dict, search_user_to_dict
 
 from video_db import add_video_to_db
 
@@ -1449,22 +1449,18 @@ def view_video(url):
     url = url.replace('http://d35wlof4jnjr70.cloudfront.net/', 'https://s3.amazonaws.com/franklyapp/')
     redis_data_client.incr(url, 1)
 
-def search(query, skip, limit):
-    users = User.query.filter(username.like('%{0}%'.format(q))).offset(skip).limit(limit)
-    res =  {
-            'results' : []
-        }
-    if len(users):
-        for obj in users:
-            user_obj = user_to_dict(obj)
-            res['results'].append({'type':'user', 'user' : user_obj})
-        if len(user) < limit:
-            res['next_offset'] = -1
-        else:
-            res['next_offset'] = offset + limit
-        res['count'] = len(users)
-    else:
-        res['count'] = 0
-        res['next_offset'] = -1
-    return res
+def search(cur_user_id, query, offset, limit):
+    users = User.query.filter(User.username.like('%{query}%'.format(query=query)), User.id!=cur_user_id).offset(offset).limit(limit).all()
+    results = []
+    for user in users:
+        results.append({'type':'user', 'user' : search_user_to_dict(user, cur_user_id)})
+    
+    count = len(users)
+    next_index = limit+offset if count >= limit else -1
+
+    return {'q':query, 'count':count, 'results':results, 'next_index':next_index}
+
+
+
+        
     

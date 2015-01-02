@@ -91,6 +91,17 @@ def guest_user_to_dict(user, current_user_id, cur_user_interest_tags=None):
     
     return user_dict
 
+def search_user_to_dict(user):
+    user_dict = {
+        'id':user.id,
+        'username':user.username,
+        'first_name':user.first_name,
+        'last_name':None,
+        'profile_picture':user.profile_picture,
+        'user_type':user.user_type
+    }
+    return user_dict
+
 def thumb_user_to_dict(user):
     user_dict = {
         'id':user.id,
