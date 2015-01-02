@@ -52,7 +52,7 @@ class AdminQuestionList(AdminProtectedResource):
 
 class AdminQuestionDeleted(AdminProtectedResource):
     @login_required
-    def get():
+    def post(self):
         arg_parser = reqparse.RequestParser()
         arg_parser.add_argument('question_id', type=str, default=0, location='json')
         args = arg_parser.parse_args()
@@ -61,7 +61,7 @@ class AdminQuestionDeleted(AdminProtectedResource):
 
 class AdminQuestionUndeleted(AdminProtectedResource):
     @login_required
-    def get():
+    def post(self):
         arg_parser = reqparse.RequestParser()
         arg_parser.add_argument('question_id', type=str, default=0, location='json')
         args = arg_parser.parse_args()
@@ -70,7 +70,7 @@ class AdminQuestionUndeleted(AdminProtectedResource):
 
 class AdminQuestionEdit(AdminProtectedResource):
     @login_required
-    def get():
+    def post(self):
         arg_parser = reqparse.RequestParser()
         arg_parser.add_argument('question_id', type=str, default=0, location='json')
         arg_parser.add_argument('body', type=str, default=0, location='json')
