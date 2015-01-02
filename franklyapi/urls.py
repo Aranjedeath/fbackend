@@ -105,5 +105,24 @@ def elbtest():
     return "{'success':'true','server':'zdexterorroh'}"
 
 
+
+
+
+
+
+
+#=================ADMIN URLS========================#
+
+import admin
+
+api.add_resource(admin.QuestionList, '/admin/question/list')
+#api.add_resource(admin.QuestionDelete, '/admin/question/delete')
+#api.add_resource(admin.QuestionUndelete, '/admin/question/undelete')
+#api.add_resource(admin.QuestionEdit, '/admin/question/edit')
+
+
+
+
+
 if __name__ == '__main__':
     app.run('127.0.0.1', 8000)
