@@ -1097,7 +1097,7 @@ def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None):
     next_index = offset+limit if posts else -1
     
     skip = offset/10
-    celeb_limit = 2
+    celeb_limit = limit-len()
     
     if offset != 0:
         skip = skip+celeb_limit-1

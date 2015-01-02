@@ -27,7 +27,7 @@ class AdminProtectedResource(restful.Resource):
         method_decorators = [admin_only]
 
 
-class QuestionList(AdminProtectedResource):
+class AdminQuestionList(AdminProtectedResource):
     @login_required
     def get():
         arg_parser = reqparse.RequestParser()
@@ -45,7 +45,7 @@ class QuestionList(AdminProtectedResource):
                                         )
 
 
-class QuestionDeleted(AdminProtectedResource):
+class AdminQuestionDeleted(AdminProtectedResource):
     @login_required
     def get():
         arg_parser = reqparse.RequestParser()
