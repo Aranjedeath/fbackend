@@ -1452,7 +1452,7 @@ def view_video(url):
 def search(cur_user_id, query, offset, limit):
     users = User.query.filter(or_(  User.username.like('%{query}%'.format(query=query)),
                                     User.first_name.like('%{query}%'.format(query=query)),
-                                    User.user_title.like('%{query}%'.format(query=query))
+                                    
                                 ),
                                 User.id!=cur_user_id,
                                 User.user_type==2
