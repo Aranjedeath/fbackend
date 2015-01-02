@@ -72,6 +72,7 @@ api.add_resource(QuestionImageCreator, '/question/bg_image/<question_id>')
 
 api.add_resource(InterviewVideoResource, '/interview/medialist')
 api.add_resource(WebHiringForm, '/web/hiring_form')
+api.add_resource(Search, '/search')
 
 
 

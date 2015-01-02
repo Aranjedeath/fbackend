@@ -1132,4 +1132,18 @@ class VideoView(restful.Resource):
             return redirect(args['url'])
 
 
+class Search(restful.Resource):
+    def get(self):
+        parser = reqparse.RequestParser()
+        parser.add_argument('q', type=str, location='args', required = True)
+        parser.add_argument('skip', type=int, location='args', default = 0)
+        parser.add_argument('limit', type=int, location='args', default = 10)
+        args = parser.parse_args()
+        try:
+            return controllers.search(args['q'], args['skip'], args['limit'])
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+
 

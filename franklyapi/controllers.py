@@ -1449,8 +1449,22 @@ def view_video(url):
     url = url.replace('http://d35wlof4jnjr70.cloudfront.net/', 'https://s3.amazonaws.com/franklyapp/')
     redis_data_client.incr(url, 1)
 
-
-
-
-            
-
+def search(query, skip, limit):
+    users = User.query.filter(username.like('%{0}%'.format(q))).offset(skip).limit(limit)
+    res =  {
+            'results' : []
+        }
+    if len(users):
+        for obj in users:
+            user_obj = user_to_dict(obj)
+            res['results'].append({'type':'user', 'user' : user_obj})
+        if len(user) < limit:
+            res['next_offset'] = -1
+        else:
+            res['next_offset'] = offset + limit
+        res['count'] = len(users)
+    else:
+        res['count'] = 0
+        res['next_offset'] = -1
+    return res
+    
