@@ -1100,7 +1100,7 @@ def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None):
     celeb_limit = 2
     
     if offset != 0:
-        skip = skip+celeb_limit-1
+        skip = skip+celeb_limit
     print 'DISCOVER USERS OFFSET/LIMIT:', skip, celeb_limit
     
     users_to_ignore = []
@@ -1450,7 +1450,15 @@ def view_video(url):
     redis_data_client.incr(url, 1)
 
 def search(cur_user_id, query, offset, limit):
-    users = User.query.filter(User.username.like('%{query}%'.format(query=query)), User.id!=cur_user_id).offset(offset).limit(limit).all()
+    users = User.query.filter(or_(  User.username.like('%{query}%'.format(query=query)),
+                                    User.first_name.like('%{query}%'.format(query=query)),
+                                    User.user_title.like('%{query}%'.format(query=query))
+                                ),
+                                User.id!=cur_user_id,
+                                User.user_type==2
+                            ).offset(offset
+                            ).limit(limit
+                            ).all()
     results = []
     for user in users:
         results.append({'type':'user', 'user' : search_user_to_dict(user, cur_user_id)})
