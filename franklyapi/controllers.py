@@ -1100,7 +1100,7 @@ def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None):
     celeb_limit = 2
     
     if offset != 0:
-        skip = skip+celeb_limit - 1
+        skip = skip+celeb_limit
     print 'DISCOVER USERS OFFSET/LIMIT:', skip, celeb_limit
     
     users_to_ignore = []
@@ -1304,7 +1304,9 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
         from database import get_item_id
 
         video_url, thumbnail_url = media_uploader.upload_user_video(user_id=cur_user_id, video_file=video, video_type='answer')
+        
         curruser = User.query.filter(User.id == cur_user_id).one()
+        
         add_video_to_db(video_url, thumbnail_url)
         
         post = Post(id=get_item_id(),
@@ -1450,11 +1452,20 @@ def view_video(url):
     redis_data_client.incr(url, 1)
 
 def search(cur_user_id, query, offset, limit):
-    users = User.query.filter(or_(  User.username.like('%{query}%'.format(query=query)),
-                                    User.first_name.like('%{query}%'.format(query=query)),
-                                ),
-                                User.id!=cur_user_id,
-                                User.user_type==2
+    if len(query)<4:
+        search_filter = or_(  User.username.like('{query}%'.format(query=query)),
+                                    User.first_name.like('% {query}%'.format(query=query)),
+                                    User.first_name.like('{query}%'.format(query=query))
+                                )
+    else:
+        search_filter = or_(  User.username.like('%{query}%'.format(query=query)),
+                                    User.first_name.like('%{query}%'.format(query=query))
+                                )
+
+    users = User.query.filter(User.id!=cur_user_id,
+                                User.user_type==2, User.profile_video!=None,
+                                search_filter,
+                                
                             ).offset(offset
                             ).limit(limit
                             ).all()

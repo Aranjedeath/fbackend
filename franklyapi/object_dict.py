@@ -100,7 +100,8 @@ def search_user_to_dict(user, current_user_id):
         'first_name':user.first_name,
         'last_name':None,
         'profile_picture':user.profile_picture,
-        'user_type':user.user_type
+        'user_type':user.user_type,
+        'user_title':user.user_title
     }
     return user_dict
 
