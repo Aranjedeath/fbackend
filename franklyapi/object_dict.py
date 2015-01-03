@@ -47,6 +47,7 @@ def user_to_dict(user):
         'fb_perm':'none',
         'admin_level':1 if user.id in config.ADMIN_USERS else 0,
         'view_count' : user.total_view_count,
+        'web_link':'http://frankly.me/{username}'.format(username=user.username),
         
         'user_type':user.user_type,
         'user_title':user.user_title,
@@ -84,7 +85,8 @@ def guest_user_to_dict(user, current_user_id, cur_user_interest_tags=None):
         'view_count' : user.total_view_count,
         'user_type':user.user_type,
         'user_title':user.user_title,
-        'profile_videos':get_video_states({user.profile_video:user.cover_picture})[user.profile_video] if user.profile_video else {}
+        'profile_videos':get_video_states({user.profile_video:user.cover_picture})[user.profile_video] if user.profile_video else {},
+        'web_link':'http://frankly.me/{username}'.format(username=user.username)
     }
     if user_dict['profile_video']:
         user_dict['answer_count'] = user_dict['answer_count']+1
