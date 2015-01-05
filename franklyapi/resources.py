@@ -300,7 +300,9 @@ class UserFollowers(restful.Resource):
         args = user_followers_parser.parse_args()
         
         try:
-            resp = controllers.user_followers(current_user.id,
+            if not user_id:
+                raise CustomExceptions.UserNotFoundException('You need to login to view this.')
+            resp = controllers.user_followers(current_user_id,
                                                 user_id=user_id, 
                                                 username=username,
                                                 offset=args['offset'],
