@@ -279,6 +279,44 @@ class UserUnfollow(restful.Resource):
             abort(500, message="Internal Server Error")
 
 
+class UserFollowers(restful.Resource):
+    def get(self, user_id):
+        
+        username=None
+
+        if current_user.is_authenticated():
+            current_user_id = current_user.id
+        else:
+            current_user_id = None
+
+        if user_id == 'me':
+            user_id = current_user_id
+        elif len(user_id) < 32:
+            username = user_id
+
+        user_followers_parser = reqparse.RequestParser()
+        user_followers_parser.add_argument('offset', default=0, type=int, location='args')
+        user_followers_parser.add_argument('limit', default=10, type=int, location='args')
+        args = user_followers_parser.parse_args()
+        
+        try:
+            resp = controllers.user_followers(current_user.id,
+                                                user_id=user_id, 
+                                                username=username,
+                                                offset=args['offset'],
+                                                limit=args['limit'])
+            return resp
+
+        except CustomExceptions.UserNotFoundException as e:
+            abort(404, message=str(e))
+
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message="Internal Server Error")
+
+
 class UserBlock(restful.Resource):
     @login_required
     def post(self):

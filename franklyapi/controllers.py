@@ -594,6 +594,42 @@ def user_unfollow(cur_user_id, user_id):
     db.session.commit()
     return {'user_id': user_id}
 
+def user_followers(cur_user_id, user_id, username=None, offset=0, limit=10):
+    if username:
+        user_id = User.query.with_entities(User.id).filter(User.username==username).one().id
+
+    followers = User.query.with_entities(User.id, User.username, User.first_name, User.user_type, User.user_title
+                            ).join(Follow
+                            ).filter(Follow.user==user_id, Follow.unfollowed==False
+                            ).order_by(Follow.timestamp
+                            ).offset(offset
+                            ).limit(limit
+                            ).all()
+
+    followers_dict = []
+    for follower in followers:
+        
+        are_you_following = is_following(user_id, cur_user_id) if cur_user_id else False
+        is_he_follower = True if user_id==cur_user_id else is_follower(user_id, cur_user_id) if cur_user_id else False
+        
+        followers_dict.append({
+                            'user_id':follower.id,
+                            'username':follower.username,
+                            'first_name':follower.first_name,
+                            'last_name':None,
+                            'user_title':follower.user_title,
+                            'user_type':follower.user_type,
+                            'is_following':are_you_following,
+                            'is_follower':is_he_follower
+            })
+
+    next_index = offset+limit
+    if len(followers_dict)<limit:
+        next_index = -1
+
+    return {'followers':followers_dict, 'next_index':next_index, 'offset':offset, 'limit':limit}
+
+
 
 def user_block(cur_user_id, user_id):
     if cur_user_id == user_id:

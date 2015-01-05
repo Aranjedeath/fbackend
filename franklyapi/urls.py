@@ -11,6 +11,8 @@ api.add_resource(UserUpdateForm, '/user/update_profile/<user_id>')
 api.add_resource(UserProfileUsername, '/user/profile/username/<username>')
 
 api.add_resource(UserFollow, '/user/follow')
+api.add_resource(UserFollowers, '/user/followers/<user_id>')
+
 api.add_resource(UserUnfollow, '/user/unfollow')
 api.add_resource(UserBlock, '/user/block')
 api.add_resource(UserUnblock, '/user/unblock')
