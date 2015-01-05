@@ -600,7 +600,7 @@ def user_followers(cur_user_id, user_id, username=None, offset=0, limit=10):
             user_id = User.query.with_entities(User.id).filter(User.username==username).one().id
 
         followers = User.query.with_entities(User.id, User.username, User.first_name, User.user_type, User.user_title
-                                ).join(Follow
+                                ).join( (Follow, Follow.followed==User.id)
                                 ).filter(Follow.user==user_id, Follow.unfollowed==False
                                 ).order_by(Follow.timestamp
                                 ).offset(offset
