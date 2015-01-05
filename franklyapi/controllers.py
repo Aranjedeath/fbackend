@@ -602,7 +602,7 @@ def user_followers(cur_user_id, user_id, username=None, offset=0, limit=10):
         followers = User.query.with_entities(User.id, User.username, User.first_name, User.user_type, User.user_title
                                 ).join( (Follow, Follow.followed==User.id)
                                 ).filter(Follow.user==user_id, Follow.unfollowed==False
-                                ).order_by(Follow.timestamp
+                                ).order_by(Follow.timestamp.desc()
                                 ).offset(offset
                                 ).limit(limit
                                 ).all()
