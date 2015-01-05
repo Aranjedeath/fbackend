@@ -1030,10 +1030,10 @@ def get_user_timeline(cur_user_id, user_id, offset, limit, include_reshares=Fals
     return {'stream': posts, 'count':len(posts), 'next_index':next_index, 'total':total_count}
     
 
-def get_celeb_users_for_feed(offset, limit, cur_user_id=None, users=[], feed_type='home'):
+def get_celeb_users_for_feed(offset, limit, cur_user_id=None, users=[], feed_type='home', visit=0):
     #for home feed only users will be included
     #for discover feed users will be excluded
-    user_day = 0
+    user_day = visit/2
     if cur_user_id:
         result = db.session.execute(text('SELECT user_since from users where id=:user_id'),
                                                     params={'user_id':cur_user_id})
@@ -1081,7 +1081,7 @@ def home_feed(cur_user_id, offset, limit, web):
 
 
 
-def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None):
+def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None, visit=0):
     followings = Follow.query.filter(Follow.user==cur_user_id, Follow.unfollowed==False)
     followings = [follow.followed for follow in followings]
 
@@ -1106,7 +1106,7 @@ def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None):
     users_to_ignore = []
     if cur_user_id:
         users_to_ignore.append(cur_user_id)
-    celeb_users = get_celeb_users_for_feed(skip, celeb_limit, cur_user_id=cur_user_id, users=users_to_ignore, feed_type='discover')
+    celeb_users = get_celeb_users_for_feed(skip, celeb_limit, cur_user_id=cur_user_id, users=users_to_ignore, feed_type='discover', visit=visit)
     
     last_extra_feed_position = 0
     for user in celeb_users:
