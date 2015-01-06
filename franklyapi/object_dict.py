@@ -113,6 +113,27 @@ def search_user_to_dict(user, current_user_id = None):
     }
     return user_dict
 
+def invitable_to_dict(invitable, current_user_id):
+    from controllers import has_invited, get_invite_count
+    invitable_dict = {
+            'id' : invitable.id,
+            'first_name' : invitable.name,
+            'last_name' : None,
+            'username' : invitable.twitter_handle,
+            'twitter_handle' : invitable.twitter_handle,
+            'email' : invitable.email,
+            'twitter_text' : invitable.twitter_text,
+            'mail_text' : invitable.mail_text,
+            'has_invited' : has_invited(current_user_id, invitable.id) if current_user_id else False,
+            'cur_invite_count' : get_invite_count(invitable.id),
+            'max_invite_count' : invitable.max_invite_count,
+            'profile_picture' : invitable.profile_picture,
+            'user_title' : invitable.user_title,
+            'bio' : invitable.bio
+
+        }
+    return invitable_dict
+
 def thumb_user_to_dict(user):
     user_dict = {
         'id':user.id,

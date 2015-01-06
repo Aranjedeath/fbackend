@@ -20,12 +20,13 @@ import social_helpers
 from configs import config
 from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
                     Question, Upvote, Comment, ForgotPasswordToken, Install, Video,\
-                    UserFeed, Event, Reshare, ContactUs
+                    UserFeed, Event, Reshare, Invitable, Invite, ContactUs
+
 from app import redis_client, raygun, db, redis_data_client
 
 from object_dict import user_to_dict, guest_user_to_dict,\
                         thumb_user_to_dict, question_to_dict, post_to_dict, comment_to_dict,\
-                        comments_to_dict, posts_to_dict, make_celeb_questions_dict, media_dict, search_user_to_dict
+                        comments_to_dict, posts_to_dict, make_celeb_questions_dict, media_dict, search_user_to_dict,invitable_to_dict
 
 from video_db import add_video_to_db
 
@@ -349,6 +350,12 @@ def get_following_count(user_id):
 
 def get_answer_count(user_id):
     return Post.query.filter(Post.answer_author==user_id, Post.deleted==False).count()
+
+def get_invite_count(invitable_id):
+    return Invite.query.filter(Invite.invitable == invitable_id).count()
+
+def has_invited(cur_user_id, invitable_id):
+    return bool(Invite.query.filter(Invite.user==cur_user_id, Invite.invitable==invitable_id).limit(1).count())
 
 def get_user_like_count(user_id):
     result = db.session.execute(text("""SELECT COUNT(post_likes.id) FROM post_likes
@@ -1305,10 +1312,6 @@ def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None, visit=0)
                 questions_feed = [{'type':'questions', 'questions':make_celeb_questions_dict(user, questions.all(), cur_user_id)}]
         
         extra_feed = [{'type':'user', 'user':guest_user_to_dict(user, cur_user_id)}]
-
-        if questions_feed:
-            extra_feed.extend(questions_feed)
-
         random_index = last_extra_feed_position + 2
         count = 0
         for item in extra_feed:
@@ -1625,6 +1628,16 @@ def view_video(url):
     redis_data_client.incr(url, 1)
 
 def search(cur_user_id, query, offset, limit):
+    results = []
+    if offset == 0:
+        search_filter_invitable = or_( Invitable.name.like('{query}%'.format(query = query)),
+                                   Invitable.name.like('% {query}%'.format(query = query))
+                                )
+        invitable = Invitable.query.filter(search_filter_invitable).limit(1).all()
+        if invitable:
+            results.append({'type':'invitable', 'invitable' : invitable_to_dict(invitable[0], cur_user_id)})
+            limit = limit - 1
+
     if len(query)<4:
         search_filter = or_(  User.username.like('{query}%'.format(query=query)),
                                     User.first_name.like('% {query}%'.format(query=query)),
@@ -1635,18 +1648,19 @@ def search(cur_user_id, query, offset, limit):
                                     User.first_name.like('%{query}%'.format(query=query))
                                 )
 
+
     users = User.query.filter(User.id!=cur_user_id,
                                 User.user_type==2, User.profile_video!=None,
                                 search_filter,
-                                
                             ).offset(offset
                             ).limit(limit
                             ).all()
-    results = []
+
     for user in users:
         results.append({'type':'user', 'user' : search_user_to_dict(user, cur_user_id)})
     
-    count = len(users)
+
+    count = len(results)
     next_index = limit+offset if count >= limit else -1
 
     return {'q':query, 'count':count, 'results':results, 'next_index':next_index}

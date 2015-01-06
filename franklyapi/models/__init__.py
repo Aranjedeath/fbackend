@@ -6,3 +6,4 @@ from auth_models import AccessToken, ForgotPasswordToken
 from others import Install, ReportAbuse, Email, Feedback, Interest, UserData, Contact, Package, UserAccount, Video, ContactUs
 from feed import UserFeed, CentralQueueMobile
 from event import Event
+from invitables import Invitable, Invite
