@@ -1197,4 +1197,19 @@ class Search(restful.Resource):
             raygun.send(err[0],err[1],err[2])
             print traceback.format_exc(e)
 
-
+class ContactUs(restful.Resource):
+    def post(self):
+        parser = reqparse.ReqestParser()
+        parser.add_argument('name', type=str, location ='json', required = True )
+        parser.add_argument('email', type=str, location ='json', required = True )
+        parser.add_argument('organisation', type=str, location ='json', required = True )
+        parser.add_argument('message', type=str, location ='json', required = True )
+        parser.add_argument('phone', type=str, location ='json', default = '000-000-0000')
+        args = parser.parse_args()
+        try:
+            return controller.add_contact(args['name'], args['email'], args['organisation'], args['message'], args['phone'])
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+    

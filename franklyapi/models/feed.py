@@ -18,3 +18,29 @@ class UserFeed(Base):
 
     def __repr__(self):
         return '<UserFeed %r:%r>' % (self.user, self.day)
+
+class CentralQueue(Base):
+    __tablename__ = 'central_queue'
+    id            = Column(Integer, primary_key = True)
+    user          = Column(CHAR(32), ForeignKey('users.id'))
+    question      = Column(CHAR(32), ForeignKey('questions.id'))
+    post          = Column(CHAR(32), ForeignKey('posts.id'))
+
+    def __init__(self, _type, obj):
+        if _type == 'user':
+            self.user = obj
+        elif _type == 'question':
+            self.question = obj
+        else:
+            self.post = obj
+
+    def __repr__(self):
+        if self.user:
+            return '<Central Queue: %r -- User: %r >' %(self.id, self.user)
+        elif self.question:
+            return '<Central Queue: %r -- Question: %r >' %(self.id, self.question)
+        else:
+            return '<Central Queue: %r -- Post: %r >' %(self.id, self.post)
+          
+            
+        

@@ -20,7 +20,7 @@ import social_helpers
 from configs import config
 from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
                     Question, Upvote, Comment, ForgotPasswordToken, Install, Video,\
-                    UserFeed, Event, Reshare
+                    UserFeed, Event, Reshare, Contact
 from app import redis_client, raygun, db, redis_data_client
 
 from object_dict import user_to_dict, guest_user_to_dict,\
@@ -1516,7 +1516,16 @@ def search(cur_user_id, query, offset, limit):
 
     return {'q':query, 'count':count, 'results':results, 'next_index':next_index}
 
+def add_contact(name, email, organisation, message, phone):
+    from base64 import b64decode as dec
+    from base64 import b64encode as enc
 
-
-        
-    
+    b64msg = dec(name + email + organisation + message + phone)
+    contact = Contacts.qeury.filter(Contacts.b64msg == b64msg).all()
+    if contact:
+        return {'success' : True}
+    else:
+        contact = Contacts(name, email, organisation, message, phone, b64msg)
+        db.session.add(contact)
+        db.session.commit()
+    return {'success' : True}
