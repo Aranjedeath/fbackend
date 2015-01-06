@@ -1153,7 +1153,7 @@ def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None, visit=0)
     
     last_extra_feed_position = 0
     for user in celeb_users:
-        question_feed = []
+        questions_feed = []
         if web:
             questions_query = Question.query.filter(Question.question_to==user.id, 
                                             Question.deleted==False,
