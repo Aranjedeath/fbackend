@@ -1153,35 +1153,35 @@ def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None, visit=0)
     
     last_extra_feed_position = 0
     for user in celeb_users:
-        questions_query = Question.query.filter(Question.question_to==user.id, 
-                                        Question.deleted==False,
-                                        Question.is_answered==False,
-                                        Question.is_ignored==False,
-                                        Question.public==True
-                                        )
-        count = questions_query.filter(Question.score>300).count()
-        if count:
-            questions_query = questions_query.filter(Question.score>300)
-        else:
-            count = questions_query.count()
+        #questions_query = Question.query.filter(Question.question_to==user.id, 
+                                        #Question.deleted==False,
+                                        #Question.is_answered==False,
+                                        #Question.is_ignored==False,
+                                        #Question.public==True
+                                        #)
+        #count = questions_query.filter(Question.score>300).count()
+        #if count:
+            #questions_query = questions_query.filter(Question.score>300)
+        #else:
+            #count = questions_query.count()
         
-        max_limit = count-2 if count>2 else count
-        question_offset = random.randint(0, max_limit)
+        #max_limit = count-2 if count>2 else count
+        #question_offset = random.randint(0, max_limit)
         
-        questions = questions_query.order_by(Question.score.desc()
-                                    ).offset(question_offset
-                                    ).limit(2)
-        questions_feed = []
-        if web:
-            questions_feed = [{'type':'question', 'questions':question_to_dict(q, cur_user_id)} for q in questions.all()]
+        #questions = questions_query.order_by(Question.score.desc()
+                                    #).offset(question_offset
+                                    #).limit(2)
+        #questions_feed = []
+        #if web:
+            #questions_feed = [{'type':'question', 'questions':question_to_dict(q, cur_user_id)} for q in questions.all()]
             
-        elif questions.count()==2:
-            questions_feed = [{'type':'questions', 'questions':make_celeb_questions_dict(user, questions.all(), cur_user_id)}]
+        #elif questions.count()==2:
+            #questions_feed = [{'type':'questions', 'questions':make_celeb_questions_dict(user, questions.all(), cur_user_id)}]
         
         extra_feed = [{'type':'user', 'user':guest_user_to_dict(user, cur_user_id)}]
 
-        if questions_feed:
-            extra_feed.extend(questions_feed)
+        #if questions_feed:
+            #extra_feed.extend(questions_feed)
 
         random_index = last_extra_feed_position + 2
         count = 0
