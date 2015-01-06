@@ -228,7 +228,7 @@ class ContactUs(Base):
     message = Column(String(400), nullable = False)
     organisation = Column(String(40), nullable = False)
     phone = Column(String(20), nullable = False)
-    b64msg = Column(String(450), nullabe = False)
+    b64msg = Column(String(450), nullable = False)
     
     def __init__(name, email, organisation, message, phone, b64msg):
         self.name = name
