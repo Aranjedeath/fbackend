@@ -1517,11 +1517,10 @@ def search(cur_user_id, query, offset, limit):
     return {'q':query, 'count':count, 'results':results, 'next_index':next_index}
 
 def add_contact(name, email, organisation, message, phone):
-    from base64 import b64decode as dec
     from base64 import b64encode as enc
 
-    b64msg = dec(name + email + organisation + message + phone)
-    contact = ContactUs.qeury.filter(Contacts.b64msg == b64msg).all()
+    b64msg = enc(name + email + organisation + message + phone)
+    contact = ContactUs.query.filter(ContactUs.b64msg == b64msg).all()
     if contact:
         return {'success' : True}
     else:

@@ -230,7 +230,7 @@ class ContactUs(Base):
     phone = Column(String(20), nullable = False)
     b64msg = Column(String(450), nullable = False)
     
-    def __init__(name, email, organisation, message, phone, b64msg):
+    def __init__(self,name, email, organisation, message, phone, b64msg):
         self.name = name
         self.email = email
         self.message = message
