@@ -220,4 +220,20 @@ class UserAccount(Base):
     def __repr__(self):
         return '<UserAccount %r:%r>' % (self.account_pname, self.account_username)
 
-
+class ContactUs(Base):
+    __tablename__ = 'contact_us'
+    id = Column(Integer, primary_key=True)
+    name = Column(String(40), nullable = False)
+    email = Column(String(60), nullable = False)
+    message = Column(String(400), nullable = False)
+    organisation = Column(String(40), nullable = False)
+    phone = Column(String(20), nullable = False)
+    b64msg = Column(String(450), nullabe = False)
+    
+    def __init__(name, email, organisation, message, phone, b64msg):
+        self.name = name
+        self.email = email
+        self.message = message
+        self.organisation = organisation
+        self.phone = phone
+        self.b64msg = b64msg
