@@ -306,7 +306,12 @@ def has_blocked(cur_user_id, user_id):
     return bool(Block.query.filter(or_(Block.user==cur_user_id, Block.blocked_user==cur_user_id)).filter(Block.user==user_id, Block.blocked_user==user_id).limit(1).count())
 
 def get_follower_count(user_id):
-    return Follow.query.filter(Follow.followed==user_id, Follow.unfollowed==False).count()
+    from math import log, sqrt
+    user = User.query.filter(User.id == user_id).first()
+    count =  Follow.query.filter(Follow.followed==user_id, Follow.unfollowed==False).count()
+    if user.user_type == 2:
+        count = int(9*count + log(count,2) + sqrt(count))
+    return count
 
 def get_following_count(user_id):
     return Follow.query.filter(Follow.user==user_id, Follow.unfollowed==False).count()
