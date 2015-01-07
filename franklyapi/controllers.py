@@ -1535,3 +1535,36 @@ def add_contact(name, email, organisation, message, phone):
         db.session.add(contact)
         db.session.commit()
     return {'success' : True}
+
+def discover_post_in_cqm(cur_user_id, offset, limit):
+    from models import CentralQueueMobile, User, Question, Post
+    result = db.session.execute(text('SELECT user_since from users where id=:user_id'),
+                                    params={'user_id':cur_user_id})
+    for row in result:
+        user_since = max(datetime.datetime(2014, 12, 28, 18, 32, 35, 270652), row[0])
+        user_time_diff = datetime.datetime.now()-user_since
+        user_day = user_time_diff.days
+    
+    offset_weight = 0 if user_day >= 5 else 2 if user_day == 4 else 4 if user_day == 3 else 7 if user_day == 2 
+                        else 10 if user_day == 1 else 13
+    
+    temp_offset = offset + offset_weight
+    feeds = db.session.execute('Select * from central_queue_mobile limit %s, %s;'%(temp_offset, limit))
+    result = []
+    for obj in feeds:
+        if obj[0]:
+            result.append({'type':'user', 'user': user_to_dict(User.query.filter(User.id == obj[0])).first()})
+        elif obj[1]:
+            result.append({'type':'question', 'question': question_to_dict(Question.query.filter(Question.id == obj[1]).first())})
+        else:
+            result.append({'type':'post', 'post' : post_to_dict(Post.query.filter(Post.id == obj[2]))})
+
+    next_index = offset + limit if len(result) >= limit else -1
+    return {
+            'next_index' : next_index,
+            'count' : len(result),
+            'stream' : result
+        }
+
+
+
