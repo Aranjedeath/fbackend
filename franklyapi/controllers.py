@@ -205,7 +205,7 @@ def register_email_user(email, password, full_name, device_id, username=None, ph
     set_access_token(device_id, device_type, new_user.id, access_token, push_id)
     new_registration_task(new_user.id)
     
-    return {'access_token': access_token, 'username': username, 'id':new_user.id, 'new_user' : True}
+    return {'access_token': access_token, 'username': username, 'id':new_user.id, 'new_user' : True, 'user_type' : new_user.user_type}
 
 def get_twitter_email(twitter_id):
     return '{twitter_id}@twitter.com'.format(twitter_id=twitter_id)
@@ -245,7 +245,7 @@ def login_user_social(social_type, social_id, external_access_token, device_id, 
         set_access_token(device_id, device_type, user.id, access_token, push_id)
         activated_now=user.deleted
         User.query.filter(User.id==user.id).update(update_dict)
-        return {'access_token': access_token, 'id':user.id, 'username':user.username, 'activated_now': activated_now, 'new_user' : False} 
+        return {'access_token': access_token, 'id':user.id, 'username':user.username, 'activated_now': activated_now, 'new_user' : False, 'user_type' : user.user_type} 
     else:
         username = make_username(user_data['email'], user_data.get('full_name'), user_data.get('social_username'))
         registered_with = '%s_%s'%(device_type, social_type) 
@@ -278,7 +278,7 @@ def login_user_social(social_type, social_id, external_access_token, device_id, 
         set_access_token(device_id, device_type, new_user.id, access_token, push_id)
         new_registration_task(new_user.id)
 
-        return {'access_token': access_token, 'id':new_user.id, 'username':new_user.username, 'activated_now':False, 'new_user' : True} 
+        return {'access_token': access_token, 'id':new_user.id, 'username':new_user.username, 'activated_now':False, 'new_user' : True, 'user_type': new_user.user_type} 
 
 def login_email_new(user_id, id_type, password, device_id, push_id=None):
     try:
@@ -297,7 +297,7 @@ def login_email_new(user_id, id_type, password, device_id, push_id=None):
         activated_now = user.deleted
         if activated_now:
             User.query.filter(User.id==user.id).update({'deleted':False})
-        return {'access_token': access_token, 'username': user.username, 'activated_now': activated_now, 'id':user.id, 'new_user':False}
+        return {'access_token': access_token, 'username': user.username, 'activated_now': activated_now, 'id':user.id, 'new_user':False, 'user_type' : user.user_type}
     except NoResultFound:
         raise CustomExceptions.UserNotFoundException("No user with the given %s found"%(id_type))
 
@@ -310,7 +310,9 @@ def get_follower_count(user_id):
     user = User.query.filter(User.id == user_id).first()
     count =  Follow.query.filter(Follow.followed==user_id, Follow.unfollowed==False).count()
     if user.user_type == 2:
-        count = int(9*count + log(count,2) + sqrt(count))
+        if count > 5:
+            pumper = count -5
+            count = int(9*pumper + log(pumper,2) + sqrt(pumper)) + count
     return count
 
 def get_following_count(user_id):
@@ -359,7 +361,12 @@ def get_post_view_count(post_id):
     return random.randint(0, 100)
 
 def get_question_upvote_count(question_id):
-    return Upvote.query.filter(Upvote.question==question_id, Upvote.downvoted==False).count()+1
+    from math import sqrt, log
+    count = Upvote.query.filter(Upvote.question==question_id, Upvote.downvoted==False).count()+1
+    if count > 5:
+        pumper = count - 5
+        count = int(6*pumper+ log(pumper, 2) + sqrt(pumper)) + count
+    return count
 
 def is_upvoted(question_id, user_id):
     return bool(Upvote.query.filter(Upvote.question==question_id, Upvote.user==user_id, Upvote.downvoted==False).count())
@@ -828,7 +835,11 @@ def question_list(user_id, offset, limit):
                                             Question.deleted==False,
                                             Question.is_answered==False,
                                             Question.is_ignored==False
-                                            ).order_by(Question.timestamp.desc()).offset(offset)
+                                            ).outerjoin(Upvote
+                                            ).group_by(Question.id
+                                            ).order_by(Question.score.desc()
+                                            ).order_by(func.count(Upvote.id).desc()
+                                            ).offset(offset)
     
     questions = [{'question':question_to_dict(question), 'type':'question'} for question in questions_query.limit(limit)]
     next_index = str(offset+limit) if questions else "-1"
