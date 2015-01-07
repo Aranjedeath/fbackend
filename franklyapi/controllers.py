@@ -1112,9 +1112,36 @@ def get_celeb_users_for_feed(offset, limit, cur_user_id=None, users=[], feed_typ
                                             ).limit(limit)
     return celeb_user_query.all()
 
+def get_question_from_followings(followings, count = 2):
+    from random import choice
+    following = choice(followings)[0]
+    user = User.query.filter(User.id == following).first()
+    
+    questions_query = Question.query.filter(Question.question_to==following, 
+                                            Question.deleted==False,
+                                            Question.is_answered==False,
+                                            Question.is_ignored==False
+                                            ).outerjoin(Upvote
+                                            ).group_by(Question.id
+                                            ).order_by(Question.score.desc()
+                                            ).order_by(func.count(Upvote.id).desc()
+                                            ).limt(40)
+    questions = questions_query.all()
+    _q_len = len(questions)
+    if _q_len < 2 and len(following) < 2:
+        return _q_len, []
+    else:
+        q1, q2 = choice(questions), choice(questions)
+        while q1 == q2:
+            q2 = choice(questions)
+        return _q_len, [q1, q2]
+
 def home_feed(cur_user_id, offset, limit, web):
+    from math import sqrt
     follows = Follow.query.filter(Follow.user==cur_user_id, Follow.unfollowed==False)
     followings = [follow.followed for follow in follows]
+    
+    celebs_followings = db.session.execute('select followed from user_follows left join users on user_follows.followed = users.id where user_follows.user = "%s" and users.user_type = 2'%cur_user_id).fetchall()
 
     posts = Post.query.filter(or_(Post.answer_author.in_(followings),
                                     Post.question_author==cur_user_id)
@@ -1125,11 +1152,22 @@ def home_feed(cur_user_id, offset, limit, web):
                     ).all()
 
     posts = posts_to_dict(posts, cur_user_id)
-    feeds = [{'type':'post', 'post':post} for post in posts]
+    
+    shortner = 0
+    questions = []
+    feeds = []
+    if len(celebs_following) > 0:
+        _q_len, questions = get_question_from_followings(celebs_following)
+        if questions:
+            shortner = 2
+    
+    if posts:
+        feeds = [{'type':'post', 'post':post} for post in posts[:len(posts) - shortner]]
+    for q in questions:
+        feeds.append({'type' : 'question', 'question' : q})
 
-    next_index = offset+limit if posts else -1
-
-    next_index = offset+limit if feeds else -1
+    tentative_idx = limit + int(len(celeb_followings) * sqrt(_q_len))
+    next_index = offset+limit-shortner if posts else tentative_idx if offset < 100 else -1
 
     return {'stream': feeds, 'count':len(feeds), 'next_index':next_index}
 
