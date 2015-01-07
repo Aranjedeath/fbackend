@@ -35,12 +35,19 @@ login_manager.login_view = '/login/email'
 
 @app.after_request
 def add_access_control_headers(response):
+    import socket
+    import json
+    hostname = socket.gethostname()
     """Adds the required access control headers"""
     response.headers['Access-Control-Allow-Origin'] = '*'
     response.headers['Access-Control-Allow-Headers'] = 'X-Token, X-Deviceid,Content-Type'
     response.headers['Access-Control-Allow-Methods'] = 'POST,GET,PUT,DELETE'
     response.headers['Cache-Control'] = 'No-Cache'
     response.headers['X-Server'] = 'api.frankly.me'
+    if 'dev' in hostname:
+        d = json.loads(response.data)
+        d['success'] = True
+        response.set_data(json.dumps(d))
     return response
 
 @app.teardown_appcontext
