@@ -18,10 +18,16 @@ ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpeg', 'image/png', 'image/gif', 'ap
 
 BASE_URL = "https://s3.amazonaws.com/{bucket_name}/".format(bucket_name=BUCKET_NAME)
 
+temp_path = '/tmp/downloads'
+if not os.path.exists(temp_path):
+        os.mkdir(temp_path)
+
 
 def download_file(url):
     res = requests.get(url)
-    path= '/tmp/downloads/%s'%(uuid.uuid4().hex)
+    if not os.path.exists(temp_path):
+        os.mkdir(temp_path)
+    path= '%s/%s'%(temp_path, uuid.uuid4().hex)
     if res.status_code == 200:
         with open(path, 'wb') as f:
             f.write(res.content)
@@ -29,7 +35,7 @@ def download_file(url):
 
 def save_file_from_request(file_to_save):
     import uuid
-    path = '/tmp/%s'%(uuid.uuid4().hex)
+    path = '%s/%s'%(temp_path, uuid.uuid4().hex)
     file_to_save.save(path)
     return path
 
@@ -103,15 +109,15 @@ def upload_user_image(user_id, image_type, image_url=None, image_file_path=None)
 
 def upload_user_video(user_id, video_type, video_file):
     random_string = uuid.uuid1().hex
-    video_file_path = '/tmp/'+random_string+".mp4"
+    video_file_path = temp_path+'/'+random_string+".mp4"
     video_file_new = open(video_file_path, "w")
     video_file_new.write(video_file.read())
     video_file_new.close()
     
-    video_thumbnail_path = make_thumbnail("/tmp/"+random_string+".mp4")
+    video_thumbnail_path = make_thumbnail(temp_path+"/"+random_string+".mp4")
     video_thumbnail_file = open(video_thumbnail_path,"rb")
     try:
-        video_file_path = make_psuedo_streamable("/tmp/"+random_string+".mp4")
+        video_file_path = make_psuedo_streamable(temp_path+"/"+random_string+".mp4")
     except:
         print 'err'
 
@@ -125,7 +131,7 @@ def upload_user_video(user_id, video_type, video_file):
         video_url = upload_to_s3(video_file, video_key_name)
         thumb_url = upload_to_s3(video_thumbnail_file, thumb_key_name)
         os.remove(video_thumbnail_path)
-        os.remove("/tmp/"+random_string+".mp4")
+        os.remove(temp_path+"/"+random_string+".mp4")
         return video_url, thumb_url
     raise CustomExceptions.BadRequestException('Video/Image type is not valid.')
 

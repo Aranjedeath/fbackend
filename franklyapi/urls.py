@@ -123,6 +123,9 @@ api.add_resource(admin.AdminQuestionList, '/admin/question/list')
 api.add_resource(admin.AdminQuestionDelete, '/admin/question/delete')
 api.add_resource(admin.AdminQuestionUndelete, '/admin/question/undelete')
 api.add_resource(admin.AdminQuestionEdit, '/admin/question/edit')
+api.add_resource(admin.AdminUserEdit, '/admin/user/edit')
+api.add_resource(admin.AdminUserAdd, '/admin/user/add')
+api.add_resource(admin.AdminQuestionAdd, '/admin/question/add')
 
 
 

@@ -32,7 +32,6 @@ class RegisterEmail(restful.Resource):
         new_email_reg_parser.add_argument('web', type=bool, location='json', default=False)
 
         new_email_reg_parser.add_argument('gender', default='M', type=str, location='json', choices=['M', 'F'])
-        new_email_reg_parser.add_argument('user_type', default=0, type=int, location='json')
 
         new_email_reg_parser.add_argument('lat', default=None, type=str, location='json')
         new_email_reg_parser.add_argument('lon', default=None, type=str, location='json')
@@ -40,7 +39,6 @@ class RegisterEmail(restful.Resource):
         new_email_reg_parser.add_argument('country_name', default=None, type=str, location='json')
         new_email_reg_parser.add_argument('country_code', default=None, type=str, location='json')
 
-        new_email_reg_parser.add_argument('user_title', type=str, location='json')
         new_email_reg_parser.add_argument('phone_num', type=str, location='json')
         new_email_reg_parser.add_argument('push_id', type=str, location='json')
         args = new_email_reg_parser.parse_args()

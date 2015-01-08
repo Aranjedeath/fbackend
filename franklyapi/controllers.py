@@ -181,7 +181,8 @@ def new_registration_task(user_id):
 
 def register_email_user(email, password, full_name, device_id, username=None, phone_num=None,
                         push_id=None, gender=None, user_type=0, user_title=None, 
-                        lat=None, lon=None, location_name=None, country_name=None, country_code=None):
+                        lat=None, lon=None, location_name=None, country_name=None, country_code=None,
+                        bio=None, profile_picture=None, profile_video=None, admin_upload=False):
     
     if not email_available(email):
         raise CustomExceptions.UserAlreadyExistsException("A user with that email already exists")
@@ -198,11 +199,19 @@ def register_email_user(email, password, full_name, device_id, username=None, ph
     new_user = User(id=get_item_id(), email=email, username=username, first_name=full_name, password=password, 
                     registered_with=registered_with, user_type=user_type, gender=gender, user_title=user_title,
                     phone_num=phone_num, lat=lat, lon=lon, location_name=location_name, country_name=country_name,
-                    country_code=country_code)
+                    country_code=country_code, bio=bio)
+    
     db.session.add(new_user)
     db.session.commit()
-    access_token = generate_access_token(new_user.id, device_id)
-    set_access_token(device_id, device_type, new_user.id, access_token, push_id)
+    
+    if profile_picture or profile_video:
+        user_update_profile_form(new_user.id, profile_picture=profile_picture, profile_video=profile_video)
+
+    access_token=None
+    if not admin_upload:
+        access_token = generate_access_token(new_user.id, device_id)
+        set_access_token(device_id, device_type, new_user.id, access_token, push_id)
+    
     new_registration_task(new_user.id)
     
     return {'access_token': access_token, 'username': username, 'id':new_user.id, 'new_user' : True, 'user_type' : new_user.user_type}
@@ -513,7 +522,7 @@ def user_view_profile(current_user_id, user_id, username=None):
         raise CustomExceptions.UserNotFoundException('No user with this username/userid found')
 
 
-def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture=None, profile_video=None, user_type=None, user_title=None, phone_num=None):
+def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture=None, profile_video=None, user_type=None, phone_num=None, admin_upload=False, user_title=None, email=None):
     update_dict = {}
 
     #user = User.objects.only('id').get(id=user_id)
@@ -564,6 +573,15 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
             os.remove(tmp_path)
         except:
             pass
+
+    if admin_upload:
+        if email:
+            if email_available(email):
+                update_dict.update({'email':email})
+            else:
+                raise CustomExceptions.UserAlreadyExistsException('Email is unavailable')
+        if user_type!=None:
+            update_dict.update({'user_type':user_type})
 
     if not update_dict:
         raise CustomExceptions.BadRequestException('Nothing to update')
