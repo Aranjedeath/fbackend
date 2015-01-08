@@ -1,4 +1,4 @@
-pimport sys
+import sys
 import traceback
 
 from flask.ext import restful
@@ -56,7 +56,7 @@ class AdminUserList(AdminProtectedResource):
 
 class AdminUserAdd(AdminProtectedResource):
     @login_required
-    def get(self):
+    def post(self):
         arg_parser = reqparse.RequestParser()
         arg_parser.add_argument('email', type=str, required=True, location='forms')
         arg_parser.add_argument('username', type=str, required=True, location='forms')
@@ -78,9 +78,9 @@ class AdminUserAdd(AdminProtectedResource):
                                                 bio=args['bio'],
                                                 password=args['password'],
                                                 user_title=args['user_title'],
-                                                user_type=args['user_type']
-                                                gender=args['gender']
-                                                profile_picture=args['profile_picture']
+                                                user_type=args['user_type'],
+                                                gender=args['gender'],
+                                                profile_picture=args['profile_picture'],
                                                 profile_video=args['profile_video']
                                                 )
         except Exception as e:
@@ -90,7 +90,7 @@ class AdminUserAdd(AdminProtectedResource):
 
 class AdminUserEdit(AdminProtectedResource):
     @login_required
-    def get(self):
+    def post(self):
 
         arg_parser = reqparse.RequestParser()
         arg_parser.add_argument('user_id', type=str, required=True, location='forms')
@@ -148,6 +148,20 @@ class AdminQuestionList(AdminProtectedResource):
         except Exception as e:
             print traceback.format_exc(e)
             abort(500, message=traceback.format_exc(e))
+
+
+class AdminQuestionAdd(AdminProtectedResource):
+    @login_required
+    def post(self):
+        arg_parser = reqparse.RequestParser()
+        arg_parser.add_argument('question_to', type=str,location = 'json', required = True)
+        arg_parser.add_argument('question_author', type=str,location = 'json', default = None)
+        arg_parser.add_argument('question_body', type=str,location = 'json', required = True)
+        args = arg_parser.parse_args()
+        try:
+            return admin_controllers.question_add(args['question_to'], args['question_body'], args['qustion_author'])
+        except Exception as e:
+            abort(500, 'Uncatched error on the server')
 
 
 
