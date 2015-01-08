@@ -1120,6 +1120,7 @@ def get_celeb_users_for_feed(offset, limit, cur_user_id=None, users=[], feed_typ
 def home_feed(cur_user_id, offset, limit, web):
     follows = Follow.query.filter(Follow.user==cur_user_id, Follow.unfollowed==False)
     followings = [follow.followed for follow in follows]
+    followings = filter(map(lambda x:x if x not in config.TEST_USERS else None, followings))
 
     posts = Post.query.filter(or_(Post.answer_author.in_(followings),
                                     Post.question_author==cur_user_id)
@@ -1143,6 +1144,7 @@ def home_feed(cur_user_id, offset, limit, web):
 def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None, visit=0):
     followings = Follow.query.filter(Follow.user==cur_user_id, Follow.unfollowed==False)
     followings = [follow.followed for follow in followings]
+    followings = filter(map(lambda x:x if x not in config.TEST_USERS else None, followings))
 
     posts = Post.query.filter(~Post.answer_author.in_(followings+[cur_user_id])
                     ).filter(Post.deleted==False, Post.popular==True
