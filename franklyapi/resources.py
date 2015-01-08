@@ -956,13 +956,16 @@ class DiscoverPost(restful.Resource):
             else:
                 current_user_id = None
             
-            resp = controllers.discover_posts(cur_user_id=current_user_id,
-                                                lat=args.get('lat'),
-                                                lon=args.get('lon'),
+            resp = controllers.discover_post_in_cqm(cur_user_id=current_user_id,
                                                 offset=args['offset'],
-                                                limit=args['limit'], 
-                                                web=args['web'],
-                                                visit=args['visit'])
+                                                limit=args['limit'])
+          # resp = controllers.discover_posts(cur_user_id=current_user_id,
+          #                                     lat=args.get('lat'),
+          #                                     lon=args.get('lon'),
+          #                                     offset=args['offset'],
+          #                                     limit=args['limit'], 
+          #                                     web=args['web'],
+          #                                     visit=args['visit'])
             return resp
 
         except Exception as e:
