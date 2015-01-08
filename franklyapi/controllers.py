@@ -313,6 +313,11 @@ def get_follower_count(user_id):
         if count > 5:
             pumper = count -5
             count = int(9*pumper + log(pumper,2) + sqrt(pumper)) + count
+    if user.username == 'RJNaved':
+        count = count + 5000
+    if user.username == 'KunalBahl':
+        count = count + 637
+
     return count
 
 def get_following_count(user_id):
@@ -1340,6 +1345,8 @@ def get_new_client_id():
 def add_video_post(cur_user_id, question_id, video, answer_type,
                         lat=None, lon=None, client_id=get_new_client_id()):
     try:
+        if not client_id:
+            client_id = get_new_client_id()
         if cur_user_id in config.ADMIN_USERS:
             question = Question.query.filter(Question.id==question_id,
                                             Question.is_answered==False,

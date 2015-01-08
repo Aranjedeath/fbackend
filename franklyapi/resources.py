@@ -664,7 +664,7 @@ class PostAdd(restful.Resource):
         answer_parser.add_argument('tags', type=list, default=[], location='form')
         answer_parser.add_argument('lat', type=float, default=0.0, location='form')
         answer_parser.add_argument('lon', type=float, default=0.0, location='form')
-        answer_parser.add_argument('client_id', type=str, location='form')
+        answer_parser.add_argument('client_id', type=str, location='form', default = None)
 
         args = answer_parser.parse_args()
         
