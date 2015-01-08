@@ -47,6 +47,7 @@ def add_access_control_headers(response):
 def shutdown_session(exception=None):
     db.session.remove()
 
+
 @login_manager.multiple_headers_loader
 def load_header(header_vals):
     from controllers import check_access_token

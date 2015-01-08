@@ -1,13 +1,108 @@
 from models import *
 from object_dict import *
 from app import db
+import controllers
+import random
+import media_uploader
+import async_encoder
+import video_db
 
-def user_list(user_type, deleted=False, offset=0, limit=10, order_by='user_since', order_desc=True):
+def user_list(user_type, deleted, offset, limit, order_by, desc):
     user_query = User.query.filter(User.user_type==user_type, User.deleted==deleted)
 
     if order_by == 'user_since':
-        if order_desc:
-            user_query.order_by(User.user_since.desc())
+        order = User.user_since if not desc else User.user_since.desc()
+
+    elif order_by == 'name':
+        order = User.first_name if not desc else User.first_name.desc()
+
+    users = user_query.order_by(order).offset(offset).limit(limit).all()
+    users = [user_to_dict(user) for user in users]
+
+    next_index = -1 if len(users)<limit else offset+limit
+
+    return {'next_index':next_index, 'users':users, 'count':len(users), 'offset':offset, 'limit':limit}
+
+def get_random_fake_user(gender=None):
+    user_query = User.query.filter(User.user_type==-1)
+    if gender:
+        user_query.filter(User.gender==gender)
+
+    count = user_query.count()
+    offset = random.randint(0,count-1)
+    return user_query.offset(offset).limit(1)[0].id
+
+
+
+def user_add(email, username, first_name, bio, password, user_title, user_type, profile_picture, profile_video, gender):
+    resp = controllers.register_email_user(email, password, full_name, device_id='web', username=username, phone_num=None,
+                                    gender=gender, user_type=user_type, user_title=user_title, 
+                                    bio=bio, profile_picture=profile_picture, profile_video=profile_video, admin_upload=True)
+
+    return {'success':True, 'user':user_to_dict(User.query.get(resp['id']))}
+
+
+def user_edit(user_id, email, username, first_name, bio, password, user_title, user_type, profile_picture, profile_video, deleted=False, phone_num=None):
+    if username:
+        controllers.user_change_username(user_id, username)
+    if password:
+        controllers.user_change_password(user_id, password)
+
+    if deleted:
+        User.query.filter(User.id==user_id).update({'deleted':deleted})
+
+    user_update_profile_form(user_id, first_name=first_name, 
+                                        bio=bio,
+                                        profile_picture=profile_picture,
+                                        profile_video=profile_video,
+                                        user_type=user_type,
+                                        phone_num=phone_num,
+                                        admin_upload=True,
+                                        user_title=user_title,
+                                        email=email)
+
+    db.session.commit()
+    return {'success':True, 'user':user_to_dict(User.query.get(user_id))}
+
+def post_list(offset, limit, deleted, order_by, desc, celeb=True, answer_authors=[], question_authors=[]):
+    post_query = Post.query.filter(Post.deleted==deleted)
+
+    if celeb:
+        post_query.join((User, Post.answer_author==User.id)).filter(User.user_type==2)
+
+    if answer_authors:
+        post_query.filter(Post.answer_author.in_(answer_authors))
+    if question_authors:
+        post_query.filter(Post.question_author.in_(question_authors))
+
+    if order_by == 'timestamp':
+        order = Post.timestamp if not desc else Post.timestamp.desc()
+
+    posts = post_query.order_by(order).offset(offset).limit(limit).all()
+    posts = posts_to_dict(posts)
+
+    next_index = -1 if len(posts)<limit else offset+limit
+
+    return {'next_index':next_index, 'posts':users, 'count':len(posts), 'offset':offset, 'limit':limit}
+
+def post_add(question_id, video, answer_type='video'):
+    answer_author = Question.query.get(question_id).question_to
+    return controllers.add_video_post(answer_author, question_id, video, answer_type,
+                        lat=None, lon=None)
+
+def post_edit(post_id, video, answer_type='video'):
+    answer_author = Question.query.get(question_id).question_to
+    video_url, thumbnail_url = media_uploader.upload_user_video(user_id=answer_author, video_file=video, video_type='answer')
+    
+    Post.query.filter(Post.id==post_id).update({'media_url':video_url, 'thumbnail_url':thumbnail_url})
+    db.session.commit()
+
+    curruser = User.query.filter(User.id == answer_author).one()
+
+    video_db.add_video_to_db(video_url, thumbnail_url)
+    async_encoder.encode_video_task.delay(video_url, curruser.username)
+    
+    return {'success': True, 'id':post_id}
 
 
 def question_list(offset, limit, user_to=[], user_from=[], public=True, deleted=False):
@@ -17,6 +112,13 @@ def question_list(offset, limit, user_to=[], user_from=[], public=True, deleted=
                                     ).limit(limit
                                     ).all()
     return {'questions': [question_to_dict(question) for question in questions], 'next_index':offset+limit}
+
+
+def question_add(question_to, body, question_author=None, is_anonymous=False, score=500, question_author_gender=None):
+    if not question_author:
+        question_author = get_random_fake_user(gender=question_author_gender)
+    return controllers.question_ask(question_author, question_to=question_to, body=body, is_anonymous=is_anonymous)
+
 
 def question_delete(question_id):
     Question.query.filter(Question.id==question_id).update({'deleted':True})

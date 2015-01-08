@@ -51,6 +51,12 @@ VIDEO_ENCODING_PROFILES = {
                                 }
                         }
 
+temp_dir = '/tmp/downloads'
+
+def check_make_dir(path):
+    if not os.path.exists(path):
+        os.mkdir(path)
+
 def get_key_name_from_url(url):
     domain = 's3.amazonaws.com/{bucket_name}/'.format(bucket_name=media_uploader.BUCKET_NAME)
     if domain not in url:
@@ -93,7 +99,10 @@ def make_thumbnail(file_path):
     cdir = os.getcwd()
     transpose_command = get_transpose_command(file_path)
     profile = VIDEO_ENCODING_PROFILES['thumbnail']
-    temp_path = '/tmp/{random_string}'.format(random_string=uuid.uuid1().hex)
+    
+    temp_path = temp_dir+'/{random_string}'.format(random_string=uuid.uuid1().hex)
+    check_make_dir(temp_dir)
+
     print_output("Making thumbnail")
     transpose_command2 = ''
     if(transpose_command != ''):
@@ -113,7 +122,9 @@ def encode_video_to_profile(file_path, video_url, profile_name, username):
     profile = VIDEO_ENCODING_PROFILES[profile_name]
     try:
         if(profile_name == 'thumbnail'):
-            temp_path = '/tmp/{random_string}'.format(random_string=uuid.uuid1().hex)
+            temp_path = temp_dir+'/{random_string}'.format(random_string=uuid.uuid1().hex)
+            check_make_dir(temp_dir)
+            
             print_output("Making thumbnail")
             transpose_command2 = ''
             if(transpose_command != ''):
@@ -127,7 +138,9 @@ def encode_video_to_profile(file_path, video_url, profile_name, username):
                 temp_path, output_file_name = make_promo_video(file_path,username,transpose_command)
                 output_file_path = temp_path + '/' + output_file_name + ".mp4"
             else:
-                temp_path = '/tmp/{random_string}'.format(random_string=uuid.uuid1().hex)
+                temp_path = temp_dir+'/{random_string}'.format(random_string=uuid.uuid1().hex)
+                check_make_dir(temp_dir)
+
                 output_file_path = temp_path + '/{random_string}.mp4'.format(random_string=uuid.uuid1().hex)
                 os.mkdir(temp_path)
                 os.chdir(temp_path)
