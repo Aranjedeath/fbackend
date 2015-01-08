@@ -46,7 +46,7 @@ def add_access_control_headers(response):
     response.headers['X-Server'] = 'api.frankly.me'
     if 'dev' in hostname:
         d = json.loads(response.data)
-        d['success'] = True
+        d['abra'] = 'cadabra'
         response.set_data(json.dumps(d))
     return response
 

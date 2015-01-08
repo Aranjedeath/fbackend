@@ -1125,10 +1125,11 @@ def get_question_from_followings(followings, count = 2):
                                             ).group_by(Question.id
                                             ).order_by(Question.score.desc()
                                             ).order_by(func.count(Upvote.id).desc()
-                                            ).limt(40)
+                                            ).limit(40)
     questions = questions_query.all()
     _q_len = len(questions)
-    if _q_len < 2 and len(following) < 2:
+    print _q_len
+    if _q_len < 2:
         return _q_len, []
     else:
         q1, q2 = choice(questions), choice(questions)
@@ -1141,7 +1142,7 @@ def home_feed(cur_user_id, offset, limit, web):
     follows = Follow.query.filter(Follow.user==cur_user_id, Follow.unfollowed==False)
     followings = [follow.followed for follow in follows]
     
-    celebs_followings = db.session.execute('select followed from user_follows left join users on user_follows.followed = users.id where user_follows.user = "%s" and users.user_type = 2'%cur_user_id).fetchall()
+    celebs_following = db.session.execute('select followed from user_follows left join users on user_follows.followed = users.id where user_follows.user = "%s" and users.user_type = 2'%cur_user_id).fetchall()
 
     posts = Post.query.filter(or_(Post.answer_author.in_(followings),
                                     Post.question_author==cur_user_id)
@@ -1164,10 +1165,10 @@ def home_feed(cur_user_id, offset, limit, web):
     if posts:
         feeds = [{'type':'post', 'post':post} for post in posts[:len(posts) - shortner]]
     for q in questions:
-        feeds.append({'type' : 'question', 'question' : q})
+        feeds.append({'type' : 'question', 'question' : question_to_dict(q)})
 
-    tentative_idx = limit + int(len(celeb_followings) * sqrt(_q_len))
-    next_index = offset+limit-shortner if posts else tentative_idx if offset < 100 else -1
+    tentative_idx = offset + limit + int(len(celebs_following) * sqrt(_q_len))
+    next_index = offset+limit-shortner if posts else tentative_idx if offset < 40 else -1
 
     return {'stream': feeds, 'count':len(feeds), 'next_index':next_index}
 
