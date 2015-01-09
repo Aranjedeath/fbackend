@@ -19,8 +19,8 @@ class UserFeed(Base):
     def __repr__(self):
         return '<UserFeed %r:%r>' % (self.user, self.day)
 
-class CentralQueue(Base):
-    __tablename__ = 'central_queue'
+class CentralQueueMobile(Base):
+    __tablename__ = 'central_queue_mobile'
     id            = Column(Integer, primary_key = True)
     user          = Column(CHAR(32), ForeignKey('users.id'))
     question      = Column(CHAR(32), ForeignKey('questions.id'))
