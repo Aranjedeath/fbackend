@@ -1,5 +1,5 @@
 from bad_usernames import UNAVAILABLE_USERNAMES_LAST_UPDATED, UNAVAILABLE_USERNAMES
-import scoket
+import socket
 
 DEBUG = False
 

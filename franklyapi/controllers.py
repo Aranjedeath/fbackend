@@ -1141,7 +1141,7 @@ def get_celeb_users_for_feed(offset, limit, cur_user_id=None, users=[], feed_typ
 def home_feed(cur_user_id, offset, limit, web):
     follows = Follow.query.filter(Follow.user==cur_user_id, Follow.unfollowed==False)
     followings = [follow.followed for follow in follows]
-    followings = filter(map(lambda x:x if x not in config.TEST_USERS else None, followings))
+    followings = filter(lambda x:x,map(lambda x:x if x not in config.TEST_USERS else None, followings))
 
     posts = Post.query.filter(or_(Post.answer_author.in_(followings),
                                     Post.question_author==cur_user_id)
@@ -1165,7 +1165,7 @@ def home_feed(cur_user_id, offset, limit, web):
 def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None, visit=0):
     followings = Follow.query.filter(Follow.user==cur_user_id, Follow.unfollowed==False)
     followings = [follow.followed for follow in followings]
-    followings = filter(map(lambda x:x if x not in config.TEST_USERS else None, followings))
+    followings = filter(lambda x:x,map(lambda x:x if x not in config.TEST_USERS else None, followings))
 
     posts = Post.query.filter(~Post.answer_author.in_(followings+[cur_user_id])
                     ).filter(Post.deleted==False, Post.popular==True
@@ -1579,28 +1579,32 @@ def add_contact(name, email, organisation, message, phone):
 
 def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon = None, visit = None):
     from models import CentralQueueMobile, User, Question, Post
-    result = db.session.execute(text('SELECT user_since from users where id=:user_id'),
-                                    params={'user_id':cur_user_id})
-    for row in result:
-        user_since = max(datetime.datetime(2014, 12, 28, 18, 32, 35, 270652), row[0])
-        user_time_diff = datetime.datetime.now()-user_since
-        user_day = user_time_diff.days
-
+    user_day = 0
+    if cur_user_id:
+        result = db.session.execute(text('SELECT user_since from users where id=:user_id'),
+                                        params={'user_id':cur_user_id})
+        for row in result:
+            user_since = max(datetime.datetime(2014, 12, 28, 18, 32, 35, 270652), row[0])
+            user_time_diff = datetime.datetime.now()-user_since
+            user_day = user_time_diff.days
+    print cur_user_id
     print 'user_day', user_day
     offset_weight = 0 if user_day >= 5 else 2 if user_day == 4 else 4 if user_day == 3 else 7 if user_day == 2 \
                         else 10 if user_day == 1 else 13
 
     temp_offset = offset + offset_weight
-    feeds = db.session.execute('Select * from central_queue_mobile limit %s, %s;'%(temp_offset, limit))
+    #feeds = db.session.execute('Select * from central_queue_mobile limit %s, %s;'%(temp_offset, limit))
+    feeds = CentralQueueMobile.query.offset(temp_offset).limit(limit).all()
+    print feeds
     result = []
     for obj in feeds:
-        print obj
-        if obj[0]:
-            result.append({'type':'user', 'user': user_to_dict(User.query.filter(User.id == obj[0]).first())})
-        elif obj[1]:
-            result.append({'type':'question', 'question': question_to_dict(Question.query.filter(Question.id == obj[1]).first())})
+        print obj.user
+        if obj.user:
+            result.append({'type':'user', 'user': user_to_dict(User.query.filter(User.id == obj.user).first())})
+        elif obj.question:
+            result.append({'type':'question', 'question': question_to_dict(Question.query.filter(Question.id == obj.question).first())})
         else:
-            result.append({'type':'post', 'post' : post_to_dict(Post.query.filter(Post.id == obj[2]).first())})
+            result.append({'type':'post', 'post' : post_to_dict(Post.query.filter(Post.id == obj.post).first())})
 
     next_index = offset + limit if len(result) >= limit else -1
     return {
