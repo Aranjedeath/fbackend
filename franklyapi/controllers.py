@@ -1135,10 +1135,16 @@ def get_question_from_followings(followings, count = 2):
         q1, q2 = choice(questions), choice(questions)
         while q1 == q2:
             q2 = choice(questions)
-        return _q_len, [q1, q2]
+        return _q_len, [q1, q2], following
 
 def home_feed(cur_user_id, offset, limit, web):
     from math import sqrt
+    if offset == -1:
+        return {
+                'stream' : [],
+                'count' : 0,
+                'next_index' : -1
+            }
     follows = Follow.query.filter(Follow.user==cur_user_id, Follow.unfollowed==False)
     followings = [follow.followed for follow in follows]
     
@@ -1158,14 +1164,19 @@ def home_feed(cur_user_id, offset, limit, web):
     questions = []
     feeds = []
     if len(celebs_following) > 0:
-        _q_len, questions = get_question_from_followings(celebs_following)
+        _q_len, questions, following = get_question_from_followings(celebs_following)
         if questions:
-            shortner = 2
+            shortner = 1
     
     if posts:
         feeds = [{'type':'post', 'post':post} for post in posts[:len(posts) - shortner]]
+    question_user = thumb_user_to_dict(User.query.filter(User.id == following).first())
+    question_user['type'] = 'questions'
+    question_user['questions'] = []
     for q in questions:
-        feeds.append({'type' : 'question', 'question' : question_to_dict(q)})
+        question_user['questions'].append(question_to_dict(q))
+
+    feeds.append(question_user)
 
     tentative_idx = offset + limit + int(len(celebs_following) * sqrt(_q_len))
     next_index = offset+limit-shortner if posts else tentative_idx if offset < 40 else -1
