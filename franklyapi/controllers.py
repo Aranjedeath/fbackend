@@ -1191,6 +1191,7 @@ def home_feed(cur_user_id, offset, limit, web):
     shortner = 0
     questions = []
     feeds = []
+    _q_len = 0
     if len(celebs_following) > 0:
         _q_len, questions, following = get_question_from_followings(celebs_following)
         if questions:

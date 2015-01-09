@@ -981,6 +981,7 @@ class ForgotPassword(restful.Resource):
         forgot_password_parser = reqparse.RequestParser()
         forgot_password_parser.add_argument('username', type=str, required=True, location='json')
         args = forgot_password_parser.parse_args()
+        print args
         try:
             username = args['username']
             email = None
