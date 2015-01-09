@@ -1539,7 +1539,7 @@ def add_contact(name, email, organisation, message, phone):
         db.session.commit()
     return {'success' : True}
 
-def discover_post_in_cqm(cur_user_id, offset, limit):
+def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon = None, visit = None):
     from models import CentralQueueMobile, User, Question, Post
     result = db.session.execute(text('SELECT user_since from users where id=:user_id'),
                                     params={'user_id':cur_user_id})
