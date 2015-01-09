@@ -1,4 +1,5 @@
 from bad_usernames import UNAVAILABLE_USERNAMES_LAST_UPDATED, UNAVAILABLE_USERNAMES
+import scoket
 
 DEBUG = False
 
@@ -44,4 +45,5 @@ TEST_USERS = []
 SPREADSHEET_EMAIL = 'tempuser@frankly.me'
 SPREADSHEET_PASSWORD = 'franklydocs'
 
+HOSTNAME = socket.gethostname()
 

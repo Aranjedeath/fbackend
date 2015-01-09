@@ -41,6 +41,11 @@ def add_access_control_headers(response):
     response.headers['Access-Control-Allow-Methods'] = 'POST,GET,PUT,DELETE'
     response.headers['Cache-Control'] = 'No-Cache'
     response.headers['X-Server'] = 'api.frankly.me'
+    if 'dev' in config.HOSTNAME:
+        import json
+        data = json.loads(response.data)
+        data['abra'] = data['kadabra']
+        response.set_data(json.dumps(data))
     return response
 
 @app.teardown_appcontext
