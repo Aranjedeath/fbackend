@@ -1635,6 +1635,12 @@ def add_contact(name, email, organisation, message, phone):
 
 def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon = None, visit = None):
     from models import CentralQueueMobile, User, Question, Post
+    if offset == -1:
+        return {
+                'next_index' : -1,
+                'count' : 0,
+                'stream' : []
+            }
     user_day = 0
     if cur_user_id:
         result = db.session.execute(text('SELECT user_since from users where id=:user_id'),
