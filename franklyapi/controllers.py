@@ -322,10 +322,14 @@ def get_follower_count(user_id):
         return 5231
 
     d = datetime.now() - timedelta(minutes = 5)
-    count_to_pump =  Follow.query.filter(Follow.followed==user_id, Follow.unfollowed==False, Follow.timestamp <= d).count()
+    count_to_pump =  Follow.query.filter(Follow.followed==user_id, Follow.unfollowed==False, Follow.timestamp <= d).count() + 1
     count_as_such = Follow.query.filter(Follow.followed==user_id, Follow.unfollowed==False, Follow.timestamp > d).count()
+    count = count_as_such + count_to_pump
     if user.user_type == 2:
-        count = int(9*count_to_pump + log(count_to_pump,2) + sqrt(count_to_pump)) + count_as_such
+        if count_to_pump:
+            count = int(9*count_to_pump + log(count_to_pump,2) + sqrt(count_to_pump)) + count_as_such
+        else:
+            count = count_to_pump + count_as_such
     if user.username == 'RJNaved':
         count = count + 5000
     if user.username == 'KunalBahl':
@@ -381,10 +385,13 @@ def get_post_view_count(post_id):
 def get_question_upvote_count(question_id):
     from math import sqrt, log
     from datetime import datetime, timedelta
-    d = datetime.now() - timedelta(minutess = 5)
-    count_to_pump = Upvote.query.filter(Upvote.question==question_id, Upvote.downvoted==False, Upvote.timestamp <= d).count()
-    count_as_such = Upvote.query.filter(Upvote.question==question_id, Upvote.downvoted==False, Upvote.timestamp > d).count() + 1
-    count = int(6*count_to_pump+ log(count_to_pump, 2) + sqrt(count_to_pump)) + count_as_such
+    d = datetime.now() - timedelta(minutes = 5)
+    count_to_pump = Upvote.query.filter(Upvote.question==question_id, Upvote.downvoted==False, Upvote.timestamp <= d).count() 
+    count_as_such = Upvote.query.filter(Upvote.question==question_id, Upvote.downvoted==False, Upvote.timestamp > d).count() 
+    if count_to_pump:
+        count = int(6*count_to_pump+ log(count_to_pump, 2) + sqrt(count_to_pump)) + count_as_such
+    else:
+        count = count_to_pump + count_as_such
     return count
 
 def is_upvoted(question_id, user_id):
