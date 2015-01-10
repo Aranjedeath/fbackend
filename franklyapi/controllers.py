@@ -317,15 +317,11 @@ def has_blocked(cur_user_id, user_id):
 def get_follower_count(user_id):
     from math import log, sqrt
     from datetime import datetime, timedelta
-    count_to_pump = Upvote.query.filter(Upvote.question==question_id, Upvote.downvoted==False, Upvote.timestamp <= d).count()
-    count_as_such = Upvote.query.filter(Upvote.question==question_id, Upvote.downvoted==False, Upvote.timestamp > d).count() + 1
-    count = int(6*count_to_pump+ log(count_to_pump, 2) + sqrt(count_to_pump)) + count_as_such
-    return count
     user = User.query.filter(User.id == user_id).first()
     if user_id == '8285cc36fe174664b283bc9a57c829d2':
         return 5231
 
-    d = datetime.now() - timedelta(mins = 5)
+    d = datetime.now() - timedelta(minutes = 5)
     count_to_pump =  Follow.query.filter(Follow.followed==user_id, Follow.unfollowed==False, Follow.timestamp <= d).count()
     count_as_such = Follow.query.filter(Follow.followed==user_id, Follow.unfollowed==False, Follow.timestamp > d).count()
     if user.user_type == 2:
@@ -385,7 +381,7 @@ def get_post_view_count(post_id):
 def get_question_upvote_count(question_id):
     from math import sqrt, log
     from datetime import datetime, timedelta
-    d = datetime.now() - timedelta(mins = 5)
+    d = datetime.now() - timedelta(minutess = 5)
     count_to_pump = Upvote.query.filter(Upvote.question==question_id, Upvote.downvoted==False, Upvote.timestamp <= d).count()
     count_as_such = Upvote.query.filter(Upvote.question==question_id, Upvote.downvoted==False, Upvote.timestamp > d).count() + 1
     count = int(6*count_to_pump+ log(count_to_pump, 2) + sqrt(count_to_pump)) + count_as_such
