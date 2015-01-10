@@ -57,21 +57,23 @@ class AdminUserList(AdminProtectedResource):
 class AdminUserAdd(AdminProtectedResource):
     @login_required
     def post(self):
+        from flask import request
+        print request.form
         arg_parser = reqparse.RequestParser()
-        arg_parser.add_argument('email', type=str, required=True, location='forms')
-        arg_parser.add_argument('username', type=str, required=True, location='forms')
-        arg_parser.add_argument('first_name', type=str, required=True, location='forms')
-        arg_parser.add_argument('bio', type=str, required=True, location='forms')
-        arg_parser.add_argument('password', type=str, required=True, location='forms')
-        arg_parser.add_argument('user_title', type=str, location='forms')
-        arg_parser.add_argument('user_type', type=int, default=-1, choices=[-1, 0, 2], location='forms')
-        arg_parser.add_argument('gender', type=str, choices=['M', 'F'], location='forms')
+        arg_parser.add_argument('email', type=str, required=True, location='form')
+        arg_parser.add_argument('username', type=str, required=True, location='form')
+        arg_parser.add_argument('first_name', type=str, required=True, location='form')
+        arg_parser.add_argument('bio', type=str, required=True, location='form')
+        arg_parser.add_argument('password', type=str, required=True, location='form')
+        arg_parser.add_argument('user_title', type=str, location='form')
+        arg_parser.add_argument('user_type', type=int, default=-1, choices=[-1, 0, 2], location='form')
+        arg_parser.add_argument('gender', type=str, choices=['M', 'F'], location='form')
 
-        arg_parser.add_argument('profile_picture', required=True, type=file, location='files')
-        arg_parser.add_argument('profile_video', required=True, type=file, location='files')
+        arg_parser.add_argument('profile_picture', type=file, location='files')
+        arg_parser.add_argument('profile_video', type=file, location='files')
+        args = arg_parser.parse_args()
 
         try:
-            args = arg_parser.parse_args()
             return admin_controllers.user_add(email=args['email'],
                                                 username=args['username'],
                                                 first_name=args['first_name'],
@@ -93,21 +95,21 @@ class AdminUserEdit(AdminProtectedResource):
     def post(self):
 
         arg_parser = reqparse.RequestParser()
-        arg_parser.add_argument('user_id', type=str, required=True, location='forms')
-        arg_parser.add_argument('email', type=str, location='forms')
-        arg_parser.add_argument('username', type=str, location='forms')
-        arg_parser.add_argument('first_name', type=str, location='forms')
-        arg_parser.add_argument('bio', type=str, location='forms')
-        arg_parser.add_argument('password', type=str, location='forms')
-        arg_parser.add_argument('user_title', type=str, location='forms')
-        arg_parser.add_argument('user_type', type=int, choices=[-1, 0, 2], location='forms')
-        arg_parser.add_argument('gender', type=str, choices=['M', 'F'], location='forms')
+        arg_parser.add_argument('user_id', type=str, required=True, location='json')
+        arg_parser.add_argument('email', type=str, location='json')
+        arg_parser.add_argument('username', type=str, location='json')
+        arg_parser.add_argument('first_name', type=str, location='json')
+        arg_parser.add_argument('bio', type=str, location='json')
+        arg_parser.add_argument('password', type=str, location='json')
+        arg_parser.add_argument('user_title', type=str, location='json')
+        arg_parser.add_argument('user_type', type=int, choices=[-1, 0, 2], location='json')
+        arg_parser.add_argument('gender', type=str, choices=['M', 'F'], location='json')
 
         arg_parser.add_argument('profile_picture', type=file, location='files')
         arg_parser.add_argument('profile_video', type=file, location='files')
+        args = arg_parser.parse_args()
 
         try:
-            args = arg_parser.parse_args()
             return admin_controllers.user_edit(user_id=args['user_id'],
                                                 email=args['email'],
                                                 username=args['username'],
@@ -117,9 +119,7 @@ class AdminUserEdit(AdminProtectedResource):
                                                 user_title=args['user_title'],
                                                 user_type=args['user_type'],
                                                 profile_picture=args['profile_picture'],
-                                                profile_video=args['profile_video'],
-                                                deleted=args['deleted'],
-                                                phone_num=args['phone_num'])
+                                                profile_video=args['profile_video'])
         except Exception as e:
             print traceback.format_exc(e)
             abort(500, message=traceback.format_exc(e))

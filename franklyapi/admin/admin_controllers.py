@@ -35,7 +35,7 @@ def get_random_fake_user(gender=None):
 
 
 def user_add(email, username, first_name, bio, password, user_title, user_type, profile_picture, profile_video, gender):
-    resp = controllers.register_email_user(email, password, full_name, device_id='web', username=username, phone_num=None,
+    resp = controllers.register_email_user(email, password, first_name, device_id='web', username=username, phone_num=None,
                                     gender=gender, user_type=user_type, user_title=user_title, 
                                     bio=bio, profile_picture=profile_picture, profile_video=profile_video, admin_upload=True)
 
@@ -51,7 +51,7 @@ def user_edit(user_id, email, username, first_name, bio, password, user_title, u
     if deleted:
         User.query.filter(User.id==user_id).update({'deleted':deleted})
 
-    user_update_profile_form(user_id, first_name=first_name, 
+    controllers.user_update_profile_form(user_id, first_name=first_name, 
                                         bio=bio,
                                         profile_picture=profile_picture,
                                         profile_video=profile_video,

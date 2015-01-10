@@ -32,6 +32,7 @@ class RegisterEmail(restful.Resource):
         new_email_reg_parser.add_argument('web', type=bool, location='json', default=False)
 
         new_email_reg_parser.add_argument('gender', default='M', type=str, location='json', choices=['M', 'F'])
+        new_email_reg_parser.add_argument('user_type', type=int, location='json', default = 0)
 
         new_email_reg_parser.add_argument('lat', default=None, type=str, location='json')
         new_email_reg_parser.add_argument('lon', default=None, type=str, location='json')
