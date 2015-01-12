@@ -325,15 +325,22 @@ def get_follower_count(user_id):
     count_to_pump =  Follow.query.filter(Follow.followed==user_id, Follow.unfollowed==False, Follow.timestamp <= d).count() + 1
     count_as_such = Follow.query.filter(Follow.followed==user_id, Follow.unfollowed==False, Follow.timestamp > d).count()
     count = count_as_such + count_to_pump
+    print count_as_such, count_to_pump
     if user.user_type == 2:
         if count_to_pump:
             count = int(9*count_to_pump + log(count_to_pump,2) + sqrt(count_to_pump)) + count_as_such
         else:
             count = count_to_pump + count_as_such
+    print count_as_such, count_to_pump
+    print count
     if user.username == 'RJNaved':
         count = count + 5000
     if user.username == 'KunalBahl':
         count = count + 637
+    if user.username == 'RJSayema':
+        count = count + 7500
+    if user.username == 'VikasKhanna':
+        count = count + 6123
 
     return count
 
