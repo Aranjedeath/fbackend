@@ -25,7 +25,7 @@ VIDEO_ENCODING_PROFILES = {
                                         'file_extension' : 'mp4'
                                 },
                                 'thumbnail':{
-                                        'command' : 'ffmpeg -loglevel 0 -ss 0 -i "{input_file}" {transpose_command2} -t 1 -update 1 -f image2 {output_file}',
+                                        'command' : 'ffmpeg -loglevel 0 -ss 0 -i "{input_file}" -vframes 1 {transpose_command2} -t 1 -update 1 -f image2 {output_file}',
                                         'file_prefix' : '_thumb',
                                         'file_extension' : 'jpeg'
                                 },
