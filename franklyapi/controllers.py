@@ -1219,8 +1219,9 @@ def home_feed(cur_user_id, offset, limit, web):
         else:
             idx = 0
         feeds.insert(idx, {'questions': question_user, 'type' : 'questions'} )
-
-    tentative_idx = offset + limit + int(len(celebs_following) * sqrt(_q_len))
+    tentative_idx = -1
+    if int(len(celebs_following) * sqrt(_q_len)): 
+        tentative_idx = offset + limit + int(len(celebs_following) * sqrt(_q_len))
     next_index = offset+limit-shortner if posts else tentative_idx if offset < 40 else -1
 
     return {'stream': feeds, 'count':len(feeds), 'next_index':next_index}
