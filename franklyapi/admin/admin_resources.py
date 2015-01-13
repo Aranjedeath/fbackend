@@ -159,8 +159,9 @@ class AdminQuestionAdd(AdminProtectedResource):
         arg_parser.add_argument('question_body', type=str,location = 'json', required = True)
         args = arg_parser.parse_args()
         try:
-            return admin_controllers.question_add(args['question_to'], args['question_body'], args['qustion_author'])
+            return admin_controllers.question_add(args['question_to'], args['question_body'], args['question_author'])
         except Exception as e:
+            print traceback.format_exc(e)
             abort(500, 'Uncatched error on the server')
 
 
