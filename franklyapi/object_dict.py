@@ -274,7 +274,7 @@ def post_to_dict(post, cur_user_id=None, distance=None):
             'media_urls':get_video_states({post.media_url:post.thumbnail_url})[post.media_url]
         },
 
-        'liked_count': get_post_like_count(post.id) if cur_user_id != '3d75b05d82694b1cbefae6c5ae14012d' else get_post_like_count(post.id) + 236,
+        'liked_count': get_post_like_count(post.id),
         'is_reshared': is_reshared(post.id, cur_user_id),
         # to store count and list of user ids
         'comment_count': get_comment_count(post.id),
