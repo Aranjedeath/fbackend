@@ -411,6 +411,7 @@ def get_question_upvote_count(question_id):
         time_factor = int(time.mktime(t.timetuple())) % 7
     count_to_pump = Upvote.query.filter(Upvote.question==question_id, Upvote.downvoted==False, Upvote.timestamp <= d).count() + 1
     count_as_such = Upvote.query.filter(Upvote.question==question_id, Upvote.downvoted==False, Upvote.timestamp > d).count() 
+    print count_to_pump, count_as_such
     if count_to_pump:
         count = int(11*count_to_pump+ log(count_to_pump, 2) + sqrt(count_to_pump)) + count_as_such
     else:
@@ -1240,6 +1241,9 @@ def home_feed(cur_user_id, offset, limit, web):
         question_user['questions'] = []
         for q in questions:
             question_user['questions'].append(question_to_dict(q))
+            from random import randint
+            if randint(0,9) % 2 == 0:
+                break
         if posts:
             idx = randint(0,len(posts)- 1)
         else:
@@ -1680,6 +1684,7 @@ def add_contact(name, email, organisation, message, phone):
 
 def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon = None, visit = None):
     from models import CentralQueueMobile, User, Question, Post
+    print web
     if offset == -1:
         return {
                 'next_index' : -1,
@@ -1706,6 +1711,16 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
         print obj.user
         if obj.user:
             result.append({'type':'user', 'user': user_to_dict(User.query.filter(User.id == obj.user).first())})
+            questions_query = Question.query.filter(Question.question_to==obj.user, 
+                                            Question.deleted==False,
+                                            Question.is_answered==False,
+                                            Question.is_ignored==False,
+                                            Question.public==True
+                                            )
+            questions = questions_query.order_by(Question.score.desc()
+                                        ).limit(3)
+            questions_feed = [{'type':'question', 'questions':question_to_dict(q, cur_user_id)} for q in questions.all()]
+            result.extend(questions_feed)
         elif obj.question:
             result.append({'type':'question', 'question': question_to_dict(Question.query.filter(Question.id == obj.question).first())})
         else:

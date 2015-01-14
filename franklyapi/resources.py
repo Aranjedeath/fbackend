@@ -957,7 +957,8 @@ class DiscoverPost(restful.Resource):
             
             resp = controllers.discover_post_in_cqm(cur_user_id=current_user_id,
                                                 offset=args['offset'],
-                                                limit=args['limit'])
+                                                limit=args['limit'],
+                                                web = args['web'])
           # resp = controllers.discover_posts(cur_user_id=current_user_id,
           #                                     lat=args.get('lat'),
           #                                     lon=args.get('lon'),
