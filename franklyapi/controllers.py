@@ -338,9 +338,9 @@ def get_follower_count(user_id):
     if user.username == 'KunalBahl':
         count = count + 637
     if user.username == 'RJSayema':
-        count = count + 7500
+        count = count + 770
     if user.username == 'VikasKhanna':
-        count = count + 6123
+        count = count + 3123
 
     return count
 
@@ -397,10 +397,10 @@ def get_question_upvote_count(question_id):
     from math import sqrt, log
     from datetime import datetime, timedelta
     d = datetime.now() - timedelta(minutes = 5)
-    count_to_pump = Upvote.query.filter(Upvote.question==question_id, Upvote.downvoted==False, Upvote.timestamp <= d).count() 
+    count_to_pump = Upvote.query.filter(Upvote.question==question_id, Upvote.downvoted==False, Upvote.timestamp <= d).count() + 1
     count_as_such = Upvote.query.filter(Upvote.question==question_id, Upvote.downvoted==False, Upvote.timestamp > d).count() 
     if count_to_pump:
-        count = int(6*count_to_pump+ log(count_to_pump, 2) + sqrt(count_to_pump)) + count_as_such
+        count = int(9*count_to_pump+ log(count_to_pump, 2) + sqrt(count_to_pump)) + count_as_such
     else:
         count = count_to_pump + count_as_such
     return count
