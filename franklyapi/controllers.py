@@ -1195,7 +1195,7 @@ def home_feed(cur_user_id, offset, limit, web):
                     #).limit(limit
                     #).all()
     
-    posts = db.session.execute('''select posts.id,posts.question_author,posts.question,posts.answer_author,posts.media_url,posts.thumbnail_url,posts.answer_type,posts.timestamp,posts.deleted,posts.lat,posts.lon,posts.location_name,posts.country_name,posts.country_code,posts.ready,posts.popular,posts.view_count,posts.client_id from posts inner join user_follows on user_follows.followed = posts.answer_author and user_follows.user = "%s" where timestampdiff(minute, user_follows.timestamp, now()) > posts.show_after order by posts.show_after desc limit %s, %s '''%(cur_user_id, offset, limit))
+    posts = db.session.execute('''select posts.show_after, posts.id,posts.question_author,posts.question,posts.answer_author,posts.media_url,posts.thumbnail_url,posts.answer_type,posts.timestamp,posts.deleted,posts.lat,posts.lon,posts.location_name,posts.country_name,posts.country_code,posts.ready,posts.popular,posts.view_count,posts.client_id from posts inner join user_follows on user_follows.followed = posts.answer_author and user_follows.user = "%s" and timestampdiff(minute, user_follows.timestamp, now()) >= posts.show_after order by posts.show_after desc, posts.timestamp desc limit %s, %s '''%(cur_user_id, offset, limit))
     posts = list(posts)
     posts = posts_to_dict(posts, cur_user_id)
     
