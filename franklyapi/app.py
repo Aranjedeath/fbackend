@@ -59,6 +59,7 @@ def shutdown_session(exception=None):
 @login_manager.multiple_headers_loader
 def load_header(header_vals):
     from controllers import check_access_token
+    print header_vals
     access_token, device_id = header_vals.get('X-Token'), header_vals.get('X-Deviceid')
     if not (access_token and device_id):
         return None

@@ -1181,20 +1181,22 @@ def home_feed(cur_user_id, offset, limit, web):
                 'count' : 0,
                 'next_index' : -1
             }
-    follows = Follow.query.filter(Follow.user==cur_user_id, Follow.unfollowed==False)
-    followings = [follow.followed for follow in follows]
-    followings = filter(lambda x:x,map(lambda x:x if x not in config.TEST_USERS else None, followings))
+    #follows = Follow.query.filter(Follow.user==cur_user_id, Follow.unfollowed==False)
+    #followings = [follow.followed for follow in follows]
+    #followings = filter(lambda x:x,map(lambda x:x if x not in config.TEST_USERS else None, followings))
     
     celebs_following = db.session.execute('select followed from user_follows left join users on user_follows.followed = users.id where user_follows.user = "%s" and users.user_type = 2'%cur_user_id).fetchall()
     
-    posts = Post.query.filter(or_(Post.answer_author.in_(followings),
-                                    Post.question_author==cur_user_id)
-                    ).filter(Post.deleted==False, Post.answer_author!=cur_user_id
-                    ).order_by(Post.timestamp.desc()
-                    ).offset(offset
-                    ).limit(limit
-                    ).all()
-
+    #posts = Post.query.filter(or_(Post.answer_author.in_(followings),
+                                    #Post.question_author==cur_user_id)
+                    #).filter(Post.deleted==False, Post.answer_author!=cur_user_id
+                    #).order_by(Post.timestamp.desc()
+                    #).offset(offset
+                    #).limit(limit
+                    #).all()
+    
+    posts = db.session.execute('''select posts.id,posts.question_author,posts.question,posts.answer_author,posts.media_url,posts.thumbnail_url,posts.answer_type,posts.timestamp,posts.deleted,posts.lat,posts.lon,posts.location_name,posts.country_name,posts.country_code,posts.ready,posts.popular,posts.view_count,posts.client_id from posts inner join user_follows on user_follows.followed = posts.answer_author and user_follows.user = "%s" where datediff(now(), user_follows.timestamp) > posts.show_after order by posts.show_after limit %s, %s '''%(cur_user_id, offset, limit))
+    posts = list(posts)
     posts = posts_to_dict(posts, cur_user_id)
     
     shortner = 0
