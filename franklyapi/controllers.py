@@ -1434,7 +1434,7 @@ def get_new_client_id():
 
 
 def add_video_post(cur_user_id, question_id, video, answer_type,
-                        lat=None, lon=None, client_id=get_new_client_id()):
+                        lat=None, lon=None, client_id=get_new_client_id(), show_after = None):
     try:
         if not client_id:
             client_id = get_new_client_id()
@@ -1473,6 +1473,8 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
                     client_id=client_id,
                     lat=lat,
                     lon=lon)
+        if show_after and type(show_after) == int:
+            post.show_after = show_after
         db.session.add(post)
 
         Question.query.filter(Question.id==question_id).update({'is_answered':True})

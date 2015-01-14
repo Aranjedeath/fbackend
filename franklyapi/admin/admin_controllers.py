@@ -86,9 +86,13 @@ def post_list(offset, limit, deleted, order_by, desc, celeb=True, answer_authors
     return {'next_index':next_index, 'posts':users, 'count':len(posts), 'offset':offset, 'limit':limit}
 
 def post_add(question_id, video, answer_type='video'):
+    from random import choice
     answer_author = Question.query.get(question_id).question_to
+    show_after = db.session.execute('Select max(show_after) from posts where answer_author = %s'%answer_author).first()
+    if show_after:
+        show_after = show_after[0] + choice([360,720, 1080 ])
     return controllers.add_video_post(answer_author, question_id, video, answer_type,
-                        lat=None, lon=None)
+                        lat=None, lon=None, show_after = show_after)
 
 def post_edit(post_id, video, answer_type='video'):
     answer_author = Question.query.get(question_id).question_to
