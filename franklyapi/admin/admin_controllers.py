@@ -150,7 +150,7 @@ def question_edit(question_id, body):
     db.session.commit()
     return {'success':True, 'question_id':question_id}
  
-def get_que_order():
+def get_que_order(offset = 0, limit =10 ):
     queue = CentralQueueMobile.query.all()
     result = []
     for item in queue:
@@ -182,13 +182,13 @@ def update_que_order(_id, day, score):
     db.session.commit()
     return {'success' : True}
 
-def get_celeb_list():
-    celebs = db.session.execute('select * from users left join central_queue_mobile on users.id = central_queue_mobile.user')
+def get_celeb_list(offset = 0, limit = 10):
+    celebs = db.session.execute('select users.id, users.username, users.first_name, users.profile_picture, users.user_type, users.user_title, central_queue_mobile.user from users left join central_queue_mobile on users.id = central_queue_mobile.user where users.user_type = 2 limit %s,%s'%(offset,limit))
     results = []
     for celeb in celebs:
-        user = thumb_user_to_dict(celeb)
+        user = search_user_to_dict(celeb)
         user['in_list'] = True if celeb.user else False
-        result.append(user)
+        results.append(user)
     return {'results' : results}
 
 def add_celeb_in_queue(item_id, item_type, item_day, item_score):

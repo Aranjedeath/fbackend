@@ -101,7 +101,7 @@ def guest_user_to_dict(user, current_user_id, cur_user_interest_tags=None):
     
     return user_dict
 
-def search_user_to_dict(user, current_user_id):
+def search_user_to_dict(user, current_user_id = None):
     user_dict = {
         'id':user.id,
         'username':user.username,

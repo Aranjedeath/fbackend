@@ -235,9 +235,9 @@ class AdminQueOrderEdit(AdminProtectedResource):
             return traceback.format_exc(e)
 
 class AdminCelebList(AdminProtectedResource):
-    @login_required:
-    def get(self):
+    @login_required
+    def get(self,offset, limit):
         try:
-            return admin_controllers.get_celebs()
+            return admin_controllers.get_celeb_list(offset, limit)
         except Exception as e:
             print traceback.format_exc(e)

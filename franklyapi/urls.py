@@ -127,7 +127,7 @@ api.add_resource(admin.AdminUserEdit, '/admin/user/edit')
 api.add_resource(admin.AdminUserAdd, '/admin/user/add')
 api.add_resource(admin.AdminQuestionAdd, '/admin/question/add')
 api.add_resource(admin.AdminQueOrderEdit, '/admin/queue/order')
-api.add_resource(admin.AdminCelebList, '/admin/celeb/list')
+api.add_resource(admin.AdminCelebList, '/admin/celeb/list/<int:offset>/<int:limit>')
 api.add_resource(admin.AdminAddCelebQue, '/admin/que/add')
 
 
