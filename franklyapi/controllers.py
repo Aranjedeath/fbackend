@@ -328,7 +328,7 @@ def get_follower_count(user_id):
     print count_as_such, count_to_pump
     if user.user_type == 2:
         if count_to_pump:
-            count = int(9*count_to_pump + log(count_to_pump,2) + sqrt(count_to_pump)) + count_as_such
+            count = int(11*count_to_pump + log(count_to_pump,2) + sqrt(count_to_pump)) + count_as_such
         else:
             count = count_to_pump + count_as_such
     print count_as_such, count_to_pump
@@ -397,12 +397,18 @@ def get_question_upvote_count(question_id):
     from math import sqrt, log
     from datetime import datetime, timedelta
     d = datetime.now() - timedelta(minutes = 5)
+    question = Question.query.filter(Question.id == question_id).first()
+    t = question.timestamp
+    time_factor = 0
+    if t:
+        time_factor = int(time.mktime(t.timetuple())) % 7
     count_to_pump = Upvote.query.filter(Upvote.question==question_id, Upvote.downvoted==False, Upvote.timestamp <= d).count() + 1
     count_as_such = Upvote.query.filter(Upvote.question==question_id, Upvote.downvoted==False, Upvote.timestamp > d).count() 
     if count_to_pump:
-        count = int(9*count_to_pump+ log(count_to_pump, 2) + sqrt(count_to_pump)) + count_as_such
+        count = int(11*count_to_pump+ log(count_to_pump, 2) + sqrt(count_to_pump)) + count_as_such
     else:
         count = count_to_pump + count_as_such
+    count += time_factor
     return count
 
 def is_upvoted(question_id, user_id):
@@ -883,8 +889,8 @@ def question_list(user_id, offset, limit):
                                             Question.is_ignored==False
                                             ).outerjoin(Upvote
                                             ).group_by(Question.id
-                                            ).order_by(Question.score.desc()
                                             ).order_by(func.count(Upvote.id).desc()
+    #                                        ).order_by(Question.score.desc()
                                             ).offset(offset)
     
     questions = [{'question':question_to_dict(question), 'type':'question'} for question in questions_query.limit(limit)]
