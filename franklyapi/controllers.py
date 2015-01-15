@@ -1672,14 +1672,14 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
                 'count' : 0,
                 'stream' : []
             }
-    user_day = 0
+    user_day = 1
     if cur_user_id:
         result = db.session.execute(text('SELECT user_since from users where id=:user_id'),
                                         params={'user_id':cur_user_id})
         for row in result:
             user_since = max(datetime.datetime(2014, 12, 28, 18, 32, 35, 270652), row[0])
             user_time_diff = datetime.datetime.now()-user_since
-            user_day = user_time_diff.days
+            user_day = user_time_diff.days + 1
     print cur_user_id
     print 'user_day', user_day
     #temp_offset = offset + offset_weight
