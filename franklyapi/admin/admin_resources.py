@@ -193,3 +193,51 @@ class AdminQuestionEdit(AdminProtectedResource):
         args = arg_parser.parse_args()
         
         return admin_controllers.question_edit(question_id=args['question_id'], body=args['body'])
+
+class AdminAddCelebQue(AdminProtectedResource):
+    @login_required
+    def post(self):
+        arg_parser = reqparse.RequestParser()
+        arg_parser.add_argument('item_id', type= str, location = 'json', required = True)
+        arg_parser.add_argument('item_type', type=str, location = 'json', required = True, choices = ['user', 'post', 'question'])
+        arg_parser.add_argument('item_day', type=str, location = 'json', required = True)
+        arg_parser.add_argument('item_score', type=str, location = 'json', required = True)
+
+        args = arg_parser.parse_args()
+        try:
+            return admin_controllers.add_celeb_in_queue(args['item_id'], args['item_type'], args['item_day'], args['item_score'])
+        except Exception as e:
+            print traceback.format_exc(e)
+            abort(500, message = 'Some Error Occured')
+
+class AdminQueOrderEdit(AdminProtectedResource):
+    @login_required
+    def get(self):
+        try:
+            return admin_controllers.get_que_order()
+        except Exception as e:
+            return traceback.format_exc(e)
+
+    @login_required
+    def post(self):
+        from flask import request
+        print request.json
+
+        arg_parser = reqparse.RequestParser()
+        arg_parser.add_argument('que_id', type=str, location = 'json', required = True)
+        arg_parser.add_argument('day', type=int, location = 'json', required = True)
+        arg_parser.add_argument('score', type=int, location='json', required = True)
+        args = arg_parser.parse_args()
+        try:
+            return admin_controllers.update_que_order(args['que_id'], args['day'], args['score'])
+        except Exception as e:
+            print traceback.format_exc(e)
+            return traceback.format_exc(e)
+
+class AdminCelebList(AdminProtectedResource):
+    @login_required
+    def get(self,offset, limit):
+        try:
+            return admin_controllers.get_celeb_list(offset, limit)
+        except Exception as e:
+            print traceback.format_exc(e)

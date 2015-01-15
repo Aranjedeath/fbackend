@@ -1,5 +1,5 @@
 import datetime
-from sqlalchemy import Column, Integer, String, Boolean, Float, DateTime, ForeignKey, Enum, CHAR, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Boolean, Float, DateTime, ForeignKey, Enum, CHAR, UniqueConstraint, SmallInteger
 from database import Base
 from database import get_item_id
 
@@ -25,10 +25,11 @@ class Post(Base):
     country_name        = Column(String(50))
     country_code        = Column(String(2))
     view_count          = Column(Integer(), default=0)
+    show_after          = Column(SmallInteger(), default = 0)
 
     def __init__(self, question, question_author, answer_author, media_url, thumbnail_url, client_id,
                     timestamp=datetime.datetime.now(), answer_type='video', score=0, deleted=False, ready=True,
-                    popular=False, lat=None, lon=None, location_name=None, country_name=None, country_code=None, id=get_item_id(), view_count=0):
+                    popular=False, lat=None, lon=None, location_name=None, country_name=None, country_code=None, id=get_item_id(), view_count=0, show_after = 0):
         self.id              = id
         self.question        = question
         self.question_author = question_author
@@ -50,6 +51,7 @@ class Post(Base):
         self.country_name    = country_name
         self.country_code    = country_code
         self.view_count      = 0
+        self.show_after      = self.show_after
 
     def __repr__(self):
         return '<Post %r>' % (self.id)

@@ -86,9 +86,13 @@ def post_list(offset, limit, deleted, order_by, desc, celeb=True, answer_authors
     return {'next_index':next_index, 'posts':users, 'count':len(posts), 'offset':offset, 'limit':limit}
 
 def post_add(question_id, video, answer_type='video'):
+    from random import choice
     answer_author = Question.query.get(question_id).question_to
+    show_after = db.session.execute('Select max(show_after) from posts where answer_author = %s'%answer_author).first()
+    if show_after:
+        show_after = show_after[0] + choice([360,720, 1080 ])
     return controllers.add_video_post(answer_author, question_id, video, answer_type,
-                        lat=None, lon=None)
+                        lat=None, lon=None, show_after = show_after)
 
 def post_edit(post_id, video, answer_type='video'):
     answer_author = Question.query.get(question_id).question_to
@@ -145,3 +149,67 @@ def question_edit(question_id, body):
     Question.query.filter(Question.id==question_id).update({'body':body.capitalize()})
     db.session.commit()
     return {'success':True, 'question_id':question_id}
+ 
+def get_que_order(offset = 0, limit =10 ):
+    queue = CentralQueueMobile.query.all()
+    result = []
+    for item in queue:
+        if item.user:
+            user = User.query.filter(User.id == item.user).first()
+            result.append(
+                {
+                    'type' : 'user',
+                    'id' : item.id,
+                    'day' : item.day,
+                    'score' : item.score,
+                    'user' : {
+                            'username' : user.username
+                        }
+                }
+            )
+        #Write code for posts and questions
+    return {
+        'result' : result
+        }
+
+def update_que_order(_id, day, score):
+    item = CentralQueueMobile.query.filter(CentralQueueMobile.id == _id).first()
+    if not item:
+        return {'success' : False,'message' : 'wrong id provided'}
+    item.day = day
+    item.score = score
+    db.session.add(item)
+    db.session.commit()
+    return {'success' : True}
+
+def get_celeb_list(offset = 0, limit = 10):
+    celebs = db.session.execute('select users.id, users.username, users.first_name, users.profile_picture, users.user_type, users.user_title, central_queue_mobile.user from users left join central_queue_mobile on users.id = central_queue_mobile.user where users.user_type = 2 limit %s,%s'%(offset,limit))
+    results = []
+    for celeb in celebs:
+        user = search_user_to_dict(celeb)
+        user['in_list'] = True if celeb.user else False
+        results.append(user)
+    return {'results' : results}
+
+def add_celeb_in_queue(item_id, item_type, item_day, item_score):
+    type_dict = {
+            'user' : CentralQueueMobile.user,
+            'post' : CentralQueueMobile.post,
+            'question' : CentralQueueMobile.question
+        }
+    que_entry = CentralQueueMobile.query.filter(type_dict[item_type] == item_id).first()
+    if not que_entry:
+        que_entry = CentralQueueMobile()
+        if item_type == 'user':
+            que_entry.user = item_id
+        elif item_type == 'question':
+            que_entry.question = item_id
+        else:
+            que_entry.post = item_id
+    que_entry.day = item_day
+    que_entry.score = item_score
+    db.session.add(que_entry)
+    db.session.commit()
+    return {'success' : True}
+
+

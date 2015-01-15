@@ -1198,20 +1198,22 @@ def home_feed(cur_user_id, offset, limit, web):
                 'count' : 0,
                 'next_index' : -1
             }
-    follows = Follow.query.filter(Follow.user==cur_user_id, Follow.unfollowed==False)
-    followings = [follow.followed for follow in follows]
-    followings = filter(lambda x:x,map(lambda x:x if x not in config.TEST_USERS else None, followings))
+    #follows = Follow.query.filter(Follow.user==cur_user_id, Follow.unfollowed==False)
+    #followings = [follow.followed for follow in follows]
+    #followings = filter(lambda x:x,map(lambda x:x if x not in config.TEST_USERS else None, followings))
     
     celebs_following = db.session.execute('select followed from user_follows left join users on user_follows.followed = users.id where user_follows.user = "%s" and users.user_type = 2'%cur_user_id).fetchall()
     
-    posts = Post.query.filter(or_(Post.answer_author.in_(followings),
-                                    Post.question_author==cur_user_id)
-                    ).filter(Post.deleted==False, Post.answer_author!=cur_user_id
-                    ).order_by(Post.timestamp.desc()
-                    ).offset(offset
-                    ).limit(limit
-                    ).all()
-
+    #posts = Post.query.filter(or_(Post.answer_author.in_(followings),
+                                    #Post.question_author==cur_user_id)
+                    #).filter(Post.deleted==False, Post.answer_author!=cur_user_id
+                    #).order_by(Post.timestamp.desc()
+                    #).offset(offset
+                    #).limit(limit
+                    #).all()
+    
+    posts = db.session.execute('''select posts.show_after, posts.id,posts.question_author,posts.question,posts.answer_author,posts.media_url,posts.thumbnail_url,posts.answer_type,posts.timestamp,posts.deleted,posts.lat,posts.lon,posts.location_name,posts.country_name,posts.country_code,posts.ready,posts.popular,posts.view_count,posts.client_id from posts inner join user_follows on user_follows.followed = posts.answer_author and user_follows.user = "%s" and timestampdiff(minute, user_follows.timestamp, now()) >= posts.show_after order by posts.show_after desc, posts.timestamp desc limit %s, %s '''%(cur_user_id, offset, limit))
+    posts = list(posts)
     posts = posts_to_dict(posts, cur_user_id)
     
     shortner = 0
@@ -1449,7 +1451,7 @@ def get_new_client_id():
 
 
 def add_video_post(cur_user_id, question_id, video, answer_type,
-                        lat=None, lon=None, client_id=get_new_client_id()):
+                        lat=None, lon=None, client_id=get_new_client_id(), show_after = None):
     try:
         if not client_id:
             client_id = get_new_client_id()
@@ -1488,6 +1490,8 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
                     client_id=client_id,
                     lat=lat,
                     lon=lon)
+        if show_after and type(show_after) == int:
+            post.show_after = show_after
         db.session.add(post)
 
         Question.query.filter(Question.id==question_id).update({'is_answered':True})
@@ -1678,13 +1682,11 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
             user_day = user_time_diff.days
     print cur_user_id
     print 'user_day', user_day
-    offset_weight = 0 if user_day >= 5 else 2 if user_day == 4 else 4 if user_day == 3 else 7 if user_day == 2 \
-                        else 10 if user_day == 1 else 13
-
-    temp_offset = offset + offset_weight
+    #temp_offset = offset + offset_weight
     #feeds = db.session.execute('Select * from central_queue_mobile limit %s, %s;'%(temp_offset, limit))
-    feeds = CentralQueueMobile.query.offset(temp_offset).limit(limit).all()
-    print feeds
+    feeds = CentralQueueMobile.query.filter(CentralQueueMobile.day <= user_day).order_by(CentralQueueMobile.day.desc(), CentralQueueMobile.score.asc()).offset(offset).limit(limit).all()
+    for f in feeds:
+        print f.day
     result = []
     for obj in feeds:
         print obj.user
