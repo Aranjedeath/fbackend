@@ -181,3 +181,35 @@ def update_que_order(_id, day, score):
     db.session.add(item)
     db.session.commit()
     return {'success' : True}
+
+def get_celeb_list():
+    celebs = db.session.execute('select * from users left join central_queue_mobile on users.id = central_queue_mobile.user')
+    results = []
+    for celeb in celebs:
+        user = thumb_user_to_dict(celeb)
+        user['in_list'] = True if celeb.user else False
+        result.append(user)
+    return {'results' : results}
+
+def add_celeb_in_queue(item_id, item_type, item_day, item_score):
+    type_dict = {
+            'user' : CentralQueueMobile.user,
+            'post' : CentralQueueMobile.post,
+            'question' : CentralQueueMobile.question
+        }
+    que_entry = CentralQueueMobile.query.filter(type_dict[item_type] == item_id).first()
+    if not que_entry:
+        que_entry = CentralQueueMobile()
+        if item_type == 'user':
+            que_entry.user = item_id
+        elif item_type == 'question':
+            que_entry.question = item_id
+        else:
+            que_entry.post = item_id
+    que_entry.day = item_day
+    que_entry.score = item_score
+    db.session.add(que_entry)
+    db.session.commit()
+    return {'success' : True}
+
+

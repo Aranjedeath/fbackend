@@ -194,6 +194,22 @@ class AdminQuestionEdit(AdminProtectedResource):
         
         return admin_controllers.question_edit(question_id=args['question_id'], body=args['body'])
 
+class AdminAddCelebQue(AdminProtectedResource):
+    @login_required
+    def post(self):
+        arg_parser = reqparse.RequestParser()
+        arg_parser.add_argument('item_id', type= str, location = 'json', required = True)
+        arg_parser.add_argument('item_type', type=str, location = 'json', required = True, choices = ['user', 'post', 'question'])
+        arg_parser.add_argument('item_day', type=str, location = 'json', required = True)
+        arg_parser.add_argument('item_score', type=str, location = 'json', required = True)
+
+        args = arg_parser.parse_args()
+        try:
+            return admin_controllers.add_celeb_in_queue(args['item_id'], args['item_type'], args['item_day'], args['item_score'])
+        except Exception as e:
+            print traceback.format_exc(e)
+            abort(500, message = 'Some Error Occured')
+
 class AdminQueOrderEdit(AdminProtectedResource):
     @login_required
     def get(self):
@@ -218,3 +234,10 @@ class AdminQueOrderEdit(AdminProtectedResource):
             print traceback.format_exc(e)
             return traceback.format_exc(e)
 
+class AdminCelebList(AdminProtectedResource):
+    @login_required:
+    def get(self):
+        try:
+            return admin_controllers.get_celebs()
+        except Exception as e:
+            print traceback.format_exc(e)
