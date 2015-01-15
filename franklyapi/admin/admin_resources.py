@@ -193,3 +193,19 @@ class AdminQuestionEdit(AdminProtectedResource):
         args = arg_parser.parse_args()
         
         return admin_controllers.question_edit(question_id=args['question_id'], body=args['body'])
+
+class AdminQueOrderEdit(AdminProtectedResource):
+    @login_required
+    def get(self):
+        return admin_controllers.get_que_order()
+
+    def post(self):
+        arg_parser = reqparse.RequestParser()
+        arg_parser.add_argument('que_id', type=str, location = 'json', required = True)
+        arg_parser.add_argument('day', type=int, location = 'json', required = True)
+        arg_parser.add_argument('score', type=int, location='json', require = True)
+
+        args = arg_parser.parse_args()
+
+        return admin_controllers.update_que_order(args['que_id'], args['day'], args['score'])
+

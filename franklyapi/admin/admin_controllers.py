@@ -149,3 +149,35 @@ def question_edit(question_id, body):
     Question.query.filter(Question.id==question_id).update({'body':body.capitalize()})
     db.session.commit()
     return {'success':True, 'question_id':question_id}
+ 
+def get_que_order():
+    queue = CentralQueueMobile.quey.all()
+    result = []
+    for item in queue:
+        if item.user:
+            user = User.query.filter(User.id == item.user).first()
+            result.append(
+                {
+                    'type' : 'user',
+                    'id' : item.id,
+                    'day' : item.day,
+                    'score' : item.score,
+                    'user' : {
+                            'username' : user.username
+                        }
+                }
+            )
+        #Write code for posts and questions
+    return {
+        'result' : result
+        }
+
+def update_que_order(_id, day, score):
+    item = CentralQueueMobile.query.filter(CentralQueueMobile.id == _id).first()
+    if not item:
+        return {'success' : False,'message' : 'wrong id provided'}
+    item.day = day
+    item.score = score
+    db.session.add(item)
+    db.session.commit()
+    return {'success' : True}
