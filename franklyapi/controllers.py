@@ -1665,13 +1665,11 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
             user_day = user_time_diff.days
     print cur_user_id
     print 'user_day', user_day
-    offset_weight = 0 if user_day >= 5 else 2 if user_day == 4 else 4 if user_day == 3 else 7 if user_day == 2 \
-                        else 10 if user_day == 1 else 13
-
-    temp_offset = offset + offset_weight
+    #temp_offset = offset + offset_weight
     #feeds = db.session.execute('Select * from central_queue_mobile limit %s, %s;'%(temp_offset, limit))
-    feeds = CentralQueueMobile.query.offset(temp_offset).limit(limit).all()
-    print feeds
+    feeds = CentralQueueMobile.query.filter(CentralQueueMobile.day <= user_day).order_by(CentralQueueMobile.day.desc(), CentralQueueMobile.score.asc()).offset(offset).limit(limit).all()
+    for f in feeds:
+        print f.day
     result = []
     for obj in feeds:
         print obj.user

@@ -25,6 +25,8 @@ class CentralQueueMobile(Base):
     user          = Column(CHAR(32), ForeignKey('users.id'))
     question      = Column(CHAR(32), ForeignKey('questions.id'))
     post          = Column(CHAR(32), ForeignKey('posts.id'))
+    day           = Column(Integer, default = 1)
+    score         = Column(Integer, default = 0)
 
     def __init__(self, _type, obj):
         if _type == 'user':
