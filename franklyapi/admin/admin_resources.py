@@ -197,15 +197,24 @@ class AdminQuestionEdit(AdminProtectedResource):
 class AdminQueOrderEdit(AdminProtectedResource):
     @login_required
     def get(self):
-        return admin_controllers.get_que_order()
+        try:
+            return admin_controllers.get_que_order()
+        except Exception as e:
+            return traceback.format_exc(e)
 
+    @login_required
     def post(self):
+        from flask import request
+        print request.json
+
         arg_parser = reqparse.RequestParser()
         arg_parser.add_argument('que_id', type=str, location = 'json', required = True)
         arg_parser.add_argument('day', type=int, location = 'json', required = True)
-        arg_parser.add_argument('score', type=int, location='json', require = True)
-
+        arg_parser.add_argument('score', type=int, location='json', required = True)
         args = arg_parser.parse_args()
-
-        return admin_controllers.update_que_order(args['que_id'], args['day'], args['score'])
+        try:
+            return admin_controllers.update_que_order(args['que_id'], args['day'], args['score'])
+        except Exception as e:
+            print traceback.format_exc(e)
+            return traceback.format_exc(e)
 

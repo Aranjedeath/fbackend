@@ -151,7 +151,7 @@ def question_edit(question_id, body):
     return {'success':True, 'question_id':question_id}
  
 def get_que_order():
-    queue = CentralQueueMobile.quey.all()
+    queue = CentralQueueMobile.query.all()
     result = []
     for item in queue:
         if item.user:
