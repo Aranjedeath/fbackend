@@ -169,7 +169,7 @@ def get_que_order(offset = 0, limit =10 ):
             )
         #Write code for posts and questions
     return {
-        'result' : result
+        'results' : result
         }
 
 def update_que_order(_id, day, score):
