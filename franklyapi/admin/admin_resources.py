@@ -216,7 +216,7 @@ class AdminQueOrderEdit(AdminProtectedResource):
         try:
             return admin_controllers.get_que_order()
         except Exception as e:
-            return traceback.format_exc(e)
+            print  traceback.format_exc(e)
 
     @login_required
     def post(self):

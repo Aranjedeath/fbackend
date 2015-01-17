@@ -201,13 +201,7 @@ def add_celeb_in_queue(item_id, item_type, item_day, item_score):
         }
     que_entry = CentralQueueMobile.query.filter(type_dict[item_type] == item_id).first()
     if not que_entry:
-        que_entry = CentralQueueMobile()
-        if item_type == 'user':
-            que_entry.user = item_id
-        elif item_type == 'question':
-            que_entry.question = item_id
-        else:
-            que_entry.post = item_id
+        que_entry = CentralQueueMobile(item_type, item_id)
     que_entry.day = item_day
     que_entry.score = item_score
     db.session.add(que_entry)
