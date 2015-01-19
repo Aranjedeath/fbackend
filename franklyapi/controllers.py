@@ -1712,18 +1712,19 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
         print obj.user
         if obj.user:
             result.append({'type':'user', 'user': user_to_dict(User.query.filter(User.id == obj.user).first())})
-            questions_query = Question.query.filter(Question.question_to==obj.user, 
-                                            Question.deleted==False,
-                                            Question.is_answered==False,
-                                            Question.is_ignored==False,
-                                            Question.public==True
-                                            )
-            questions = questions_query.order_by(Question.score.desc()
-                                        ).limit(3)
-            questions_feed = [{'type':'question', 'questions':question_to_dict(q, cur_user_id)} for q in questions.all()]
-            result.extend(questions_feed)
+            if web:
+                questions_query = Question.query.filter(Question.question_to==obj.user, 
+                                                Question.deleted==False,
+                                                Question.is_answered==False,
+                                                Question.is_ignored==False,
+                                                Question.public==True
+                                                )
+                questions = questions_query.order_by(Question.score.desc()
+                                            ).limit(3)
+                questions_feed = [{'type':'questions', 'questions':question_to_dict(q, cur_user_id)} for q in questions.all()]
+                result.extend(questions_feed)
         elif obj.question:
-            result.append({'type':'question', 'question': question_to_dict(Question.query.filter(Question.id == obj.question).first())})
+            result.append({'type':'questions', 'questions': question_to_dict(Question.query.filter(Question.id == obj.question).first())})
         else:
             result.append({'type':'post', 'post' : post_to_dict(Post.query.filter(Post.id == obj.post).first())})
 
