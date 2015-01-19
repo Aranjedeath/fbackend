@@ -1181,12 +1181,14 @@ class VideoView(restful.Resource):
 
 class Search(restful.Resource):
     def get(self):
+        from flask import request
         parser = reqparse.RequestParser()
         parser.add_argument('q', type=str, location='args', required = True)
         parser.add_argument('offset', type=int, location='args', default = 0)
         parser.add_argument('limit', type=int, location='args', default = 10)
         args = parser.parse_args()
         try:
+            version_code = request.headers.get('X-Version-Code', None)
             if current_user.is_authenticated():
                 current_user_id = current_user.id
             else:
@@ -1195,7 +1197,8 @@ class Search(restful.Resource):
             return controllers.search(cur_user_id=current_user_id,
                                         query=args['q'],
                                         offset=args['offset'],
-                                        limit=args['limit'])
+                                        limit=args['limit'],
+                                        version_code = version_code)
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])

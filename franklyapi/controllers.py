@@ -1631,9 +1631,10 @@ def view_video(url):
     url = url.replace('http://d35wlof4jnjr70.cloudfront.net/', 'https://s3.amazonaws.com/franklyapp/')
     redis_data_client.incr(url, 1)
 
-def search(cur_user_id, query, offset, limit):
+def search(cur_user_id, query, offset, limit, version_code=None):
     results = []
-    if offset == 0:
+    print version_code
+    if str(version_code) == '50' and offset == 0:
         search_filter_invitable = or_( Invitable.name.like('{query}%'.format(query = query)),
                                    Invitable.name.like('% {query}%'.format(query = query))
                                 )

@@ -156,17 +156,17 @@ def get_que_order(offset = 0, limit =10 ):
     for item in queue:
         if item.user:
             user = User.query.filter(User.id == item.user).first()
+            user = search_user_to_dict(user)
             result.append(
                 {
                     'type' : 'user',
                     'id' : item.id,
                     'day' : item.day,
                     'score' : item.score,
-                    'user' : {
-                            'username' : user.username
-                        }
+                    'user' : user
                 }
             )
+    result = sorted(result, key=lambda x:x['day'], reverse = True)
         #Write code for posts and questions
     return {
         'results' : result
@@ -191,6 +191,7 @@ def get_celeb_list(offset = 0, limit = 10):
         user['day'] = celeb.day
         user['score'] = celeb.score
         results.append(user)
+    results = sorted(results, key=lambda x:x['day'], reverse = True)
     return {'results' : results}
 
 def add_celeb_in_queue(item_id, item_type, item_day, item_score):
