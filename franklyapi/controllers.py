@@ -395,7 +395,7 @@ def get_user_like_count(user_id):
     return count
 
 def get_user_view_count(user_id, user_view_count=None):
-    return 100
+    return User.query.get(user_id).total_view_count
 
 def is_following(user_id, current_user_id):
     return bool(Follow.query.filter(Follow.user==current_user_id, Follow.followed==user_id, Follow.unfollowed==False).limit(1).count())

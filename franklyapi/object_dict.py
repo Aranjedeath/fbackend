@@ -49,7 +49,7 @@ def user_to_dict(user):
         'fb_write_perm' : user.facebook_write_permission,
         'fb_perm':'none',
         'admin_level':1 if user.id in config.ADMIN_USERS else 0,
-        'view_count' : user.total_view_count,
+        'view_count' : user_stats['view_count'],
         'web_link':'http://frankly.me/{username}'.format(username=user.username),
         
         'user_type':user.user_type,
@@ -88,7 +88,7 @@ def guest_user_to_dict(user, current_user_id, cur_user_interest_tags=None):
         'is_follower':is_follower(user.id, current_user_id) if current_user_id else False,
         'is_following':is_following(user.id, current_user_id) if current_user_id else False,
         'allow_anonymous_question': user.allow_anonymous_question,
-        'view_count' : user.total_view_count,
+        'view_count' : user_stats['view_count'],
         'user_type':user.user_type,
         'user_title':user.user_title,
         'profile_videos':get_video_states({user.profile_video:user.cover_picture})[user.profile_video] if user.profile_video else {},
