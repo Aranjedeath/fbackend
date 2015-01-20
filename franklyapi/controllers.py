@@ -338,9 +338,11 @@ def get_follower_count(user_id):
         count = count + 5000
     if user.username == 'KunalBahl':
         count = count + 637
-    if user.username == 'RJSayema':
+    elif user.username == 'RJSayema':
         count = count + 770
-    if user.username == 'VikasKhanna':
+    elif user.username == 'VikasKhanna':
+        count = count + 3123
+    elif user.username == 'KiranBedi':
         count = count + 3123
 
     return count

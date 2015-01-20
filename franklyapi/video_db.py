@@ -17,7 +17,8 @@ def update_video_state(video_url, result={}):
         else:
             Video.query.filter(Video.url==video_url).update({'process_state':'failed'})
             db.session.commit()
-    except:
+    except Exception as e:
+        print e
         db.session.rollback()
 
 
