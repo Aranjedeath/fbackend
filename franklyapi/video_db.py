@@ -12,9 +12,9 @@ def update_video_state(video_url, result={}):
     try:
         if result:
             print result
-            print 'Updating DB'
             result.update({'process_state':'success'})
-            print Video.query.filter(Video.url==video_url).update(result)
+            Video.query.filter(Video.url==video_url).update(result)
+            db.session.commit()
         else:
             Video.query.filter(Video.url==video_url).update({'process_state':'failed'})
             db.session.commit()
