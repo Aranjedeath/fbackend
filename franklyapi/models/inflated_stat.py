@@ -9,7 +9,7 @@ class InflatedStat(Base):
     post           = Column(CHAR(32), ForeignKey('posts.id'))
     user           = Column(CHAR(32), ForeignKey('users.id'))
     question       = Column(CHAR(32), ForeignKey('questions.id'))
-    timestamp      = Column(DateTime(), server_onupdate=datetime.datetime.now, nullable=False)
+    timestamp      = Column(DateTime(), onupdate=datetime.datetime.now, nullable=False)
     view_count     = Column(Integer(), nullable=False, server_default=0)
     like_count     = Column(Integer(), nullable=False, server_default=0)
     follower_count = Column(Integer(), nullable=False, server_default=0)
