@@ -96,7 +96,7 @@ def make_username(email, full_name=None, social_username=None):
         while not uname_valid and num_of_attempt<3:
             uname_valid = username_available(username)
             num_of_attempt += 1
-            if len(username)<6:
+            if not uname_valid:
                 username = username+str(random.randint(0, 9000))
 
     if not uname_valid and social_username:
@@ -105,7 +105,7 @@ def make_username(email, full_name=None, social_username=None):
         while not uname_valid and num_of_attempt<3:
             uname_valid = username_available(username)
             num_of_attempt += 1
-            if len(username)<6:
+            if not uname_valid:
                 username = username+str(random.randint(0, 9000))
 
     if not uname_valid and email:
@@ -114,7 +114,7 @@ def make_username(email, full_name=None, social_username=None):
         while not uname_valid and num_of_attempt<3:
             uname_valid = username_available(username)
             num_of_attempt += 1
-            if len(username)<6:
+            if not uname_valid:
                 username = username+str(random.randint(0, 9000))
 
     if not uname_valid:
@@ -125,7 +125,7 @@ def make_username(email, full_name=None, social_username=None):
         while not uname_valid and num_of_attempt<3:
             uname_valid = username_available(username)
             num_of_attempt += 1
-            if len(username)<6:
+            if not uname_valid:
                 username = username+str(random.randint(0, 9000))
     return username
 
