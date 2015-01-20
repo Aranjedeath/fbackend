@@ -56,8 +56,12 @@ def user_to_dict(user):
     }
     if user.username == 'RJNaved':
         user_dict['view_count'] = user_dict['view_count'] + 25690
+    if user.username == 'KiranBedi':
+        user_dict['view_count'] = user_dict['view_count'] + 49690
     elif user.username == 'KunalBahl':
         user_dict['view_count'] = user_dict['view_count'] + 1362
+    elif user.username == 'AjazKhan':
+        user_dict['view_count'] = user_dict['view_count'] + 9671
     if user_dict['profile_video']:
         user_dict['answer_count'] = user_dict['answer_count']+1
     return user_dict
@@ -96,8 +100,12 @@ def guest_user_to_dict(user, current_user_id, cur_user_interest_tags=None):
         user_dict['answer_count'] = user_dict['answer_count']+1
     if user.username == 'RJNaved':
         user_dict['view_count'] = user_dict['view_count'] + 25690
+    if user.username == 'KiranBedi':
+        user_dict['view_count'] = user_dict['view_count'] + 49690
     elif user.username == 'KunalBahl':
         user_dict['view_count'] = user_dict['view_count'] + 1362
+    elif user.username == 'AjazKhan':
+        user_dict['view_count'] = user_dict['view_count'] + 9671
     
     return user_dict
 
