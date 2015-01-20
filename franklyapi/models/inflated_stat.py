@@ -10,10 +10,10 @@ class InflatedStat(Base):
     user           = Column(CHAR(32), ForeignKey('users.id'))
     question       = Column(CHAR(32), ForeignKey('questions.id'))
     timestamp      = Column(DateTime(), onupdate=datetime.datetime.now, nullable=False)
-    view_count     = Column(Integer(), nullable=False, server_default=0)
-    like_count     = Column(Integer(), nullable=False, server_default=0)
-    follower_count = Column(Integer(), nullable=False, server_default=0)
-    upvote_count   = Column(Integer(), nullable=False, server_default=0)
+    view_count     = Column(Integer(), nullable=False, default=0)
+    like_count     = Column(Integer(), nullable=False, default=0)
+    follower_count = Column(Integer(), nullable=False, default=0)
+    upvote_count   = Column(Integer(), nullable=False, default=0)
 
 
     def __init__(self, post=None, user=None, question=None, view_count=0, like_count=0, follower_count=0, upvote_count=0, timestamp=datetime.datetime.now()):
