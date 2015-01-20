@@ -21,7 +21,10 @@ def media_dict(media_url, thumbnail_url):
 
 def user_to_dict(user):
     from configs import config
-    from controllers import get_video_states, get_user_view_count, get_follower_count, get_following_count, get_answer_count, get_user_like_count
+    from controllers import get_video_states, get_user_stats
+    
+    user_stats = get_user_stats(user.id)
+
     user_dict = {
         'id': user.id,
         'email': user.email,
@@ -37,10 +40,10 @@ def user_to_dict(user):
         'cover_picture': user.cover_picture,
         'profile_video': user.profile_video,
         'gender': user.gender,
-        'follower_count': get_follower_count(user.id),
-        'following_count': get_following_count(user.id),
-        'answer_count': get_answer_count(user.id),
-        'likes_count': get_user_like_count(user.id),
+        'follower_count': user_stats['follower_count'],
+        'following_count': user_stats['following_count'],
+        'answer_count': user_stats['answer_count'],
+        'likes_count': 0,
         'location': location_dict(user.lat, user.lon, user.location_name, user.country_name, user.country_code),
         'last_updated': int(time.mktime(user.last_updated.timetuple())),
         'fb_write_perm' : user.facebook_write_permission,
@@ -54,24 +57,19 @@ def user_to_dict(user):
         'interests':[],
         'profile_videos':get_video_states({user.profile_video:user.cover_picture})[user.profile_video] if user.profile_video else {}
     }
-    if user.username == 'RJNaved':
-        user_dict['view_count'] = user_dict['view_count'] + 25690
-    if user.username == 'KiranBedi':
-        user_dict['view_count'] = user_dict['view_count'] + 49690
-    elif user.username == 'KunalBahl':
-        user_dict['view_count'] = user_dict['view_count'] + 1362
-    elif user.username == 'AjazKhan':
-        user_dict['view_count'] = user_dict['view_count'] + 9671
+
     if user_dict['profile_video']:
         user_dict['answer_count'] = user_dict['answer_count']+1
     return user_dict
 
 
 def guest_user_to_dict(user, current_user_id, cur_user_interest_tags=None):
-    from controllers import get_video_states, get_follower_count, get_following_count, get_answer_count,\
-                            get_user_like_count, is_follower, is_following, get_user_view_count
+    from controllers import get_video_states, get_user_stats, is_follower, is_following
     if user.deleted == True:
         return thumb_user_to_dict(user)
+    
+    user_stats = get_user_stats(user.id)
+
     user_dict = {
         'id': user.id,
         'username': user.username,
@@ -82,10 +80,10 @@ def guest_user_to_dict(user, current_user_id, cur_user_interest_tags=None):
         'cover_picture': user.cover_picture,
         'profile_video': user.profile_video,
         'gender': user.gender,
-        'follower_count': get_follower_count(user.id),
-        'following_count': get_following_count(user.id),
-        'answer_count': get_answer_count(user.id),
-        'likes_count': get_user_like_count(user.id),
+        'follower_count': user_stats['follower_count'],
+        'following_count': user_stats['following_count'],
+        'answer_count': user_stats['answer_count'],
+        'likes_count': 0,
         'location': location_dict(user.lat, user.lon, user.location_name, user.country_name, user.country_code),
         'is_follower':is_follower(user.id, current_user_id) if current_user_id else False,
         'is_following':is_following(user.id, current_user_id) if current_user_id else False,
@@ -98,14 +96,6 @@ def guest_user_to_dict(user, current_user_id, cur_user_interest_tags=None):
     }
     if user_dict['profile_video']:
         user_dict['answer_count'] = user_dict['answer_count']+1
-    if user.username == 'RJNaved':
-        user_dict['view_count'] = user_dict['view_count'] + 25690
-    if user.username == 'KiranBedi':
-        user_dict['view_count'] = user_dict['view_count'] + 49690
-    elif user.username == 'KunalBahl':
-        user_dict['view_count'] = user_dict['view_count'] + 1362
-    elif user.username == 'AjazKhan':
-        user_dict['view_count'] = user_dict['view_count'] + 9671
     
     return user_dict
 
@@ -256,10 +246,13 @@ def question_to_dict(question, current_user_id=None):
     return ques_dict
 
 def post_to_dict(post, cur_user_id=None, distance=None):
-    from controllers import get_video_states, is_liked, is_reshared, get_questions, get_post_like_count, is_following, get_follower_count, get_thumb_users, get_comment_count, get_post_view_count
+    from controllers import get_video_states, is_liked, is_reshared, get_questions, is_following, get_thumb_users, get_post_stats, get_user_stats
     users = get_thumb_users([post.question_author, post.answer_author])
     questions = get_questions([post.question])
-
+    
+    post_stats = get_post_stats(post.id)
+    answer_author_stats = get_user_stats(post.answer_author)
+    
     post_dict = {
         'id': post.id,
         'question_author': {
@@ -283,7 +276,7 @@ def post_to_dict(post, cur_user_id=None, distance=None):
             'user_title':users[post.answer_author]['user_title'],
             'allow_anonymous_question': users[post.answer_author]['user_title'],
             'is_following':is_following(post.answer_author, cur_user_id) if cur_user_id else False,
-            'follower_count': get_follower_count(post.answer_author)
+            'follower_count': answer_author_stats['follower_count']
 
         },
         'question': {
@@ -303,10 +296,10 @@ def post_to_dict(post, cur_user_id=None, distance=None):
             'media_urls':get_video_states({post.media_url:post.thumbnail_url})[post.media_url]
         },
 
-        'liked_count': get_post_like_count(post.id),
+        'liked_count': post_stats['like_count'],
         'is_reshared': is_reshared(post.id, cur_user_id),
         # to store count and list of user ids
-        'comment_count': get_comment_count(post.id),
+        'comment_count': post_stats['comment_count'],
         'is_liked': is_liked(post.id, cur_user_id),
         'deleted': post.deleted,
         'tags':[],
@@ -315,7 +308,7 @@ def post_to_dict(post, cur_user_id=None, distance=None):
         'client_id':post.client_id,
         'ready':post.ready,
         'popular':post.popular,
-        'view_count':post.view_count,
+        'view_count':post_stats['view_count'],
         'web_link':'http://frankly.me/p/{client_id}'.format(client_id=post.client_id)
     }
     return post_dict
@@ -323,7 +316,7 @@ def post_to_dict(post, cur_user_id=None, distance=None):
 
 
 def posts_to_dict(posts, cur_user_id=None, distance=None):
-    from controllers import get_video_states, get_questions, is_liked, is_reshared, get_post_like_count, is_following, get_follower_count, get_thumb_users, get_comment_count, get_post_view_count
+    from controllers import get_video_states, get_questions, is_liked, is_reshared, is_following, get_thumb_users, get_post_stats, get_user_stats
     user_list = set()
     answer_media_urls = {}
     question_ids = []
@@ -341,6 +334,10 @@ def posts_to_dict(posts, cur_user_id=None, distance=None):
 
     posts_dict = []
     for post in posts:
+        
+        post_stats = get_post_stats(post.id)
+        answer_author_stats = get_user_stats(post.answer_author)
+        
         p_dict = {
             'id': post.id,
             'question_author': {
@@ -364,7 +361,7 @@ def posts_to_dict(posts, cur_user_id=None, distance=None):
                 'user_title':users[post.answer_author]['user_title'],
                 'allow_anonymous_question': users[post.answer_author]['user_title'],
                 'is_following':is_following(post.answer_author, cur_user_id) if cur_user_id else False,
-                'follower_count': get_follower_count(post.answer_author)
+                'follower_count': answer_author_stats['follower_count']
 
             },
             'question': {
@@ -383,9 +380,9 @@ def posts_to_dict(posts, cur_user_id=None, distance=None):
                 'tags': [],
                 'media_urls':media_urls[post.media_url]
             },
-            'liked_count': get_post_like_count(post.id),
+            'liked_count': post_stats['like_count'],
             # to store count and list of user ids
-            'comment_count': get_comment_count(post.id),
+            'comment_count': post_stats['comment_count'],
             'is_liked': is_liked(post.id, cur_user_id),
             'is_reshared': is_reshared(post.id, cur_user_id),
             'deleted': post.deleted,
@@ -395,7 +392,7 @@ def posts_to_dict(posts, cur_user_id=None, distance=None):
             'client_id':post.client_id,
             'ready':post.ready,
             'popular':post.popular,
-            'view_count':post.view_count,
+            'view_count':post_stats['view_count'],
             'web_link':'http://frankly.me/p/{client_id}'.format(client_id=post.client_id)
         }
         posts_dict.append(p_dict)

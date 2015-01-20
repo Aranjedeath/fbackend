@@ -20,7 +20,7 @@ import social_helpers
 from configs import config
 from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
                     Question, Upvote, Comment, ForgotPasswordToken, Install, Video,\
-                    UserFeed, Event, Reshare, Invitable, Invite, ContactUs
+                    UserFeed, Event, Reshare, Invitable, Invite, ContactUs, InflatedStat
 
 from app import redis_client, raygun, db, redis_data_client
 
@@ -315,39 +315,58 @@ def login_email_new(user_id, id_type, password, device_id, push_id=None):
 def has_blocked(cur_user_id, user_id):
     return bool(Block.query.filter(or_(Block.user==cur_user_id, Block.blocked_user==cur_user_id)).filter(Block.user==user_id, Block.blocked_user==user_id).limit(1).count())
 
+
+def get_user_stats(user_id):
+    following_count = get_following_count(user_id)
+    follower_count  = get_follower_count(user_id)
+    view_count      = get_user_view_count(user_id)
+    answer_count    = get_answer_count(user_id)
+
+    inflated_stat = InflatedStat.query.filter(InflatedStat.user==user_id).first()
+    if inflated_stat:
+        view_count += inflated_stat.view_count
+        follower_count += inflated_stat.follower_count
+
+    return {
+            'following_count':following_count,
+            'follower_count':follower_count,
+            'view_count':view_count,
+            'answer_count':answer_count
+            }
+
+
+def get_post_stats(post_id):
+    view_count = get_post_view_count(post_id)
+    like_count = get_post_like_count(post_id)
+    comment_count = get_comment_count(post_id)
+
+    inflated_stat = InflatedStat.query.filter(InflatedStat.post==post_id).first()
+    if inflated_stat:
+        view_count += inflated_stat.view_count
+        like_count += inflated_stat.like_count
+
+    return {
+            'view_count':view_count,
+            'like_count':like_count,
+            'comment_count':comment_count
+            }
+
+
 def get_follower_count(user_id):
     from math import log, sqrt
     from datetime import datetime, timedelta
     user = User.query.filter(User.id == user_id).first()
-    if user_id == '8285cc36fe174664b283bc9a57c829d2':
-        return 5231
 
     d = datetime.now() - timedelta(minutes = 5)
     count_to_pump =  Follow.query.filter(Follow.followed==user_id, Follow.unfollowed==False, Follow.timestamp <= d).count() + 1
     count_as_such = Follow.query.filter(Follow.followed==user_id, Follow.unfollowed==False, Follow.timestamp > d).count()
     count = count_as_such + count_to_pump
-    print count_as_such, count_to_pump
+
     if user.user_type == 2:
         if count_to_pump:
             count = int(11*count_to_pump + log(count_to_pump,2) + sqrt(count_to_pump)) + count_as_such
         else:
             count = count_to_pump + count_as_such
-    print count_as_such, count_to_pump
-    print count
-    if user.username == 'RJNaved':
-        count = count + 5000
-    if user.username == 'KunalBahl':
-        count = count + 637
-    elif user.username == 'RJSayema':
-        count = count + 770
-    elif user.username == 'VikasKhanna':
-        count = count + 3123
-    elif user.username == 'KiranBedi':
-        count = count + 3123
-    if user.username == 'KiranBedi':
-        count = count + 15123
-    if user.username == 'AjazKhan':
-        count = count + 1297
 
     return count
 
@@ -423,6 +442,9 @@ def get_question_upvote_count(question_id):
     else:
         count = count_to_pump + count_as_such
     count += time_factor
+    inflated_stat = InflatedStat.query.filter(InflatedStat.question==question_id).first()
+    if inflated_stat:
+        count += inflated_stat.upvote_count
     return count
 
 def is_upvoted(question_id, user_id):

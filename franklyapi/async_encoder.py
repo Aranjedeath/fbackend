@@ -24,3 +24,5 @@ def _encode_video_to_profile(file_path, video_url, profile, username=''):
 @cel.task(queue='retry_queue')
 def _try_video_again(video_url, username=''):
     encode_video_task(video_url, username)
+
+
