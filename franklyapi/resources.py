@@ -939,7 +939,7 @@ class DiscoverPost(restful.Resource):
         discover_post_parser.add_argument('X-Deviceid', type=str, required=True, location='headers')
         discover_post_parser.add_argument('web', type=int, default=False, location='args')
         discover_post_parser.add_argument('visit', type=int, default=0, location='args')
-        discover_post_parser.add_argument('append_top', type=list, default=[], location='args')
+        discover_post_parser.add_argument('append_top', type=str, default='', location='args')
 
 
         args = discover_post_parser.parse_args()
