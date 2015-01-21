@@ -1770,7 +1770,7 @@ def search_default():
     categories_order = ['Politicians', 'Trending Now', 'Singers', 'Radio Jockeys', 'Chefs', 'Entrepenuers', 'Subject Experts', 'New on Frankly']
     results = {cat:[] for cat in categories_order}
 
-    users = SearchDefault.query.order_by(SearchDefault.score.desc()).all()
+    users = SearchDefault.query.order_by(SearchDefault.score).all()
     for item in users:
         user = User.query.filter(User.id==item.user).first()
         if user:
