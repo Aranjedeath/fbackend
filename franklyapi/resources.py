@@ -1222,4 +1222,10 @@ class ContactUs(restful.Resource):
 
 class SearchDefault(restful.Resource):
     def get(self):
-        return controllers.search_default()
+        try:
+            return controllers.search_default()
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message=str(traceback.format_exc(e)))
