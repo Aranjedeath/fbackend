@@ -1712,7 +1712,7 @@ def add_contact(name, email, organisation, message, phone):
         db.session.commit()
     return {'success' : True}
 
-def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon = None, visit = None):
+def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon = None, visit = None, append_top=[]):
     from models import CentralQueueMobile, User, Question, Post
     print web
     if offset == -1:
@@ -1736,11 +1736,15 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
     feeds = CentralQueueMobile.query.filter(CentralQueueMobile.day <= user_day).order_by(CentralQueueMobile.day.desc(), CentralQueueMobile.score.asc()).offset(offset).limit(limit).all()
     for f in feeds:
         print f.day
-    result = []
+
+    append_top_users = User.query.filter(User.username.in_(append_top), User.profile_video!=None).all() if append_top else []
+    
+    result = [{'type':'user', 'user': guest_user_to_dict(user, cur_user_id)} for user in append_top_users]
+
     for obj in feeds:
         print obj.user
         if obj.user:
-            user = User.query.filter(User.id == obj.user, User.profile_video != None).first() 
+            user = User.query.filter(User.id == obj.user, User.profile_video != None, ~User.username.in_(append_top)).first() 
             if user:
                 result.append({'type':'user', 'user': guest_user_to_dict(user, cur_user_id)})
                 if web:
@@ -1767,7 +1771,7 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
         }
 
 def search_default():
-    categories_order = ['Politicians', 'Trending Now', 'Singers', 'Radio Jockeys', 'Chefs', 'Entrepenuers', 'Subject Experts', 'New on Frankly']
+    categories_order = ['Politicians', 'Trending Now', 'New on Frankly', 'Singers', 'Radio Jockeys', 'Chefs', 'Entrepenuers', 'Subject Experts']
     results = {cat:[] for cat in categories_order}
 
     users = SearchDefault.query.order_by(SearchDefault.score).all()

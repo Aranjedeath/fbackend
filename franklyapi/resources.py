@@ -939,6 +939,7 @@ class DiscoverPost(restful.Resource):
         discover_post_parser.add_argument('X-Deviceid', type=str, required=True, location='headers')
         discover_post_parser.add_argument('web', type=int, default=False, location='args')
         discover_post_parser.add_argument('visit', type=int, default=0, location='args')
+        discover_post_parser.add_argument('append_top', type=list, default=[], location='args')
 
 
         args = discover_post_parser.parse_args()
@@ -956,7 +957,8 @@ class DiscoverPost(restful.Resource):
             resp = controllers.discover_post_in_cqm(cur_user_id=current_user_id,
                                                 offset=args['offset'],
                                                 limit=args['limit'],
-                                                web = args['web'])
+                                                web = args['web'],
+                                                append_top = args['append_top'])
           # resp = controllers.discover_posts(cur_user_id=current_user_id,
           #                                     lat=args.get('lat'),
           #                                     lon=args.get('lon'),
