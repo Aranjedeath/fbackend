@@ -1739,7 +1739,7 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
 
     append_top_usernames = [item.strip().lower() for item in append_top.split(',') if item.strip()]
     append_top_users = User.query.filter(User.username.in_(append_top_usernames), User.profile_video!=None).all() if append_top_usernames else []
-    append_top_users.sort(key=lambda u:append_top_users.index(u.username.lower()))
+    append_top_users.sort(key=lambda u:append_top_usernames.index(u.username.lower()))
     limit -= len(append_top_users)
 
     result = [{'type':'user', 'user': guest_user_to_dict(user, cur_user_id)} for user in append_top_users]
