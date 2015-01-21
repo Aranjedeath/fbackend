@@ -77,6 +77,8 @@ api.add_resource(WebHiringForm, '/web/hiring_form')
 api.add_resource(Search, '/search')
 api.add_resource(ContactUs, '/contactus')
 
+api.add_resource(SearchDefault, '/search/default')
+
 
 
 
@@ -107,18 +109,6 @@ def mixpanel_switch():
 @app.route('/elb-test',methods=['GET'])
 def elbtest():
     return "{'success':'true','server':'zdexterorroh'}"
-
-@app.route('/search/default',methods=['GET'])
-def search_default():
-    from flask import jsonify
-    from search_default import search_default
-    return jsonify(search_default)
-
-
-
-
-
-
 
 #=================ADMIN URLS========================#
 

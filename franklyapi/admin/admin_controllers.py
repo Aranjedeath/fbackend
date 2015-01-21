@@ -94,6 +94,14 @@ def post_add(question_id, video, answer_type='video'):
     return controllers.add_video_post(answer_author, question_id, video, answer_type,
                         lat=None, lon=None, show_after = show_after)
 
+def post_unanswer(post_id):
+    post = Post.query.filter(Post.id==post_id).one()
+    question_id = post.question
+    Question.query.filter(Question.id==question_id).update({'is_answered':False})
+    Post.query.filter(Post.id==post_id).delete()
+    db.session.commit()
+    return {'success':True}
+
 def post_edit(post_id, video, answer_type='video'):
     answer_author = Question.query.get(question_id).question_to
     video_url, thumbnail_url = media_uploader.upload_user_video(user_id=answer_author, video_file=video, video_type='answer')

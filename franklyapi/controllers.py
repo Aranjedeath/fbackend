@@ -20,7 +20,8 @@ import social_helpers
 from configs import config
 from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
                     Question, Upvote, Comment, ForgotPasswordToken, Install, Video,\
-                    UserFeed, Event, Reshare, Invitable, Invite, ContactUs, InflatedStat
+                    UserFeed, Event, Reshare, Invitable, Invite, ContactUs, InflatedStat,\
+                    SearchDefault
 
 from app import redis_client, raygun, db, redis_data_client
 
@@ -1739,7 +1740,7 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
     for obj in feeds:
         print obj.user
         if obj.user:
-            result.append({'type':'user', 'user': user_to_dict(User.query.filter(User.id == obj.user).first())})
+            result.append({'type':'user', 'user': user_to_dict(User.query.filter(User.id == obj.user, cur_user_id).first())})
             if web:
                 questions_query = Question.query.filter(Question.question_to==obj.user, 
                                                 Question.deleted==False,
@@ -1752,9 +1753,9 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
                 questions_feed = [{'type':'questions', 'questions':question_to_dict(q, cur_user_id)} for q in questions.all()]
                 result.extend(questions_feed)
         elif obj.question:
-            result.append({'type':'questions', 'questions': question_to_dict(Question.query.filter(Question.id == obj.question).first())})
+            result.append({'type':'questions', 'questions': question_to_dict(Question.query.filter(Question.id == obj.question).first(), cur_user_id)})
         else:
-            result.append({'type':'post', 'post' : post_to_dict(Post.query.filter(Post.id == obj.post).first())})
+            result.append({'type':'post', 'post' : post_to_dict(Post.query.filter(Post.id == obj.post).first(), cur_user_id)})
 
     next_index = offset + limit if len(result) >= limit else -1
     return {
@@ -1762,6 +1763,29 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
             'count' : len(result),
             'stream' : result
         }
+
+def search_default():
+    categories_order = ['Politicians', 'Trending Now', 'Singers', 'Radio Jockeys', 'Chefs', 'Entrepenuers', 'Subject Experts', 'New on Frankly']
+    results = {cat:[] for cat in categories_order}
+
+    users = SearchDefault.query.order_by(SearchDefault.score.desc()).all()
+    for item in users:
+        user = User.query.filter(User.id==users.user).first()
+        if user:
+            results[item.category].append(thumb_user_to_dict(user))
+
+    resp = []
+    for cat in categories_order:
+        resp.append({'category_name':cat, 'users':results[cat])
+
+    return {'results':resp}
+
+
+
+
+
+
+
 
 
 
