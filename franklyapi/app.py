@@ -45,10 +45,13 @@ def add_access_control_headers(response):
     response.headers['Cache-Control'] = 'No-Cache'
     response.headers['X-Server'] = 'api.frankly.me'
     if 'dev' in config.HOSTNAME:
-        import json
-        data = json.loads(response.data)
-        data['abra'] = data['kadabra']
-        response.set_data(json.dumps(data))
+        try:
+            import json
+            data = json.loads(response.data)
+            data['abra'] = 'kadabra'
+            response.set_data(json.dumps(data))
+        except Exception as e:
+            print e
     return response
 
 @app.teardown_appcontext
