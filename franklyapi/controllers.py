@@ -1772,7 +1772,7 @@ def search_default():
 
     users = SearchDefault.query.order_by(SearchDefault.score.desc()).all()
     for item in users:
-        user = User.query.filter(User.id==users.user).first()
+        user = User.query.filter(User.id==item.user).first()
         if user:
             results[item.category].append(thumb_user_to_dict(user))
 
