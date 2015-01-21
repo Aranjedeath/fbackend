@@ -359,8 +359,8 @@ def get_follower_count(user_id):
     user = User.query.filter(User.id == user_id).first()
 
     d = datetime.now() - timedelta(minutes = 5)
-    count_to_pump =  Follow.query.filter(Follow.followed==user_id, Follow.unfollowed==False, Follow.timestamp <= d).count() + 1
-    count_as_such = Follow.query.filter(Follow.followed==user_id, Follow.unfollowed==False, Follow.timestamp > d).count()
+    count_to_pump =  Follow.query.filter(Follow.followed==user_id, Follow.unfollowed==False, Follow.timestamp <= d).count() 
+    count_as_such = Follow.query.filter(Follow.followed==user_id, Follow.unfollowed==False, Follow.timestamp > d).count() +1
     count = count_as_such + count_to_pump
 
     if user.user_type == 2:
@@ -435,8 +435,8 @@ def get_question_upvote_count(question_id):
     time_factor = 0
     if t:
         time_factor = int(time.mktime(t.timetuple())) % 7
-    count_to_pump = Upvote.query.filter(Upvote.question==question_id, Upvote.downvoted==False, Upvote.timestamp <= d).count() + 1
-    count_as_such = Upvote.query.filter(Upvote.question==question_id, Upvote.downvoted==False, Upvote.timestamp > d).count() 
+    count_to_pump = Upvote.query.filter(Upvote.question==question_id, Upvote.downvoted==False, Upvote.timestamp <= d).count() 
+    count_as_such = Upvote.query.filter(Upvote.question==question_id, Upvote.downvoted==False, Upvote.timestamp > d).count() + 1
     print count_to_pump, count_as_such
     if count_to_pump:
         count = int(11*count_to_pump+ log(count_to_pump, 2) + sqrt(count_to_pump)) + count_as_such
@@ -1663,7 +1663,7 @@ def view_video(url):
 def search(cur_user_id, query, offset, limit, version_code=None):
     results = []
     print version_code
-    if str(version_code) == '50' and offset == 0:
+    if str(version_code) == '42' and offset == 0:
         search_filter_invitable = or_( Invitable.name.like('{query}%'.format(query = query)),
                                    Invitable.name.like('% {query}%'.format(query = query))
                                 )
