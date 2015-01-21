@@ -1778,7 +1778,7 @@ def search_default():
 
     resp = []
     for cat in categories_order:
-        resp.append({'category_name':cat, 'users':results[cat])
+        resp.append({'category_name':cat, 'users':results[cat]})
 
     return {'results':resp}
 
