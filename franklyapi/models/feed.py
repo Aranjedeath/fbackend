@@ -47,7 +47,7 @@ class CentralQueueMobile(Base):
             
         
 class IntervalCountMap(Base):
-    __tablename__ = 'score_count_map'
+    __tablename__ = 'interval_count_map'
     id            = Column(Integer, primary_key = True)
     minutes       = Column(Integer, default = 0)
     count         = Column(Integer, default = 3)

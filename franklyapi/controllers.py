@@ -20,7 +20,8 @@ import social_helpers
 from configs import config
 from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
                     Question, Upvote, Comment, ForgotPasswordToken, Install, Video,\
-                    UserFeed, Event, Reshare, Invitable, Invite, ContactUs, InflatedStat
+                    UserFeed, Event, Reshare, Invitable, Invite, ContactUs, InflatedStat,\
+                    IntervalCountMap
 
 from app import redis_client, raygun, db, redis_data_client
 
@@ -1711,28 +1712,37 @@ def add_contact(name, email, organisation, message, phone):
         db.session.commit()
     return {'success' : True}
 
+def return_none_feed():
+    return {
+            'next_index' : -1,
+            'count' : 0,
+            'stream' : []
+        }
+
 def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon = None, visit = None):
     from models import CentralQueueMobile, User, Question, Post
     print web
     if offset == -1:
-        return {
-                'next_index' : -1,
-                'count' : 0,
-                'stream' : []
-            }
+        return return_none_feed
+
     user_time_diff = 1
     feed_count = 0
+    requested_limit = limit
     if cur_user_id:
-        result = db.session.execute(text('SELECT timestampdiff(minutes,user_since,now()) from users where id=:user_id'),
+        result = db.session.execute(text('SELECT timestampdiff(minute,user_since,now()) from users where id=:user_id'),
                                         params={'user_id':cur_user_id})
         for row in result:
             user_time_diff = int(row[0]) + 1
-    #temp_offset = offset + offset_weight
-    #feeds = db.session.execute('Select * from central_queue_mobile limit %s, %s;'%(temp_offset, limit))
+    print user_time_diff
     count_arr = IntervalCountMap.query.filter(IntervalCountMap.minutes <= user_time_diff).all()
     feeds_count = sum(map(lambda x:x.count, count_arr))
-    if limit > feeds_count:
-        limit = feeds_count
+    print feeds_count
+    if offset > feeds_count:
+        return return_none_feed()
+
+    if limit > feeds_count - offset:
+        limit = feeds_count - offset
+    print limit
     feeds = CentralQueueMobile.query.order_by(CentralQueueMobile.score.asc()).offset(offset).limit(limit).all()
     result = []
     for obj in feeds:
@@ -1755,7 +1765,7 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
         else:
             result.append({'type':'post', 'post' : post_to_dict(Post.query.filter(Post.id == obj.post).first())})
 
-    next_index = offset + limit if len(result) >= limit else -1
+    next_index = offset + requested_limit if len(result) >= requested_limit else -1
     return {
             'next_index' : next_index,
             'count' : len(result),
