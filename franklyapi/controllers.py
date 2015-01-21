@@ -1742,7 +1742,7 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
         if obj.user:
             user = User.query.filter(User.id == obj.user, User.profile_video != None).first() 
             if user:
-                result.append({'type':'user', 'user': user_to_dict(user, cur_user_id)})
+                result.append({'type':'user', 'user': guest_user_to_dict(user, cur_user_id)})
                 if web:
                     questions_query = Question.query.filter(Question.question_to==obj.user, 
                                                     Question.deleted==False,
