@@ -1720,21 +1720,20 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
                 'count' : 0,
                 'stream' : []
             }
-    user_day = 1
+    user_time_diff = 1
+    feed_count = 0
     if cur_user_id:
-        result = db.session.execute(text('SELECT user_since from users where id=:user_id'),
+        result = db.session.execute(text('SELECT timestampdiff(minutes,user_since,now()) from users where id=:user_id'),
                                         params={'user_id':cur_user_id})
         for row in result:
-            user_since = max(datetime.datetime(2014, 12, 28, 18, 32, 35, 270652), row[0])
-            user_time_diff = datetime.datetime.now()-user_since
-            user_day = user_time_diff.days + 1
-    print cur_user_id
-    print 'user_day', user_day
+            user_time_diff = int(row[0]) + 1
     #temp_offset = offset + offset_weight
     #feeds = db.session.execute('Select * from central_queue_mobile limit %s, %s;'%(temp_offset, limit))
-    feeds = CentralQueueMobile.query.filter(CentralQueueMobile.day <= user_day).order_by(CentralQueueMobile.day.desc(), CentralQueueMobile.score.asc()).offset(offset).limit(limit).all()
-    for f in feeds:
-        print f.day
+    count_arr = IntervalCountMap.query.filter(IntervalCountMap.minutes <= user_time_diff).all()
+    feeds_count = sum(map(lambda x:x.count, count_arr))
+    if limit > feeds_count:
+        limit = feeds_count
+    feeds = CentralQueueMobile.query.order_by(CentralQueueMobile.score.asc()).offset(offset).limit(limit).all()
     result = []
     for obj in feeds:
         print obj.user
