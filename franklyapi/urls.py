@@ -106,6 +106,10 @@ api.add_resource(QuestionImageCreator, '/question/bg_image/<question_id>')
 def mixpanel_switch():
     return '{"track":"true"}'
 
+@app.route('/test/<int:bytesize>',methods=['GET'])
+def test_size(bytesize):
+    return 'a'*bytesize
+
 @app.route('/elb-test',methods=['GET'])
 def elbtest():
     return "{'success':'true','server':'zdexterorroh'}"
