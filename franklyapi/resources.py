@@ -19,8 +19,6 @@ ALLOWED_VIDEO_FORMATS = ['mp4']
 
 
 
-
-
 class RegisterEmail(restful.Resource):
     def post(self):
         new_email_reg_parser = reqparse.RequestParser()
@@ -1221,3 +1219,7 @@ class ContactUs(restful.Resource):
             print traceback.format_exc(e)
             abort(500, message=str(traceback.format_exc(e)))
 
+
+class SearchDefault(restful.Resource):
+    def get(self):
+        return controllers.search_default()
