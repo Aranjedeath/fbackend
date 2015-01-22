@@ -134,6 +134,7 @@ api.add_resource(admin.AdminQuestionAdd, '/admin/question/add')
 api.add_resource(admin.AdminQueOrderEdit, '/admin/queue/order')
 api.add_resource(admin.AdminCelebList, '/admin/celeb/list/<int:offset>/<int:limit>')
 api.add_resource(admin.AdminAddCelebQue, '/admin/queue/add')
+api.add_resource(admin.AdminCelebSearch, '/admin/celeb/search/<query>')
 
 
 

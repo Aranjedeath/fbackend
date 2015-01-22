@@ -6,6 +6,7 @@ import random
 import media_uploader
 import async_encoder
 import video_db
+from sqlalchemy import or_
 
 def user_list(user_type, deleted, offset, limit, order_by, desc):
     user_query = User.query.filter(User.user_type==user_type, User.deleted==deleted)
@@ -209,4 +210,19 @@ def add_celeb_in_queue(item_id, item_type, item_day, item_score):
     db.session.commit()
     return {'success' : True}
 
+def get_celeb_search(query):
+    search_filter = or_(  User.username.like('{query}%'.format(query=query)),
+                                    User.first_name.like('% {query}%'.format(query=query)),
+                                    User.first_name.like('{query}%'.format(query=query))
+                               )
+    results = []
+    users = User.query.filter(search_filter, User.user_type == 2).all()
+    for user in users:
+        results.append({'type':'user', 'user':search_user_to_dict(user)})
+    posts = Post.query.filter(Post.answer_author.in_(map(lambda x:x.id,users))).all()
+    for post in posts:
+        results.append({'type':'post', 'post':post_to_dict(post)})
+    return {'results' : results}
+    print posts
+    
 

@@ -241,3 +241,16 @@ class AdminCelebList(AdminProtectedResource):
             return admin_controllers.get_celeb_list(offset, limit)
         except Exception as e:
             print traceback.format_exc(e)
+
+class AdminCelebSearch(AdminProtectedResource):
+    @login_required
+    def get(self,query):
+        try:
+            return admin_controllers.get_celeb_search(query)
+        except Exception as e:
+            print e
+
+class AdminQueueEdit(AdminProtectedResource):
+    @login_required
+    def post(self):
+
