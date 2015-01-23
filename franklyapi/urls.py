@@ -121,7 +121,8 @@ def apidoc():
         from doc_generator import doc_gen
         return json.dumps(doc_gen(app))
     except Exception as e:
-        print e
+        import traceback
+        print traceback.format_exc(e)
 
 #=================ADMIN URLS========================#
 
