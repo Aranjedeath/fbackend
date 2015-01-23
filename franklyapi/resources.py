@@ -642,7 +642,6 @@ class UserLocation(restful.Resource):
     post_parser.add_argument('country_code'    , location='json', type=str, default=None, help='country_code should be two letter country code.')
     post_parser.add_argument('loc_name'        , location='json', type=str, default=None)
 
-    @login_required
     def post(self):
         """
         Updates location of the current_user.
@@ -1283,7 +1282,7 @@ class TimelineHome(restful.Resource):
             resp = controllers.home_feed(current_user.id,
                                         offset=args['offset'],
                                         limit=args['limit'],
-                                        web=args['web'])
+                                        web=args.get('web'))
             return resp
 
         except CustomExceptions.UserNotFoundException, e:
@@ -1333,7 +1332,7 @@ class DiscoverPost(restful.Resource):
             resp = controllers.discover_post_in_cqm(cur_user_id=current_user_id,
                                                 offset=args['offset'],
                                                 limit=args['limit'],
-                                                web = args['web'],
+                                                web = args.get('web'),
                                                 append_top = args['append_top'])
             return resp
 
