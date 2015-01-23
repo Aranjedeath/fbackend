@@ -1743,7 +1743,7 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
     if limit > feeds_count - offset:
         limit = feeds_count - offset
     print limit
-    feeds = CentralQueueMobile.query.order_by(CentralQueueMobile.score.asc()).offset(offset).limit(limit).all()
+    feeds = CentralQueueMobile.query.order_by(CentralQueueMobile.score.desc()).offset(offset).limit(limit).all()
     append_top_usernames = [item.strip().lower() for item in append_top.split(',') if item.strip()]
     append_top_users = User.query.filter(User.username.in_(append_top_usernames), User.profile_video!=None).all() if append_top_usernames else []
     append_top_users.sort(key=lambda u:append_top_usernames.index(u.username.lower()))
