@@ -5,7 +5,6 @@ from flask.ext import restful
 from flask.ext.login import LoginManager
 from raygun4py import raygunprovider
 from flask.ext.sqlalchemy import SQLAlchemy
-from flask.ext.autodoc import Autodoc
 
 from configs import config
 
@@ -24,8 +23,6 @@ app.config.from_object(FlaskConfig)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
-
-doc_generator = Autodoc(app)
 
 
 db = SQLAlchemy(app)
