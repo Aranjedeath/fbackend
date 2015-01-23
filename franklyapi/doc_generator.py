@@ -1,4 +1,5 @@
 import flask
+import sys
 
 def doc_gen(app, resources=None):
     endpoint_rule_mapping = {}
@@ -7,8 +8,9 @@ def doc_gen(app, resources=None):
         endpoint_rule_mapping[i.endpoint] = i.rule
 
     list_of_attributes = dir(resources) if resources else dir()
+    item_to_check_for_resources = resources if resources else sys.modules[__name__]
 
-    views = [getattr(list_of_attributes, item) for item in list_of_attributes if type(getattr(list_of_attributes, item)) == flask.views.MethodViewType]
+    views = [getattr(item_to_check_for_resources, item) for item in list_of_attributes if type(getattr(item_to_check_for_resources, item)) == flask.views.MethodViewType]
 
     doc_items = []
 
