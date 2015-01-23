@@ -10,15 +10,23 @@ def doc_gen(app, resources=None):
     list_of_attributes = dir(resources) if resources else dir()
     item_to_check_for_resources = resources if resources else sys.modules[__name__]
 
-    views = [getattr(item_to_check_for_resources, item) for item in list_of_attributes if type(getattr(item_to_check_for_resources, item)) == flask.views.MethodViewType]
-
+    views = []
+    for item in list_of_attributes:
+        try:
+            if type(getattr(item_to_check_for_resources, item)) == flask.views.MethodViewType:
+                views.append(getattr(item_to_check_for_resources, item))
+        except:
+            pass
+    
+    print views
     doc_items = []
 
     for item in views:
         doc_item = {}
         try:
             url = endpoint_rule_mapping[item.endpoint]
-        except AttributeError:
+        except AttributeError as e:
+            print e
             continue
         
         doc_item['url'] = url
