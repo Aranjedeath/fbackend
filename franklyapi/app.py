@@ -5,6 +5,7 @@ from flask.ext import restful
 from flask.ext.login import LoginManager
 from raygun4py import raygunprovider
 from flask.ext.sqlalchemy import SQLAlchemy
+from flask.ext.autodoc import Autodoc
 
 from configs import config
 
@@ -24,8 +25,12 @@ app.config.from_object(FlaskConfig)
 login_manager = LoginManager()
 login_manager.init_app(app)
 
+doc_generator = Autodoc(app)
+
+
 db = SQLAlchemy(app)
 api = restful.Api(app)
+
 
 raygun = raygunprovider.RaygunSender(config.RAYGUN_KEY)
 redis_client = redis.Redis(config.REDIS_HOST)
@@ -35,9 +40,7 @@ login_manager.login_view = '/login/email'
 
 @app.after_request
 def add_access_control_headers(response):
-    import socket
     import json
-    hostname = socket.gethostname()
     """Adds the required access control headers"""
     response.headers['Access-Control-Allow-Origin'] = '*'
     response.headers['Access-Control-Allow-Headers'] = 'X-Token, X-Deviceid,Content-Type'
@@ -46,7 +49,6 @@ def add_access_control_headers(response):
     response.headers['X-Server'] = 'api.frankly.me'
     if 'dev' in config.HOSTNAME:
         try:
-            import json
             data = json.loads(response.data)
             data['abra'] = 'kadabra'
             response.set_data(json.dumps(data))

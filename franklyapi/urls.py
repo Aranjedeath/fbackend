@@ -8,7 +8,6 @@ api.add_resource(LoginEmail, '/login/email')
 
 api.add_resource(UserProfile, '/user/profile/<user_id>')
 api.add_resource(UserUpdateForm, '/user/update_profile/<user_id>')
-api.add_resource(UserProfileUsername, '/user/profile/username/<username>')
 
 api.add_resource(UserFollow, '/user/follow')
 api.add_resource(UserFollowers, '/user/followers/<user_id>')
@@ -74,9 +73,9 @@ api.add_resource(QuestionImageCreator, '/question/bg_image/<question_id>')
 
 api.add_resource(InterviewVideoResource, '/interview/medialist')
 api.add_resource(WebHiringForm, '/web/hiring_form')
-api.add_resource(Search, '/search')
 api.add_resource(ContactUs, '/contactus')
 
+api.add_resource(Search, '/search')
 api.add_resource(SearchDefault, '/search/default', '/accountsetup/follow/celebs')
 
 
@@ -114,7 +113,19 @@ def test_size(bytesize):
 def elbtest():
     return "{'success':'true','server':'zdexterorroh'}"
 
+
+@app.route('/admin/doc',methods=['GET'])
+def apidoc():
+	from doc_generator import doc_gen
+	return jsonify(doc_gen(app))
+
 #=================ADMIN URLS========================#
+
+
+
+
+
+
 
 import admin
 
