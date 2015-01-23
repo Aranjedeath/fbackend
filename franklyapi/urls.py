@@ -117,8 +117,9 @@ def elbtest():
 @app.route('/admin/doc',methods=['GET'])
 def apidoc():
     try:
+        import json
         from doc_generator import doc_gen
-        return jsonify(doc_gen(app))
+        return json.dumps(doc_gen(app))
     except Exception as e:
         print e
 
