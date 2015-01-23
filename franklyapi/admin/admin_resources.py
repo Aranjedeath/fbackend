@@ -226,6 +226,7 @@ class AdminQueOrderEdit(AdminProtectedResource):
         arg_parser = reqparse.RequestParser()
         arg_parser.add_argument('items', type=list, location='json', required = True)
         args = arg_parser.parse_args()
+        print args
         try:
             return admin_controllers.update_que_order(args['items'])
         except Exception as e:

@@ -152,7 +152,7 @@ def question_edit(question_id, body):
     return {'success':True, 'question_id':question_id}
  
 def get_que_order(offset = 0, limit =10 ):
-    queue = CentralQueueMobile.query.order_by(CentralQueueMobile.day).all()
+    queue = CentralQueueMobile.query.order_by(CentralQueueMobile.score).all()
     result = []
     for item in queue:
         if item.user:
@@ -193,7 +193,7 @@ def update_que_order(items):
         que_entry = CentralQueueMobile.query.filter(type_dict[item['type']] == item['id']).first()
         if not que_entry:
             que_entry = CentralQueueMobile(item['type'], item['id'])
-        que_entry.score = item_score
+        que_entry.score = item['score']
         db.session.add(que_entry)
     db.session.commit()
     return {'success' : True}
