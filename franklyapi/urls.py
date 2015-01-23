@@ -121,7 +121,7 @@ def apidoc():
         from doc_generator import doc_gen
         from flask import Response
         import resources
-        return Response(json.dumps(doc_gen(app, resources), headers={'Content-Type': 'text/css; charset=utf-8'}))
+        return Response(json.dumps(doc_gen(app, resources)), content_type='application/json')
     except Exception as e:
         import traceback
         print traceback.format_exc(e)
