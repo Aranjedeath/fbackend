@@ -6,6 +6,7 @@ import random
 import media_uploader
 import async_encoder
 import video_db
+from sqlalchemy import or_
 
 def user_list(user_type, deleted, offset, limit, order_by, desc):
     user_query = User.query.filter(User.user_type==user_type, User.deleted==deleted)
@@ -159,7 +160,7 @@ def question_edit(question_id, body):
     return {'success':True, 'question_id':question_id}
  
 def get_que_order(offset = 0, limit =10 ):
-    queue = CentralQueueMobile.query.all()
+    queue = CentralQueueMobile.query.order_by(CentralQueueMobile.score).all()
     result = []
     for item in queue:
         if item.user:
@@ -174,19 +175,34 @@ def get_que_order(offset = 0, limit =10 ):
                     'user' : user
                 }
             )
-    result = sorted(result, key=lambda x:x['day'], reverse = True)
-        #Write code for posts and questions
+        if item.post:
+            post = Post.query.filter(Post.id == item.post).first()
+            post = post_to_dict(post)
+            result.append(
+                {
+                    'type' : 'post',
+                    'id' : item.id,
+                    'day' : item.day,
+                    'score' : item.score,
+                    'post' : post
+                }
+            )
     return {
         'results' : result
         }
 
-def update_que_order(_id, day, score):
-    item = CentralQueueMobile.query.filter(CentralQueueMobile.id == _id).first()
-    if not item:
-        return {'success' : False,'message' : 'wrong id provided'}
-    item.day = day
-    item.score = score
-    db.session.add(item)
+def update_que_order(items):
+    type_dict = {
+            'user' : CentralQueueMobile.user,
+            'post' : CentralQueueMobile.post,
+            'question' : CentralQueueMobile.question
+        }
+    for item in items:
+        que_entry = CentralQueueMobile.query.filter(type_dict[item['type']] == item['id']).first()
+        if not que_entry:
+            que_entry = CentralQueueMobile(item['type'], item['id'])
+        que_entry.score = item['score']
+        db.session.add(que_entry)
     db.session.commit()
     return {'success' : True}
 
@@ -217,4 +233,19 @@ def add_celeb_in_queue(item_id, item_type, item_day, item_score):
     db.session.commit()
     return {'success' : True}
 
+def get_celeb_search(query):
+    search_filter = or_(  User.username.like('{query}%'.format(query=query)),
+                                    User.first_name.like('% {query}%'.format(query=query)),
+                                    User.first_name.like('{query}%'.format(query=query))
+                               )
+    results = []
+    users = User.query.filter(search_filter, User.user_type == 2).all()
+    for user in users:
+        results.append({'type':'user', 'user':search_user_to_dict(user)})
+    posts = Post.query.filter(Post.answer_author.in_(map(lambda x:x.id,users))).all()
+    for post in posts:
+        results.append({'type':'post', 'post':post_to_dict(post)})
+    return {'results' : results}
+    print posts
+    
 

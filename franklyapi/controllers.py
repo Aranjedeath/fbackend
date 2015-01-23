@@ -21,7 +21,7 @@ from configs import config
 from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
                     Question, Upvote, Comment, ForgotPasswordToken, Install, Video,\
                     UserFeed, Event, Reshare, Invitable, Invite, ContactUs, InflatedStat,\
-                    SearchDefault
+                    SearchDefault, IntervalCountMap
 
 from app import redis_client, raygun, db, redis_data_client
 
@@ -1712,38 +1712,44 @@ def add_contact(name, email, organisation, message, phone):
         db.session.commit()
     return {'success' : True}
 
+def return_none_feed():
+    return {
+            'next_index' : -1,
+            'count' : 0,
+            'stream' : []
+        }
+
 def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon = None, visit = None, append_top=''):
     from models import CentralQueueMobile, User, Question, Post
     print web
     if offset == -1:
-        return {
-                'next_index' : -1,
-                'count' : 0,
-                'stream' : []
-            }
-    user_day = 1
+        return return_none_feed
+
+    user_time_diff = 1
+    feed_count = 0
+    requested_limit = limit
     if cur_user_id:
-        result = db.session.execute(text('SELECT user_since from users where id=:user_id'),
+        result = db.session.execute(text('SELECT timestampdiff(minute,user_since,now()) from users where id=:user_id'),
                                         params={'user_id':cur_user_id})
         for row in result:
-            user_since = max(datetime.datetime(2014, 12, 28, 18, 32, 35, 270652), row[0])
-            user_time_diff = datetime.datetime.now()-user_since
-            user_day = user_time_diff.days + 1
-    print cur_user_id
-    print 'user_day', user_day
-    #temp_offset = offset + offset_weight
-    #feeds = db.session.execute('Select * from central_queue_mobile limit %s, %s;'%(temp_offset, limit))
-    feeds = CentralQueueMobile.query.filter(CentralQueueMobile.day <= user_day).order_by(CentralQueueMobile.day.desc(), CentralQueueMobile.score.asc()).offset(offset).limit(limit).all()
-    for f in feeds:
-        print f.day
+            user_time_diff = int(row[0]) + 1
+    print user_time_diff
+    count_arr = IntervalCountMap.query.filter(IntervalCountMap.minutes <= user_time_diff).all()
+    feeds_count = sum(map(lambda x:x.count, count_arr))
+    print feeds_count
+    if offset > feeds_count:
+        return return_none_feed()
 
+    if limit > feeds_count - offset:
+        limit = feeds_count - offset
+    print limit
+    feeds = CentralQueueMobile.query.order_by(CentralQueueMobile.score.asc()).offset(offset).limit(limit).all()
     append_top_usernames = [item.strip().lower() for item in append_top.split(',') if item.strip()]
     append_top_users = User.query.filter(User.username.in_(append_top_usernames), User.profile_video!=None).all() if append_top_usernames else []
     append_top_users.sort(key=lambda u:append_top_usernames.index(u.username.lower()))
     limit -= len(append_top_users)
 
     result = [{'type':'user', 'user': guest_user_to_dict(user, cur_user_id)} for user in append_top_users]
-
     for obj in feeds:
         print obj.user
         if obj.user:
@@ -1766,7 +1772,7 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
         else:
             result.append({'type':'post', 'post' : post_to_dict(Post.query.filter(Post.id == obj.post).first(), cur_user_id)})
 
-    next_index = offset + limit if len(result) >= limit else -1
+    next_index = offset + requested_limit if len(result) >= requested_limit else -1
     return {
             'next_index' : next_index,
             'count' : len(result),

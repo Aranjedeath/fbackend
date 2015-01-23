@@ -46,3 +46,15 @@ class CentralQueueMobile(Base):
           
             
         
+class IntervalCountMap(Base):
+    __tablename__ = 'interval_count_map'
+    id            = Column(Integer, primary_key = True)
+    minutes       = Column(Integer, default = 0)
+    count         = Column(Integer, default = 3)
+    
+    def __init__(self, minutes, count):
+        self.minutes = minutes
+        self.count = count
+
+    def __repr__(self):
+        return '<Hour Count: %s, %s, %s>'%(self.id, self.minutes, self.count)

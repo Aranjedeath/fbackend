@@ -224,12 +224,11 @@ class AdminQueOrderEdit(AdminProtectedResource):
         print request.json
 
         arg_parser = reqparse.RequestParser()
-        arg_parser.add_argument('que_id', type=str, location = 'json', required = True)
-        arg_parser.add_argument('day', type=int, location = 'json', required = True)
-        arg_parser.add_argument('score', type=int, location='json', required = True)
+        arg_parser.add_argument('items', type=list, location='json', required = True)
         args = arg_parser.parse_args()
+        print args
         try:
-            return admin_controllers.update_que_order(args['que_id'], args['day'], args['score'])
+            return admin_controllers.update_que_order(args['items'])
         except Exception as e:
             print traceback.format_exc(e)
             return traceback.format_exc(e)
@@ -241,3 +240,11 @@ class AdminCelebList(AdminProtectedResource):
             return admin_controllers.get_celeb_list(offset, limit)
         except Exception as e:
             print traceback.format_exc(e)
+
+class AdminCelebSearch(AdminProtectedResource):
+    @login_required
+    def get(self,query):
+        try:
+            return admin_controllers.get_celeb_search(query)
+        except Exception as e:
+            print e
