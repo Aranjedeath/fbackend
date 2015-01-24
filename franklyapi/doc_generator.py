@@ -43,8 +43,8 @@ def doc_gen(app, resources=None):
             try:
                 arg_parser = getattr(item, '%s_parser'%(method.lower()))
                 arg_objects = arg_parser.args
-            except AttributeError:
-                pass
+            except AttributeError as e:
+                print e
 
             arg_items = []
             for arg in arg_objects:
@@ -58,10 +58,12 @@ def doc_gen(app, resources=None):
                                                         'help'    : arg.help
                                                     })
             arg_items.sort(key=lambda x:x['name'])
-            arg_items.sort(key=lambda x:x['required'])
+            arg_items.sort(key=lambda x:not x['required'])
             [i.pop('default') for i in arg_items if i['required']]
             [i.pop('choices') for i in arg_items if not i['choices']]
             [i.pop('help') for i in arg_items if not i['help']]
+
+            doc_item['args'] = arg_items
 
         doc_items.append(doc_item)
 

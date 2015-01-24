@@ -27,7 +27,7 @@ class InflatedStat(Base):
             self.post        = post
             self.like_count  = like_count
 
-        elif post:
+        elif question:
             self.object_type  = 'question'
             self.question     = question
             self.upvote_count = upvote_count
