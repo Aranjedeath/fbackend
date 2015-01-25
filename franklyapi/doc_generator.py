@@ -30,6 +30,7 @@ def doc_gen(app, resources=None):
             continue
         
         doc_item['url'] = url
+        doc_item['name'] = item.endpoint
         doc_item['methods'] = item.methods
 
         for method in item.methods:
@@ -37,7 +38,7 @@ def doc_gen(app, resources=None):
 
             method_func = getattr(item, method.lower())
             method_func_doc = method_func.im_func.func_doc
-            doc_item[method]['docstring'] = method_func_doc
+            doc_item[method]['docstring'] = method_func_doc.strip()
             
             arg_objects = []
             try:
@@ -61,9 +62,8 @@ def doc_gen(app, resources=None):
             arg_items.sort(key=lambda x:not x['required'])
             [i.pop('default') for i in arg_items if i['required']]
             [i.pop('choices') for i in arg_items if not i['choices']]
-            [i.pop('help') for i in arg_items if not i['help']]
 
-            doc_item['args'] = arg_items
+            doc_item[method]['args'] = arg_items
 
         doc_items.append(doc_item)
 

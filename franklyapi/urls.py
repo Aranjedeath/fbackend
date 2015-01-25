@@ -114,14 +114,16 @@ def elbtest():
     return "{'success':'true','server':'zdexterorroh'}"
 
 
-@app.route('/admin/doc',methods=['GET'])
+
+@app.route('/admin/apidoc',methods=['GET'])
 def apidoc():
     try:
-        import json
         from doc_generator import doc_gen
-        from flask import Response
         import resources
-        return Response(json.dumps(doc_gen(app, resources)), content_type='application/json')
+        from flask import render_template
+
+        #return Response(json.dumps(doc_gen(app, resources)), content_type='application/json')
+        return render_template('api_doc.html', endpoints=doc_gen(app, resources))
     except Exception as e:
         import traceback
         print traceback.format_exc(e)

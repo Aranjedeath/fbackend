@@ -67,4 +67,3 @@ def load_header(header_vals):
     return check_access_token(access_token, device_id)
 
 
-

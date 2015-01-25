@@ -22,3 +22,9 @@ def update_view_count():
 def update_user_view_count():
     users = User.query.with_entities(User.id).filter(User.user_type==2)
     update_total_view_count([user.id for user in users])
+
+
+@periodic_task(run_every=timedelta(seconds=600), queue='periodic')
+def update_user_view_count():
+    users = User.query.with_entities(User.id).filter(User.user_type==2)
+    update_total_view_count([user.id for user in users])
