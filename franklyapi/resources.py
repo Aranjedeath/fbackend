@@ -1601,7 +1601,7 @@ class BadUsernames(restful.Resource):
     
     def get(self):
         """
-        Returns a list of bad usernames if the list has changed or returns {"changed":false}
+        Returns a list of bad usernames if the list has changed since provided timestamp or returns {"changed":false}
         bad usernames are usernames which are not allowed for the user
 
         Controller Functions Used:
@@ -1629,7 +1629,7 @@ class VideoView(restful.Resource):
     def get(self):
         """
         Redirects to the url provided in the argument.
-        If the url is of a video, increments the view count by 1.
+        If the url is of a video, increments the view count of the video by 1.
 
         Controller Functions Used:
             - get_parser

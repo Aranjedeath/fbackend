@@ -62,6 +62,7 @@ def doc_gen(app, resources=None):
             arg_items.sort(key=lambda x:not x['required'])
             [i.pop('default') for i in arg_items if i['required']]
             [i.pop('choices') for i in arg_items if not i['choices']]
+            [i.pop('help') for i in arg_items if not i['help']]
 
             doc_item[method]['args'] = arg_items
 
