@@ -48,7 +48,7 @@
             {% for endpoint in endpoints %}
                 <div class="list-group-item">
                     <div class="hidden" id="search_field">{{endpoint.url|e}}</div>
-                    <a class="list-group-item" data-toggle="collapse" data-target="#{{endpoint.name}}">
+                    <a class="list-group-item bg-success" data-toggle="collapse" data-target="#{{endpoint.name}}">
                         <code id='url'>
                             <span id="search_field">{{endpoint.url|e}}</span>
                         </code>&nbsp;
