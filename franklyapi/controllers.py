@@ -1263,7 +1263,7 @@ def home_feed(cur_user_id, offset, limit, web):
                                         FROM posts INNER JOIN user_follows ON user_follows.followed = posts.answer_author
                                         AND user_follows.user = :cur_user_id AND timestampdiff(minute, user_follows.timestamp, now()) >= posts.show_after 
                                         WHERE deleted=false AND answer_author != :cur_user_id
-                                        ORDER BY posts.show_after DESC, posts.imestamp DESC LIMIT :offset, :limit"""),
+                                        ORDER BY posts.show_after DESC, posts.timestamp DESC LIMIT :offset, :limit"""),
                                     params = {'cur_user_id':cur_user_id, 'offset':offset, 'limit':limit}
                                 )
 
