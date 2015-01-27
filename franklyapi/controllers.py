@@ -480,8 +480,7 @@ def get_video_states(video_urls={}):
     for video in videos:
         result[video.url] = {}
         result[video.url]['original'] = video.url
-        result[video.url]['thumb'] = video_urls[video.url]
-        
+        result[video.url]['thumb'] = video.thumbnail
         if video.ultralow:
             result[video.url][0] = video.ultralow
         if video.low:
