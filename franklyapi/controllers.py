@@ -1201,12 +1201,13 @@ def get_celeb_users_for_feed(offset, limit, cur_user_id=None, users=[], feed_typ
                                             ).limit(limit)
     return celeb_user_query.all()
 
-def get_question_from_followings(followings, count = 2):
+def get_question_from_followings(followings, count = 2, cur_user_id=None):
     from random import choice
     following = choice(followings)[0]
     user = User.query.filter(User.id == following).first()
     
     questions_query = Question.query.filter(Question.question_to==following, 
+                                            Question.question_author!=cur_user_id,
                                             Question.deleted==False,
                                             Question.is_answered==False,
                                             Question.is_ignored==False
@@ -1239,8 +1240,13 @@ def home_feed(cur_user_id, offset, limit, web):
     #followings = [follow.followed for follow in follows]
     #followings = filter(lambda x:x,map(lambda x:x if x not in config.TEST_USERS else None, followings))
     
-    celebs_following = db.session.execute('select followed from user_follows left join users on user_follows.followed = users.id where user_follows.user = "%s" and users.user_type = 2'%cur_user_id).fetchall()
+    celebs_following = db.session.execute(text("""SELECT followed from user_follows
+                                                    left join users on user_follows.followed = users.id 
+                                                    where user_follows.user = :cur_user_id and users.user_type = 2"""),
+                                            params={'cur_user_id':cur_user_id}
+                                        ).fetchall()
     
+
     #posts = Post.query.filter(or_(Post.answer_author.in_(followings),
                                     #Post.question_author==cur_user_id)
                     #).filter(Post.deleted==False, Post.answer_author!=cur_user_id
@@ -1249,7 +1255,19 @@ def home_feed(cur_user_id, offset, limit, web):
                     #).limit(limit
                     #).all()
     
-    posts = db.session.execute('''select posts.show_after, posts.id,posts.question_author,posts.question,posts.answer_author,posts.media_url,posts.thumbnail_url,posts.answer_type,posts.timestamp,posts.deleted,posts.lat,posts.lon,posts.location_name,posts.country_name,posts.country_code,posts.ready,posts.popular,posts.view_count,posts.client_id from posts inner join user_follows on user_follows.followed = posts.answer_author and user_follows.user = "%s" and timestampdiff(minute, user_follows.timestamp, now()) >= posts.show_after order by posts.show_after desc, posts.timestamp desc limit %s, %s '''%(cur_user_id, offset, limit))
+    posts = db.session.execute(text("""SELECT posts.show_after, posts.id, posts.question_author,
+                                        posts.question, posts.answer_author, posts.media_url,
+                                        posts.thumbnail_url, posts.answer_type, posts.timestamp,
+                                        posts.deleted, posts.lat, posts.lon, posts.location_name,
+                                        posts.country_name, posts.country_code, posts.ready,
+                                        posts.popular, posts.view_count, posts.client_id
+                                        FROM posts INNER JOIN user_follows ON user_follows.followed = posts.answer_author
+                                        AND user_follows.user = :cur_user_id AND timestamp diff(minute, user_follows.timestamp, now()) >= posts.show_after 
+                                        WHERE deleted=false AND answer_author IS NOT :cur_user_id
+                                        ORDER BY posts.show_after DESC, posts.timestamp DESC LIMIT :offset, :limit"""),
+                                    params = {'cur_user_id':cur_user_id, 'offset':offset, 'limit':limit}
+                                )
+
     posts = list(posts)
     posts = posts_to_dict(posts, cur_user_id)
     
@@ -1258,7 +1276,7 @@ def home_feed(cur_user_id, offset, limit, web):
     feeds = []
     _q_len = 0
     if len(celebs_following) > 0:
-        _q_len, questions, following = get_question_from_followings(celebs_following)
+        _q_len, questions, following = get_question_from_followings(celebs_following, cur_user_id=cur_user_id)
         if questions:
             shortner = 1
     
@@ -1269,7 +1287,7 @@ def home_feed(cur_user_id, offset, limit, web):
         question_user = thumb_user_to_dict(User.query.filter(User.id == following).first())
         question_user['questions'] = []
         for q in questions:
-            question_user['questions'].append(question_to_dict(q))
+            question_user['questions'].append(question_to_dict(q, cur_user_id))
             from random import randint
             if randint(0,9) % 2 == 0:
                 break
