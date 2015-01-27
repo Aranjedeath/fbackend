@@ -150,6 +150,8 @@ api.add_resource(admin.AdminCelebList, '/admin/celeb/list/<int:offset>/<int:limi
 api.add_resource(admin.AdminAddCelebQue, '/admin/queue/add')
 api.add_resource(admin.AdminCelebSearch, '/admin/celeb/search/<query>')
 api.add_resource(admin.AdminQueueDelete, '/admin/queue/delete')
+api.add_resource(admin.AdminCelebsAskedToday, '/admin/most/asked/today')
+api.add_resource(admin.AdminQuestionTodayList, '/admin/question/today/list')
 
 
 
