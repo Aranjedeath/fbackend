@@ -3,7 +3,6 @@ import requests
 import uuid
 from boto.s3.connection import S3Connection
 import os
-from video_encoder import make_thumbnail, make_psuedo_streamable
 
 import CustomExceptions
 from configs import config
@@ -108,6 +107,8 @@ def upload_user_image(user_id, image_type, image_url=None, image_file_path=None)
 
 
 def upload_user_video(user_id, video_type, video_file):
+    from video_encoder import make_thumbnail, make_psuedo_streamable
+
     random_string = uuid.uuid1().hex
     video_file_path = temp_path+'/'+random_string+".mp4"
     video_file_new = open(video_file_path, "w")
