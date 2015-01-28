@@ -950,6 +950,7 @@ def question_list_public(current_user_id, user_id, offset, limit):
                                             ).offset(offset)
 
     questions = [{'question':question_to_dict(question, current_user_id), 'type':'question'} for question in questions_query.limit(limit)]
+    questions.sort(lambda q: q['question']['upvote_count'], reverse=True)
     next_index = str(offset+limit) if questions else "-1"
     return {'questions': questions, 'count': len(questions),  'next_index' : next_index}
 
@@ -1743,6 +1744,7 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
         return return_none_feed
 
     user_time_diff = 1
+    
     feed_count = 0
     requested_limit = limit
     if cur_user_id:
@@ -1750,7 +1752,11 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
                                         params={'user_id':cur_user_id})
         for row in result:
             user_time_diff = int(row[0]) + 1
+    elif visit:
+        user_time_diff = int(visit/(3600*24))
+    
     print user_time_diff
+
     count_arr = IntervalCountMap.query.filter(IntervalCountMap.minutes <= user_time_diff).all()
     feeds_count = sum(map(lambda x:x.count, count_arr))
     print feeds_count

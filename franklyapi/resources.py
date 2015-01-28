@@ -1304,7 +1304,7 @@ class DiscoverPost(restful.Resource):
     get_parser.add_argument('lat'       , type=float, location='args')
     get_parser.add_argument('lon'       , type=float, location='args')
     get_parser.add_argument('X-Deviceid', type=str, required=True, location='headers')
-    get_parser.add_argument('visit'     , type=int, default=0, location='args', help='visit should be the count of visit of the browser user when the request is unauthorised')
+    get_parser.add_argument('visit'     , type=int, default=0, location='args', help="visit should be the time difference of the current time and user's first visit in seconds for unauthorised requests")
     get_parser.add_argument('append_top', type=str, default='', location='args', help="append_top should be username or comma separayed username. These users will be appended on top of the feed. Only valid when offset=0")
     
     def get(self):
