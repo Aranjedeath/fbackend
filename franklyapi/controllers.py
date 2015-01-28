@@ -1744,7 +1744,7 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
 
     user_time_diff = 1
     
-    feed_count = 0
+    feeds_count = 0
     requested_limit = limit
     if cur_user_id:
         result = db.session.execute(text('SELECT timestampdiff(minute,user_since,now()) from users where id=:user_id'),
@@ -1762,10 +1762,11 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
     if offset > feeds_count:
         return return_none_feed()
 
-    if limit > feeds_count - offset:
-        limit = feeds_count - offset
-    print limit
-    feeds = CentralQueueMobile.query.order_by(CentralQueueMobile.score.asc()).offset(offset).limit(limit).all()
+    temp_offset = feeds_count - offset
+    limit = temp_offset - limit if temp_offset-limit >= 0 else 0
+
+    print 'offset , limit',temp_offset, limit
+    feeds = CentralQueueMobile.query.order_by(CentralQueueMobile.score.asc()).offset(limit).limit(temp_offset).all()
     append_top_usernames = [item.strip().lower() for item in append_top.split(',') if item.strip()]
     append_top_users = User.query.filter(User.username.in_(append_top_usernames), User.profile_video!=None).all() if append_top_usernames else []
     append_top_users.sort(key=lambda u:append_top_usernames.index(u.username.lower()))
@@ -1795,6 +1796,7 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
             result.append({'type':'post', 'post' : post_to_dict(Post.query.filter(Post.id == obj.post).first(), cur_user_id)})
 
     next_index = offset + requested_limit if len(result) >= requested_limit else -1
+    result.reverse()
     return {
             'next_index' : next_index,
             'count' : len(result),
