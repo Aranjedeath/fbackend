@@ -2,9 +2,12 @@ from models import Video, User
 from app import db, redis_data_client
 from sqlalchemy.sql import text, func
 
-def add_video_to_db(video_url, thumbnail_url=None):
+def add_video_to_db(video_url, thumbnail_url=None, username=None):
     if not Video.query.filter(Video.url==video_url).count():
-        db.session.add(Video(url=video_url, thumbnail=thumbnail_url))
+        v = Video(url=video_url, thumbnail=thumbnail_url)
+        if username:
+            v.username=username
+        db.session.add(v)
         db.session.commit()
 
 
