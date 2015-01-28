@@ -19,4 +19,4 @@ class SearchDefault(Base):
         self.timestamp = timestamp
 
     def __repr__(self):
-        return '<SearchDefault %r:%r:%r>' % (self.categoy, self.user, self.score)
+        return '<SearchDefault %r:%r:%r>' % (self.category, self.user, self.score)
