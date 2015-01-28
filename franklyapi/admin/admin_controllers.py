@@ -248,4 +248,12 @@ def get_celeb_search(query):
     return {'results' : results}
     print posts
     
-
+def delete_from_central_queue(item_type, item_id):
+    type_dict = {
+            'user' : CentralQueueMobile.user,
+            'post' : CentralQueueMobile.post,
+            'question' : CentralQueueMobile.question
+        }
+    CentralQueueMobile.query.filter(type_dict[item_type] == item_id).delete()
+    db.session.commit()
+    return {'success' : True} 
