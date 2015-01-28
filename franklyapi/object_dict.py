@@ -311,6 +311,7 @@ def post_to_dict(post, cur_user_id=None, distance=None):
         'view_count':post_stats['view_count'],
         'web_link':'http://frankly.me/p/{client_id}'.format(client_id=post.client_id)
     }
+    post_dict['answer']['media']['thumbnail_url'] = post_dict['answer']['media_urls']['thumb']
     return post_dict
 
 
@@ -395,6 +396,7 @@ def posts_to_dict(posts, cur_user_id=None, distance=None):
             'view_count':post_stats['view_count'],
             'web_link':'http://frankly.me/p/{client_id}'.format(client_id=post.client_id)
         }
+        p_dict['answer']['media']['thumbnail_url'] = p_dict['answer']['media_urls']['thumb']
         posts_dict.append(p_dict)
     return posts_dict
 
