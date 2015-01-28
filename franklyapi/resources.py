@@ -1333,7 +1333,8 @@ class DiscoverPost(restful.Resource):
                                                 offset=args['offset'],
                                                 limit=args['limit'],
                                                 web = args.get('web'),
-                                                append_top = args['append_top'])
+                                                append_top = args['append_top'],
+                                                visit=args['visit'])
             return resp
 
         except Exception as e:
