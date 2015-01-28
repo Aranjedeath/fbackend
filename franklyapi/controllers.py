@@ -1739,7 +1739,6 @@ def return_none_feed():
 
 def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon = None, visit = None, append_top=''):
     from models import CentralQueueMobile, User, Question, Post
-    print web
     if offset == -1:
         return return_none_feed
 
@@ -1753,7 +1752,7 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
         for row in result:
             user_time_diff = int(row[0]) + 1
     elif visit:
-        user_time_diff = int(visit/(3600*24))
+        user_time_diff = int(visit/60)
     
     print user_time_diff
 
