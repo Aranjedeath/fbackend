@@ -950,7 +950,7 @@ def question_list_public(current_user_id, user_id, offset, limit):
                                             ).offset(offset)
 
     questions = [{'question':question_to_dict(question, current_user_id), 'type':'question'} for question in questions_query.limit(limit)]
-    questions.sort(key=lambda q: q['question']['upvote_count'], reverse=True)
+    questions.sort(key=lambda q: q['question']['ask_count'], reverse=True)
     next_index = str(offset+limit) if questions else "-1"
     return {'questions': questions, 'count': len(questions),  'next_index' : next_index}
 
