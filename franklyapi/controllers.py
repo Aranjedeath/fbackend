@@ -1755,14 +1755,17 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
         user_time_diff = int(visit/60)
     
     print user_time_diff
-
+    
+    item_count = CentralQueueMobile.query.count()
     count_arr = IntervalCountMap.query.filter(IntervalCountMap.minutes <= user_time_diff).all()
     feeds_count = sum(map(lambda x:x.count, count_arr))
+    if feeds_count > item_count:
+        feeds_count = item_count
     print feeds_count
     if offset > feeds_count:
         return return_none_feed()
 
-    temp_offset = feeds_count - offset -1
+    temp_offset = feeds_count - offset
     if limit > temp_offset:
         limit = temp_offset
     temp_offset = temp_offset - limit
