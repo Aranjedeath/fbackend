@@ -3,5 +3,5 @@ for pid in `ps -ef| grep python|grep gunicorn|grep guni_conf| awk '{print $2}'`
         kill -9 $pid
     done
 cd franklyapi
-gunicorn -c franklyapi/guni_conf.py run:app
+gunicorn -c guni_conf.py run:app
 
