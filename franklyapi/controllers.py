@@ -1690,6 +1690,11 @@ def search(cur_user_id, query, offset, limit, version_code=None):
             results.append({'type':'invitable', 'invitable' : invitable_to_dict(invitable[0], cur_user_id)})
             limit = limit - 1
 
+    if offset == 0:
+        search_default = SearchDefault.query.filter(SearchDefault.category == query).order_by(SearchDefault.score).all()
+        for s in search_default:
+            results.append({'type':'user', 'user':search_user_to_dict(User.query.filter(User.id == s.user).first(), cur_user_id)})
+
     if len(query)<4:
         search_filter = or_(  User.username.like('{query}%'.format(query=query)),
                                     User.first_name.like('% {query}%'.format(query=query)),
@@ -1829,7 +1834,15 @@ def search_default():
 
     return {'results':resp}
 
-
+def invite_celeb(cur_user_id, invitable_id):
+    try:
+        i = Invite(cur_user_id, invitable_id)
+        db.session.add(i)
+        db.session.commit()
+        return {'success':True}
+    except Exception as e:
+        print e
+        return {'success':False}
 
 
 

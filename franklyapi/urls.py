@@ -78,6 +78,8 @@ api.add_resource(ContactUs, '/contactus')
 api.add_resource(Search, '/search')
 api.add_resource(SearchDefault, '/search/default', '/accountsetup/follow/celebs')
 
+api.add_resource(InviteCeleb, '/invite/celeb')
+
 
 
 

@@ -13,7 +13,7 @@ class AccessToken(Base):
     device_type   = Column(String(10), nullable=False)
     active        = Column(Boolean(), default=True)
     push_id       = Column(String(200))
-    last_login    = Column(DateTime(), default=datetime.datetime.now)
+    last_login    = Column(DateTime(), default=datetime.datetime.now())
 
 
     def __init__(self, device_id, user, access_token, device_type, push_id, active=True):
@@ -33,7 +33,7 @@ class ForgotPasswordToken(Base):
     token         = Column(String(100), nullable=False, primary_key=True)
     user          = Column(CHAR(), ForeignKey('users.id'), nullable=False, unique=True)
     email         = Column(String(120), nullable=False, unique=True)
-    created_at    = Column(DateTime(), default=datetime.datetime.now)
+    created_at    = Column(DateTime(), default=datetime.datetime.now())
 
     def __init__(self, token, user, email):
         self.token = token

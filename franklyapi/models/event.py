@@ -20,7 +20,7 @@ class Event(Base):
     user              = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
     action            = Column(Enum('follow','like','upvote','answer','question','comment'), nullable=False)
     foreign_data      = Column(CHAR(32), nullable=False)
-    event_time        = Column(DateTime(), default=datetime.datetime.now)
+    event_time        = Column(DateTime(), default=datetime.datetime.now())
     event_date        = Column(Date(), default=datetime.date.today)
     for_notification  = Column(Boolean(), default=True)
     notification_sent = Column(Boolean(), default=False)

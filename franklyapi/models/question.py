@@ -9,7 +9,7 @@ class Question(Base):
     question_author = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
     question_to     = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
     body            = Column(String(300), nullable=False)
-    timestamp       = Column(DateTime(), default=datetime.datetime.now)
+    timestamp       = Column(DateTime(), default=datetime.datetime.now())
     is_answered     = Column(Boolean(), default=False)
     is_anonymous    = Column(Boolean(), default=False)
     is_ignored      = Column(Boolean(), default=False)
@@ -56,7 +56,7 @@ class Upvote(Base):
     id             = Column(Integer, primary_key=True)
     user           = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
     question       = Column(CHAR(32), ForeignKey('questions.id'), nullable=False)
-    timestamp      = Column(DateTime(), onupdate=datetime.datetime.now, default=datetime.datetime.now())
+    timestamp      = Column(DateTime(), onupdate=datetime.datetime.now(), default=datetime.datetime.now())
     downvoted      = Column(Boolean(), default=False)
 
 
