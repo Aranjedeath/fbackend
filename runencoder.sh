@@ -1,6 +1,6 @@
 for count in {0..59}
 do
-	num=`ps -ef|grep python | grep celery|grep cel_tasks|grep encoding|wc -l`
+	num=`ps -ef|grep python | grep celery|grep encoding|wc -l`
 	if [ $num -lt 1 ]; then
 		cd '/home/ubuntu/franklysql/franklyapi'
 		echo "$num restarting encoder worker"
