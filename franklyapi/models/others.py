@@ -26,17 +26,18 @@ class Install(Base):
 
 class Video(Base):
     __tablename__ = 'videos'
-    url           = Column(String(300), primary_key=True)
-    username      = Column(String(30))
-    thumbnail     = Column(String(300), nullable=False)
-    opt           = Column(String(300)) # 700
-    medium        = Column(String(300)) # 300
-    low           = Column(String(300)) # 150
-    ultralow      = Column(String(300)) # 45
-    promo         = Column(String(300)) # promo
-    delete        = Column(Boolean(), default=False)
-    process_state = Column(Enum('pending', 'running', 'success', 'failed'), default='pending')
-    created_at    = Column(DateTime(), default=datetime.datetime.now)
+    url            = Column(String(300), primary_key=True)
+    username       = Column(String(30))
+    thumbnail      = Column(String(300), nullable=False)
+    opt            = Column(String(300)) # 700
+    medium         = Column(String(300)) # 300
+    low            = Column(String(300)) # 150
+    ultralow       = Column(String(300)) # 45
+    promo          = Column(String(300)) # promo
+    
+    delete         = Column(Boolean(), default=False)
+    process_state  = Column(Enum('pending', 'running', 'success', 'failed'), default='pending')
+    created_at     = Column(DateTime(), default=datetime.datetime.now)
 
     def __init__(self, url, username=None, thumbnail=None, opt=None, medium=None, low=None, ultra_low=None, 
                         process_state='pending' ,delete=False, 
