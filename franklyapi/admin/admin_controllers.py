@@ -6,7 +6,7 @@ import random
 import media_uploader
 import async_encoder
 import video_db
-from sqlalchemy import or_
+from sqlalchemy import or_, text
 
 def user_list(user_type, deleted, offset, limit, order_by, desc):
     user_query = User.query.filter(User.user_type==user_type, User.deleted==deleted)
@@ -248,4 +248,34 @@ def get_celeb_search(query):
     return {'results' : results}
     print posts
     
+def delete_from_central_queue(item_type, item_id):
+    type_dict = {
+            'user' : CentralQueueMobile.user,
+            'post' : CentralQueueMobile.post,
+            'question' : CentralQueueMobile.question
+        }
+    CentralQueueMobile.query.filter(type_dict[item_type] == item_id).delete()
+    db.session.commit()
+    return {'success' : True} 
 
+def get_celebs_asked_today(offset, limit):
+    from datetime import datetime, timedelta
+    today = datetime.now() #+ timedelta(minutes = 330) 
+    start_time = datetime(today.year, today.month, today.day, 0 ,0 ,0)
+    result = db.session.execute(text('SELECT question_to, users.id, users.username, users.first_name, users.profile_picture, users.user_type, users.user_title, count(*) from questions join users on users.id = questions.question_to where timestamp > :today group by question_to order by count(*) desc'),params={'today' :start_time })
+    resp = []
+    for row in result:
+        user = search_user_to_dict(row)
+        user['questions_count'] = row['count(*)']
+        resp.append(user)
+    return {'results':resp}
+
+def get_questions_asked_today(user_id, offset, limit):
+    from datetime import datetime, timedelta
+    today = datetime.now() #+ timedelta(minutes = 330) 
+    start_time = datetime(today.year, today.month, today.day, 0 ,0 ,0)
+    result = db.session.execute(text('SELECT * from questions where question_to = :user_id and timestamp > :today order by timestamp desc'), params={'today':start_time, 'user_id':user_id})
+    resp = []
+    for row in result:
+        resp.append(question_to_dict(row))
+    return {'results':resp}

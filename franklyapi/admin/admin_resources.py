@@ -248,3 +248,41 @@ class AdminCelebSearch(AdminProtectedResource):
             return admin_controllers.get_celeb_search(query)
         except Exception as e:
             print e
+
+class AdminQueueDelete(AdminProtectedResource):
+    @login_required
+    def post(self):
+        arg_parser = reqparse.RequestParser()
+        arg_parser.add_argument('item_type', type=str, location='json', required = True, choices=['post', 'user', 'question'])
+        arg_parser.add_argument('item_id', type=str, location='json', required = True)
+        args = arg_parser.parse_args()
+        try:
+            return admin_controllers.delete_from_central_queue(args['item_type'], args['item_id'])
+        except Exception as e:
+            print traceback.format_exc(e)
+
+class AdminCelebsAskedToday(AdminProtectedResource):
+    @login_required
+    def get(self):
+        arg_parser = reqparse.RequestParser()
+        arg_parser.add_argument('offset', type=int, location='args', default=0)
+        arg_parser.add_argument('limit', type=int, location='args', default=10)
+        args = arg_parser.parse_args()
+        try:
+            return admin_controllers.get_celebs_asked_today(args['offset'], args['limit'])
+        except Exception as e:
+            print traceback.format_exc(e)
+
+class AdminQuestionTodayList(AdminProtectedResource):
+    @login_required
+    def get(self):
+        arg_parser = reqparse.RequestParser()
+        arg_parser.add_argument('user_id', type=str, location='args', required=True)
+        arg_parser.add_argument('offset', type=int, location='args', default=0)
+        arg_parser.add_argument('limit', type=int, location='args', default=10)
+        args = arg_parser.parse_args()
+        try:
+            return admin_controllers.get_questions_asked_today(args['user_id'], args['offset'], args['limit'])
+        except Exception as e:
+            print e
+        

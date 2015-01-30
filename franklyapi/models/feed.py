@@ -8,7 +8,7 @@ class UserFeed(Base):
     user          = Column(CHAR(32), ForeignKey('users.id'), nullable=False, unique=True)
     day           = Column(String(20), nullable=False)
     score         = Column(Integer(), default=-1, nullable=False)
-    changed_at    = Column(DateTime(), onupdate=datetime.datetime.now, default=datetime.datetime.now())
+    changed_at    = Column(DateTime(), onupdate=datetime.datetime.now(), default=datetime.datetime.now())
 
     def __init__(self, user, day, score=-1, changed_at=datetime.datetime.now()):
         self.user       = user

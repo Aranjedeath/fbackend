@@ -1756,3 +1756,28 @@ class InterviewVideoResource(restful.Resource):
             raygun.send(err[0],err[1],err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)  
+
+class InviteCeleb(restful.Resource):
+    
+    invite_parser = reqparse.RequestParser()
+    invite_parser.add_argument('invitable_id', type=str, location='json', required = True)
+    
+    @login_required
+    def post(self):
+        """
+        Adds Invite for an Invitable by logged in user
+
+        Controller Functions Used:
+            - invite_celeb
+
+        Authentication: Required
+        """    
+        args = self.invite_parser.parse_args()
+        try:
+            return controllers.invite_celeb(current_user.id, args['invitable_id'])
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0], err[1], err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
+

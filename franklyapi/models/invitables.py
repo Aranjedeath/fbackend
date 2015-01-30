@@ -42,7 +42,7 @@ class Invite(Base):
     id = Column(Integer, primary_key=True)
     user = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
     invitable = Column(CHAR(32), ForeignKey('invitables.id'), nullable=False)
-    timestamp = Column(DateTime(), onupdate=datetime.datetime.now, default=datetime.datetime.now())
+    timestamp = Column(DateTime(), onupdate=datetime.datetime.now(), default=datetime.datetime.now())
     count = Column(Integer(), default=1)
 
     def __init__(self, user, invitable, count = 1, timestamp = datetime.datetime.now()):

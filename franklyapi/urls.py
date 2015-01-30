@@ -78,6 +78,8 @@ api.add_resource(ContactUs, '/contactus')
 api.add_resource(Search, '/search')
 api.add_resource(SearchDefault, '/search/default', '/accountsetup/follow/celebs')
 
+api.add_resource(InviteCeleb, '/invite/celeb')
+
 
 
 
@@ -149,6 +151,9 @@ api.add_resource(admin.AdminQueOrderEdit, '/admin/queue/order')
 api.add_resource(admin.AdminCelebList, '/admin/celeb/list/<int:offset>/<int:limit>')
 api.add_resource(admin.AdminAddCelebQue, '/admin/queue/add')
 api.add_resource(admin.AdminCelebSearch, '/admin/celeb/search/<query>')
+api.add_resource(admin.AdminQueueDelete, '/admin/queue/delete')
+api.add_resource(admin.AdminCelebsAskedToday, '/admin/most/asked/today')
+api.add_resource(admin.AdminQuestionTodayList, '/admin/question/today/list')
 
 
 

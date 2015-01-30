@@ -9,7 +9,7 @@ class SearchDefault(Base):
     category      = Column(String(30))
     user          = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
     score         = Column(Float(), nullable=False)
-    timestamp     = Column(DateTime(), onupdate=datetime.datetime.now, nullable=False)
+    timestamp     = Column(DateTime(), onupdate=datetime.datetime.now(), nullable=False)
 
 
     def __init__(self, user, category, score=0, timestamp=datetime.datetime.now()):

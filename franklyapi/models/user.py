@@ -39,9 +39,9 @@ class User(Base):
     location_name             = Column(String(50))
     country_name              = Column(String(50))
     country_code              = Column(String(2))    
-    user_since                = Column(DateTime(), default=datetime.datetime.now)
-    last_updated              = Column(DateTime(), onupdate=datetime.datetime.now, default=datetime.datetime.now())   
-    last_seen                 = Column(DateTime(), onupdate=datetime.datetime.now, default=datetime.datetime.now())
+    user_since                = Column(DateTime(), default=datetime.datetime.now())
+    last_updated              = Column(DateTime(), onupdate=datetime.datetime.now(), default=datetime.datetime.now())   
+    last_seen                 = Column(DateTime(), onupdate=datetime.datetime.now(), default=datetime.datetime.now())
     allow_anonymous_question  = Column(Boolean(), default=True)
     notify_like               = Column(Boolean(), default=True)
     notify_follow             = Column(Boolean(), default=True)
@@ -134,7 +134,7 @@ class Follow(Base):
     id             = Column(Integer, primary_key=True)
     user           = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
     followed       = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
-    timestamp      = Column(DateTime(), onupdate=datetime.datetime.now, default=datetime.datetime.now())
+    timestamp      = Column(DateTime(), onupdate=datetime.datetime.now(), default=datetime.datetime.now())
     unfollowed     = Column(Boolean(), default=False)
 
 
@@ -153,7 +153,7 @@ class Block(Base):
     id             = Column(Integer, primary_key=True)
     user           = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
     blocked_user   = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
-    timestamp      = Column(DateTime(), onupdate=datetime.datetime.now, default=datetime.datetime.now())
+    timestamp      = Column(DateTime(), onupdate=datetime.datetime.now(), default=datetime.datetime.now())
     unblocked      = Column(Boolean(), default=False)
 
 
@@ -176,7 +176,7 @@ class UserArchive(Base):
     profile_video   = Column(String(250))
     cover_picture   = Column(String(250))
     bio             = Column(String(200))
-    timestamp       = Column(DateTime(), onupdate=datetime.datetime.now, default=datetime.datetime.now())
+    timestamp       = Column(DateTime(), onupdate=datetime.datetime.now(), default=datetime.datetime.now())
 
 
     def __init__(self, user, username, first_name, profile_picture, profile_video, cover_picture, bio):

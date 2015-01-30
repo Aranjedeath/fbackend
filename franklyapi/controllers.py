@@ -1675,6 +1675,13 @@ def view_video(url):
 def search(cur_user_id, query, offset, limit, version_code=None):
     results = []
     print version_code
+    if 'test' in query:
+        return {
+                "q": query,
+                "count": 0,
+                "results": [ ],
+                "next_index": -1
+            } 
     if version_code and int(version_code) > 42 and offset == 0:
         search_filter_invitable = or_( Invitable.name.like('{query}%'.format(query = query)),
                                    Invitable.name.like('% {query}%'.format(query = query))
@@ -1683,6 +1690,11 @@ def search(cur_user_id, query, offset, limit, version_code=None):
         if invitable:
             results.append({'type':'invitable', 'invitable' : invitable_to_dict(invitable[0], cur_user_id)})
             limit = limit - 1
+
+    if offset == 0:
+        search_default = SearchDefault.query.filter(SearchDefault.category == query).order_by(SearchDefault.score).all()
+        for s in search_default:
+            results.append({'type':'user', 'user':search_user_to_dict(User.query.filter(User.id == s.user).first(), cur_user_id)})
 
     if len(query)<4:
         search_filter = or_(  User.username.like('{query}%'.format(query=query)),
@@ -1696,7 +1708,7 @@ def search(cur_user_id, query, offset, limit, version_code=None):
 
 
     users = User.query.filter(User.id!=cur_user_id,
-                                User.user_type==2, User.profile_video!=None,
+                                User.monkness==-1, User.profile_video!=None, # replaced monkness with user_type
                                 search_filter,
                             ).offset(offset
                             ).limit(limit
@@ -1823,7 +1835,15 @@ def search_default():
 
     return {'results':resp}
 
-
+def invite_celeb(cur_user_id, invitable_id):
+    try:
+        i = Invite(cur_user_id, invitable_id)
+        db.session.add(i)
+        db.session.commit()
+        return {'success':True}
+    except Exception as e:
+        print e
+        return {'success':False}
 
 
 

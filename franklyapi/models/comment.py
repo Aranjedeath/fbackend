@@ -10,7 +10,7 @@ class Comment(Base):
     on_post        = Column(CHAR(32), ForeignKey('posts.id'), nullable=False)
     comment_author = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
     body           = Column(String(300), nullable=False)
-    timestamp      = Column(DateTime(), default=datetime.datetime.now)
+    timestamp      = Column(DateTime(), default=datetime.datetime.now())
     deleted        = Column(Boolean(), default=False)
     
     lat            = Column(Float())
