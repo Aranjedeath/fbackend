@@ -35,7 +35,7 @@ def user_to_dict(user):
         'google_id': user.google_id,
         'first_name': user.first_name,
         'last_name': None,
-        'bio': user.bio,
+        'bio': user.bio or config.DEFAULT_BIO,
         'profile_picture': user.profile_picture,
         'cover_picture': user.cover_picture,
         'profile_video': user.profile_video,
@@ -64,6 +64,7 @@ def user_to_dict(user):
 
 
 def guest_user_to_dict(user, current_user_id, cur_user_interest_tags=None):
+    from configs import config
     from controllers import get_video_states, get_user_stats, is_follower, is_following
     if user.deleted == True:
         return thumb_user_to_dict(user)
@@ -75,7 +76,7 @@ def guest_user_to_dict(user, current_user_id, cur_user_interest_tags=None):
         'username': user.username,
         'first_name': user.first_name,
         'last_name': None,
-        'bio': user.bio,
+        'bio': user.bio or config.DEFAULT_BIO,
         'profile_picture': user.profile_picture,
         'cover_picture': user.cover_picture,
         'profile_video': user.profile_video,
@@ -133,6 +134,7 @@ def invitable_to_dict(invitable, current_user_id):
     return invitable_dict
 
 def thumb_user_to_dict(user):
+    from configs import config
     user_dict = {
         'id':user.id,
         'username': user.username,
@@ -141,7 +143,7 @@ def thumb_user_to_dict(user):
         'profile_picture': user.profile_picture,
         'deleted': user.deleted,
         'gender':user.gender,
-        'bio' : user.bio,
+        'bio' : user.bio or config.DEFAULT_BIO,
         'allow_anonymous_question' : user.allow_anonymous_question,
         'location': location_dict(user.lat, user.lon, user.location_name, user.country_name, user.country_code),
         'user_title':user.user_title
@@ -246,6 +248,7 @@ def question_to_dict(question, current_user_id=None):
     return ques_dict
 
 def post_to_dict(post, cur_user_id=None, distance=None):
+    from configs import config
     from controllers import get_video_states, is_liked, is_reshared, get_questions, is_following, get_thumb_users, get_post_stats, get_user_stats
     users = get_thumb_users([post.question_author, post.answer_author])
     questions = get_questions([post.question])
@@ -271,7 +274,7 @@ def post_to_dict(post, cur_user_id=None, distance=None):
             'profile_picture': users[post.answer_author]['profile_picture'],
             'location': users[post.answer_author]['location'],
             'gender': users[post.answer_author]['gender'],
-            'bio':users[post.answer_author]['bio'],
+            'bio':users[post.answer_author]['bio'] or config.DEFAULT_BIO,
             'user_type':users[post.answer_author]['user_type'],
             'user_title':users[post.answer_author]['user_title'],
             'allow_anonymous_question': users[post.answer_author]['user_title'],
@@ -317,6 +320,7 @@ def post_to_dict(post, cur_user_id=None, distance=None):
 
 
 def posts_to_dict(posts, cur_user_id=None, distance=None):
+    from configs import config
     from controllers import get_video_states, get_questions, is_liked, is_reshared, is_following, get_thumb_users, get_post_stats, get_user_stats
     user_list = set()
     answer_media_urls = {}
@@ -357,7 +361,7 @@ def posts_to_dict(posts, cur_user_id=None, distance=None):
                 'profile_picture': users[post.answer_author]['profile_picture'],
                 'location': users[post.answer_author]['location'],
                 'gender': users[post.answer_author]['gender'],
-                'bio':users[post.answer_author]['bio'],
+                'bio':users[post.answer_author]['bio'] or config.DEFAULT_BIO,
                 'user_type':users[post.answer_author]['user_type'],
                 'user_title':users[post.answer_author]['user_title'],
                 'allow_anonymous_question': users[post.answer_author]['user_title'],

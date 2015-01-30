@@ -45,5 +45,7 @@ TEST_USERS = []
 SPREADSHEET_EMAIL = 'tempuser@frankly.me'
 SPREADSHEET_PASSWORD = 'franklydocs'
 
+DEFAULT_BIO = "Ask me anything for video replies."
+
 HOSTNAME = socket.gethostname()
 
