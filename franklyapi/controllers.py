@@ -1707,7 +1707,7 @@ def search(cur_user_id, query, offset, limit, version_code=None):
 
 
     users = User.query.filter(User.id!=cur_user_id,
-                                User.user_type==2, User.profile_video!=None,
+                                User.monkness==-1, User.profile_video!=None, # replaced monkness with user_type
                                 search_filter,
                             ).offset(offset
                             ).limit(limit
