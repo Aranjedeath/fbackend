@@ -16,7 +16,7 @@ consider_for_notification = {
 class Event(Base):
     __tablename__     = 'events'
     __table_args__    = ( UniqueConstraint('user', 'action', 'foreign_data', 'event_date'),)
-    id                = Column(CHAR(32), primary_key=True, default=get_item_id)
+    id                = Column(CHAR(32), primary_key=True, default=get_item_id())
     user              = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
     action            = Column(Enum('follow','like','upvote','answer','question','comment'), nullable=False)
     foreign_data      = Column(CHAR(32), nullable=False)

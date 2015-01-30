@@ -5,7 +5,7 @@ from database import get_item_id
 
 class Question(Base):
     __tablename__   = 'questions'
-    id              = Column(CHAR(32), primary_key=True, default=get_item_id)
+    id              = Column(CHAR(32), primary_key=True, default=get_item_id())
     question_author = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
     question_to     = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
     body            = Column(String(300), nullable=False)

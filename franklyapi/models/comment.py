@@ -6,7 +6,7 @@ from database import get_item_id
 
 class Comment(Base):
     __tablename__  = 'comments'
-    id             = Column(CHAR(32), primary_key=True, default=get_item_id)
+    id             = Column(CHAR(32), primary_key=True, default=get_item_id())
     on_post        = Column(CHAR(32), ForeignKey('posts.id'), nullable=False)
     comment_author = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
     body           = Column(String(300), nullable=False)

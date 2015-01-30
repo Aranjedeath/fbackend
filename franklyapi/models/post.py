@@ -5,7 +5,7 @@ from database import get_item_id
 
 class Post(Base):
     __tablename__       = 'posts'
-    id                  = Column(CHAR(32), primary_key=True, default=get_item_id)
+    id                  = Column(CHAR(32), primary_key=True, default=get_item_id())
     question            = Column(CHAR(32), ForeignKey('questions.id'), nullable=False, unique=True)
     question_author     = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
     answer_author       = Column(CHAR(32), ForeignKey('users.id'), nullable=False)

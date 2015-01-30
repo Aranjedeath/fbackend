@@ -5,7 +5,7 @@ from database import get_item_id
 
 class User(Base):
     __tablename__             = 'users'
-    id                        = Column(CHAR(32), primary_key=True, default=get_item_id)
+    id                        = Column(CHAR(32), primary_key=True, default=get_item_id())
     username                  = Column(String(30), nullable=False, unique=True)
     email                     = Column(String(120), nullable=False, unique=True)
     registered_with           = Column(String(15), nullable=False)

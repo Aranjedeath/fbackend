@@ -5,7 +5,7 @@ import datetime
 
 class Invitable(Base):
     __tablename__ = 'invitables'
-    id = Column(CHAR(32), primary_key=True, default=get_item_id)
+    id = Column(CHAR(32), primary_key=True, default=get_item_id())
     name = Column(String(40), nullable=False)
     twitter_handle = Column(String(40))
     email = Column(String(50))

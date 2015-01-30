@@ -33,8 +33,7 @@ from video_db import add_video_to_db
 
 def create_event(user, action, foreign_data, event_date=datetime.date.today()):
     if not Event.query.filter(Event.user==user, Event.action==action, Event.foreign_data==foreign_data, Event.event_date==event_date).count():
-        from database import get_item_id
-        return Event(id=get_item_id(), user=user, action=action, foreign_data=foreign_data, event_date=event_date)
+        return Event(user=user, action=action, foreign_data=foreign_data, event_date=event_date)
     return
 
 def check_access_token(access_token, device_id):
@@ -196,9 +195,8 @@ def register_email_user(email, password, full_name, device_id, username=None, ph
 
     device_type = get_device_type(device_id)
     registered_with = device_type + '_email'
-    from database import get_item_id
 
-    new_user = User(id=get_item_id(), email=email, username=username, first_name=full_name, password=password, 
+    new_user = User(email=email, username=username, first_name=full_name, password=password, 
                     registered_with=registered_with, user_type=user_type, gender=gender, user_title=user_title,
                     phone_num=phone_num, lat=lat, lon=lon, location_name=location_name, country_name=country_name,
                     country_code=country_code, bio=bio)
@@ -260,9 +258,8 @@ def login_user_social(social_type, social_id, external_access_token, device_id, 
     else:
         username = make_username(user_data['email'], user_data.get('full_name'), user_data.get('social_username'))
         registered_with = '%s_%s'%(device_type, social_type) 
-        from database import get_item_id
 
-        new_user = User(id=get_item_id(), email=user_data['email'], username=username, first_name=user_data['full_name'], 
+        new_user = User(email=user_data['email'], username=username, first_name=user_data['full_name'], 
                         registered_with=registered_with, user_type=user_type, gender=user_data.get('gender'), user_title=user_title,
                         location_name=user_data.get('location_name'), country_name=user_data.get('country_name'),
                         country_code=user_data.get('country_code'))
@@ -1526,16 +1523,13 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
         if has_blocked(answer_author, question.question_author):
             raise CustomExceptions.BlockedUserException("Question not available for action")
 
-        from database import get_item_id
-
         video_url, thumbnail_url = media_uploader.upload_user_video(user_id=cur_user_id, video_file=video, video_type='answer')
         
         curruser = User.query.filter(User.id == cur_user_id).one()
         
         add_video_to_db(video_url, thumbnail_url)
         
-        post = Post(id=get_item_id(),
-                    question=question_id,
+        post = Post(question=question_id,
                     question_author=question.question_author, 
                     answer_author=answer_author,                    
                     answer_type=answer_type,
