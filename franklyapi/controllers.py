@@ -1681,6 +1681,13 @@ def view_video(url):
 def search(cur_user_id, query, offset, limit, version_code=None):
     results = []
     print version_code
+    if 'test' in query:
+        return {
+                "q": query,
+                "count": 0,
+                "results": [ ],
+                "next_index": -1
+            } 
     if version_code and int(version_code) > 42 and offset == 0:
         search_filter_invitable = or_( Invitable.name.like('{query}%'.format(query = query)),
                                    Invitable.name.like('% {query}%'.format(query = query))
