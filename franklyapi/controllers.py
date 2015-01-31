@@ -1579,16 +1579,16 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
         if event:
             db.session.add(event)
         
-        db.session.commit()
+        
 
         add_video_to_db(video_url=video_url,
                         thumbnail_url=thumbnail_url,
                         video_type='answer_video',
                         object_id=post.id,
-                        username=curuser.username)
+                        username=curruser.username)
 
         encode_video_task.delay(video_url, username=curuser.username)
-
+        db.session.commit()
         return {'success': True, 'id': str(post.id)}
 
     except NoResultFound:
