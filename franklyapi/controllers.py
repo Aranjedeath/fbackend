@@ -30,6 +30,7 @@ from object_dict import user_to_dict, guest_user_to_dict,\
                         comments_to_dict, posts_to_dict, make_celeb_questions_dict, media_dict, search_user_to_dict,invitable_to_dict
 
 from video_db import add_video_to_db
+from database import get_item_id
 
 def create_event(user, action, foreign_data, event_date=datetime.date.today()):
     if not Event.query.filter(Event.user==user, Event.action==action, Event.foreign_data==foreign_data, Event.event_date==event_date).count():
@@ -199,7 +200,7 @@ def register_email_user(email, password, full_name, device_id, username=None, ph
     new_user = User(email=email, username=username, first_name=full_name, password=password, 
                     registered_with=registered_with, user_type=user_type, gender=gender, user_title=user_title,
                     phone_num=phone_num, lat=lat, lon=lon, location_name=location_name, country_name=country_name,
-                    country_code=country_code, bio=bio)
+                    country_code=country_code, bio=bio, id=get_item_id())
     
     db.session.add(new_user)
     db.session.commit()
@@ -909,7 +910,7 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous):
     public = True if user_status['user_type']==2 else False #if user is celeb
     question = Question(question_author=cur_user_id, question_to=question_to, 
                 body=body.capitalize(), is_anonymous=is_anonymous, public=public,
-                lat=lat, lon=lon, short_id=get_new_short_id(for_object='question'))
+                lat=lat, lon=lon, short_id=get_new_short_id(for_object='question'), id = get_item_id())
     
 
     db.session.add(question)
@@ -920,7 +921,7 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous):
 
     db.session.commit()
 
-    resp = {'success':True, 'id':str(question.id)}
+    resp = {'success':True, 'id':str(question.id), 'question':question_to_dict(question)}
     return resp
 
 
@@ -1566,7 +1567,8 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
                     thumbnail_url=thumbnail_url,
                     client_id=client_id,
                     lat=lat,
-                    lon=lon)
+                    lon=lon,
+                    id = get_item_id())
         if show_after and type(show_after) == int:
             post.show_after = show_after
         
