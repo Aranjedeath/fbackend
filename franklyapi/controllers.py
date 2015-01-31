@@ -670,7 +670,7 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
                         object_id=user_id,
                         username=user.username)
         
-        encode_video_task.delay(profile_video_url, username=user.username)
+        async_encoder.fencode_video_task.delay(profile_video_url, username=user.username)
 
     return user_to_dict(user)
 
