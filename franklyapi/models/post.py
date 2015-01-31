@@ -5,7 +5,7 @@ from database import get_item_id
 
 class Post(Base):
     __tablename__       = 'posts'
-    id                  = Column(CHAR(32), primary_key=True, default=get_item_id())
+    id                  = Column(CHAR(32), primary_key=True)
     question            = Column(CHAR(32), ForeignKey('questions.id'), nullable=False, unique=True)
     question_author     = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
     answer_author       = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
@@ -29,8 +29,8 @@ class Post(Base):
 
     def __init__(self, question, question_author, answer_author, media_url, thumbnail_url, client_id,
                     timestamp=datetime.datetime.now(), answer_type='video', score=0, deleted=False, ready=True,
-                    popular=False, lat=None, lon=None, location_name=None, country_name=None, country_code=None, id=get_item_id(), view_count=0, show_after = 0):
-        self.id              = id
+                    popular=False, lat=None, lon=None, location_name=None, country_name=None, country_code=None, id=None, view_count=0, show_after = 0):
+        self.id              = get_item_id()
         self.question        = question
         self.question_author = question_author
         self.answer_author   = answer_author

@@ -6,7 +6,7 @@ from database import get_item_id
 
 class Comment(Base):
     __tablename__  = 'comments'
-    id             = Column(CHAR(32), primary_key=True, default=get_item_id())
+    id             = Column(CHAR(32), primary_key=True)
     on_post        = Column(CHAR(32), ForeignKey('posts.id'), nullable=False)
     comment_author = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
     body           = Column(String(300), nullable=False)
@@ -21,8 +21,8 @@ class Comment(Base):
 
 
     def __init__(self, on_post, comment_author, body, timestamp=datetime.datetime.now(), deleted=False,
-                    lat=None, lon=None, location_name=None, country_name=None, country_code=None, id=get_item_id()):
-        self.id             = id
+                    lat=None, lon=None, location_name=None, country_name=None, country_code=None, id=None):
+        self.id             = get_item_id()
         self.on_post        = on_post
         self.comment_author = comment_author
         self.body           = body

@@ -5,7 +5,7 @@ import datetime
 
 class Invitable(Base):
     __tablename__ = 'invitables'
-    id = Column(CHAR(32), primary_key=True, default=get_item_id())
+    id = Column(CHAR(32), primary_key=True)
     name = Column(String(40), nullable=False)
     twitter_handle = Column(String(40))
     email = Column(String(50))
@@ -18,8 +18,8 @@ class Invitable(Base):
     bio = Column(String(300))
     mail_subject = Column(String(500))
 
-    def __init__(self, name, twitter_handle, email, twitter_text, mail_text, bio, gender, user_title, mail_subject, profile_picture = None, max_invite_count = 1000, id = get_item_id()):
-        self.id = id
+    def __init__(self, name, twitter_handle, email, twitter_text, mail_text, bio, gender, user_title, mail_subject, profile_picture = None, max_invite_count = 1000, id =None):
+        self.id = get_item_id()
         self.name = name
         self.twitter_handle = twitter_handle
         self.email = email

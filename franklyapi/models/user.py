@@ -5,7 +5,7 @@ from database import get_item_id
 
 class User(Base):
     __tablename__             = 'users'
-    id                        = Column(CHAR(32), primary_key=True, default=get_item_id())
+    id                        = Column(CHAR(32), primary_key=True)
     username                  = Column(String(30), nullable=False, unique=True)
     email                     = Column(String(120), nullable=False, unique=True)
     registered_with           = Column(String(15), nullable=False)
@@ -62,8 +62,8 @@ class User(Base):
                         user_since=datetime.datetime.now(), last_updated=datetime.datetime.now(),
                         last_seen=datetime.datetime.now(), allow_anonymous_question=True,
                         notify_like=True, notify_follow=True, notify_question=True, notify_comments=True,
-                        notify_mention=None, notify_answer=None, timezone=0, id=get_item_id(), phone_num=None, view_count=0, total_view_count=0):
-        self.id                        = id
+                        notify_mention=None, notify_answer=None, timezone=0, id=None, phone_num=None, view_count=0, total_view_count=0):
+        self.id                        = get_item_id()
         self.email                     = email
         self.first_name                = first_name
         self.username                  = username
