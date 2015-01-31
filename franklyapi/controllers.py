@@ -1300,7 +1300,7 @@ def home_feed(cur_user_id, offset, limit, web):
         feeds = [{'type':'post', 'post':post} for post in posts[:len(posts) - shortner]]
 
     if questions:
-        question_user = thumb_user_to_dict(User.query.filter(User.id == following, cur_user_id).first())
+        question_user = thumb_user_to_dict(User.query.filter(User.id == following).first(), cur_user_id)
         question_user['questions'] = []
         for q in questions:
             question_user['questions'].append(question_to_dict(q, cur_user_id))
