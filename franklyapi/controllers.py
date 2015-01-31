@@ -1814,6 +1814,16 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
 
     print 'offset , limit',temp_offset, limit
     feeds = CentralQueueMobile.query.order_by(CentralQueueMobile.score.asc()).offset(temp_offset).limit(limit).all()
+    users_in_feeds = filter(lambda x:x, map(lambda x:x.user, feeds))
+    print users_in_feeds
+    filter_these_from_feeds = []
+    if cur_user_id:
+        filter_these_from_feeds = db.session.execute(text('SELECT followed FROM user_follows WHERE user = :cur_user_id and \
+                                                        followed in :users_in_feeds'),
+                                                        params = {'cur_user_id':cur_user_id,
+                                                                  'users_in_feeds':users_in_feeds})
+    filter_these_from_feeds = [x[0] for x in filter_these_from_feeds]
+    print filter_these_from_feeds
     print len(feeds)
     append_top_usernames = [item.strip().lower() for item in append_top.split(',') if item.strip()]
     append_top_users = User.query.filter(User.username.in_(append_top_usernames), User.profile_video!=None).all() if append_top_usernames else []
@@ -1824,6 +1834,7 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
     for obj in feeds:
         print obj.user
         if obj.user:
+            if obj.user in filter_these_from_feeds: continue
             user = User.query.filter(User.id == obj.user, User.profile_video != None, ~User.username.in_(append_top_usernames)).first() 
             if user:
                 result.append({'type':'user', 'user': guest_user_to_dict(user, cur_user_id)})
@@ -1843,7 +1854,7 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
         else:
             result.append({'type':'post', 'post' : post_to_dict(Post.query.filter(Post.id == obj.post).first(), cur_user_id)})
 
-    next_index = offset + requested_limit if len(result) >= requested_limit else -1
+    next_index = offset + requested_limit if len(feeds) >= requested_limit else -1
     print next_index
     result.reverse()
 #    if offset ==0:
