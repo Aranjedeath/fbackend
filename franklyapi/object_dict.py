@@ -133,8 +133,9 @@ def invitable_to_dict(invitable, current_user_id):
         }
     return invitable_dict
 
-def thumb_user_to_dict(user):
+def thumb_user_to_dict(user, current_user_id=None):
     from configs import config
+    from controllers import is_following
     user_dict = {
         'id':user.id,
         'username': user.username,
@@ -146,7 +147,8 @@ def thumb_user_to_dict(user):
         'bio' : user.bio or config.DEFAULT_BIO,
         'allow_anonymous_question' : user.allow_anonymous_question,
         'location': location_dict(user.lat, user.lon, user.location_name, user.country_name, user.country_code),
-        'user_title':user.user_title
+        'user_title':user.user_title,
+        'is_following':is_following(user.id, current_user_id) if current_user_id else False
     }
     return user_dict
 
@@ -168,6 +170,7 @@ def make_celeb_questions_dict(celeb, questions, current_user_id=None):
                     'user_title': celeb.user_title,
                     'user_type':celeb.user_type,
                     'is_following': is_following(celeb.id, current_user_id),
+                    'bio':celeb.bio,
                     'questions':[]
                 }
     for question in questions:

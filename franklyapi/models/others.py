@@ -46,6 +46,8 @@ class Video(Base):
                         process_state='pending' ,delete=False, 
                         created_at=datetime.datetime.now()):
         self.url           = url
+        self.video_type    = video_type
+        self.object_id     = object_id
         self.thumbnail     = thumbnail
         self.username      = username
         self.opt           = opt 
