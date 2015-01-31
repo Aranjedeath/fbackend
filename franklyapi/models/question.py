@@ -16,7 +16,7 @@ class Question(Base):
     public          = Column(Boolean(), default=False)
     deleted         = Column(Boolean(), default=False)
     moderated_by    = Column(CHAR(32), ForeignKey('users.id'))
-    short_id        = Column(Column(String(15), nullable=False))
+    short_id        = Column(Column(String(15)))
 
     lat             = Column(Float())
     lon             = Column(Float())
