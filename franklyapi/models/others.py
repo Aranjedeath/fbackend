@@ -28,6 +28,9 @@ class Video(Base):
     __tablename__ = 'videos'
 
     url           = Column(String(300), primary_key=True)
+    video_type    = Column(String(20))
+    object_id     = Column(CHAR(32))
+    task_id       = Column(CHAR(32))
     username      = Column(String(30))
     thumbnail     = Column(String(300), nullable=False)
     opt           = Column(String(300)) # 700
@@ -39,7 +42,7 @@ class Video(Base):
     process_state = Column(Enum('pending', 'running', 'success', 'failed'), default='pending')
     created_at    = Column(DateTime(), default=datetime.datetime.now())
 
-    def __init__(self, url, username=None, thumbnail=None, opt=None, medium=None, low=None, ultra_low=None, 
+    def __init__(self, url, video_type, object_id, username=None, thumbnail=None, opt=None, medium=None, low=None, ultra_low=None, 
                         process_state='pending' ,delete=False, 
                         created_at=datetime.datetime.now()):
         self.url           = url

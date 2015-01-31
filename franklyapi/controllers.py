@@ -621,9 +621,6 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
         profile_video_url, cover_picture_url = media_uploader.upload_user_video(user_id=user_id, video_file=profile_video, video_type='profile_video')
         print profile_video_url, cover_picture_url
         update_dict.update({'profile_video':profile_video_url, 'cover_picture':cover_picture_url})
-        add_video_to_db(profile_video_url, cover_picture_url)
-        async_encoder.encode_video_task.delay(profile_video_url, user.username)
-
 
     if profile_picture:
         tmp_path = '/tmp/request/{random_string}.jpeg'.format(random_string=uuid.uuid1().hex)
@@ -660,6 +657,14 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
     db.session.add(user_archive)
     User.query.filter(User.id==user_id).update(update_dict)
     db.session.commit()
+    if profile_video:
+        add_video_to_db(video_url=profile_video_url,
+                        thumbnail_url=cover_picture_url,
+                        video_type='profile_video',
+                        object_id=user_id,
+                        username=user.username)
+        
+        encode_video_task.delay(profile_video_url, username=user.username)
 
     return user_to_dict(user)
 
@@ -897,9 +902,9 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous):
         raise CustomExceptions.NoPermissionException('Anonymous question not allowed for the user')
 
     public = True if user_status['user_type']==2 else False #if user is celeb
-    from database import get_item_id
-    question = Question(id=get_item_id(), question_author=cur_user_id, question_to=question_to, 
-                body=body.capitalize(), is_anonymous=is_anonymous, public=public, lat=lat, lon=lon)
+    question = Question(question_author=cur_user_id, question_to=question_to, 
+                body=body.capitalize(), is_anonymous=is_anonymous, public=public,
+                lat=lat, lon=lon, short_id=get_new_short_id(for_object='question'))
     
 
     db.session.add(question)
@@ -1055,10 +1060,24 @@ def post_view(cur_user_id, post_id, client_id=None):
 
         if cur_user_id and (has_blocked(cur_user_id, post.answer_author) or has_blocked(cur_user_id, post.question_author)):
             raise CustomExceptions.BlockedUserException()
-        db.session.commit()
         return {'post': post_to_dict(post, cur_user_id)}
     except NoResultFound:
-        raise CustomExceptions.PostNotFoundException()
+        raise CustomExceptions.PostNotFoundException("No post with that id found")
+
+
+def question_view(cur_user_id=current_user_id, question_id=question_id, short_id=short_id):
+    try:
+        if short_id:
+            question = Question.query.filter(Question.short_id==short_id, Question.deleted==False).one()
+        else:
+            question = Question.query.filter(Question.id==question_id, Question.deleted==False).one()
+
+        if cur_user_id and (has_blocked(cur_user_id, question.question_to) or has_blocked(cur_user_id, question.question_author)):
+            raise CustomExceptions.BlockedUserException()
+        
+        return {'question': question_to_dict(question, cur_user_id)}
+    except NoResultFound:
+        raise CustomExceptions.ObjectNotFoundException('No question with that id found')
 
 
 
@@ -1491,21 +1510,28 @@ def install_ref(device_id, url):
     db.session.commit()
 
 
-def get_new_client_id():
+def get_new_short_id(for_object):
     id_chars = []
     for i in range(6):
         id_chars.append(random.choice(config.ALLOWED_CHARACTERS))
     cid = 's%s'%(''.join(id_chars))
-    if not Post.query.filter(Post.client_id==cid).count():
+    
+    if for_object == 'post':
+        already_exists = Post.query.filter(Post.client_id==cid).count()
+    elif for_object == 'question':
+        already_exists = Question.query.filter(Question.client_id==cid).count()
+    
+    if not already_exists:
         return cid
-    return get_new_client_id()
+    return get_new_short_id(for_object)
 
 
 def add_video_post(cur_user_id, question_id, video, answer_type,
-                        lat=None, lon=None, client_id=get_new_client_id(), show_after = None):
+                        lat=None, lon=None, client_id=get_new_short_id(for_object='post'),
+                        show_after = None):
     try:
         if not client_id:
-            client_id = get_new_client_id()
+            client_id = get_new_short_id(for_object='post')
         if cur_user_id in config.ADMIN_USERS:
             question = Question.query.filter(Question.id==question_id,
                                             Question.is_answered==False,
@@ -1526,9 +1552,7 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
         video_url, thumbnail_url = media_uploader.upload_user_video(user_id=cur_user_id, video_file=video, video_type='answer')
         
         curruser = User.query.filter(User.id == cur_user_id).one()
-        
-        add_video_to_db(video_url, thumbnail_url)
-        
+            
         post = Post(question=question_id,
                     question_author=question.question_author, 
                     answer_author=answer_author,                    
@@ -1540,6 +1564,7 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
                     lon=lon)
         if show_after and type(show_after) == int:
             post.show_after = show_after
+        
         db.session.add(post)
 
         Question.query.filter(Question.id==question_id).update({'is_answered':True})
@@ -1549,8 +1574,14 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
             db.session.add(event)
         
         db.session.commit()
-        async_encoder.encode_video_task.delay(video_url, curruser.username)
 
+        add_video_to_db(video_url=video_url,
+                        thumbnail_url=thumbnail_url,
+                        video_type='answer_video',
+                        object_id=post.id,
+                        username=curuser.username)
+
+        encode_video_task.delay(video_url, username=curuser.username)
 
         return {'success': True, 'id': str(post.id)}
 

@@ -768,6 +768,43 @@ class QuestionAsk(restful.Resource):
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
+class QuestionView(restful.Resource):
+    
+    def get(self, question_id):
+        """
+        Returns a single question.
+        question_id can be id of the post or short_id of the post.
+
+        Controller Functions Used:
+            - question_view
+
+        Authentication: Optional
+        """
+        try:
+            short_id =  None
+            if len(question_id)<32:
+                short_id = question_id
+
+            if current_user.is_authenticated():
+                current_user_id = current_user.id
+            else:
+                current_user_id = None
+            
+            resp = controllers.question_view(cur_user_id=current_user_id, question_id=question_id, short_id=short_id)
+            return resp
+        
+        except CustomExceptions.BlockedUserException as e:
+            abort(404, message=str(e))
+        except CustomExceptions.ObjectNotFoundException as e:
+            abort(404, message=str(e))
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
+
+
+
 class QuestionList(restful.Resource):
     
     get_parser = reqparse.RequestParser()

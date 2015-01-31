@@ -29,6 +29,7 @@ api.add_resource(UserUpdateToken, '/user/update_token')
 
 
 api.add_resource(QuestionAsk, '/question/ask')
+api.add_resource(QuestionView, '/question/view/<question_id>')
 api.add_resource(QuestionList, '/question/list/multitype')
 api.add_resource(QuestionListPublic, '/question/list/public/<user_id>')
 
