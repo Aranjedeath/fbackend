@@ -209,7 +209,7 @@ def make_celeb_questions_dict(celeb, questions, current_user_id=None):
 
 
 def question_to_dict(question, current_user_id=None):
-    from controllers import get_question_upvote_count, is_upvoted, get_upvoters,  get_thumb_users,is_following
+    from controllers import get_question_upvote_count, is_upvoted, get_upvoters, get_thumb_users, is_following
     
     upvoters = get_upvoters(question.id, count=5)
     users = get_thumb_users([question.question_author, question.question_to]+upvoters)
@@ -233,7 +233,7 @@ def question_to_dict(question, current_user_id=None):
                         'gender': users[question.question_to]['gender'],
                         'user_type': users[question.question_to]['user_type'],
                         'user_title': users[question.question_to]['user_title'],
-                        'is_following':is_following(celeb.id, current_user_id)
+                        'is_following':is_following(question.question_to, current_user_id)
 
                         },
         'tags': [],
