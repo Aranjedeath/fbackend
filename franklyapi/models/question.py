@@ -25,7 +25,7 @@ class Question(Base):
     country_code    = Column(String(2))
     score           = Column(Integer(), default=0)
 
-    def __init__(self, question_author, question_to, body, timestamp=datetime.datetime.now(),
+    def __init__(self, question_author, question_to, body, short_id, timestamp=datetime.datetime.now(),
                         is_answered=False, is_anonymous=False, is_ignored=False, public=False,
                         deleted=False, moderated_by=None, lat=None, lon=None, location_name=None, 
                         country_name=None, country_code=None, id=get_item_id(), score=0):
@@ -33,6 +33,7 @@ class Question(Base):
         self.question_author = question_author
         self.question_to     = question_to
         self.body            = body
+        self.short_id        = short_id
         self.timestamp       = timestamp
         self.is_answered     = is_answered
         self.is_anonymous    = is_anonymous

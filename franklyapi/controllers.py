@@ -1065,7 +1065,7 @@ def post_view(cur_user_id, post_id, client_id=None):
         raise CustomExceptions.PostNotFoundException("No post with that id found")
 
 
-def question_view(cur_user_id=current_user_id, question_id=question_id, short_id=short_id):
+def question_view(cur_user_id, question_id, short_id):
     try:
         if short_id:
             question = Question.query.filter(Question.short_id==short_id, Question.deleted==False).one()
