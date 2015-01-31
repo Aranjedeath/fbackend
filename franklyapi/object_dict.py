@@ -248,7 +248,7 @@ def question_to_dict(question, current_user_id=None):
         'askers': [{'id':users[upvoter]['id'], 'profile_picture':users[upvoter]['profile_picture'], 'gender':users[upvoter]['gender']} for upvoter in upvoters],
         'background_image':"http://dev.frankly.me/question/bg_image/%s"%(str(question.id)),
         'is_voted': is_upvoted(question.id, current_user_id) if current_user_id else False,
-        'web_link':'http://frankly.me/q/{short_id}'.format(question.short_id),
+        'web_link':'http://frankly.me/q/{short_id}'.format(short_id=question.short_id),
         'short_id': question.short_id,
         'is_answered':question.is_answered
     }
