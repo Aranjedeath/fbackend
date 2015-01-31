@@ -1263,8 +1263,8 @@ def home_feed(cur_user_id, offset, limit, web):
     
     celebs_following = db.session.execute(text("""SELECT followed from user_follows
                                                     left join users on user_follows.followed = users.id 
-                                                    where user_follows.user = :cur_user_id and users.user_type = 2"""),
-                                            params={'cur_user_id':cur_user_id}
+                                                    where user_follows.user = :cur_user_id and user_follows.unfollowed = :unfollowed and users.user_type = 2"""),
+                                            params={'cur_user_id':cur_user_id, 'unfollowed':False}
                                         ).fetchall()
     
 
@@ -1283,10 +1283,10 @@ def home_feed(cur_user_id, offset, limit, web):
                                         posts.country_name, posts.country_code, posts.ready,
                                         posts.popular, posts.view_count, posts.client_id
                                         FROM posts INNER JOIN user_follows ON user_follows.followed = posts.answer_author
-                                        AND user_follows.user = :cur_user_id AND timestampdiff(minute, user_follows.timestamp, now()) >= posts.show_after 
+                                        AND user_follows.user = :cur_user_id and user_follows.unfollowed=:unfollowed AND timestampdiff(minute, user_follows.timestamp, now()) >= posts.show_after 
                                         WHERE deleted=false AND answer_author != :cur_user_id
                                         ORDER BY posts.timestamp DESC,posts.show_after DESC LIMIT :offset, :limit"""),
-                                    params = {'cur_user_id':cur_user_id, 'offset':offset, 'limit':limit}
+                                    params = {'cur_user_id':cur_user_id, 'offset':offset, 'limit':limit, 'unfollowed':False}
                                 )
 
     posts = list(posts)
