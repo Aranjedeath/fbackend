@@ -5,7 +5,7 @@ from database import get_item_id
 
 class Question(Base):
     __tablename__   = 'questions'
-    id              = Column(CHAR(32), primary_key=True, default=get_item_id())
+    id              = Column(CHAR(32), primary_key=True)
     question_author = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
     question_to     = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
     body            = Column(String(300), nullable=False)
@@ -28,8 +28,9 @@ class Question(Base):
     def __init__(self, question_author, question_to, body, short_id, timestamp=datetime.datetime.now(),
                         is_answered=False, is_anonymous=False, is_ignored=False, public=False,
                         deleted=False, moderated_by=None, lat=None, lon=None, location_name=None, 
-                        country_name=None, country_code=None, id=get_item_id(), score=0):
-        self.id              = id
+                        country_name=None, country_code=None,id=None, score=0):
+        self.id              = get_item_id()
+        print self.id, "is my id"
         self.question_author = question_author
         self.question_to     = question_to
         self.body            = body

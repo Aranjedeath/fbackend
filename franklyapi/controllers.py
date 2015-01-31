@@ -912,7 +912,6 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous):
                 body=body.capitalize(), is_anonymous=is_anonymous, public=public,
                 lat=lat, lon=lon, short_id=get_new_short_id(for_object='question'), id = get_item_id())
     
-
     db.session.add(question)
 
     event = create_event(user=cur_user_id, action='question', foreign_data=question.id)
