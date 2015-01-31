@@ -348,7 +348,12 @@ def get_post_stats(post_id):
             'like_count':like_count,
             'comment_count':comment_count
             }
-
+def get_post_id_from_question_id(question_id):
+    post = Post.query.with_entities('id').filter(Post.question==question_id).first()
+    if post:
+        return post.id
+    else:
+        return None
 
 def get_follower_count(user_id):
     from math import log, sqrt

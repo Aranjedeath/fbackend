@@ -212,7 +212,7 @@ def make_celeb_questions_dict(celeb, questions, current_user_id=None):
 
 
 def question_to_dict(question, current_user_id=None):
-    from controllers import get_question_upvote_count, is_upvoted, get_upvoters, get_thumb_users, is_following
+    from controllers import get_question_upvote_count, is_upvoted, get_upvoters, get_thumb_users, is_following, get_post_id_from_question_id
     
     upvoters = get_upvoters(question.id, count=5)
     users = get_thumb_users([question.question_author, question.question_to]+upvoters)
@@ -248,8 +248,12 @@ def question_to_dict(question, current_user_id=None):
         'askers': [{'id':users[upvoter]['id'], 'profile_picture':users[upvoter]['profile_picture'], 'gender':users[upvoter]['gender']} for upvoter in upvoters],
         'background_image':"http://dev.frankly.me/question/bg_image/%s"%(str(question.id)),
         'is_voted': is_upvoted(question.id, current_user_id) if current_user_id else False,
-        'web_link':'http://frankly.me'
+        'web_link':'http://frankly.me/q/{short_id}'.format(question.short_id),
+        'short_id': question.short_id,
+        'is_answered':question.is_answered
     }
+    if question.is_answered:
+        ques_dict['post_id'] = get_post_id_from_question_id(question.id)
     return ques_dict
 
 def post_to_dict(post, cur_user_id=None, distance=None):
