@@ -1519,7 +1519,7 @@ def get_new_short_id(for_object):
     if for_object == 'post':
         already_exists = Post.query.filter(Post.client_id==cid).count()
     elif for_object == 'question':
-        already_exists = Question.query.filter(Question.client_id==cid).count()
+        already_exists = Question.query.filter(Question.short_id==cid).count()
     
     if not already_exists:
         return cid
