@@ -956,7 +956,7 @@ def question_list_public(current_user_id, user_id, offset, limit):
                                                     ).order_by(Question.timestamp.desc()
                                                     ).offset(0).limit(5).all()
 
-        cur_user_questions = [{'question':question_to_dict(question, current_user_id), 'type':'question'} for question in cur_users_questions]
+        cur_user_questions = [{'question':question_to_dict(question, current_user_id), 'type':'question'} for question in cur_user_questions]
 
     cur_user_question_ids = [q['question']['id'] for q in cur_user_questions]
     
