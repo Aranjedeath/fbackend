@@ -945,7 +945,7 @@ def question_list_public(current_user_id, user_id, offset, limit):
     if has_blocked(current_user_id, user_id):
         raise CustomExceptions.BlockedUserException('User Not Found')
 
-    cur_users_questions = []
+    cur_user_questions = []
     if offset == 0 and current_user_id:
         cur_user_questions = Question.query.filter(Question.question_to==user_id,
                                                     Question.question_author==current_user_id,
@@ -958,7 +958,7 @@ def question_list_public(current_user_id, user_id, offset, limit):
 
         cur_user_questions = [{'question':question_to_dict(question, current_user_id), 'type':'question'} for question in cur_users_questions]
 
-    cur_users_question_ids = [q['question']['id'] for q in cur_user_questions]
+    cur_user_question_ids = [q['question']['id'] for q in cur_user_questions]
     
     questions_query = Question.query.filter(~Question.id.in_(cur_users_question_ids),
                                             Question.question_to==user_id, 
