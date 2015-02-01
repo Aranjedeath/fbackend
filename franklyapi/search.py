@@ -67,9 +67,9 @@ def search(cur_user_id, q, offset, limit):
 
         params.update({'processed_query_contained_{idx}'.format(idx=idx): '%s{pq}%s'.format(pq=i)})
 
-    params.update({ 'query_start':'{q}%s'.format(q=q),
-                    'query_word_start':' {q}%s'.format(q=q),
-                    'query_contained':'%s{q}%s'.format(q=q),
+    params.update({ 'query_start':'{q}%'.format(q=q),
+                    'query_word_start':' {q}%'.format(q=q),
+                    'query_contained':'%{q}%'.format(q=q),
                     'top_users':top_users,
                     'cur_user_id':cur_user_id,
                     'result_offset':offset,
