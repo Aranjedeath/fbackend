@@ -92,6 +92,7 @@ def search(cur_user_id, q, offset, limit):
     order_by_processed_username = ''
     order_by_title = ''
     order_by_bio = ''
+    remove_current_user = ''
     params = {}
 
     for i in processed_queries:
@@ -118,6 +119,10 @@ def search(cur_user_id, q, offset, limit):
                     'result_limit':limit,
                     })
 
+    if cur_user_id:
+        remove_current_user = "and id!=:cur_user_id"
+
+
     query = text("""SELECT id, username, first_name, profile_picture, user_type, user_title, bio,
                                     username like :query_start or first_name like :query_start as name_start_match,
                                     first_name like :query_word_start as name_word_start_match,
@@ -133,10 +138,8 @@ def search(cur_user_id, q, offset, limit):
                                         )
                                         and monkness=-1 
                                         and profile_video is not null
-                                        and id is not :cur_user_id
                                         and user_type=2
-                                        and profile_video is not null
-                                        and id is not :cur_user_id
+                                        {remove_current_user}
 
                                     order by name_start_match desc,
                                             top_user_score desc,
@@ -151,7 +154,8 @@ def search(cur_user_id, q, offset, limit):
                                                                                    where_clause=where_clause,
                                                                                    order_by_title=order_by_title,
                                                                                    order_by_bio=order_by_bio,
-                                                                                   order_by_processed_username=order_by_processed_username
+                                                                                   order_by_processed_username=order_by_processed_username,
+                                                                                   remove_current_user=remove_current_user
                                                                                 )
 
                                     )
