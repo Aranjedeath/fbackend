@@ -1725,7 +1725,7 @@ def view_video(url):
     url = url.replace('http://d35wlof4jnjr70.cloudfront.net/', 'https://s3.amazonaws.com/franklyapp/')
     redis_views.incr(url, 1)
 
-def search(cur_user_id, query, offset, limit, version_code=None):
+def query_search(cur_user_id, query, offset, limit, version_code=None):
     results = []
     print version_code
     if 'test' in query:
@@ -1744,37 +1744,17 @@ def search(cur_user_id, query, offset, limit, version_code=None):
             results.append({'type':'invitable', 'invitable' : invitable_to_dict(invitable[0], cur_user_id)})
             limit = limit - 1
 
+    '''
     if offset == 0:
         search_default = SearchDefault.query.filter(SearchDefault.category == query).order_by(SearchDefault.score).all()
         for s in search_default:
             results.append({'type':'user', 'user':search_user_to_dict(User.query.filter(User.id == s.user).first(), cur_user_id)})
-
-    if len(query)<4:
-        search_filter = or_(  User.username.like('{query}%'.format(query=query)),
-                                    User.first_name.like('% {query}%'.format(query=query)),
-                                    User.first_name.like('{query}%'.format(query=query))
-                                )
-    else:
-        search_filter = or_(  User.username.like('%{query}%'.format(query=query)),
-                                    User.first_name.like('%{query}%'.format(query=query))
-                                )
-
-
-    users = User.query.filter(User.id!=cur_user_id,
-                                User.monkness==-1, User.profile_video!=None, # replaced monkness with user_type
-                                search_filter,
-                            ).offset(offset
-                            ).limit(limit
-                            ).all()
-
-    for user in users:
-        results.append({'type':'user', 'user' : search_user_to_dict(user, cur_user_id)})
+    '''
     
-
-    count = len(results)
-    next_index = limit+offset if count >= limit else -1
-
-    return {'q':query, 'count':count, 'results':results, 'next_index':next_index}
+    import search
+    response = search.search(cur_user_id, query, offset, limit)
+    response['results'] = results + response['results']
+    return response
 
 def add_contact(name, email, organisation, message, phone):
     from base64 import b64encode as enc

@@ -1545,7 +1545,7 @@ class Search(restful.Resource):
             else:
                 current_user_id = None
             
-            return controllers.search(cur_user_id=current_user_id,
+            return controllers.query_search(cur_user_id=current_user_id,
                                         query=args['q'],
                                         offset=args['offset'],
                                         limit=args['limit'],
