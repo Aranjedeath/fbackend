@@ -67,6 +67,14 @@ def search(cur_user_id, q, offset, limit):
 
         params.update({'processed_query_contained_{idx}'.format(idx=idx): '%s{pq}%s'.format(pq=i)})
 
+    params.update({ 'query_start':'{q}%s'.format(q=q),
+                    'query_word_start':' {q}%s'.format(q=q),
+                    'query_contained':'%s{q}%s'.format(q=q),
+                    'top_users':top_users,
+                    'cur_user_id':cur_user_id,
+                    'result_offset':offset,
+                    'result_limit':limit,
+                    })
 
     results = db.session.execute(text("""SELECT id, username, first_name, profile_picture, user_type, user_title,
                                     username like :query_start or first_name like :query_start as name_start_match,
@@ -93,16 +101,15 @@ def search(cur_user_id, q, offset, limit):
                                             {order_by_bio}
                                             top_user_score desc, 
 
-                                    limit :result_offset, :result_limit"""),
+                                    limit :result_offset, :result_limit""".format({ "select_query": select_query,
+                                                                                    "where_clause": where_clause,
+                                                                                    "order_by_title": order_by_title,
+                                                                                    "order_by_bio": order_by_bio
+                                                                                })
+
+                                    ),
                         
-                                params = {'query_start':'{q}%s'.format(q=q),
-                                            'query_word_start':' {q}%s'.format(q=q),
-                                            'query_contained':'%s{q}%s'.format(q=q),
-                                            'top_users':top_users,
-                                            'cur_user_id':cur_user_id,
-                                            'result_offset':offset,
-                                            'result_limit':limit,
-                                            }.update(params)
+                                params = params
                                 )
     
     results = [{'type':'user',
