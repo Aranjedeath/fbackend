@@ -945,7 +945,23 @@ def question_list_public(current_user_id, user_id, offset, limit):
     if has_blocked(current_user_id, user_id):
         raise CustomExceptions.BlockedUserException('User Not Found')
 
-    questions_query = Question.query.filter(Question.question_to==user_id, 
+    cur_users_questions = []
+    if offset == 0 and current_user_id:
+        cur_user_questions = Question.query.filter(Question.question_to==user_id,
+                                                    Question.question_author==current_user_id,
+                                                    Question.deleted==False,
+                                                    Question.is_answered==False,
+                                                    Question.is_ignored==False,
+                                                    Question.public==True
+                                                    ).order_by(Question.timestamp.desc()
+                                                    ).offset(0).limit(5).all()
+
+        cur_user_questions = [{'question':question_to_dict(question, current_user_id), 'type':'question'} for question in cur_users_questions]
+
+    cur_users_question_ids = [q['question']['id'] for q in cur_user_questions]
+    
+    questions_query = Question.query.filter(~Question.id.in_(cur_users_question_ids),
+                                            Question.question_to==user_id, 
                                             Question.deleted==False,
                                             Question.is_answered==False,
                                             Question.is_ignored==False,
@@ -959,7 +975,7 @@ def question_list_public(current_user_id, user_id, offset, limit):
     questions = [{'question':question_to_dict(question, current_user_id), 'type':'question'} for question in questions_query.limit(limit)]
     questions.sort(key=lambda q: q['question']['ask_count'], reverse=True)
     next_index = str(offset+limit) if questions else "-1"
-    return {'questions': questions, 'count': len(questions),  'next_index' : next_index}
+    return {'current_user_questions':cur_user_questions, 'questions': questions, 'count': len(questions),  'next_index' : next_index}
 
 def question_upvote(cur_user_id, question_id):
     if Question.query.filter(
@@ -1556,7 +1572,7 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
 
         video_url, thumbnail_url = media_uploader.upload_user_video(user_id=cur_user_id, video_file=video, video_type='answer')
         
-        curruser = User.query.filter(User.id == cur_user_id).one()
+        curuser = User.query.filter(User.id == cur_user_id).one()
             
         post = Post(question=question_id,
                     question_author=question.question_author, 
@@ -1585,7 +1601,7 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
                         thumbnail_url=thumbnail_url,
                         video_type='answer_video',
                         object_id=post.id,
-                        username=curruser.username)
+                        username=curuser.username)
         async_encoder.encode_video_task.delay(video_url, username=curuser.username)
 
         db.session.commit()

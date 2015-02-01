@@ -10,6 +10,9 @@ PORT = 8000
 PROPOGATE_EXCEPTIONS = True
 
 RAYGUN_KEY = "hAmfuTIzQ8jYdMiQdh1fug=="
+#Raygun username and password is used for documentation
+RAYGUN_USERNAME = "frankly1@mailinator.com" 
+RAYGUN_PASSWORD = "dexter123"
 
 AWS_KEY = 'AKIAJ72DWIKVJZNTD2VA'
 AWS_SECRET = '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' 

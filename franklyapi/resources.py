@@ -1651,7 +1651,6 @@ class BadUsernames(restful.Resource):
         try:
             if args['timestamp'] < config.UNAVAILABLE_USERNAMES_LAST_UPDATED:
                 return {'ulist':config.UNAVAILABLE_USERNAMES, 'changed':True}
-            print shashank
             return {'ulist':[], 'changed':False}
         except Exception as e:
             err = sys.exc_info()
