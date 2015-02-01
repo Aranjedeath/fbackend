@@ -1,5 +1,5 @@
 import random
-from collections import DefaultDict
+from collections import defaultdict
 
 from sqlalchemy.sql import text
 
@@ -28,7 +28,7 @@ keyword_map = {
                                     'elections', 'delhi', 'party', 'politician']
                 }
 
-reverse_index = DefaultDict(list)
+reverse_index = defaultdict(list)
 
 for name, key_list in keyword_map.items():
     for item in key_list:
@@ -41,7 +41,8 @@ def search(cur_user_id, q, offset, limit):
     processed_queries = set()
     
     for i in q.split():
-        processed_queries.add(reverse_index[i])
+        for match in reverse_index[i]:
+            processed_queries.add(match)
 
     processed_queries = list(processed_queries)
     
