@@ -1,5 +1,5 @@
 from models import Video, User
-from app import db, redis_data_client
+from app import db, redis_views
 from sqlalchemy.sql import text, func
 
 def add_video_to_db(video_url, thumbnail_url, video_type, object_id, username=None):
@@ -29,7 +29,7 @@ def update_video_state(video_url, result={}):
 def update_view_count_to_db(url):
     try:
         original_url = url
-        count = redis_data_client.get(url)
+        count = redis_views.get(url)
         
         url = url.replace('http://d35wlof4jnjr70.cloudfront.net/', 'https://s3.amazonaws.com/franklyapp/')
         types = ['_ultralow', '_low', '_medium', '_opt', '_promo']
@@ -50,7 +50,7 @@ def update_view_count_to_db(url):
                                 params = {"url":url, "count":int(count)}
                             )
             db.session.commit()
-        redis_data_client.delete(original_url)
+        redis_views.delete(original_url)
     except:
         db.session.rollback()
 

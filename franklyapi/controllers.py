@@ -23,7 +23,7 @@ from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
                     UserFeed, Event, Reshare, Invitable, Invite, ContactUs, InflatedStat,\
                     SearchDefault, IntervalCountMap
 
-from app import redis_client, raygun, db, redis_data_client
+from app import redis_client, raygun, db, redis_views
 
 from object_dict import user_to_dict, guest_user_to_dict,\
                         thumb_user_to_dict, question_to_dict, post_to_dict, comment_to_dict,\
@@ -1723,7 +1723,7 @@ def web_hiring_form(name, email, phone_num, role):
 
 def view_video(url):
     url = url.replace('http://d35wlof4jnjr70.cloudfront.net/', 'https://s3.amazonaws.com/franklyapp/')
-    redis_data_client.incr(url, 1)
+    redis_views.incr(url, 1)
 
 def search(cur_user_id, query, offset, limit, version_code=None):
     results = []

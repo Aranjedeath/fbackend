@@ -6,13 +6,10 @@ import video_db
 
 cel = Celery(broker=config.ASYNC_ENCODER_BROKER_URL, backend=config.ASYNC_ENCODER_BACKEND_URL)
 
+
 @cel.task(queue='encoding')
 def encode_video_task(video_url, username='', profiles=video_encoder.VIDEO_ENCODING_PROFILES.keys()):
-    uname = username if username else None
-
-    video_db.add_video_to_db(video_url, username=uname)
     file_path = media_uploader.download_file(video_url)
-
     for profile_name in profiles:
         _encode_video_to_profile(file_path, video_url, profile_name, username)    
 
