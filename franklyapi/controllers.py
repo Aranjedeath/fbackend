@@ -670,7 +670,7 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
                         object_id=user_id,
                         username=user.username)
         
-        async_encoder.fencode_video_task.delay(profile_video_url, username=user.username)
+        async_encoder.encode_video_task.delay(profile_video_url, username=user.username)
 
     return user_to_dict(user)
 
@@ -1586,8 +1586,8 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
                         video_type='answer_video',
                         object_id=post.id,
                         username=curruser.username)
+        async_encoder.encode_video_task.delay(video_url, username=curuser.username)
 
-        encode_video_task.delay(video_url, username=curuser.username)
         db.session.commit()
         return {'success': True, 'id': str(post.id)}
 
@@ -1781,6 +1781,7 @@ def return_none_feed():
         }
 
 def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon = None, visit = None, append_top=''):
+    print offset, limit
     from models import CentralQueueMobile, User, Question, Post
     if offset == -1:
         return return_none_feed
@@ -1818,7 +1819,7 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
     users_in_feeds = filter(lambda x:x, map(lambda x:x.user, feeds))
     print users_in_feeds
     filter_these_from_feeds = []
-    if cur_user_id:
+    if cur_user_id and users_in_feeds:
         filter_these_from_feeds = db.session.execute(text('SELECT followed FROM user_follows WHERE user = :cur_user_id and \
                                                         followed in :users_in_feeds'),
                                                         params = {'cur_user_id':cur_user_id,
