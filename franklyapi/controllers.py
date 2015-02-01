@@ -960,7 +960,7 @@ def question_list_public(current_user_id, user_id, offset, limit):
 
     cur_user_question_ids = [q['question']['id'] for q in cur_user_questions]
     
-    questions_query = Question.query.filter(~Question.id.in_(cur_users_question_ids),
+    questions_query = Question.query.filter(~Question.id.in_(cur_user_question_ids),
                                             Question.question_to==user_id, 
                                             Question.deleted==False,
                                             Question.is_answered==False,
