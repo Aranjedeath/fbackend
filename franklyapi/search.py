@@ -101,11 +101,11 @@ def search(cur_user_id, q, offset, limit):
                                             {order_by_bio}
                                             top_user_score desc, 
 
-                                    limit :result_offset, :result_limit""".format({ "select_query": select_query,
-                                                                                    "where_clause": where_clause,
-                                                                                    "order_by_title": order_by_title,
-                                                                                    "order_by_bio": order_by_bio
-                                                                                })
+                                    limit :result_offset, :result_limit""".format( select_query=select_query,
+                                                                                   where_clause=where_clause,
+                                                                                   order_by_title=order_by_title,
+                                                                                   order_by_bio=order_by_bio
+                                                                                )
 
                                     ),
                         
