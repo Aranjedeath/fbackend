@@ -32,7 +32,7 @@ reverse_index = defaultdict(list)
 
 for name, key_list in keyword_map.items():
     for item in key_list:
-        reverse_index[item].append(name)
+        reverse_index[item.strip()].append(name.strip())
 
 top_users = ['arvindkejriwal', 'kiranbedi', 'mufflerman', 'ajaymaken', 'yogendrayadav', 'ashutoshgupta', 'ranveerbrar', 'sunilpal', 'javedakhtar']
 
@@ -41,8 +41,9 @@ def search(cur_user_id, q, offset, limit):
     processed_queries = set()
     
     for i in q.split():
-        for match in reverse_index[i]:
-            processed_queries.add(match)
+        if q.strip():
+            for match in reverse_index[i.strip()]:
+                processed_queries.add(match)
 
     processed_queries = list(processed_queries)
     
