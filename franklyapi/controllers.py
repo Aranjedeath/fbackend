@@ -443,9 +443,9 @@ def get_question_upvote_count(question_id):
     print count_to_pump, count_as_such
     if count_to_pump:
         count = int(11*count_to_pump+ log(count_to_pump, 2) + sqrt(count_to_pump)) + count_as_such
+        count += time_factor
     else:
         count = count_to_pump + count_as_such
-    count += time_factor
     inflated_stat = InflatedStat.query.filter(InflatedStat.question==question_id).first()
     if inflated_stat:
         count += inflated_stat.upvote_count
