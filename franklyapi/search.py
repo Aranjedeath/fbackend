@@ -140,7 +140,7 @@ def search(cur_user_id, q, offset, limit):
 
                                     from users WHERE 
                                         (   username like :query_start or first_name like :query_start or first_name like :query_word_start
-                                            or user_title like :query_contained,
+                                            or user_title like :query_contained
                                             {where_clause}
                                         )
                                         and monkness=-1 
