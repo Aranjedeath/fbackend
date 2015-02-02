@@ -16,21 +16,20 @@ from functools import wraps
 import admin_controllers
 
 def admin_only(f):
-    try:
-        print 'main yaha hun 1'
-        @wraps(f)
-        def decorated(*args, **kwargs):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        try:
             print 'main yaha hun 2'
             if not current_user.id in config.ADMIN_USERS:
                 abort(403, message='Invalid Login')
             return f(*args, **kwargs)
-        print 'main yaha hun 3'
-        return decorated
-    except Exception as e:
-        err = sys.exc_info()
-        raygun.send(err[0],err[1],err[2])
-        print traceback.format_exc(e)
-        abort(500, message='Error')
+        except Exception as e:
+            print 'main yaha hun 3'
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message='Error')
+    return decorated
 
 
 class AdminProtectedResource(restful.Resource):
