@@ -109,7 +109,7 @@ def search(cur_user_id, q, offset, limit):
 
         order_by_processed_username += """processed_username_match_{idx} desc, """.format(idx=idx)
         order_by_title += """processed_title_match_{idx} desc, """.format(idx=idx)
-        order_by_bio += """processed_bio_match_{idx} desc, """.format(idx=idx)
+        order_by_bio += """, processed_bio_match_{idx} desc """.format(idx=idx)
 
         params.update({'processed_query_contained_{idx}'.format(idx=idx): '%{pq}%'.format(pq=i)})
 
@@ -154,9 +154,8 @@ def search(cur_user_id, q, offset, limit):
                                             {order_by_processed_username}
                                             exact_title_match desc,
                                             {order_by_title}
-                                            name_word_start_match desc,
+                                            name_word_start_match desc
                                             {order_by_bio}
-                                            bio_match desc
 
                                     limit :result_offset, :result_limit""".format( select_query=select_query,
                                                                                    where_clause=where_clause,
