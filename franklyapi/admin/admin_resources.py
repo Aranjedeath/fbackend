@@ -63,9 +63,10 @@ class AdminUserList(AdminProtectedResource):
             abort(500, message='Error')
 
 
-class AdminUserAdd(AdminProtectedResource):
+class AdminUserAdd(restful.Resource):
     @login_required
     def post(self):
+        print 'tumhari maa ka.'
         arg_parser = reqparse.RequestParser()
         arg_parser.add_argument('email', type=str, required=True, location='form')
         arg_parser.add_argument('username', type=str, required=True, location='form')
@@ -79,6 +80,7 @@ class AdminUserAdd(AdminProtectedResource):
         arg_parser.add_argument('profile_picture', type=file, location='files')
         arg_parser.add_argument('profile_video', type=file, location='files')
         args = arg_parser.parse_args()
+        print 'bhonsdi wala.'
 
         try:
             return admin_controllers.user_add(email=args['email'],
@@ -93,6 +95,7 @@ class AdminUserAdd(AdminProtectedResource):
                                                 profile_video=args['profile_video']
                                                 )
         except Exception as e:
+            print 'Hellllllo'
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])
             print traceback.format_exc(e)
