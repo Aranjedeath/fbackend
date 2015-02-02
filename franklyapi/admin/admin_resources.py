@@ -17,11 +17,14 @@ import admin_controllers
 
 def admin_only(f):
     try:
+        print 'main yaha hun 1'
         @wraps(f)
         def decorated(*args, **kwargs):
+            print 'main yaha hun 2'
             if not current_user.id in config.ADMIN_USERS:
                 abort(403, message='Invalid Login')
             return f(*args, **kwargs)
+        print 'main yaha hun 3'
         return decorated
     except Exception as e:
         err = sys.exc_info()
@@ -63,7 +66,7 @@ class AdminUserList(AdminProtectedResource):
             abort(500, message='Error')
 
 
-class AdminUserAdd(restful.Resource):
+class AdminUserAdd(AdminProtectedResource):
     @login_required
     def post(self):
         print 'tumhari maa ka.'
