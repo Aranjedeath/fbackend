@@ -941,12 +941,13 @@ def question_list(user_id, offset, limit):
     return {'questions': questions, 'count': len(questions),  'next_index' : next_index}
 
 
-def question_list_public(current_user_id, user_id, offset, limit):
+def question_list_public(current_user_id, user_id, offset, limit, version_code=None):
     if has_blocked(current_user_id, user_id):
         raise CustomExceptions.BlockedUserException('User Not Found')
 
     cur_user_questions = []
-    if offset == 0 and current_user_id:
+
+    if offset == 0 and current_user_id and version_code>43:
         cur_user_questions = Question.query.filter(Question.question_to==user_id,
                                                     Question.question_author==current_user_id,
                                                     Question.deleted==False,
