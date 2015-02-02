@@ -1866,7 +1866,7 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
         }
 
 def search_default():
-    categories_order = ['Politicians', 'Trending Now', 'New on Frankly', 'Singers', 'Radio Jockeys', 'Chefs', 'Entrepeneurs', 'Subject Experts']
+    categories_order = ['Politicians', 'Trending Now', 'New on Frankly', 'Singers', 'Radio Jockeys', 'Chefs', 'Entrepreneurs', 'Subject Experts']
     results = {cat:[] for cat in categories_order}
 
     users = SearchDefault.query.order_by(SearchDefault.score).all()
