@@ -15,9 +15,8 @@ reverse_index['sportsman'] = ['wrestler', 'shooter', 'cricketer', 'tennis']
 reverse_index['sportsperson'] = ['wrestler', 'shooter', 'cricketer']
 reverse_index['experts'] = ['marketing', 'guru', 'yoga', 'doctor', 'astrologer', 'tattoo', 'entrepreneur', 'dancer', 'advocate', 'anchor', 'psychologist']
 reverse_index['television'] = ['masterchef', 'actor', 'actress', 'stylist', 'media', 'dancer', 'anchor', 'makeup', 'tattoo', 'models']
-reverse_index['tv'] = ['masterchef', 'actor', 'actress', 'media', 'dancer', 'anchor', 'makeup', 'tattoo', 'models']
+reverse_index['tv'] = ['masterchefs', 'actor', 'actress', 'media', 'dancer', 'anchor', 'makeup', 'tattoo', 'models']
 reverse_index['stars'] = ['actor', 'actress', 'media', 'dancer', 'anchor', 'makeup', 'tattoo', 'models']
-
 
 keyword_map = {
                 'aap'           :[
@@ -56,7 +55,10 @@ keyword_map = {
                 'actress'       :['actors', 'bollywood', 'stars', 'movies', 'tv', 'television', 'models'],
                 'stylist'       :['bollywood', 'stars', 'makeup', 'tv', 'television', 'models'],
                 'media'         :['television', 'tv', 'anchors'],
-                'radio'         :['rj', 'radio', 'jockeys', 'fm']
+                'radio'         :['rj', 'radio', 'jockeys', 'fm'],
+                'singer'        :['singers', 'music', 'musicians'],
+                'chef'          :['chefs', 'master', 'cooks', 'food'],
+                'entrepreneur'  :['businessman', 'entrepreneurs', 'startups', 'company', 'founders']
                 }
 
 
