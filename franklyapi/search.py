@@ -17,6 +17,7 @@ reverse_index['experts'] = ['marketing', 'guru', 'yoga', 'doctor', 'astrologer',
 reverse_index['television'] = ['masterchef', 'actor', 'actress', 'stylist', 'media', 'dancer', 'anchor', 'makeup', 'tattoo', 'models']
 reverse_index['tv'] = ['masterchefs', 'actor', 'actress', 'media', 'dancer', 'anchor', 'makeup', 'tattoo', 'models']
 reverse_index['stars'] = ['actor', 'actress', 'media', 'dancer', 'anchor', 'makeup', 'tattoo', 'models']
+reverse_index['author'] = ['authors']
 
 keyword_map = {
                 'aap'           :[
