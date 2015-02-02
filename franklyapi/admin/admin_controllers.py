@@ -104,17 +104,16 @@ def post_unanswer(post_id):
     return {'success':True}
 
 def post_edit(post_id, video, answer_type='video'):
-    answer_author = Question.query.get(question_id).question_to
-    video_url, thumbnail_url = media_uploader.upload_user_video(user_id=answer_author, video_file=video, video_type='answer')
-    
+    post = Post.query.filter(Post.id==post_id)
+    video_url, thumbnail_url = media_uploader.upload_user_video(user_id=post.answer_author, video_file=video, video_type='answer')
     Post.query.filter(Post.id==post_id).update({'media_url':video_url, 'thumbnail_url':thumbnail_url})
+
+    username = User.query.with_entities('username').filter(User.id==post.answer_author).one().username
+
+    video_db.add_video_to_db(video_url, thumbnail_url, 'answer_video', post_id, username)
+    async_encoder.encode_video_task.delay(video_url, username)
     db.session.commit()
 
-    curruser = User.query.filter(User.id == answer_author).one()
-
-    video_db.add_video_to_db(video_url, thumbnail_url)
-    async_encoder.encode_video_task.delay(video_url, curruser.username)
-    
     return {'success': True, 'id':post_id}
 
 

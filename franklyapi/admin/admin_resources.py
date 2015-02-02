@@ -19,12 +19,10 @@ def admin_only(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         try:
-            print 'main yaha hun 2'
-            if not current_user.id in config.ADMIN_USERS:
+            if not current_user or not current_user.id in config.ADMIN_USERS:
                 abort(403, message='Invalid Login')
             return f(*args, **kwargs)
         except Exception as e:
-            print 'main yaha hun 3'
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])
             print traceback.format_exc(e)
@@ -68,7 +66,6 @@ class AdminUserList(AdminProtectedResource):
 class AdminUserAdd(AdminProtectedResource):
     @login_required
     def post(self):
-        print 'tumhari maa ka.'
         arg_parser = reqparse.RequestParser()
         arg_parser.add_argument('email', type=str, required=True, location='form')
         arg_parser.add_argument('username', type=str, required=True, location='form')
@@ -103,6 +100,23 @@ class AdminUserAdd(AdminProtectedResource):
             print traceback.format_exc(e)
             abort(500, message='Error')
 
+class AdminPostEdit(AdminProtectedResource):
+    @login_required
+    def get(self):
+        arg_parser = reqparse.RequestParser()
+        arg_parser.add_argument('post_id', type=int, default=0, location='forms')
+        arg_parser.add_argument('video', type=file, default=10, location='files')
+        try:
+
+            args = arg_parser.parse_args()
+        
+            return admin_controllers.post_edit(post_id=args['post_id'],
+                                                video=['video'])
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message='Error')
 
 class AdminUserEdit(AdminProtectedResource):
     @login_required
