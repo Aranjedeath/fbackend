@@ -180,7 +180,7 @@ def search(cur_user_id, q, offset, limit):
                         'bio':row[6]
                         }
                 } for row in results]
-    results.sort(key=lambda x: top_users.index(x['user']['username'].lower()) if  x['user']['username'].lower() in top_users else -1)
+    results.sort(key=lambda x: top_users.index(x['user']['username'].lower()) if  x['user']['username'].lower() in top_users else 999)
 
     count = len(results)
     next_index = -1
