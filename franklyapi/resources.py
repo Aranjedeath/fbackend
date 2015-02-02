@@ -836,6 +836,8 @@ class QuestionListPublic(restful.Resource):
     get_parser = reqparse.RequestParser()
     get_parser.add_argument('since', dest='offset', type=int, default=0, location='args')
     get_parser.add_argument('limit', type=int, default=10, location='args')
+    get_parser.add_argument('X-Version-Code', type=int, location='headers', default=None)
+
     
     @login_required
     def get(self, user_id):
@@ -849,7 +851,7 @@ class QuestionListPublic(restful.Resource):
         """
         args = self.get_parser.parse_args()
         try:
-            resp = controllers.question_list_public(current_user.id, user_id=user_id, offset=args['offset'], limit=args['limit'])
+            resp = controllers.question_list_public(current_user.id, user_id=user_id, offset=args['offset'], limit=args['limit'], version_code=args['X-Version-Code'])
             return resp
 
         except CustomExceptions.BlockedUserException as e:
