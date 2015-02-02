@@ -1744,12 +1744,12 @@ def query_search(cur_user_id, query, offset, limit, version_code=None):
             results.append({'type':'invitable', 'invitable' : invitable_to_dict(invitable[0], cur_user_id)})
             limit = limit - 1
 
-    '''
-    if offset == 0:
+    if offset == 0 and ('trending' in query.lower() or 'new on' in query.lower()):
         search_default = SearchDefault.query.filter(SearchDefault.category == query).order_by(SearchDefault.score).all()
         for s in search_default:
             results.append({'type':'user', 'user':search_user_to_dict(User.query.filter(User.id == s.user).first(), cur_user_id)})
-    '''
+    
+    
     import search
     response = search.search(cur_user_id, query.lower(), offset, limit)
     response['results'] = results + response['results']

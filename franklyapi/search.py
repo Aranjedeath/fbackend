@@ -56,6 +56,7 @@ keyword_map = {
                 'actress'       :['actors', 'bollywood', 'stars', 'movies', 'tv', 'television', 'models'],
                 'stylist'       :['bollywood', 'stars', 'makeup', 'tv', 'television', 'models'],
                 'media'         :['television', 'tv', 'anchors'],
+                'radio'         :['rj', 'radio', 'jockeys', 'fm']
                 }
 
 
