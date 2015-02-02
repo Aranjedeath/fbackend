@@ -15,8 +15,8 @@ reverse_index['sportsman'] = ['wrestler', 'shooter', 'cricketer', 'tennis']
 reverse_index['sportsperson'] = ['wrestler', 'shooter', 'cricketer']
 reverse_index['experts'] = ['marketing', 'guru', 'yoga', 'doctor', 'astrologer', 'tattoo', 'entrepreneur', 'dancer', 'advocate', 'anchor', 'psychologist']
 reverse_index['television'] = ['masterchef', 'actor', 'actress', 'stylist', 'media', 'dancer', 'anchor', 'makeup', 'tattoo', 'models']
-reverse_index['tv'] = ['masterchef', 'actor', 'actress', 'stylist', 'media', 'dancer', 'anchor', 'makeup', 'tattoo', 'models']
-reverse_index['stars'] = ['actor', 'actress', 'stylist', 'media', 'dancer', 'anchor', 'makeup', 'tattoo', 'models']
+reverse_index['tv'] = ['masterchef', 'actor', 'actress', 'media', 'dancer', 'anchor', 'makeup', 'tattoo', 'models']
+reverse_index['stars'] = ['actor', 'actress', 'media', 'dancer', 'anchor', 'makeup', 'tattoo', 'models']
 
 
 keyword_map = {
@@ -93,7 +93,10 @@ def search(cur_user_id, q, offset, limit):
     order_by_title = ''
     order_by_bio = ''
     remove_current_user = ''
+    bio_query = ''
+    bio_where = ''
     params = {}
+
 
     for i in processed_queries:
         idx = processed_queries.index(i)
@@ -122,18 +125,23 @@ def search(cur_user_id, q, offset, limit):
     if cur_user_id:
         remove_current_user = "and id!=:cur_user_id"
 
+    if len(q.strip()) > 4:
+        bio_query = " or bio like :query_contained "
+        bio_where = " bio like :query_contained as bio_match "
+
+
 
     query = text("""SELECT id, username, first_name, profile_picture, user_type, user_title, bio,
                                     username like :query_start or first_name like :query_start as name_start_match,
                                     first_name like :query_word_start as name_word_start_match,
                                     user_title like :query_contained as exact_title_match,
-                                    bio like :query_contained as bio_match,
+                                    {bio_query}
                                     {select_query}
                                     username in :top_users as top_user_score
 
                                     from users WHERE 
                                         (   username like :query_start or first_name like :query_start or first_name like :query_word_start
-                                            or user_title like :query_contained or bio like :query_contained 
+                                            or user_title like :query_contained {bio_where}
                                             {where_clause}
                                         )
                                         and monkness=-1 
@@ -155,7 +163,9 @@ def search(cur_user_id, q, offset, limit):
                                                                                    order_by_title=order_by_title,
                                                                                    order_by_bio=order_by_bio,
                                                                                    order_by_processed_username=order_by_processed_username,
-                                                                                   remove_current_user=remove_current_user
+                                                                                   remove_current_user=remove_current_user,
+                                                                                   bio_where=bio_where,
+                                                                                   bio_query=bio_query
                                                                                 )
 
                                     )
