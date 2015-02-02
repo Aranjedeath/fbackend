@@ -70,7 +70,7 @@ top_users = ['arvindkejriwal', 'kiranbedi', 'mufflerman', 'kiranbhedi', 'ajaymak
 def search(cur_user_id, q, offset, limit):
         
     processed_queries_freq = defaultdict(int)
-
+    q = q.lower()
     for i in q.split():
         if i.strip():
             for match in reverse_index[i.strip()]:
