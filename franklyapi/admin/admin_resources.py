@@ -66,8 +66,6 @@ class AdminUserList(AdminProtectedResource):
 class AdminUserAdd(AdminProtectedResource):
     @login_required
     def post(self):
-        from flask import request
-        print request.form
         arg_parser = reqparse.RequestParser()
         arg_parser.add_argument('email', type=str, required=True, location='form')
         arg_parser.add_argument('username', type=str, required=True, location='form')
