@@ -136,13 +136,12 @@ def search(cur_user_id, q, offset, limit):
                                     username like :query_start or first_name like :query_start as name_start_match,
                                     first_name like :query_word_start as name_word_start_match,
                                     user_title like :query_contained as exact_title_match,
-                                    {bio_query}
                                     {select_query}
                                     username in :top_users as top_user_score
 
                                     from users WHERE 
                                         (   username like :query_start or first_name like :query_start or first_name like :query_word_start
-                                            or user_title like :query_contained {bio_where}
+                                            or user_title like :query_contained,
                                             {where_clause}
                                         )
                                         and monkness=-1 
@@ -162,9 +161,7 @@ def search(cur_user_id, q, offset, limit):
                                                                                    order_by_title=order_by_title,
                                                                                    order_by_bio=order_by_bio,
                                                                                    order_by_processed_username=order_by_processed_username,
-                                                                                   remove_current_user=remove_current_user,
-                                                                                   bio_where=bio_where,
-                                                                                   bio_query=bio_query
+                                                                                   remove_current_user=remove_current_user
                                                                                 )
 
                                     )
@@ -185,6 +182,7 @@ def search(cur_user_id, q, offset, limit):
                         'bio':row[6]
                         }
                 } for row in results]
+    results.sort(key=lambda x: top_users.index(x['username'].lower()))
 
     count = len(results)
     next_index = -1
