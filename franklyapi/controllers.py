@@ -968,8 +968,8 @@ def question_list_public(current_user_id, user_id, offset, limit):
                                             Question.public==True
                                             ).outerjoin(Upvote
                                             ).group_by(Question.id
-                                            ).order_by(Question.score.desc()
                                             ).order_by(func.count(Upvote.id).desc()
+                                            ).order_by(Question.score.desc()
                                             ).offset(offset)
 
     questions = [{'question':question_to_dict(question, current_user_id), 'type':'question'} for question in questions_query.limit(limit)]
