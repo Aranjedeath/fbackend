@@ -76,7 +76,7 @@ def search(cur_user_id, q, offset, limit):
             for match in reverse_index[i.strip()]:
                 processed_queries_freq[match] = processed_queries_freq[match]+1
         
-        if len(i) > 4:
+        if len(i) > 3:
             for key, value in reverse_index.items():
                 if i in key:
                     for match in value:
@@ -184,7 +184,7 @@ def search(cur_user_id, q, offset, limit):
 
     count = len(results)
     next_index = -1
-    if count <= offset+limit:
+    if count >= offset+limit:
         next_index = offset+limit
 
     return {'q':q, 'count':count, 'results':results, 'next_index':next_index}
