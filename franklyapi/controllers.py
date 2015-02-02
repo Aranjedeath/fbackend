@@ -1753,6 +1753,7 @@ def query_search(cur_user_id, query, offset, limit, version_code=None):
     import search
     response = search.search(cur_user_id, query.lower(), offset, limit)
     response['results'] = results + response['results']
+    response['q'] = query
     print response
     return response
 
