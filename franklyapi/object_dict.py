@@ -250,7 +250,8 @@ def question_to_dict(question, current_user_id=None):
         'is_voted': is_upvoted(question.id, current_user_id) if current_user_id else False,
         'web_link':'http://frankly.me/q/{short_id}'.format(short_id=question.short_id),
         'short_id': question.short_id,
-        'is_answered':question.is_answered
+        'is_answered':question.is_answered,
+        'score':question.score
     }
     if question.is_answered:
         ques_dict['post_id'] = get_post_id_from_question_id(question.id)

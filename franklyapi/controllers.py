@@ -968,12 +968,13 @@ def question_list_public(current_user_id, user_id, offset, limit):
                                             Question.public==True
                                             ).outerjoin(Upvote
                                             ).group_by(Question.id
-                                            ).order_by(func.count(Upvote.id).desc()
                                             ).order_by(Question.score.desc()
+                                            ).order_by(func.count(Upvote.id).desc()
                                             ).offset(offset)
 
-    questions = [{'question':question_to_dict(question, current_user_id), 'type':'question'} for question in questions_query.limit(limit)]
-    questions.sort(key=lambda q: q['question']['ask_count'], reverse=True)
+    question_objects = questions_query.limit(limit)
+    questions = [{'question':question_to_dict(question, current_user_id), 'type':'question'} for question in question_objects]
+    questions.sort(key=lambda q: q['question']['ask_count']*q['question']['score'], reverse=True)
     next_index = str(offset+limit) if questions else "-1"
     return {'current_user_questions':cur_user_questions, 'questions': questions, 'count': len(questions),  'next_index' : next_index}
 
