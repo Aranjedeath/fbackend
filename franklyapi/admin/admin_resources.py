@@ -5,9 +5,10 @@ from flask.ext import restful
 from flask.ext.restful import abort
 from flask.ext.restful import reqparse
 from flask.ext.login import login_required, current_user
-from raygun4py import raygunprovider
 
 import CustomExceptions
+
+from app import raygun
 
 from configs import config
 from functools import wraps
@@ -50,8 +51,10 @@ class AdminUserList(AdminProtectedResource):
                                                     desc=bool(args['desc'])
                                                     )
         except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
             print traceback.format_exc(e)
-            abort(500, message=traceback.format_exc(e))
+            abort(500, message='Error')
 
 
 class AdminUserAdd(AdminProtectedResource):
@@ -86,8 +89,10 @@ class AdminUserAdd(AdminProtectedResource):
                                                 profile_video=args['profile_video']
                                                 )
         except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
             print traceback.format_exc(e)
-            abort(500, message=traceback.format_exc(e))
+            abort(500, message='Error')
 
 
 class AdminUserEdit(AdminProtectedResource):
@@ -121,8 +126,10 @@ class AdminUserEdit(AdminProtectedResource):
                                                 profile_picture=args['profile_picture'],
                                                 profile_video=args['profile_video'])
         except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
             print traceback.format_exc(e)
-            abort(500, message=traceback.format_exc(e))
+            abort(500, message='Error')
 
 
 
@@ -146,8 +153,10 @@ class AdminQuestionList(AdminProtectedResource):
                                                     deleted=bool(args['deleted'])
                                                     )
         except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
             print traceback.format_exc(e)
-            abort(500, message=traceback.format_exc(e))
+            abort(500, message='Error')
 
 
 class AdminQuestionAdd(AdminProtectedResource):
@@ -161,8 +170,10 @@ class AdminQuestionAdd(AdminProtectedResource):
         try:
             return admin_controllers.question_add(args['question_to'], args['question_body'], args['question_author'])
         except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
             print traceback.format_exc(e)
-            abort(500, 'Uncatched error on the server')
+            abort(500, message='Error')
 
 
 
@@ -172,8 +183,13 @@ class AdminQuestionDelete(AdminProtectedResource):
         arg_parser = reqparse.RequestParser()
         arg_parser.add_argument('question_id', type=str, default=0, location='json')
         args = arg_parser.parse_args()
-        
-        return admin_controllers.question_delete(question_id=args['question_id'])
+        try:
+            return admin_controllers.question_delete(question_id=args['question_id'])
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message='Error')
 
 class AdminQuestionUndelete(AdminProtectedResource):
     @login_required
@@ -181,8 +197,13 @@ class AdminQuestionUndelete(AdminProtectedResource):
         arg_parser = reqparse.RequestParser()
         arg_parser.add_argument('question_id', type=str, default=0, location='json')
         args = arg_parser.parse_args()
-        
-        return admin_controllers.question_undelete(question_id=args['question_id'])
+        try:
+            return admin_controllers.question_undelete(question_id=args['question_id'])
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message='Error')
 
 class AdminQuestionEdit(AdminProtectedResource):
     @login_required
@@ -191,8 +212,13 @@ class AdminQuestionEdit(AdminProtectedResource):
         arg_parser.add_argument('question_id', type=str, default=0, location='json')
         arg_parser.add_argument('body', type=str, default=0, location='json')
         args = arg_parser.parse_args()
-        
-        return admin_controllers.question_edit(question_id=args['question_id'], body=args['body'])
+        try:
+            return admin_controllers.question_edit(question_id=args['question_id'], body=args['body'])
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message='Error')
 
 class AdminAddCelebQue(AdminProtectedResource):
     @login_required
@@ -207,8 +233,10 @@ class AdminAddCelebQue(AdminProtectedResource):
         try:
             return admin_controllers.add_celeb_in_queue(args['item_id'], args['item_type'], args['item_day'], args['item_score'])
         except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
             print traceback.format_exc(e)
-            abort(500, message = 'Some Error Occured')
+            abort(500, message='Error')
 
 class AdminQueOrderEdit(AdminProtectedResource):
     @login_required
@@ -216,7 +244,10 @@ class AdminQueOrderEdit(AdminProtectedResource):
         try:
             return admin_controllers.get_que_order()
         except Exception as e:
-            print  traceback.format_exc(e)
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message='Error')
 
     @login_required
     def post(self):
@@ -230,8 +261,10 @@ class AdminQueOrderEdit(AdminProtectedResource):
         try:
             return admin_controllers.update_que_order(args['items'])
         except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
             print traceback.format_exc(e)
-            return traceback.format_exc(e)
+            abort(500, message='Error')
 
 class AdminCelebList(AdminProtectedResource):
     @login_required
@@ -239,7 +272,10 @@ class AdminCelebList(AdminProtectedResource):
         try:
             return admin_controllers.get_celeb_list(offset, limit)
         except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
             print traceback.format_exc(e)
+            abort(500, message='Error')
 
 class AdminCelebSearch(AdminProtectedResource):
     @login_required
@@ -247,7 +283,10 @@ class AdminCelebSearch(AdminProtectedResource):
         try:
             return admin_controllers.get_celeb_search(query)
         except Exception as e:
-            print e
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message='Error')
 
 class AdminQueueDelete(AdminProtectedResource):
     @login_required
@@ -259,7 +298,10 @@ class AdminQueueDelete(AdminProtectedResource):
         try:
             return admin_controllers.delete_from_central_queue(args['item_type'], args['item_id'])
         except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
             print traceback.format_exc(e)
+            abort(500, message='Error')
 
 class AdminCelebsAskedToday(AdminProtectedResource):
     @login_required
@@ -271,7 +313,10 @@ class AdminCelebsAskedToday(AdminProtectedResource):
         try:
             return admin_controllers.get_celebs_asked_today(args['offset'], args['limit'])
         except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
             print traceback.format_exc(e)
+            abort(500, message='Error')
 
 class AdminQuestionTodayList(AdminProtectedResource):
     @login_required
@@ -284,5 +329,8 @@ class AdminQuestionTodayList(AdminProtectedResource):
         try:
             return admin_controllers.get_questions_asked_today(args['user_id'], args['offset'], args['limit'])
         except Exception as e:
-            print e
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message='Error')
         
