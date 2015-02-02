@@ -31,7 +31,7 @@ def get_fb_data(access_token):
         profile = graph.get_object("me")
         user_data = {
             'social_id' : profile.get('id'),
-            'email' : profile.get('email')
+            'email' : profile.get('email', '{username}@facebook.com'.format(username=profile['username']))
         }
         if (profile.get('name')):
             user_data['full_name'] = profile.get('name')
