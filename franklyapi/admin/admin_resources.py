@@ -96,7 +96,7 @@ class AdminUserAdd(AdminProtectedResource):
 
 class AdminPostEdit(AdminProtectedResource):
     @login_required
-    def get(self):
+    def post(self):
         arg_parser = reqparse.RequestParser()
         arg_parser.add_argument('post_id', type=int, default=0, location='forms')
         arg_parser.add_argument('video', type=file, default=10, location='files')
