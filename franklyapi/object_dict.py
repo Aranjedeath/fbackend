@@ -97,12 +97,13 @@ def guest_user_to_dict(user, current_user_id, cur_user_interest_tags=None):
     }
     if user_dict['profile_video']:
         user_dict['answer_count'] = user_dict['answer_count']+1
-    
+    '''
     if user.username.lower() in ['arvindkejriwal', 'kiranbedi', 'ajaymaken', 'javedakhtar']:
         profile_videos = {}
         for key, value in user_dict['profile_videos'].items():
             profile_videos[key] = value.replace('http://d35wlof4jnjr70.cloudfront.net', 'http://storage.googleapis.com')
         user_dict['profile_videos'] = profile_videos
+    '''
     return user_dict
 
 def search_user_to_dict(user, current_user_id = None):
