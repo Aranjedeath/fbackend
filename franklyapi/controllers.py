@@ -119,7 +119,7 @@ def make_username(email, full_name=None, social_username=None):
                 username = username+str(random.randint(0, 9000))
 
     if not uname_valid:
-        suffix = random.choice(['red', 'big', 'small', 'pink', 'thin', 'smart', 'genius', 'black', 'evil'])
+        suffix = random.choice(['red', 'big', 'small', 'pink', 'thin', 'smart', 'genius', 'black', 'evil', 'purple'])
         prefix = random.choice(['tomato', 'potato', 'cup', 'rabbit', 'bowl', 'book', 'ball', 'wall', 'chocolate'])
         username = '%s_%s'%(suffix,prefix)
         num_of_attempt = 0
@@ -316,15 +316,20 @@ def has_blocked(cur_user_id, user_id):
 
 
 def get_user_stats(user_id):
-    following_count = get_following_count(user_id)
+    following_count = 0#get_following_count(user_id)
     follower_count  = get_follower_count(user_id)
-    view_count      = get_user_view_count(user_id)
+    view_count      = get_user_view_count(user_id, follower_count=follower_count)
     answer_count    = get_answer_count(user_id)
 
     inflated_stat = InflatedStat.query.filter(InflatedStat.user==user_id).first()
     if inflated_stat:
-        view_count += inflated_stat.view_count
         follower_count += inflated_stat.follower_count
+        view_count += inflated_stat.view_count
+
+    if view_count < like_count:
+        view_count += like_count + random.randint(50, 200)
+
+        
 
     return {
             'following_count':following_count,
@@ -336,13 +341,16 @@ def get_user_stats(user_id):
 
 def get_post_stats(post_id):
     like_count = get_post_like_count(post_id)
-    view_count = get_post_view_count(post_id, like_count=like_count)
+    view_count = get_post_view_count(post_id)
     comment_count = get_comment_count(post_id)
 
     inflated_stat = InflatedStat.query.filter(InflatedStat.post==post_id).first()
     if inflated_stat:
         view_count += inflated_stat.view_count
         like_count += inflated_stat.like_count
+
+    if view_count < like_count:
+        view_count += like_count + random.randint(50, 200)
 
     return {
             'view_count':view_count,
@@ -426,13 +434,8 @@ def is_reshared(post_id, user_id):
 def get_comment_count(post_id):
     return Comment.query.filter(Comment.on_post==post_id, Comment.deleted==False).count()
 
-def get_post_view_count(post_id, like_count=0):
+def get_post_view_count(post_id):
     view_count = Post.query.with_entities('view_count').filter(Post.id==post_id).one().view_count
-    inflated_stat = InflatedStat.query.with_entities('view_count').filter(InflatedStat.post==post_id).first()
-    if inflated_stat:
-        view_count += inflated_stat.view_count
-    if like_count > view_count:
-        view_count = like_count + random.randint(20, 100)
     return view_count
 
 def get_question_upvote_count(question_id):
