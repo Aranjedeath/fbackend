@@ -326,8 +326,8 @@ def get_user_stats(user_id):
         follower_count += inflated_stat.follower_count
         view_count += inflated_stat.view_count
 
-    if view_count < like_count:
-        view_count += like_count + random.randint(50, 200)
+    if view_count < follower_count:
+        view_count += follower_count + random.randint(50, 200)
 
         
 
