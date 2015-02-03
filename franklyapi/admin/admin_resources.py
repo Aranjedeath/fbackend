@@ -98,12 +98,10 @@ class AdminPostEdit(AdminProtectedResource):
     @login_required
     def post(self):
         arg_parser = reqparse.RequestParser()
-        arg_parser.add_argument('post_id', type=int, required=True, location='forms')
+        arg_parser.add_argument('post_id', type=int, required=True, location='form')
         arg_parser.add_argument('video', type=file, required=True, location='files')
+        args = arg_parser.parse_args()
         try:
-
-            args = arg_parser.parse_args()
-        
             return admin_controllers.post_edit(post_id=args['post_id'],
                                                 video=['video'])
         except Exception as e:
