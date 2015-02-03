@@ -104,7 +104,7 @@ def post_unanswer(post_id):
     return {'success':True}
 
 def post_edit(post_id, video, answer_type='video'):
-    post = Post.query.filter(Post.id==post_id)
+    post = Post.query.filter(Post.id==post_id).one()
     video_url, thumbnail_url = media_uploader.upload_user_video(user_id=post.answer_author, video_file=video, video_type='answer')
     Post.query.filter(Post.id==post_id).update({'media_url':video_url, 'thumbnail_url':thumbnail_url})
 
