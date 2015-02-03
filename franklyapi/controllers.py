@@ -318,7 +318,7 @@ def has_blocked(cur_user_id, user_id):
 def get_user_stats(user_id):
     following_count = 0#get_following_count(user_id)
     follower_count  = get_follower_count(user_id)
-    view_count      = get_user_view_count(user_id, follower_count=follower_count)
+    view_count      = get_user_view_count(user_id)
     answer_count    = get_answer_count(user_id)
 
     inflated_stat = InflatedStat.query.filter(InflatedStat.user==user_id).first()
