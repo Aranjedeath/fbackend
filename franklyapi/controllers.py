@@ -427,7 +427,11 @@ def get_comment_count(post_id):
     return Comment.query.filter(Comment.on_post==post_id, Comment.deleted==False).count()
 
 def get_post_view_count(post_id):
-    return random.randint(0, 100)
+    view_count = Post.query.with_entities('view_count').filter(Post.id==post_id).one().view_count
+    inflated_stat = InflatedStat.query.with_entities('view_count').filter(InflatedStat.post==post_id).first()
+    if inflated_stat:
+        view_count += inflated_stat.view_count
+    return view_count
 
 def get_question_upvote_count(question_id):
     from math import sqrt, log
@@ -747,9 +751,9 @@ def user_block(cur_user_id, user_id):
     db.session.execute(text("""UPDATE user_follows 
                                 SET user_follows.unfollowed=true
                                 WHERE (user_follows.user=:user_id 
-                                AND user_follows.follows=:cur_user_id)
+                                AND user_follows.followed=:cur_user_id)
                                 OR (user_follows.user=:cur_user_id 
-                                    AND user_follows.follows=:user_id)"""),
+                                    AND user_follows.followed=:user_id)"""),
                         params={'user_id':user_id, 'cur_user_id':user_id})
 
     db.session.execute(text(""" INSERT INTO user_blocks (user, blocked_user, unblocked)
@@ -1723,9 +1727,9 @@ def web_hiring_form(name, email, phone_num, role):
     return {'success':True}
 
 
-def view_video(url):
+def view_video(url, count=1):
     url = url.replace('http://d35wlof4jnjr70.cloudfront.net/', 'https://s3.amazonaws.com/franklyapp/')
-    redis_views.incr(url, 1)
+    redis_views.incr(url, count)
 
 def query_search(cur_user_id, query, offset, limit, version_code=None):
     results = []
