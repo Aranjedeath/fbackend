@@ -335,8 +335,8 @@ def get_user_stats(user_id):
 
 
 def get_post_stats(post_id):
-    view_count = get_post_view_count(post_id)
     like_count = get_post_like_count(post_id)
+    view_count = get_post_view_count(post_id, like_count=like_count)
     comment_count = get_comment_count(post_id)
 
     inflated_stat = InflatedStat.query.filter(InflatedStat.post==post_id).first()
@@ -426,11 +426,13 @@ def is_reshared(post_id, user_id):
 def get_comment_count(post_id):
     return Comment.query.filter(Comment.on_post==post_id, Comment.deleted==False).count()
 
-def get_post_view_count(post_id):
+def get_post_view_count(post_id, like_count=0):
     view_count = Post.query.with_entities('view_count').filter(Post.id==post_id).one().view_count
     inflated_stat = InflatedStat.query.with_entities('view_count').filter(InflatedStat.post==post_id).first()
     if inflated_stat:
         view_count += inflated_stat.view_count
+    if like_count > view_count:
+        view_count = like_count + random.randint(20, 100)
     return view_count
 
 def get_question_upvote_count(question_id):
