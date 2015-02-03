@@ -98,8 +98,8 @@ class AdminPostEdit(AdminProtectedResource):
     @login_required
     def post(self):
         arg_parser = reqparse.RequestParser()
-        arg_parser.add_argument('post_id', type=int, default=0, location='forms')
-        arg_parser.add_argument('video', type=file, default=10, location='files')
+        arg_parser.add_argument('post_id', type=int, required=True, location='forms')
+        arg_parser.add_argument('video', type=file, required=True, location='files')
         try:
 
             args = arg_parser.parse_args()
