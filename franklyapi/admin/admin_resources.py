@@ -103,7 +103,7 @@ class AdminPostEdit(AdminProtectedResource):
         args = arg_parser.parse_args()
         try:
             return admin_controllers.post_edit(post_id=args['post_id'],
-                                                video=['video'])
+                                                video=args['video'])
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])
