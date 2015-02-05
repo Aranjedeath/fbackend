@@ -83,6 +83,8 @@ api.add_resource(SearchDefault, '/search/default', '/accountsetup/follow/celebs'
 
 api.add_resource(InviteCeleb, '/invite/celeb')
 
+api.add_resource(FeedBackResponse, '/feedback')
+
 
 
 

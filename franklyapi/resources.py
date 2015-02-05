@@ -1839,7 +1839,6 @@ class TopLikedUsers(restful.Resource):
         """
         args = self.get_parser.parse_args()
         try:
-            print current_user.id
             return controllers.top_liked_users(current_user.id, count=args['count'])
         except Exception as e:
             err = sys.exc_info()
@@ -1847,6 +1846,30 @@ class TopLikedUsers(restful.Resource):
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
+class FeedBackResponse(restful.Resource):
+
+    post_parser = reqparse.RequestParser()
+    post_parser.add_argument('medium', type=str, location='json', required=True)
+    post_parser.add_argument('message', type=str, location='json', required=True)
+    post_parser.add_argument('X-Version-Code', type=str, location='headers', default=None)
 
 
+    @login_required
+    def post(self):
+        """
+        Saves users feedback (y/n)
+
+        Controller Functions Used:
+            - top_liked_users
+
+        Authentication: Required
+        """
+        args = self.post_parser.parse_args()
+        try:
+            return controllers.save_feedback_response(current_user.id, args['medium'], args['message'], args['version'])
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0], err[1], err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
 

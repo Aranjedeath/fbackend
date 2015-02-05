@@ -107,12 +107,24 @@ class Feedback(Base):
     version       = Column(String(10))
     timestamp     = Column(DateTime(), onupdate=datetime.datetime.now(), default=datetime.datetime.now())
 
-    def __init__(self, user, medium, message=None, email=None, version=None):
+    def _medium_is_valid(medium):
+        medium_components = medium.split('-')
+        if not medium_components[0] in ['android', 'ios', 'web']:
+            return False
+        if len(medium_components) != 2:
+            return False
+        return True
+
+    def __init__(self, user, medium, message=None, email=None, version=None, timestamp=datetime.datetime.now()):
+        medium = medium.lower()
+        if not _medium_is_valid(medium):
+            raise Exception('medium should be of format <platform_type>-<screen>')
         self.user    = user
         self.medium  = medium
         self.message = message
         self.email   = email
         self.version = version
+        self.timestamp = timestamp
 
     def __repr__(self):
         return '<Feedback %r:%r>' % (self.user, self.medium)

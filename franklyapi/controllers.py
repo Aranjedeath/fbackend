@@ -1904,12 +1904,34 @@ def invite_celeb(cur_user_id, invitable_id):
         print e
         return {'success':False}
 
-def top_liked_users(current_user_id, count=5):
-    liked_users_list = most_liked_users(current_user_id=str(current_user_id))
+def user_follows_list(cur_user_id):
+    follow_object_list = Follow.query.filter(Follow.user==str(cur_user_id)).all()
+    user_id_list = []
+    for follow_object in follow_object_list:
+        user_id_list.append(follow_object.followed)
+    return user_id_list
+
+def celebrity_list(count):
+    celebrity_object_list = User.query.filter(User.user_type==2)
+
+def top_liked_users(cur_user_id, count=5):
+    liked_users_list = most_liked_users(current_user_id=str(cur_user_id))
     liked_user_ids = []
+    if len(liked_users_list) < count:
+        liked_users_list.append(user_follows_list(cur_user_id))
+    # if len(liked_users_list) < count:
+    #     liked_users_list.append()
     for i in xrange(count):
         liked_user_ids.append(liked_users_list[i][0])
     return {'users': get_thumb_users(liked_user_ids).values()}
+
+def save_feedback_response(cur_user_id, medium, message, version):
+    email = User.query.filter(User.id==str(cur_user_id)).one().email
+    feedback = Feedback(user=str(cur_user_id), medium=medium, message=message, version=version)
+    db.session.add(feedback)
+    db.session.commit()
+    return {'success': True}
+
 
 
 
