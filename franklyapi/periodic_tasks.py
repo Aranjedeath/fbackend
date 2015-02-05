@@ -1,6 +1,6 @@
 from datetime import timedelta
 from celery.decorators import periodic_task
-from video_db import update_view_count_to_db, redis_data_client, update_total_view_count
+from video_db import update_view_count_to_db, redis_views, update_total_view_count
 
 from configs import config
 from celery import Celery
@@ -13,7 +13,7 @@ cel = Celery(broker=config.ASYNC_ENCODER_BROKER_URL, backend=config.ASYNC_ENCODE
 @periodic_task(run_every=timedelta(seconds=300), queue='periodic')
 def update_view_count():
     print 'started'
-    for url in redis_data_client.keys():
+    for url in redis_views.keys():
         update_view_count_to_db(url)
     print 'ended'
 
