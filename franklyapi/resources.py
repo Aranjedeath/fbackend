@@ -955,6 +955,7 @@ class PostAdd(restful.Resource):
         """
         args = self.post_parser.parse_args()
         
+        
         try:
             resp = controllers.add_video_post(current_user.id, 
                                                 question_id=args['question_id'],

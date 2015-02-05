@@ -7,7 +7,12 @@ from PIL import ImageDraw
 import shutil
 import os
 
-def overlay(bg_file,ov_bg_file,ov_static_file,ov_black_line_file,ov_black_line_ratio,out_dir,out_file,overlay_ratio=9/float(16),stext=None,stext_y_ratio=None,stext_color=None,text=None,text_y_ratio=None,text_color=None,stext_font="bariol_bold-webfont_0.ttf",text_font="bariol_bold-webfont_0.ttf",sfont_size=34,font_size=56):
+def overlay(bg_file, ov_bg_file, ov_static_file, ov_black_line_file,
+            ov_black_line_ratio, out_dir, out_file, overlay_ratio=9/float(16),
+            stext=None, stext_y_ratio=None, stext_color=None, text=None,
+            text_y_ratio=None, text_color=None, stext_font="bariol_bold-webfont_0.ttf",
+            text_font="bariol_bold-webfont_0.ttf", sfont_size=34, font_size=56):
+
     bg_im = Image.open(bg_file)
     bg_w,bg_h = bg_im.size[0],bg_im.size[1]
     background_ratio = bg_w/float(bg_h)
@@ -52,7 +57,14 @@ def overlay(bg_file,ov_bg_file,ov_static_file,ov_black_line_file,ov_black_line_r
     #canvas.save(out_dir+"/"+out_file+".png","PNG")
     canvas.save(out_dir+"/"+out_file+".jpeg","jpeg")
 
-def promo_video(in_file = "",out_file = "out.jpg",end_file = "end.mp4",final_file = "final.mp4",stext = "www.frankly.me",stext_y_ratio = 1118/float(1280),text = "/",text_y_ratio = 1100/float(1280),color = (220,92,80),scolor = (255,255,255),n = 85,n2 = 54,infold1 = 'overlay_png1',infold2 = 'overlay_png2',infold3 = 'overlay_png3',final_fold = 'final',overlay_ratio=9/float(16),transpose_command=''):
+
+def promo_video(in_file="", out_file="out.jpg", end_file="end.mp4", final_file="final.mp4",
+                stext="www.frankly.me", stext_y_ratio=1118/float(1280), text="/",
+                text_y_ratio=1100/float(1280), color=(220,92,80), scolor=(255,255,255),
+                n=85, n2=54, infold1='overlay_png1', infold2='overlay_png2',
+                infold3='overlay_png3', final_fold='final', overlay_ratio=9/float(16),
+                transpose_command=''):
+
     if(transpose_command == ''):
         transpose_command2 = ''
     else:
