@@ -1,5 +1,5 @@
 Flask==0.10.1
-Flask-Login==0.2.9
+https://github.com/tusharbabbar/flask-login/archive/master.zip
 Flask-RESTful==0.3.0
 Flask-SQLAlchemy==2.0
 Jinja2==2.7.3
