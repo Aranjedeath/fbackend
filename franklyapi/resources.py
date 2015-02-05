@@ -236,8 +236,8 @@ class UserUpdateForm(restful.Resource):
     post_parser.add_argument('first_name'     , type=str, location='form')
     post_parser.add_argument('bio'            , type=str, location='form', help="bio should be str(200)")
     post_parser.add_argument('user_title'     , type=str, location='form')
-    post_parser.add_argument('profile_picture', location='files', help="profile_picture should be an jpg/jpeg file")
-    post_parser.add_argument('profile_video'  , location='files', help="profile_video should be a .mp4 file")
+    post_parser.add_argument('profile_picture', type=file, location='files', help="profile_picture should be an jpg/jpeg file")
+    post_parser.add_argument('profile_video'  , type=file, location='files', help="profile_video should be a .mp4 file")
     
     @login_required
     def post(self, user_id):
@@ -936,7 +936,7 @@ class PostAdd(restful.Resource):
     
     post_parser = reqparse.RequestParser()
     post_parser.add_argument('question_id', type=str, required=True, location='form', help="question_id should be the id of the question to be answered")
-    post_parser.add_argument('video_media', required=True, location='files', help="video_media should be a .mp4 file")
+    post_parser.add_argument('video_media', required=True, type=file, location='files', help="video_media should be a .mp4 file")
     post_parser.add_argument('answer_type', type=str, default='video', location='form', choices=['picture', 'video', 'text'])
     post_parser.add_argument('tags'       , type=list, default=[], location='form')
     post_parser.add_argument('lat'        , type=float, default=0.0, location='form')
@@ -954,7 +954,7 @@ class PostAdd(restful.Resource):
         Authentication: Required
         """
         args = self.post_parser.parse_args()
-        
+        print args  
         
         try:
             resp = controllers.add_video_post(current_user.id, 
