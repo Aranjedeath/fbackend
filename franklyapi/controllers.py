@@ -1830,7 +1830,7 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
     filter_these_from_feeds = []
     if cur_user_id and users_in_feeds:
         filter_these_from_feeds = db.session.execute(text('SELECT followed FROM user_follows WHERE user = :cur_user_id and \
-                                                        followed in :users_in_feeds'),
+                                                        followed in :users_in_feeds and unfollowed=false'),
                                                         params = {'cur_user_id':cur_user_id,
                                                                   'users_in_feeds':users_in_feeds})
     filter_these_from_feeds = [x[0] for x in filter_these_from_feeds]

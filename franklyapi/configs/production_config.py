@@ -23,8 +23,8 @@ TWITTER_APP_SECRET = 'AAOwvDBHlci4WmJANTmgOLJg28v3HSx0SogBEfQY9TGamsF9CS'
 REDIS_HOST = 'franklyapi.wocnxz.0001.use1.cache.amazonaws.com'
 
 MYSQL_HOST = 'franklyapi.c0gm6ruawjoo.us-east-1.rds.amazonaws.com:3306'
-MYSQL_USERNAME = 'franklyapi'
-MYSQL_PASSWORD = 'Jack4Jill$'
+MYSQL_USERNAME = 'application_user'
+MYSQL_PASSWORD = 'Al@nTuring8'
 MYSQL_DATABASE_NAME = 'frankly'
 
 DATABASE_URI = 'mysql://{username}:{password}@{host}/{db_name}'.format(username=MYSQL_USERNAME, 
