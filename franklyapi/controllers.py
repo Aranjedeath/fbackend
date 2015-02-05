@@ -31,6 +31,7 @@ from object_dict import user_to_dict, guest_user_to_dict,\
 
 from video_db import add_video_to_db
 from database import get_item_id
+from trends import most_liked_users
 
 def create_event(user, action, foreign_data, event_date=datetime.date.today()):
     if not Event.query.filter(Event.user==user, Event.action==action, Event.foreign_data==foreign_data, Event.event_date==event_date).count():
@@ -1903,7 +1904,12 @@ def invite_celeb(cur_user_id, invitable_id):
         print e
         return {'success':False}
 
-
+def top_liked_users(current_user_id, count=5):
+    liked_users_list = most_liked_users(current_user_id=str(current_user_id))
+    liked_user_ids = []
+    for i in xrange(count):
+        liked_user_ids.append(liked_users_list[i][0])
+    return {'users': get_thumb_users(liked_user_ids).values()}
 
 
 
