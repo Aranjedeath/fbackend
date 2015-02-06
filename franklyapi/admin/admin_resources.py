@@ -348,4 +348,83 @@ class AdminQuestionTodayList(AdminProtectedResource):
             raygun.send(err[0],err[1],err[2])
             print traceback.format_exc(e)
             abort(500, message='Error')
+
+class AdminDeleteSearchDefaultUser(AdminProtectedResource):
+    @login_required
+    def post(self):
+        arg_parser = reqparse.RequestParser()
+        arg_parser.add_argument('category_name', type=str, required=True, location='json')
+        arg_parser.add_argument('user_id', type=str, required = True, location = 'json')
+        args = arg_parser.parse_args()
+
+        try:
+            return admin_controllers.delete_search_default_user(args['category_name'], args['user_id'])
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message='Error')
+
+class AdminUpdateSearchDefaultCategoryOrder(AdminProtectedResource):
+    @login_required
+    def post(self):
+        arg_parser = reqparse.RequestParser()
+        arg_parser.add_argument('category_name', type=str, required=True, location='json')
+        arg_parser.add_argument('cat_user_data', type=list, required = True, location = 'json')
+        args = arg_parser.parse_args()
+
+        try:
+            return admin_controllers.update_category_order_search_default(args['category_name'], args['cat_user_data'])
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message='Error')
         
+class AdminRedirectQuestion(AdminProtectedResource):
+    @login_required
+    def post(self):
+        arg_parser = reqparse.RequestParser()
+        arg_parser.add_argument('primary_question_id', type=str, required=True, location='json')
+        arg_parser.add_argument('questions_to_redirect', type=list, required = True, location = 'json')
+        args = arg_parser.parse_args()
+
+        try:
+            return admin_controllers.questions_redirect(args['primary_question_id'], args['questions_to_redirect'])
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message='Error')
+
+class AdminGetUnansweredQuestionListWithSameCount(AdminProtectedResource):
+    @login_required
+    def get(self):
+        arg_parser = reqparse.RequestParser()
+        arg_parser.add_argument('user_id', type=str, required = True, location = 'args')
+        arg_parser.add_argument('offset', type=int, default=0, location = 'args')
+        arg_parser.add_argument('limit', type=int, default=5, location = 'args')
+        args = arg_parser.parse_args()
+
+        try:
+            return admin_controllers.get_unanswered_questions_with_same_count(args['user_id'], args['offset'], args['limit'])
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message='Error')
+
+class AdminGetSimilarQuestions(AdminProtectedResource):
+    @login_required
+    def get(self):
+        arg_parser = reqparse.RequestParser()
+        arg_parser.add_argument('question_id',required=True, location='args', type=str)
+        args = arg_parser.parse_args()
+        try:
+            admin_controllers.get_similar_questions(args['question_id'])
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message='Error')
+

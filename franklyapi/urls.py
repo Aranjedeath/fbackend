@@ -160,10 +160,10 @@ api.add_resource(admin.AdminQueueDelete, '/admin/queue/delete')
 api.add_resource(admin.AdminCelebsAskedToday, '/admin/most/asked/today')
 api.add_resource(admin.AdminQuestionTodayList, '/admin/question/today/list')
 api.add_resource(admin.AdminPostEdit, '/admin/post/edit')
-
-
-
-
+api.add_resource(admin.AdminDeleteSearchDefaultUser, '/admin/search/default/delete')
+api.add_resource(admin.AdminUpdateSearchDefaultCategoryOrder, '/admin/search/default/update')
+api.add_resource(admin.AdminGetUnansweredQuestionListWithSameCount, '/admin/question/list/same')
+api.add_resource(admin.AdminGetSimilarQuestions, '/admin/question/similar')
 
 if __name__ == '__main__':
     app.run('127.0.0.1', 8000)

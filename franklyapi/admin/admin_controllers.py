@@ -157,7 +157,62 @@ def question_edit(question_id, body):
     Question.query.filter(Question.id==question_id).update({'body':body.capitalize()})
     db.session.commit()
     return {'success':True, 'question_id':question_id}
- 
+
+def question_redirect(question_ids, redirect_to):
+    Question.query.filter(Question.id.in_(question_ids)).update(Question.redirect_to == redirect_to)
+    db.session.commit() 
+    return {'success':True}
+
+
+stop_words = ["i" , "me" , "my" , "myself" , "we" , "our" , "ours" , "ourselves" , "you" , "your" , "yours" , "yourself" , "yourselves" , "he" , "him" , "his" , "himself" , "she" , "her" , "hers" , "herself" , "it" , "its" , "itself" , "they" , "them" , "their" , "theirs" , "themselves" , "what" , "which" , "who" , "whom" , "this" , "that" , "these" , "those" , "am" , "is" , "are" , "was" , "were" , "be" , "been" , "being" , "have" , "has" , "had" , "having" , "do" , "does" , "did" , "doing" , "a" , "an" , "the" , "and" , "but" , "if" , "or" , "because" , "as" , "until" , "while" , "of" , "at" , "by" , "for" , "with" , "about" , "against" , "between" , "into" , "through" , "during" , "before" , "after" , "above" , "below" , "to" , "from" , "up" , "down" , "in" , "out" , "on" , "off" , "over" , "under" , "again" , "further" , "then" , "once" , "here" , "there" , "when" , "where" , "why" , "how" , "all" , "any" , "both" , "each" , "few" , "more" , "most" , "other" , "some" , "such" , "no" , "nor" , "not" , "only" , "own" , "same" , "so" , "than" , "too" , "very" , "s" , "t" , "can" , "will" , "just" , "don" , "should" , "now"]
+
+def get_search_words(question_body):
+    search_words = filter(lambda x:x, map(lambda x:True if x not in stop_words else False, question_body))
+    return search_words
+
+def get_similar_questions(question_id):
+    question = Question.query.filter(Question.id == question_id).first()
+    search_words = get_search_words(question.body)
+    questions = Question.query.filter(Question.question_to == question.question_to, Question.body.op('regexp')('|'.join(search_words))).all()
+    result = {'questions' : [question_to_dict(q) for q in questions], 'question_id' : question_id}
+    return result
+
+def get_unanswered_questions_with_same_count(user_id, offset, limit):
+    questions = Question.query.filter(Question.user == user_id, Question.is_answered == False).offset(offset).limit(limit).all()
+    res = []
+    for question in questions:
+        search_words = get_search_words(question.body)
+        count = Question.query.filter(Question.question_to == question.question_to, Question.body.op('regexp')('|'.join(search_words))).count()
+        question_dict = question_to_dict(question)
+        question_dict['similar_questions'] = count
+        res.append(question_dict)
+    next_index = offset + limit if len(res) == limit else -1
+    return {'questions' : res, 'count' : len(res), 'next_index' : next_index}
+
+def update_category_order_search_default(category_name, user_cat_data):
+    '''
+    user_cat_data example : {
+                                'user_id' : string user id,
+                                'score' : integer score
+                            }
+    '''
+    cat_users_count = SearchDefault.query.filter(SearchDefault.category == category_name).count()
+    if not cat_users_count:
+        return {'success': False, 'message': 'cannot add categories abhi!!!'}
+    for user_data in user_cat_data:
+        s = SearchDefault.query.filter(SearchDefault.user == user_data['user_id'], SearchDefault.category == category_name).first()
+        if not s:
+            s = SearchDefault(user = user_data['user_id'],
+                              category = category_name)
+        s.score = user_data['score']
+        db.session.add(s)
+        db.session.commit()
+
+def delete_search_default_user(category_name, user_id):
+    s = SearchDefault.query.filter(SearchDefault.user == user_id, SearchDefault.category == category_name).delete()
+    db.session.commit()
+    return {'success' : True}
+        
 def get_que_order(offset = 0, limit =10 ):
     queue = CentralQueueMobile.query.order_by(CentralQueueMobile.score).all()
     result = []
@@ -259,7 +314,7 @@ def delete_from_central_queue(item_type, item_id):
 
 def get_celebs_asked_today(offset, limit):
     from datetime import datetime, timedelta
-    today = datetime.now() #+ timedelta(minutes = 330) 
+    today = datetime.now() + timedelta(minutes = 330) 
     start_time = datetime(today.year, today.month, today.day, 0 ,0 ,0)
     result = db.session.execute(text('SELECT question_to, users.id, users.username, users.first_name, users.profile_picture, users.user_type, users.user_title, count(*) from questions join users on users.id = questions.question_to where timestamp > :today group by question_to order by count(*) desc'),params={'today' :start_time })
     resp = []
@@ -271,7 +326,7 @@ def get_celebs_asked_today(offset, limit):
 
 def get_questions_asked_today(user_id, offset, limit):
     from datetime import datetime, timedelta
-    today = datetime.now() #+ timedelta(minutes = 330) 
+    today = datetime.now() + timedelta(minutes = 330) 
     start_time = datetime(today.year, today.month, today.day, 0 ,0 ,0)
     result = db.session.execute(text('SELECT * from questions where question_to = :user_id and timestamp > :today order by timestamp desc'), params={'today':start_time, 'user_id':user_id})
     resp = []
