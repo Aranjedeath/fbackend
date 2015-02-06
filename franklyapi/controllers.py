@@ -958,7 +958,7 @@ def question_list_public(current_user_id, user_id, offset, limit, version_code=N
 
     cur_user_questions = []
 
-    if offset == 0 and current_user_id and version_code>47:
+    if offset == 0 and current_user_id and version_code>46:
         cur_user_questions = Question.query.filter(Question.question_to==user_id,
                                                     Question.question_author==current_user_id,
                                                     Question.deleted==False,
@@ -1879,7 +1879,7 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
         }
 
 def search_default():
-    categories_order = ['Politicians', 'Trending Now', 'New on Frankly', 'Singers', 'Actors', 'Authors', 'Radio Jockeys', 'Chefs', 'Entrepreneurs', 'Subject Experts']
+    categories_order = ['Politicians', 'Authors', 'Trending Now', 'New on Frankly', 'Singers', 'Actors', 'Radio Jockeys', 'Chefs', 'Entrepreneurs', 'Subject Experts']
     results = {cat:[] for cat in categories_order}
 
     users = SearchDefault.query.order_by(SearchDefault.score).all()
