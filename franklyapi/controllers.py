@@ -1794,7 +1794,7 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
     print offset, limit
     from models import CentralQueueMobile, User, Question, Post
     if offset == -1:
-        return return_none_feed
+        return return_none_feed()
 
     user_time_diff = 1
     
@@ -1810,6 +1810,18 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
     
     print user_time_diff
     
+    response = []
+    if offset ==0: 
+        response.append({'type':'upload_profile_video', 'upload_profile_video':{}}) 
+        limit -= 1
+
+        append_top_usernames = [item.strip().lower() for item in append_top.split(',') if item.strip()]
+        append_top_users = User.query.filter(User.username.in_(append_top_usernames), User.profile_video!=None).all()
+        append_top_users.sort(key=lambda u:append_top_usernames.index(u.username.lower()))
+        limit -= len(append_top_users)
+
+        response = [{'type':'user', 'user': guest_user_to_dict(user, cur_user_id)} for user in append_top_users]
+   
     item_count = CentralQueueMobile.query.count()
     count_arr = IntervalCountMap.query.filter(IntervalCountMap.minutes <= user_time_diff).all()
     feeds_count = sum(map(lambda x:x.count, count_arr))
@@ -1837,19 +1849,15 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
     filter_these_from_feeds = [x[0] for x in filter_these_from_feeds]
     print filter_these_from_feeds
     print len(feeds)
-    append_top_usernames = [item.strip().lower() for item in append_top.split(',') if item.strip()]
-    append_top_users = User.query.filter(User.username.in_(append_top_usernames), User.profile_video!=None).all() if append_top_usernames else []
-    append_top_users.sort(key=lambda u:append_top_usernames.index(u.username.lower()))
-    limit -= len(append_top_users)
 
-    result = [{'type':'user', 'user': guest_user_to_dict(user, cur_user_id)} for user in append_top_users]
+    results = []
     for obj in feeds:
         print obj.user
         if obj.user:
             if obj.user in filter_these_from_feeds: continue
             user = User.query.filter(User.id == obj.user, User.profile_video != None, ~User.username.in_(append_top_usernames)).first() 
             if user:
-                result.append({'type':'user', 'user': guest_user_to_dict(user, cur_user_id)})
+                results.append({'type':'user', 'user': guest_user_to_dict(user, cur_user_id)})
                 if web:
                     questions_query = Question.query.filter(Question.question_to==obj.user, 
                                                     Question.deleted==False,
@@ -1860,23 +1868,21 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
                     questions = questions_query.order_by(Question.score.desc()
                                                 ).limit(3)
                     questions_feed = [{'type':'questions', 'questions':question_to_dict(q, cur_user_id)} for q in questions.all()]
-                    result.extend(questions_feed)
+                    results.extend(questions_feed)
         elif obj.question:
-            result.append({'type':'questions', 'questions': question_to_dict(Question.query.filter(Question.id == obj.question).first(), cur_user_id)})
+            results.append({'type':'questions', 'questions': question_to_dict(Question.query.filter(Question.id == obj.question).first(), cur_user_id)})
         else:
-            result.append({'type':'post', 'post' : post_to_dict(Post.query.filter(Post.id == obj.post).first(), cur_user_id)})
+            results.append({'type':'post', 'post' : post_to_dict(Post.query.filter(Post.id == obj.post).first(), cur_user_id)})
 
     next_index = offset + requested_limit if len(feeds) >= requested_limit else -1
     print next_index
-    result.reverse()
-#    if offset ==0:
-#        result.insert(2, {'type':'upload_profile_video', 'upload_profile_video':{}})
-#        next_index = next_index - 1
+    results.reverse()
+    response.extend(results)
     return {
             'next_index' : next_index,
-            'count' : len(result),
-            'stream' : result
-        }
+            'count' : len(response),
+            'stream' : response
+           }
 
 def search_default():
     categories_order = ['Politicians', 'Authors', 'Trending Now', 'New on Frankly', 'Singers', 'Actors', 'Radio Jockeys', 'Chefs', 'Entrepreneurs', 'Subject Experts']
