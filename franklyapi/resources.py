@@ -1346,8 +1346,8 @@ class DiscoverPost(restful.Resource):
     get_parser.add_argument('X-Deviceid'    , type=str, required=True, location='headers')
     get_parser.add_argument('visit'         , type=int, default=0, location='args', help="visit should be the time difference of the current time and user's first visit in seconds for unauthorised requests")
     get_parser.add_argument('append_top'    , type=str, default='', location='args', help="append_top should be username or comma separayed username. These users will be appended on top of the feed. Only valid when offset=0")
-    get_parser.add_argument('X-Deviceid'    , type=int, dest='device_id', location='args', help=device_id_argument_help)
-    get_parser.add_argument('X-Version-Code', type=int, dest='version_code', default=0, location='args', help="version_code of the app.")
+    get_parser.add_argument('X-Deviceid'    , type=str, dest='device_id', required=True, location='headers', help=device_id_argument_help)
+    get_parser.add_argument('X-Version-Code', type=int, dest='version_code', default=0, location='headers', help="version_code of the app.")
 
     def get(self):
         """

@@ -1790,11 +1790,16 @@ def return_none_feed():
             'stream' : []
         }
 
-def user_has_profile_video(user_id):
-    return not bool(User.query.filter(User.id==user_id, User.profile_picture!=None).count())
+def prompt_for_profile_video(user_id):
+    time_threshold = datetime.datetime.now() - datetime.timedelta(hours=48)
+    print time_threshold
+    return not bool(User.query.filter(User.id==user_id, User.user_since<time_threshold, User.profile_picture!=None).count())
 
-def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon = None, visit = None, append_top=''):
+def discover_post_in_cqm(cur_user_id, offset, limit, device_id, version_code, web = None, lat = None, lon = None, visit = None, append_top=''):
     from models import CentralQueueMobile, User, Question, Post
+    
+    device_type = get_device_type(device_id)
+
     if offset == -1:
         return return_none_feed()
 
@@ -1812,7 +1817,7 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
         
     response = []
     if offset ==0: 
-        if cur_user_id and not user_has_profile_video(cur_user_id):
+        if cur_user_id and not prompt_for_profile_video(cur_user_id) and (device_type!='android' or version_code>46):
             response.append({'type':'upload_profile_video', 'upload_profile_video':{}}) 
             limit -= 1
 
