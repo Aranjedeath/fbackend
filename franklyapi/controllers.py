@@ -1790,6 +1790,9 @@ def return_none_feed():
             'stream' : []
         }
 
+def user_has_profile_video(user_id):
+    return not bool(User.query.filter(User.id==user_id, User.profile_picture!=None).count())
+
 def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon = None, visit = None, append_top=''):
     from models import CentralQueueMobile, User, Question, Post
     if offset == -1:
@@ -1806,20 +1809,19 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
             user_time_diff = int(row[0]) + 1
     elif visit:
         user_time_diff = int(visit/60)
-    
-    print user_time_diff
-    
+        
     response = []
     if offset ==0: 
-        response.append({'type':'upload_profile_video', 'upload_profile_video':{}}) 
-        limit -= 1
+        if cur_user_id and not user_has_profile_video(cur_user_id):
+            response.append({'type':'upload_profile_video', 'upload_profile_video':{}}) 
+            limit -= 1
 
         append_top_usernames = [item.strip().lower() for item in append_top.split(',') if item.strip()]
         append_top_users = User.query.filter(User.username.in_(append_top_usernames), User.profile_video!=None).all()
         append_top_users.sort(key=lambda u:append_top_usernames.index(u.username.lower()))
         limit -= len(append_top_users)
 
-        response = [{'type':'user', 'user': guest_user_to_dict(user, cur_user_id)} for user in append_top_users]
+        response.extend([{'type':'user', 'user': guest_user_to_dict(user, cur_user_id)} for user in append_top_users])
    
     item_count = CentralQueueMobile.query.count()
     count_arr = IntervalCountMap.query.filter(IntervalCountMap.minutes <= user_time_diff).all()
@@ -1835,10 +1837,9 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
         limit = temp_offset
     temp_offset = temp_offset - limit
 
-    print 'offset , limit',temp_offset, limit
     feeds = CentralQueueMobile.query.order_by(CentralQueueMobile.score.asc()).offset(temp_offset).limit(limit).all()
     users_in_feeds = filter(lambda x:x, map(lambda x:x.user, feeds))
-    print users_in_feeds
+    
     filter_these_from_feeds = []
     if cur_user_id and users_in_feeds:
         filter_these_from_feeds = db.session.execute(text('SELECT followed FROM user_follows WHERE user = :cur_user_id and \
@@ -1849,7 +1850,7 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
 
     results = []
     for obj in feeds:
-        print obj.user
+        #print obj.user
         if obj.user:
             if obj.user in filter_these_from_feeds: continue
             user = User.query.filter(User.id == obj.user, User.profile_video != None, ~User.username.in_(append_top_usernames)).first() 

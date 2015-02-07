@@ -1358,6 +1358,7 @@ class DiscoverPost(restful.Resource):
         """
     
         args = self.get_parser.parse_args()
+        print '**ARGS', args['append_top']
 
         if 'web' in args['X-Deviceid']:
             args['web'] = True
