@@ -164,7 +164,7 @@ def get_que_order(offset = 0, limit =10 ):
     for item in queue:
         if item.user:
             user = User.query.filter(User.id == item.user).first()
-            user = search_user_to_dict(user)
+            user = thumb_user_to_dict(user)
             result.append(
                 {
                     'type' : 'user',
@@ -209,7 +209,7 @@ def get_celeb_list(offset = 0, limit = 10):
     celebs = db.session.execute('select users.id, users.username, users.first_name, users.profile_picture, users.user_type, users.user_title, central_queue_mobile.user, central_queue_mobile.day, central_queue_mobile.score from users left join central_queue_mobile on users.id = central_queue_mobile.user where users.user_type = 2 limit %s,%s'%(offset,limit))
     results = []
     for celeb in celebs:
-        user = search_user_to_dict(celeb)
+        user = thumb_user_to_dict(celeb)
         user['in_list'] = True if celeb.user else False
         user['day'] = celeb.day
         user['score'] = celeb.score
@@ -240,7 +240,7 @@ def get_celeb_search(query):
     results = []
     users = User.query.filter(search_filter, User.user_type == 2).all()
     for user in users:
-        results.append({'type':'user', 'user':search_user_to_dict(user)})
+        results.append({'type':'user', 'user':thumb_user_to_dict(user)})
     posts = Post.query.filter(Post.answer_author.in_(map(lambda x:x.id,users))).all()
     for post in posts:
         results.append({'type':'post', 'post':post_to_dict(post)})
@@ -264,7 +264,7 @@ def get_celebs_asked_today(offset, limit):
     result = db.session.execute(text('SELECT question_to, users.id, users.username, users.first_name, users.profile_picture, users.user_type, users.user_title, count(*) from questions join users on users.id = questions.question_to where timestamp > :today group by question_to order by count(*) desc'),params={'today' :start_time })
     resp = []
     for row in result:
-        user = search_user_to_dict(row)
+        user = thumb_user_to_dict(row)
         user['questions_count'] = row['count(*)']
         resp.append(user)
     return {'results':resp}
