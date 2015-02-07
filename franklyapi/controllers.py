@@ -27,7 +27,7 @@ from app import redis_client, raygun, db, redis_views
 
 from object_dict import user_to_dict, guest_user_to_dict,\
                         thumb_user_to_dict, question_to_dict, post_to_dict, comment_to_dict,\
-                        comments_to_dict, posts_to_dict, make_celeb_questions_dict, media_dict, search_user_to_dict,invitable_to_dict
+                        comments_to_dict, posts_to_dict, make_celeb_questions_dict, media_dict,invitable_to_dict
 
 from video_db import add_video_to_db
 from database import get_item_id
@@ -1760,7 +1760,7 @@ def query_search(cur_user_id, query, offset, limit, version_code=None):
     if offset == 0 and ('trending' in query.lower() or 'new on' in query.lower()):
         search_default = SearchDefault.query.filter(SearchDefault.category == query).order_by(SearchDefault.score).all()
         for s in search_default:
-            results.append({'type':'user', 'user':search_user_to_dict(User.query.filter(User.id == s.user).first(), cur_user_id)})
+            results.append({'type':'user', 'user':thumb_user_to_dict(User.query.filter(User.id == s.user).first(), cur_user_id)})
     
     
     import search
