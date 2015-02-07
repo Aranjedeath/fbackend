@@ -1923,18 +1923,26 @@ def user_follows_list(cur_user_id):
         user_id_list.append(follow_object.followed)
     return user_id_list
 
-def celebrity_list(count):
+def random_celebrity_list(count):
     celebrity_object_list = User.query.filter(User.user_type==2)
+    number_of_celebrities = celebrity_object_list.count()
+    random_number_list = random.sample(xrange(number_of_celebrities), count)
+    random_celeb_list = []
+    for random_number in random_number_list:
+        celebrity_object = celebrity_object_list[random_number]
+        random_celeb_list.append(celebrity_object_list[random_number].id)
+    return random_celeb_list
+
 
 def top_liked_users(cur_user_id, count=5):
     liked_users_list = most_liked_users(current_user_id=str(cur_user_id))
     liked_user_ids = []
-    if len(liked_users_list) < count:
-        liked_users_list.append(user_follows_list(cur_user_id))
-    # if len(liked_users_list) < count:
-    #     liked_users_list.append()
-    for i in xrange(count):
+    for i in xrange(len(liked_users_list)):
         liked_user_ids.append(liked_users_list[i][0])
+    if len(liked_user_ids) < count:
+        liked_user_ids.extend(user_follows_list(cur_user_id))
+    if len(liked_user_ids) < count:
+        liked_user_ids.extend(random_celebrity_list(count))
     return {'users': get_thumb_users(liked_user_ids).values()}
 
 def save_feedback_response(cur_user_id, medium, message, version):
