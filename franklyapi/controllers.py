@@ -1816,6 +1816,7 @@ def discover_post_in_cqm(cur_user_id, offset, limit, device_id, version_code, we
         user_time_diff = int(visit/60)
         
     response = []
+    append_top_usernames = []
     if offset ==0: 
         if cur_user_id and not prompt_for_profile_video(cur_user_id) and (device_type!='android' or version_code>46):
             response.append({'type':'upload_profile_video', 'upload_profile_video':{}}) 
@@ -1881,7 +1882,7 @@ def discover_post_in_cqm(cur_user_id, offset, limit, device_id, version_code, we
 
     results.reverse()
     response.extend(results)
-    next_index = offset + limit if len(response) >= requested_limit else -1
+    next_index = offset + limit if len(feeds) >= requested_limit else -1
     
     return {
             'next_index' : next_index,
