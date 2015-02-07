@@ -1820,11 +1820,13 @@ def discover_post_in_cqm(cur_user_id, offset, limit, device_id, version_code, we
         if cur_user_id and not prompt_for_profile_video(cur_user_id) and (device_type!='android' or version_code>46):
             response.append({'type':'upload_profile_video', 'upload_profile_video':{}}) 
             limit -= 1
+            
 
         append_top_usernames = [item.strip().lower() for item in append_top.split(',') if item.strip()]
         append_top_users = User.query.filter(User.username.in_(append_top_usernames), User.profile_video!=None).all()
         append_top_users.sort(key=lambda u:append_top_usernames.index(u.username.lower()))
         limit -= len(append_top_users)
+        requested_limit = limit
 
         response.extend([{'type':'user', 'user': guest_user_to_dict(user, cur_user_id)} for user in append_top_users])
    
