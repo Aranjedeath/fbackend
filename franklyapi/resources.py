@@ -1569,10 +1569,14 @@ class SearchDefault(restful.Resource):
         Controller Functions Used:
             - search_default
 
-        Authentication: None
+        Authentication: Optional
         """
         try:
-            return controllers.search_default()
+            current_user_id = None
+            if current_user.is_authenticated():
+                current_user_id = current_user.id
+
+            return controllers.search_default(cur_user_id=current_user_id)
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])

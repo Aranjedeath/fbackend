@@ -1791,7 +1791,6 @@ def return_none_feed():
         }
 
 def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon = None, visit = None, append_top=''):
-    print offset, limit
     from models import CentralQueueMobile, User, Question, Post
     if offset == -1:
         return return_none_feed()
@@ -1847,8 +1846,6 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
                                                         params = {'cur_user_id':cur_user_id,
                                                                   'users_in_feeds':users_in_feeds})
     filter_these_from_feeds = [x[0] for x in filter_these_from_feeds]
-    print filter_these_from_feeds
-    print len(feeds)
 
     results = []
     for obj in feeds:
@@ -1874,17 +1871,17 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
         else:
             results.append({'type':'post', 'post' : post_to_dict(Post.query.filter(Post.id == obj.post).first(), cur_user_id)})
 
-    next_index = offset + requested_limit if len(feeds) >= requested_limit else -1
-    print next_index
     results.reverse()
     response.extend(results)
+    next_index = offset + limit if len(response) >= requested_limit else -1
+    
     return {
             'next_index' : next_index,
             'count' : len(response),
             'stream' : response
            }
 
-def search_default():
+def search_default(cur_user_id=None):
     categories_order = ['Politicians', 'Authors', 'Trending Now', 'New on Frankly', 'Singers', 'Actors', 'Radio Jockeys', 'Chefs', 'Entrepreneurs', 'Subject Experts']
     results = {cat:[] for cat in categories_order}
 
@@ -1892,7 +1889,7 @@ def search_default():
     for item in users:
         user = User.query.filter(User.id==item.user).first()
         if user:
-            results[item.category].append(thumb_user_to_dict(user))
+            results[item.category].append(thumb_user_to_dict(user, cur_user_id))
 
     resp = []
     for cat in categories_order:
