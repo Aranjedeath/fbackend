@@ -19,7 +19,6 @@ import social_helpers
 
 from configs import config
 from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
-                    Question, Upvote, Comment, ForgotPasswordToken, Install, Video,\
                     UserFeed, Event, Reshare, Invitable, Invite, ContactUs, InflatedStat,\
                     SearchDefault, IntervalCountMap
 
@@ -1622,14 +1621,141 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
     except NoResultFound:
         raise CustomExceptions.ObjectNotFoundException("Question not available for action")
 
+def notification_to_dict(notification):
+    read = False
+    if notification.read_time:
+        read = True
+
+    data = {
+        'id' : str(notification.id),
+        'user_to' : str(notification.user_to.id),
+        'type' : notification.notification_type,
+        'text' : notification.text,
+        'timestamp' : timegm(notification.timestamp.utctimetuple()),
+        'entity_id' : notification.entity_id,
+        'sub_entity_id' : notification.sub_entity_id,
+        'deeplink' : notification.deeplink,
+        'read': read
+    }
+    if notification.user_from:
+        data['user_from'] = thumb_user_to_dict(notification.user_from)
+
+    if notification.notification_type == 'question_ask':
+        question = Question.objects.get(id=notification.entity_id)
+        if question.is_anonymous:
+            data['user_from'] = {
+                'username' : 'Anonymous'  
+            }
+            data['text'] = 'Someone asked you an anonymous question'
+    return data
+
+def update_required(device_type, version_code):
+    should_update = False
+    if device_type == 'ios':
+        should_update = version_code < config.CURRENT_IOS_VERSION_CODE    
+    if device_type == 'android':
+        should_update = version_code < config.CURRENT_ANDROID_VERSION_CODE
+
+    return should_update
 
 
-def get_notifications(cur_user_id, notification_category, offset, limit):
-    #TODO: Fix this dummy function.
-    return {'notifications':[], 'count':0, 'next_index':-1}
+def get_notifications(cur_user_id, device_id, version_code, notification_category, offset, limit):
+    original_limit = limit
 
-def get_notification_count(cur_user_id):
-    return 0
+    device_type = get_device_type(device_id)
+    
+    if device_type == 'ios':
+        playstore_link = config.IOS_APPSTORE_LINK
+    
+    if device_type == 'android':
+        app_store_link = config.ANDROID_APPSTORE_LINK
+
+    
+
+    notifications = []
+    if update_required(device_type, version_code):
+
+        update_notification = {
+                                    "user_to" : cur_user_id,
+                                    "type" : 1,
+                                    "id" : 'update_required_ios',
+                                    "text" : "A new version of Frankly.me is available. Click here to update.",
+                                    "icon" : default_icons['frankly_icon'],
+                                    "group_id": 'update_required',
+                                    "link" : app_store_link,
+                                    "deeplink" : app_store_link,
+                                    "timestamp" : datetime.datetime.now(),
+                                    "seen" : False
+                                }
+        notifications.append(update_notification)
+        limit -= 1    
+
+    results = db.session.execute(text("""SELECT notifications.id, notifications.text, 
+                                                notifications.icon, notifications.type,
+                                                notifications.object_id, notifications.link,
+                                                user_notifications.added_at
+                                            FROM notifications, user_notifications 
+                                            WHERE user_notifications.user_id = :cur_user_id,
+                                                    user_notifications.list_type = :list_type
+                                            ORDER BY user_notifications.added_at 
+                                            GROUP BY notifications.type,notification.object_id
+                                        """),
+                                    params = {'cur_user_id':cur_user_id,
+                                                'list_type':list_type,
+                                                'limit':limit,
+                                                'offset':offset
+                                            }
+                                    )
+    
+    from collections import defaultdict
+    icon_object_ids = defaultdict(list)
+    icons = {}
+    
+    for row in result:
+        notification = {
+                        "user_to" : cur_user_id,
+                        "type" : 1,
+                        "id" : row[0],
+                        "text" : row[1],
+                        "icon" : row[2],
+                        "group_id": str(row[3])+str(row[4]),
+                        "link" : row[5],
+                        "deeplink" : row[5],
+                        "timestamp" : row[6],
+                        "seen" : row[7]
+                        }
+        notifications.append(notification)
+        icon_data = notification['icon'].split('-')
+        if icon_data[0] not in ['url', 'default']:
+            icon_object_ids[icon_data[1]].append(icon_data[3])
+
+    if icon_object_ids['user']:
+        icons['user'] = icons{u.id:{'profile_picture':u.profile_picture, 'cover_picture':u.cover_picture} for u in User.query.with_entities('profile_picture', 'cover_picture').filter(User.id.in_(icon_object_ids['user'])).all()}
+    if icon_object_ids['post']:
+        icons['post'] = {p.id:{'thumbnail_url':p.thumbnail_url} for p in Post.query.with_entities('thumbnail_url').filter(Post.id.in_(icon_object_ids['post'])).all()}
+
+    for notification in notifications:
+        icon_data = notification['icon'].split('-')
+        if icon_data[0] == 'default':
+            notification['icon'] = default_icons[icon_data[3]]
+        if icon_data[0] == 'url':
+            notification['icon'] = icon_data[3]
+        else:
+            notification['icon'] = icons[icon_data[1]][icon_data[3]][icon_data[2]]
+
+    count = len(notifications)
+    next_index = -1 if count<original_limit else offset+limit
+
+    return {'notifications':notifications, 'count':count, 'next_index':next_index}
+
+
+def get_notification_count(cur_user_id, device_id, version_code):
+    count = 0
+    device_type = get_device_type(device_id)
+    if update_required(device_type, version_code):
+
+    
+    
 
 def logout(access_token, device_id):
     from app import redis_client

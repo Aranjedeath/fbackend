@@ -10,6 +10,7 @@ PORT = 8000
 PROPOGATE_EXCEPTIONS = True
 
 RAYGUN_KEY = "hAmfuTIzQ8jYdMiQdh1fug=="
+
 #Raygun username and password is used for documentation
 RAYGUN_USERNAME = "frankly1@mailinator.com" 
 RAYGUN_PASSWORD = "dexter123"
@@ -49,6 +50,10 @@ SPREADSHEET_EMAIL = 'tempuser@frankly.me'
 SPREADSHEET_PASSWORD = 'franklydocs'
 
 DEFAULT_BIO = "Ask me anything for video replies."
+
+GCM_API_KEY = 'AIzaSyBKa5pjzTdbdLwMcYkic1yK1q_fbHljbxY'
+
+
 
 HOSTNAME = socket.gethostname()
 
