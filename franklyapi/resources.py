@@ -1859,7 +1859,7 @@ class FeedBackResponse(restful.Resource):
     post_parser = reqparse.RequestParser()
     post_parser.add_argument('medium', type=str, location='json', required=True)
     post_parser.add_argument('message', type=str, location='json', required=True)
-    post_parser.add_argument('X-Version-Code', type=str, location='headers', default=None)
+    post_parser.add_argument('X-Version-Code', dest='version_code', type=str, location='headers', default=None)
 
 
     @login_required
@@ -1874,7 +1874,7 @@ class FeedBackResponse(restful.Resource):
         """
         args = self.post_parser.parse_args()
         try:
-            return controllers.save_feedback_response(current_user.id, args['medium'], args['message'], args['version'])
+            return controllers.save_feedback_response(current_user.id, args['medium'], args['message'], args['version_code'])
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0], err[1], err[2])
