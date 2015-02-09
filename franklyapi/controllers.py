@@ -2045,31 +2045,31 @@ def invite_celeb(cur_user_id, invitable_id):
         print e
         return {'success':False}
 
-def user_follows_list(cur_user_id):
-    follow_object_list = Follow.query.filter(Follow.user==str(cur_user_id)).all()
+def user_follows_list(cur_user_id, count):
+    follow_object_list = Follow.query.filter(Follow.user==str(cur_user_id)).limit(count).all()
     user_id_list = []
     for follow_object in follow_object_list:
         user_id_list.append(follow_object.followed)
     return user_id_list
 
 def random_celebrity_list(count):
-    celebrity_object_list = User.query.filter(User.user_type==2)
-    number_of_celebrities = celebrity_object_list.count()
-    random_number_list = random.sample(xrange(number_of_celebrities), count)
+    offst = random.randint(0, 100)
+    celebrity_object_list = User.query.filter(User.user_type==2).offset(offst).limit(count)
     random_celeb_list = []
-    for random_number in random_number_list:
-        celebrity_object = celebrity_object_list[random_number]
-        random_celeb_list.append(celebrity_object_list[random_number].id)
+    for celebrity_object in celebrity_object_list:
+        random_celeb_list.append(celebrity_object.id)
     return random_celeb_list
 
 
 def top_liked_users(cur_user_id, count=5):
+    if count > 20:
+        count = 20
     liked_users_list = most_liked_users(current_user_id=str(cur_user_id))
     liked_user_ids = []
     for i in xrange(len(liked_users_list)):
         liked_user_ids.append(liked_users_list[i][0])
     if len(liked_user_ids) < count:
-        liked_user_ids.extend(user_follows_list(cur_user_id))
+        liked_user_ids.extend(user_follows_list(cur_user_id, count))
     if len(liked_user_ids) < count:
         liked_user_ids.extend(random_celebrity_list(count))
     return {'users': get_thumb_users(liked_user_ids).values()}
