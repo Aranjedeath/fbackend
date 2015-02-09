@@ -116,6 +116,7 @@ class UserPushNotification(Base):
 
 class UserNotificationInfo(Base):
     __tablename__                = 'user_notification_info'
+    __table_args__               = (UniqueConstraint('user_id', 'device_type'),)
     id                           = Column(Integer(), primary_key=True)
     user_id                      = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
     device_type                  = Column(Enum('ios', 'android', 'web'), nullable=False)
