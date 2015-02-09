@@ -8,6 +8,7 @@ class Notification(Base):
     id            = Column(CHAR(32), primary_key=True, default=get_item_id())
     type          = Column(String(30), nullable=False)
     link          = Column(String(200), nullable=False)
+    text          = Column(String(300), nullable=False)
     object_id     = Column(CHAR(32), nullable=False)
     icon          = Column(String(100), nullable=False)
     created_at    = Column(DateTime(), default=datetime.datetime.now())
@@ -28,7 +29,7 @@ class Notification(Base):
         return True
 
 
-    def __init__(self, type, link, object_id, icon, created_at=datetime.datetime.now(), manual=False, id=get_item_id()):
+    def __init__(self, type, text, link, object_id, icon, created_at=datetime.datetime.now(), manual=False, id=get_item_id()):
         if not self._type_is_valid(type):
             raise Exception('type should be of format <object>-<action>')
         if not self._icon_is_valid(type):
@@ -36,6 +37,7 @@ class Notification(Base):
 
         self.id         = id
         self.type       = type
+        self.text       = text
         self.link       = link
         self.object_id  = object_id
         self.icon       = icon,
@@ -49,6 +51,7 @@ class Notification(Base):
 
 class UserNotification(Base):
     __tablename__   = 'user_notifications'
+    __table_args__  = (UniqueConstraint('user_id', 'notification_id'),)
     id              = Column(CHAR(32), primary_key=True, default=get_item_id())
     notification_id = Column(CHAR(32), ForeignKey('notifications.id'), nullable=False)
     user_id         = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
@@ -56,20 +59,22 @@ class UserNotification(Base):
     seen_at         = Column(DateTime())
     seen_type       = Column(String(10))
     list_type       = Column(String(10), default='me')
+    push_to         = Column(Enum('android', 'ios', 'web', 'all', 'mobile'), default='all')
     added_at        = Column(DateTime(), default=datetime.datetime.now())
 
 
     def __init__(self, notification_id, user_id, list_type, push_at=datetime.datetime.now(),
                         seen_at=None, seen_type=None,
-                        added_at=datetime.datetime.now(), id=get_item_id()):
+                        added_at=datetime.datetime.now(), push_to='all', id=get_item_id()):
         self.id              = id
         self.notification_id = notification_id
         self.user_id         = user_id
         self.push_at         = push_at
+        self.list_type       = list_type
         self.seen_at         = seen_at
         self.seen_type       = seen_type
         self.added_at        = added_at
-
+        self.push_to         = push_to
 
     def __repr__(self):
         return '<UserNotification %r:%r>' % (self.user_id, self.notification_id)
@@ -87,11 +92,12 @@ class UserPushNotification(Base):
     clicked_at      = Column(String(10))
     source          = Column(String(10), default='application')
     cancelled       = Column(Boolean(), default=False)
+    result          = Column(String(100))
 
 
     def __init__(self, notification_id, user_id, device_id, push_id,
                         added_at=datetime.datetime.now(), pushed_at=None, clicked_at=None,
-                        source='application', cancelled=False, id=get_item_id()):
+                        source='application', cancelled=False, result=None, id=get_item_id()):
         self.id              = id
         self.notification_id = notification_id
         self.user_id         = user_id
@@ -102,7 +108,29 @@ class UserPushNotification(Base):
         self.clicked_at      = clicked_at
         self.source          = source
         self.cancelled       = cancelled
+        self.result          = result
 
 
     def __repr__(self):
         return '<UserPushNotification %r:%r:%r>' % (self.notification_id, self.device_id, self.pushed_at)
+
+class UserNotificationInfo(Base):
+    __tablename__                = 'user_notification_info'
+    id                           = Column(Integer(), primary_key=True)
+    user_id                      = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
+    device_type                  = Column(Enum('ios', 'android', 'web'), nullable=False)
+    last_notification_fetch_time = Column(DateTime(), default=datetime.datetime.now())
+    last_notification_push_time  = Column(DateTime())
+
+
+    def __init__(self, user_id, device_type, last_notification_fetch_time=datetime.datetime.now(),
+                                            last_notification_push_time=datetime.datetime.now()):
+        self.user_id                      = user_id
+        self.device_type                  = device_type
+        self.last_notification_push_time  = last_notification_push_time
+        self.last_notification_fetch_time = last_notification_fetch_time
+
+    def __repr__(self):
+        return '<UserNotificationInfo %r:%r>' % (self.user_id, self.device_type)
+
+

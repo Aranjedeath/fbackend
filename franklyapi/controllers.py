@@ -41,22 +41,19 @@ def check_access_token(access_token, device_id):
     try:
         print access_token, device_id
         device_type = get_device_type(device_id)
-        user_id = None
+        user = None
+        
         if device_type == 'web':
             user_id = redis_client.get(access_token)
-            print 'REDIS USER', user_id
-            return User.query.get(user_id) if user_id else None
+            user = User.query.filter(User.id==user_id).first()
 
-        access_token_object = AccessToken.query.filter(AccessToken.access_token==access_token,
+        else:
+            user = User.query.join(AccessToken, AccessToken.user==User.id
+                                            ).filter(AccessToken.access_token==access_token,
                                                         AccessToken.device_id==device_id,
-                                                        AccessToken.active==True).one()
-
-        user_id = access_token_object.user
-        user = User.query.get(user_id)
-        print 'LOGGED IN USER', user.username
+                                            ).first()
         return user
-    except NoResultFound:
-        return None
+    
     except Exception as e:
         err = sys.exc_info()
         raygun.send(err[0],err[1],err[2])
@@ -1622,34 +1619,6 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
     except NoResultFound:
         raise CustomExceptions.ObjectNotFoundException("Question not available for action")
 
-def notification_to_dict(notification):
-    read = False
-    if notification.read_time:
-        read = True
-
-    data = {
-        'id' : str(notification.id),
-        'user_to' : str(notification.user_to.id),
-        'type' : notification.notification_type,
-        'text' : notification.text,
-        'timestamp' : timegm(notification.timestamp.utctimetuple()),
-        'entity_id' : notification.entity_id,
-        'sub_entity_id' : notification.sub_entity_id,
-        'deeplink' : notification.deeplink,
-        'read': read
-    }
-    if notification.user_from:
-        data['user_from'] = thumb_user_to_dict(notification.user_from)
-
-    if notification.notification_type == 'question_ask':
-        question = Question.objects.get(id=notification.entity_id)
-        if question.is_anonymous:
-            data['user_from'] = {
-                'username' : 'Anonymous'  
-            }
-            data['text'] = 'Someone asked you an anonymous question'
-    return data
-
 def update_required(device_type, version_code):
     should_update = False
     if device_type == 'ios':
@@ -1694,12 +1663,15 @@ def get_notifications(cur_user_id, device_id, version_code, notification_categor
     results = db.session.execute(text("""SELECT notifications.id, notifications.text, 
                                                 notifications.icon, notifications.type,
                                                 notifications.object_id, notifications.link,
-                                                user_notifications.added_at
-                                            FROM notifications, user_notifications 
+                                                user_notifications.added_at, user_notifications.seen_at
+                                            FROM notifications JOIN user_notifications
+                                                ON notifications.id = user_notifications.notification_id
                                             WHERE user_notifications.user_id = :cur_user_id,
                                                     user_notifications.list_type = :list_type
+                                                    user_notifications.device_type
                                             ORDER BY user_notifications.added_at 
                                             GROUP BY notifications.type,notification.object_id
+                                            LIMIT :offset,:limit
                                         """),
                                     params = {'cur_user_id':cur_user_id,
                                                 'list_type':list_type,
@@ -1723,7 +1695,7 @@ def get_notifications(cur_user_id, device_id, version_code, notification_categor
                         "link" : row[5],
                         "deeplink" : row[5],
                         "timestamp" : row[6],
-                        "seen" : row[7]
+                        "seen" : bool(row[7])
                         }
         notifications.append(notification)
         icon_data = notification['icon'].split('-')
@@ -1731,9 +1703,9 @@ def get_notifications(cur_user_id, device_id, version_code, notification_categor
             icon_object_ids[icon_data[1]].append(icon_data[3])
 
     if icon_object_ids['user']:
-        icons['user'] = icons{u.id:{'profile_picture':u.profile_picture, 'cover_picture':u.cover_picture} for u in User.query.with_entities('profile_picture', 'cover_picture').filter(User.id.in_(icon_object_ids['user'])).all()}
+        icons['user'] = {u.id: {'profile_picture':u.profile_picture, 'cover_picture':u.cover_picture} for u in User.query.with_entities('profile_picture', 'cover_picture').filter(User.id.in_(icon_object_ids['user'])).all()}
     if icon_object_ids['post']:
-        icons['post'] = {p.id:{'thumbnail_url':p.thumbnail_url} for p in Post.query.with_entities('thumbnail_url').filter(Post.id.in_(icon_object_ids['post'])).all()}
+        icons['post'] = {p.id: {'thumbnail_url':p.thumbnail_url} for p in Post.query.with_entities('thumbnail_url').filter(Post.id.in_(icon_object_ids['post'])).all()}
 
     for notification in notifications:
         icon_data = notification['icon'].split('-')
@@ -1754,9 +1726,40 @@ def get_notification_count(cur_user_id, device_id, version_code):
     count = 0
     device_type = get_device_type(device_id)
     if update_required(device_type, version_code):
+        count += 1
 
-    
-    
+    last_fetch_time = datetime.datetime.now() - datetime.timedelta(days=100)
+    last_fetch_time_query = ''
+    results = db.session.execute(text("""SELECT user_notification_info.last_notification_fetch_time 
+                                        FROM user_notification_info 
+                                        WHERE user_id == :cur_user_id
+                                        ORDER_BY user_notification_info.last_notification_fetch_time
+                                        LIMIT 0,1
+                                    """), params={'cur_user_id':cur_user_id}
+                                )
+    for row in results:
+        last_fetch_time = row[0]
+
+
+    results = db.session.execute(text("""SELECT count(notifications.id)
+                                        FROM notifications JOIN user_notifications
+                                            ON notifications.id = user_notifications.notification_id
+                                        WHERE user_notifications.user_id = :cur_user_id
+                                        AND user_notifications.seen_at = null
+                                        AND user_notifications.added_at > :last_fetch_time
+                                        ORDER BY user_notifications.added_at 
+                                        GROUP BY notifications.type,notification.object_id
+                                        LIMIT :offset,:limit
+                                    """),
+                                params = {'cur_user_id':cur_user_id,
+                                            'limit':limit,
+                                            'offset':offset,
+                                            'last_fetch_time':last_fetch_time
+                                        }
+                                )
+    for row in result:
+        count += row[0]
+    return count
 
 def logout(access_token, device_id):
     from app import redis_client
