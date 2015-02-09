@@ -123,7 +123,7 @@ def makeFinalPromo(answer_author_name,video_file_path,question,question_author_u
 	fontfaceItalics = "Bariol_Regular_Italic.otf"
 
 	fadeimage_filename = "fade1.png"
-	celebPicQ.path = "ak.jpeg" #.png"
+	celebPicQ.path = answer_author_image_filepath
 	framesFolder = "final"
 	bgQ.file="snapshot.png"
 	referencepic = "bg1.png"
