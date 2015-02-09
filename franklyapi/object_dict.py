@@ -137,7 +137,6 @@ def thumb_user_to_dict(user, current_user_id=None):
         'first_name': user.first_name,
         'last_name': None,
         'profile_picture': user.profile_picture,
-        'deleted': user.deleted,
         'gender':user.gender,
         'user_type':user.user_type,
         'bio' : user.bio or config.DEFAULT_BIO,
