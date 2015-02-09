@@ -953,7 +953,7 @@ class PostAdd(restful.Resource):
         Authentication: Required
         """
         args = self.post_parser.parse_args()
-        
+        print args  
         
         try:
             resp = controllers.add_video_post(current_user.id, 
@@ -1338,14 +1338,16 @@ class TimelineHome(restful.Resource):
 class DiscoverPost(restful.Resource):
 
     get_parser = reqparse.RequestParser()
-    get_parser.add_argument('offset'    , type=int, default=0, location='args')
-    get_parser.add_argument('limit'     , type=int, default=10, location='args')
-    get_parser.add_argument('lat'       , type=float, location='args')
-    get_parser.add_argument('lon'       , type=float, location='args')
-    get_parser.add_argument('X-Deviceid', type=str, required=True, location='headers')
-    get_parser.add_argument('visit'     , type=int, default=0, location='args', help="visit should be the time difference of the current time and user's first visit in seconds for unauthorised requests")
-    get_parser.add_argument('append_top', type=str, default='', location='args', help="append_top should be username or comma separayed username. These users will be appended on top of the feed. Only valid when offset=0")
-    
+    get_parser.add_argument('offset'        , type=int, default=0, location='args')
+    get_parser.add_argument('limit'         , type=int, default=10, location='args')
+    get_parser.add_argument('lat'           , type=float, location='args')
+    get_parser.add_argument('lon'           , type=float, location='args')
+    get_parser.add_argument('X-Deviceid'    , type=str, required=True, location='headers')
+    get_parser.add_argument('visit'         , type=int, default=0, location='args', help="visit should be the time difference of the current time and user's first visit in seconds for unauthorised requests")
+    get_parser.add_argument('append_top'    , type=str, default='', location='args', help="append_top should be username or comma separayed username. These users will be appended on top of the feed. Only valid when offset=0")
+    get_parser.add_argument('X-Deviceid'    , type=str, dest='device_id', required=True, location='headers', help=device_id_argument_help)
+    get_parser.add_argument('X-Version-Code', type=int, dest='version_code', default=0, location='headers', help="version_code of the app.")
+
     def get(self):
         """
         Returns the discover feed.
@@ -1371,6 +1373,8 @@ class DiscoverPost(restful.Resource):
             resp = controllers.discover_post_in_cqm(cur_user_id=current_user_id,
                                                 offset=args['offset'],
                                                 limit=args['limit'],
+                                                device_id=args['device_id'],
+                                                version_code=args['version_code'],
                                                 web = args.get('web'),
                                                 append_top = args['append_top'],
                                                 visit=args['visit'])
@@ -1568,10 +1572,14 @@ class SearchDefault(restful.Resource):
         Controller Functions Used:
             - search_default
 
-        Authentication: None
+        Authentication: Optional
         """
         try:
-            return controllers.search_default()
+            current_user_id = None
+            if current_user.is_authenticated():
+                current_user_id = current_user.id
+
+            return controllers.search_default(cur_user_id=current_user_id)
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])
@@ -1814,6 +1822,58 @@ class InviteCeleb(restful.Resource):
         args = self.invite_parser.parse_args()
         try:
             return controllers.invite_celeb(current_user.id, args['invitable_id'])
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0], err[1], err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
+
+
+class TopLikedUsers(restful.Resource):
+
+    get_parser = reqparse.RequestParser()
+    get_parser.add_argument('count', type=int, location='args', default=5)
+
+    @login_required
+    def get(self):
+        """
+        Returns top users who are liked by the current user
+
+        Controller Functions Used:
+            - top_liked_users
+
+        Authentication: Required
+        """
+        args = self.get_parser.parse_args()
+        try:
+            return controllers.top_liked_users(current_user.id, count=args['count'])
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0], err[1], err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
+
+class FeedBackResponse(restful.Resource):
+
+    post_parser = reqparse.RequestParser()
+    post_parser.add_argument('medium', type=str, location='json', required=True)
+    post_parser.add_argument('message', type=str, location='json', required=True)
+    post_parser.add_argument('X-Version-Code', type=str, location='headers', default=None)
+
+
+    @login_required
+    def post(self):
+        """
+        Saves users feedback (y/n)
+
+        Controller Functions Used:
+            - top_liked_users
+
+        Authentication: Required
+        """
+        args = self.post_parser.parse_args()
+        try:
+            return controllers.save_feedback_response(current_user.id, args['medium'], args['message'], args['version'])
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0], err[1], err[2])

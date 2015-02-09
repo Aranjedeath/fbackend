@@ -27,6 +27,8 @@ api.add_resource(UserLocation, '/user/location')
 api.add_resource(UpdatePushId, '/update/push_id')
 api.add_resource(UserUpdateToken, '/user/update_token')
 
+api.add_resource(TopLikedUsers, '/user/top_liked_users')
+
 
 api.add_resource(QuestionAsk, '/question/ask')
 api.add_resource(QuestionView, '/question/view/<question_id>')
@@ -80,6 +82,8 @@ api.add_resource(Search, '/search')
 api.add_resource(SearchDefault, '/search/default', '/accountsetup/follow/celebs')
 
 api.add_resource(InviteCeleb, '/invite/celeb')
+
+api.add_resource(FeedBackResponse, '/feedback')
 
 
 
@@ -156,10 +160,10 @@ api.add_resource(admin.AdminQueueDelete, '/admin/queue/delete')
 api.add_resource(admin.AdminCelebsAskedToday, '/admin/most/asked/today')
 api.add_resource(admin.AdminQuestionTodayList, '/admin/question/today/list')
 api.add_resource(admin.AdminPostEdit, '/admin/post/edit')
-
-
-
-
+api.add_resource(admin.AdminDeleteSearchDefaultUser, '/admin/search/default/delete')
+api.add_resource(admin.AdminUpdateSearchDefaultCategoryOrder, '/admin/search/default/update')
+api.add_resource(admin.AdminGetUnansweredQuestionListWithSameCount, '/admin/question/list/same')
+api.add_resource(admin.AdminGetSimilarQuestions, '/admin/question/similar')
 
 if __name__ == '__main__':
     app.run('127.0.0.1', 8000)

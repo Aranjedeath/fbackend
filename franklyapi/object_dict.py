@@ -106,17 +106,6 @@ def guest_user_to_dict(user, current_user_id, cur_user_interest_tags=None):
     '''
     return user_dict
 
-def search_user_to_dict(user, current_user_id = None):
-    user_dict = {
-        'id':user.id,
-        'username':user.username,
-        'first_name':user.first_name,
-        'last_name':None,
-        'profile_picture':user.profile_picture,
-        'user_type':user.user_type,
-        'user_title':user.user_title
-    }
-    return user_dict
 
 def invitable_to_dict(invitable, current_user_id):
     from controllers import has_invited, get_invite_count
@@ -150,6 +139,7 @@ def thumb_user_to_dict(user, current_user_id=None):
         'profile_picture': user.profile_picture,
         'deleted': user.deleted,
         'gender':user.gender,
+        'user_type':user.user_type,
         'bio' : user.bio or config.DEFAULT_BIO,
         'allow_anonymous_question' : user.allow_anonymous_question,
         'location': location_dict(user.lat, user.lon, user.location_name, user.country_name, user.country_code),

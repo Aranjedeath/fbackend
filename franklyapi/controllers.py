@@ -26,10 +26,11 @@ from app import redis_client, raygun, db, redis_views
 
 from object_dict import user_to_dict, guest_user_to_dict,\
                         thumb_user_to_dict, question_to_dict, post_to_dict, comment_to_dict,\
-                        comments_to_dict, posts_to_dict, make_celeb_questions_dict, media_dict, search_user_to_dict,invitable_to_dict
+                        comments_to_dict, posts_to_dict, make_celeb_questions_dict, media_dict,invitable_to_dict
 
 from video_db import add_video_to_db
 from database import get_item_id
+from trends import most_liked_users
 
 def create_event(user, action, foreign_data, event_date=datetime.date.today()):
     if not Event.query.filter(Event.user==user, Event.action==action, Event.foreign_data==foreign_data, Event.event_date==event_date).count():
@@ -956,7 +957,7 @@ def question_list_public(current_user_id, user_id, offset, limit, version_code=N
 
     cur_user_questions = []
 
-    if offset == 0 and current_user_id and version_code>47:
+    if offset == 0 and current_user_id and version_code>46:
         cur_user_questions = Question.query.filter(Question.question_to==user_id,
                                                     Question.question_author==current_user_id,
                                                     Question.deleted==False,
@@ -1885,7 +1886,7 @@ def query_search(cur_user_id, query, offset, limit, version_code=None):
     if offset == 0 and ('trending' in query.lower() or 'new on' in query.lower()):
         search_default = SearchDefault.query.filter(SearchDefault.category == query).order_by(SearchDefault.score).all()
         for s in search_default:
-            results.append({'type':'user', 'user':search_user_to_dict(User.query.filter(User.id == s.user).first(), cur_user_id)})
+            results.append({'type':'user', 'user':thumb_user_to_dict(User.query.filter(User.id == s.user).first(), cur_user_id)})
     
     
     import search
@@ -1915,11 +1916,18 @@ def return_none_feed():
             'stream' : []
         }
 
-def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon = None, visit = None, append_top=''):
-    print offset, limit
+def prompt_for_profile_video(user_id):
+    time_threshold = datetime.datetime.now() - datetime.timedelta(hours=48)
+    print time_threshold
+    return not bool(User.query.filter(User.id==user_id, User.user_since<time_threshold, User.profile_picture!=None).count())
+
+def discover_post_in_cqm(cur_user_id, offset, limit, device_id, version_code, web = None, lat = None, lon = None, visit = None, append_top=''):
     from models import CentralQueueMobile, User, Question, Post
+    
+    device_type = get_device_type(device_id)
+
     if offset == -1:
-        return return_none_feed
+        return return_none_feed()
 
     user_time_diff = 1
     
@@ -1932,9 +1940,23 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
             user_time_diff = int(row[0]) + 1
     elif visit:
         user_time_diff = int(visit/60)
-    
-    print user_time_diff
-    
+        
+    response = []
+    append_top_usernames = []
+    if offset ==0: 
+        if cur_user_id and not prompt_for_profile_video(cur_user_id) and (device_type!='android' or version_code>46):
+            response.append({'type':'upload_profile_video', 'upload_profile_video':{}}) 
+            limit -= 1
+            
+
+        append_top_usernames = [item.strip().lower() for item in append_top.split(',') if item.strip()]
+        append_top_users = User.query.filter(User.username.in_(append_top_usernames), User.profile_video!=None).all()
+        append_top_users.sort(key=lambda u:append_top_usernames.index(u.username.lower()))
+        limit -= len(append_top_users)
+        requested_limit = limit
+
+        response.extend([{'type':'user', 'user': guest_user_to_dict(user, cur_user_id)} for user in append_top_users])
+   
     item_count = CentralQueueMobile.query.count()
     count_arr = IntervalCountMap.query.filter(IntervalCountMap.minutes <= user_time_diff).all()
     feeds_count = sum(map(lambda x:x.count, count_arr))
@@ -1949,10 +1971,9 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
         limit = temp_offset
     temp_offset = temp_offset - limit
 
-    print 'offset , limit',temp_offset, limit
     feeds = CentralQueueMobile.query.order_by(CentralQueueMobile.score.asc()).offset(temp_offset).limit(limit).all()
     users_in_feeds = filter(lambda x:x, map(lambda x:x.user, feeds))
-    print users_in_feeds
+    
     filter_these_from_feeds = []
     if cur_user_id and users_in_feeds:
         filter_these_from_feeds = db.session.execute(text('SELECT followed FROM user_follows WHERE user = :cur_user_id and \
@@ -1960,21 +1981,15 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
                                                         params = {'cur_user_id':cur_user_id,
                                                                   'users_in_feeds':users_in_feeds})
     filter_these_from_feeds = [x[0] for x in filter_these_from_feeds]
-    print filter_these_from_feeds
-    print len(feeds)
-    append_top_usernames = [item.strip().lower() for item in append_top.split(',') if item.strip()]
-    append_top_users = User.query.filter(User.username.in_(append_top_usernames), User.profile_video!=None).all() if append_top_usernames else []
-    append_top_users.sort(key=lambda u:append_top_usernames.index(u.username.lower()))
-    limit -= len(append_top_users)
 
-    result = [{'type':'user', 'user': guest_user_to_dict(user, cur_user_id)} for user in append_top_users]
+    results = []
     for obj in feeds:
-        print obj.user
+        #print obj.user
         if obj.user:
             if obj.user in filter_these_from_feeds: continue
             user = User.query.filter(User.id == obj.user, User.profile_video != None, ~User.username.in_(append_top_usernames)).first() 
             if user:
-                result.append({'type':'user', 'user': guest_user_to_dict(user, cur_user_id)})
+                results.append({'type':'user', 'user': guest_user_to_dict(user, cur_user_id)})
                 if web:
                     questions_query = Question.query.filter(Question.question_to==obj.user, 
                                                     Question.deleted==False,
@@ -1985,33 +2000,31 @@ def discover_post_in_cqm(cur_user_id, offset, limit, web = None, lat = None, lon
                     questions = questions_query.order_by(Question.score.desc()
                                                 ).limit(3)
                     questions_feed = [{'type':'questions', 'questions':question_to_dict(q, cur_user_id)} for q in questions.all()]
-                    result.extend(questions_feed)
+                    results.extend(questions_feed)
         elif obj.question:
-            result.append({'type':'questions', 'questions': question_to_dict(Question.query.filter(Question.id == obj.question).first(), cur_user_id)})
+            results.append({'type':'questions', 'questions': question_to_dict(Question.query.filter(Question.id == obj.question).first(), cur_user_id)})
         else:
-            result.append({'type':'post', 'post' : post_to_dict(Post.query.filter(Post.id == obj.post).first(), cur_user_id)})
+            results.append({'type':'post', 'post' : post_to_dict(Post.query.filter(Post.id == obj.post).first(), cur_user_id)})
 
-    next_index = offset + requested_limit if len(feeds) >= requested_limit else -1
-    print next_index
-    result.reverse()
-#    if offset ==0:
-#        result.insert(2, {'type':'upload_profile_video', 'upload_profile_video':{}})
-#        next_index = next_index - 1
+    results.reverse()
+    response.extend(results)
+    next_index = offset + limit if len(feeds) >= requested_limit else -1
+    
     return {
             'next_index' : next_index,
-            'count' : len(result),
-            'stream' : result
-        }
+            'count' : len(response),
+            'stream' : response
+           }
 
-def search_default():
-    categories_order = ['Politicians', 'Trending Now', 'New on Frankly', 'Singers', 'Radio Jockeys', 'Chefs', 'Entrepreneurs', 'Subject Experts']
+def search_default(cur_user_id=None):
+    categories_order = ['Politicians', 'Authors', 'Trending Now', 'New on Frankly', 'Singers', 'Actors', 'Radio Jockeys', 'Chefs', 'Entrepreneurs', 'Subject Experts']
     results = {cat:[] for cat in categories_order}
 
     users = SearchDefault.query.order_by(SearchDefault.score).all()
     for item in users:
         user = User.query.filter(User.id==item.user).first()
         if user:
-            results[item.category].append(thumb_user_to_dict(user))
+            results[item.category].append(thumb_user_to_dict(user, cur_user_id))
 
     resp = []
     for cat in categories_order:
@@ -2029,6 +2042,41 @@ def invite_celeb(cur_user_id, invitable_id):
         print e
         return {'success':False}
 
+def user_follows_list(cur_user_id):
+    follow_object_list = Follow.query.filter(Follow.user==str(cur_user_id)).all()
+    user_id_list = []
+    for follow_object in follow_object_list:
+        user_id_list.append(follow_object.followed)
+    return user_id_list
+
+def random_celebrity_list(count):
+    celebrity_object_list = User.query.filter(User.user_type==2)
+    number_of_celebrities = celebrity_object_list.count()
+    random_number_list = random.sample(xrange(number_of_celebrities), count)
+    random_celeb_list = []
+    for random_number in random_number_list:
+        celebrity_object = celebrity_object_list[random_number]
+        random_celeb_list.append(celebrity_object_list[random_number].id)
+    return random_celeb_list
+
+
+def top_liked_users(cur_user_id, count=5):
+    liked_users_list = most_liked_users(current_user_id=str(cur_user_id))
+    liked_user_ids = []
+    for i in xrange(len(liked_users_list)):
+        liked_user_ids.append(liked_users_list[i][0])
+    if len(liked_user_ids) < count:
+        liked_user_ids.extend(user_follows_list(cur_user_id))
+    if len(liked_user_ids) < count:
+        liked_user_ids.extend(random_celebrity_list(count))
+    return {'users': get_thumb_users(liked_user_ids).values()}
+
+def save_feedback_response(cur_user_id, medium, message, version):
+    email = User.query.filter(User.id==str(cur_user_id)).one().email
+    feedback = Feedback(user=str(cur_user_id), medium=medium, message=message, version=version)
+    db.session.add(feedback)
+    db.session.commit()
+    return {'success': True}
 
 
 
