@@ -59,13 +59,13 @@ class UserNotification(Base):
     seen_at         = Column(DateTime())
     seen_type       = Column(String(10))
     list_type       = Column(String(10), default='me')
-    push_to         = Column(Enum('android', 'ios', 'web', 'all', 'mobile'), default='all')
+    show_on         = Column(Enum('android', 'ios', 'web', 'all', 'mobile'), default='all')
     added_at        = Column(DateTime(), default=datetime.datetime.now())
 
 
     def __init__(self, notification_id, user_id, list_type, push_at=datetime.datetime.now(),
                         seen_at=None, seen_type=None,
-                        added_at=datetime.datetime.now(), push_to='all', id=get_item_id()):
+                        added_at=datetime.datetime.now(), show_on='all', id=get_item_id()):
         self.id              = id
         self.notification_id = notification_id
         self.user_id         = user_id
@@ -74,7 +74,7 @@ class UserNotification(Base):
         self.seen_at         = seen_at
         self.seen_type       = seen_type
         self.added_at        = added_at
-        self.push_to         = push_to
+        self.show_on         = show_on
 
     def __repr__(self):
         return '<UserNotification %r:%r>' % (self.user_id, self.notification_id)
