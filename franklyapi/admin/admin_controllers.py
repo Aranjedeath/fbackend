@@ -167,22 +167,25 @@ def question_redirect(question_ids, redirect_to):
 stop_words = ["i" , "me" , "my" , "myself" , "we" , "our" , "ours" , "ourselves" , "you" , "your" , "yours" , "yourself" , "yourselves" , "he" , "him" , "his" , "himself" , "she" , "her" , "hers" , "herself" , "it" , "its" , "itself" , "they" , "them" , "their" , "theirs" , "themselves" , "what" , "which" , "who" , "whom" , "this" , "that" , "these" , "those" , "am" , "is" , "are" , "was" , "were" , "be" , "been" , "being" , "have" , "has" , "had" , "having" , "do" , "does" , "did" , "doing" , "a" , "an" , "the" , "and" , "but" , "if" , "or" , "because" , "as" , "until" , "while" , "of" , "at" , "by" , "for" , "with" , "about" , "against" , "between" , "into" , "through" , "during" , "before" , "after" , "above" , "below" , "to" , "from" , "up" , "down" , "in" , "out" , "on" , "off" , "over" , "under" , "again" , "further" , "then" , "once" , "here" , "there" , "when" , "where" , "why" , "how" , "all" , "any" , "both" , "each" , "few" , "more" , "most" , "other" , "some" , "such" , "no" , "nor" , "not" , "only" , "own" , "same" , "so" , "than" , "too" , "very" , "s" , "t" , "can" , "will" , "just" , "don" , "should" , "now"]
 
 def get_search_words(question_body):
-    search_words = filter(lambda x:x, map(lambda x:True if x not in stop_words else False, question_body))
+    search_words = filter(lambda x:x, map(lambda x:x.strip() if x not in stop_words else False, question_body.split(' ')))
     return search_words
 
 def get_similar_questions(question_id):
     question = Question.query.filter(Question.id == question_id).first()
     search_words = get_search_words(question.body)
-    questions = Question.query.filter(Question.question_to == question.question_to, Question.body.op('regexp')('|'.join(search_words))).all()
-    result = {'questions' : [question_to_dict(q) for q in questions], 'question_id' : question_id}
+    questions = Question.query.filter(Question.question_to == question.question_to, Question.id != question.id, Question.body.op('regexp')('|'.join(search_words))).all()
+    result = {'questions' : [question_to_dict(q) for q in questions[0:10]], 'question_id' : question_id}
+    print result
     return result
 
 def get_unanswered_questions_with_same_count(user_id, offset, limit):
-    questions = Question.query.filter(Question.user == user_id, Question.is_answered == False).offset(offset).limit(limit).all()
+    questions = Question.query.filter(Question.question_to == user_id, Question.is_answered == False).offset(offset).limit(limit).all()
+    print questions
     res = []
     for question in questions:
         search_words = get_search_words(question.body)
-        count = Question.query.filter(Question.question_to == question.question_to, Question.body.op('regexp')('|'.join(search_words))).count()
+        print search_words
+        count = Question.query.filter(Question.question_to == question.question_to, Question.id != question.id, Question.body.op('regexp')('|'.join(search_words))).count()
         question_dict = question_to_dict(question)
         question_dict['similar_questions'] = count
         res.append(question_dict)
@@ -207,6 +210,7 @@ def update_category_order_search_default(category_name, user_cat_data):
         s.score = user_data['score']
         db.session.add(s)
         db.session.commit()
+    return {'success':True}
 
 def delete_search_default_user(category_name, user_id):
     s = SearchDefault.query.filter(SearchDefault.user == user_id, SearchDefault.category == category_name).delete()
@@ -333,3 +337,32 @@ def get_questions_asked_today(user_id, offset, limit):
     for row in result:
         resp.append(question_to_dict(row))
     return {'results':resp}
+
+def get_monks():
+    return User.query.filter(User.monkness == 0).all()
+
+def increase_followers(user_id, count):
+    for u in get_monks()[:count]:
+        f = Follow(user= u.id, followed=user_id)
+        db.session.add(f)
+    db.session.commit()
+
+def increase_upvotes(question_id, count):
+    for u in get_monks()[:count]:
+        upvote = Upvote(question_id, u.id)
+        db.session.add(upvote)
+    db.session.commit()
+
+def upvote_questions_of(username, count):
+    from random import randint
+    user = User.query.filter(User.username == username).first()
+    if not user:
+        return 'User not found'
+    questions = Question.query.filter(Question.question_to == user.id, Question.is_answered == False).all()
+    for question in questions:
+        increase_upvotes(question.id, randint(count - 5, count))
+
+def update_total_view_count(user_id, count):
+    User.query.filter(User.id == user_id).update({'total_view_count':count})
+    db.session.commit()
+

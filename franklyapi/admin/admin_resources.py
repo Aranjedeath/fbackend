@@ -405,6 +405,7 @@ class AdminGetUnansweredQuestionListWithSameCount(AdminProtectedResource):
         arg_parser.add_argument('offset', type=int, default=0, location = 'args')
         arg_parser.add_argument('limit', type=int, default=5, location = 'args')
         args = arg_parser.parse_args()
+        print args
 
         try:
             return admin_controllers.get_unanswered_questions_with_same_count(args['user_id'], args['offset'], args['limit'])
@@ -421,7 +422,7 @@ class AdminGetSimilarQuestions(AdminProtectedResource):
         arg_parser.add_argument('question_id',required=True, location='args', type=str)
         args = arg_parser.parse_args()
         try:
-            admin_controllers.get_similar_questions(args['question_id'])
+            return admin_controllers.get_similar_questions(args['question_id'])
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])
