@@ -406,6 +406,13 @@ def get_users_stats(user_ids, cur_user_id=None):
     return data
 
     
+def question_count(user_id):
+    question_count = Question.query.filter(Question.question_to==user_id,
+                            Question.deleted==False,
+                            Question.is_answered==False,
+                            Question.is_ignored==False
+                            ).count()
+    return {'question_count':question_count}
 
 
 def get_user_stats(user_id):
@@ -2022,16 +2029,30 @@ def discover_post_in_cqm(cur_user_id, offset, limit, device_id, version_code, we
            }
 
 def search_default(cur_user_id=None):
+    from collections import defaultdict
     categories_order = ['Politicians', 'Authors', 'Trending Now', 'New on Frankly', 'Singers', 'Actors', 'Radio Jockeys', 'Chefs', 'Entrepreneurs', 'Subject Experts']
-    results = {cat:[] for cat in categories_order}
+    results = defaultdict(list)
 
-    for cat in categories_order:
-        users = SearchDefault.query.filter(SearchDefault.category == cat).order_by(SearchDefault.score).all()
-        users = random.sample(users, min(3, len(users)))
-        for item in users:
-            user = User.query.filter(User.id==item.user).first()
-            if user:
-                results[item.category].append(thumb_user_to_dict(user, cur_user_id))
+    search_results = SearchDefault.query.filter(SearchDefault.category.in_(categories_order)).order_by(SearchDefault.score).all()
+    
+    
+    for item in search_results:
+        results[item.category].append(item.user)
+
+    users_to_fetch = []
+    user_category_mapping = {}
+    for cat in results:
+        results[cat] = random.sample(results[cat], min(3, len(results[cat])))
+        users_to_fetch.extent(results[cat])
+        for user in results[cat]:
+            user_category_mapping[user] = cat
+
+    users = User.query.filter(User.id.in_(users_to_fetch)).all()
+
+    results = defaultdict(list)
+    for user in users:
+        results[user_category_mapping[user.id]].append(thumb_user_to_dict(user, cur_user_id))
+
     resp = []
     for cat in categories_order:
         resp.append({'category_name':cat, 'users':results[cat]})

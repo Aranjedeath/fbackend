@@ -1528,6 +1528,27 @@ class NotificationCount(restful.Resource):
             abort(500, message=internal_server_error_message)
 
 
+class QuestionCount(restful.Resource):
+    
+    @login_required
+    def get(self):
+        """
+        Returns count of pending questions for the logged in user
+
+        Controller Functions Used:
+            - question_count
+
+        Authentication: Required
+        """
+        try:
+            resp = controllers.question_count(current_user.id)
+            return resp
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
+
 class Search(restful.Resource):
     
     get_parser = reqparse.RequestParser()
