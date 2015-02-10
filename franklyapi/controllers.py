@@ -1042,10 +1042,6 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous):
     
     db.session.add(question)
 
-    event = create_event(user=cur_user_id, action='question', foreign_data=question.id)
-    if event:
-        db.session.add(event)
-
     db.session.commit()
 
     resp = {'success':True, 'id':str(question.id), 'question':question_to_dict(question)}
