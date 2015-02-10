@@ -1006,7 +1006,7 @@ def question_list_public(current_user_id, user_id, offset, limit, version_code=N
     cur_user_questions = questions[0:len(cur_user_questions)]
     cur_user_questions = [{'question':q, 'type':'question'} for q in cur_user_questions]
 
-    other_questions = questions[len(current_user_questions):]
+    other_questions = questions[len(cur_user_questions):]
     other_questions.sort(key=lambda q: q['ask_count']*q['score'], reverse=True)
     questions = [{'question':q, 'type':'question'} for q in other_questions]
 
