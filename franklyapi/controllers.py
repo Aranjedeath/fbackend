@@ -339,7 +339,6 @@ def get_user_stats(user_id):
             'answer_count':answer_count
             }
 
-
 def get_post_stats(post_id):
     like_count = get_post_like_count(post_id)
     view_count = get_post_view_count(post_id)
@@ -358,6 +357,10 @@ def get_post_stats(post_id):
             'like_count':like_count,
             'comment_count':comment_count
             }
+
+
+
+
 def get_post_id_from_question_id(question_id):
     post = Post.query.with_entities('id').filter(Post.question==question_id).first()
     if post:
@@ -519,15 +522,20 @@ def get_video_states(video_urls={}):
     return result
 
 
-def get_thumb_users(user_ids):
+def get_thumb_users(user_ids, cur_user_id=None):
     data = {}
     if user_ids:
-        result = db.session.execute(text("""SELECT id, username, first_name, profile_picture, deleted,
-                                                lat, lon, location_name, country_name, country_code,
-                                                gender, bio, allow_anonymous_question, user_type, user_title 
+        result = db.session.execute(text("""SELECT users.id, users.username, users.first_name, users.profile_picture, users.deleted,
+                                                users.lat, users.lon, users.location_name, users.country_name, users.country_code,
+                                                users.gender, users.bio, users.allow_anonymous_question, users.user_type, users.user_title,
+                                                (SELECT count(user_follows.user) FROM user_follows 
+                                                        WHERE user_follows.user=:cur_user_id
+                                                                AND user_follows.followed=users.id
+                                                                AND user_follows.unfollowed=False
+                                                                ) as is_following
                                             FROM users 
-                                            WHERE id in :user_ids"""),
-                                        params={'user_ids':list(user_ids)})
+                                            WHERE users.id in :user_ids"""),
+                                        params={'user_ids':list(user_ids), 'cur_user_id':cur_user_id})
         for row in result:
             if not row[5] or not row[6]:
                 coordinate_point = None
@@ -551,24 +559,31 @@ def get_thumb_users(user_ids):
                                     'bio':row[11],
                                     'allow_anonymous_question':bool(row[12]),
                                     'user_type':row[13],
-                                    'user_title':row[14]
+                                    'user_title':row[14],
+                                    'is_following':bool(row[15])
                                     }
                         })
     return data
 
-def get_questions(question_ids):
+def get_questions(question_ids, cur_user_id=None):
     data = {}
     if question_ids:
-        result = db.session.execute(text("""SELECT id, body, is_anonymous, timestamp
+        result = db.session.execute(text("""SELECT questions.id, questions.body,
+                                                   questions.is_anonymous, questions.timestamp,
+                                                   (SELECT count(question_upvotes.user) FROM question_upvotes
+                                                    WHERE question_upvotes.question=questions.id 
+                                                            AND question_upvotes.user=:cur_user_id
+                                                            AND question_upvotes.downvoted=False) as is_upvoted
                                             FROM questions
                                             WHERE id in :question_ids"""),
-                                        params={'question_ids':list(question_ids)})
+                                        params={'question_ids':list(question_ids), 'cur_user_id':cur_user_id})
         for row in result:
             data.update({
                             row[0]:{'id':row[0],
                                     'body':row[1],
                                     'is_anonymous':row[2],
-                                    'timestamp':row[3]
+                                    'timestamp':row[3],
+                                    'is_upvoted':bool(row[4])
                                     }
                         })
     return data
@@ -947,7 +962,9 @@ def question_list(user_id, offset, limit):
     #                                        ).order_by(Question.score.desc()
                                             ).offset(offset)
     
-    questions = [{'question':question_to_dict(question), 'type':'question'} for question in questions_query.limit(limit)]
+    questions = questions_to_dict(questions_query.limit(limit))
+    questions = [{'question':q, 'type':'question'} for q in questions]
+
     next_index = str(offset+limit) if questions else "-1"
     return {'questions': questions, 'count': len(questions),  'next_index' : next_index}
 
@@ -968,9 +985,7 @@ def question_list_public(current_user_id, user_id, offset, limit, version_code=N
                                                     ).order_by(Question.timestamp.desc()
                                                     ).offset(0).limit(5).all()
 
-        cur_user_questions = [{'question':question_to_dict(question, current_user_id), 'type':'question'} for question in cur_user_questions]
-
-    cur_user_question_ids = [q['question']['id'] for q in cur_user_questions]
+    cur_user_question_ids = [q.id for q in cur_user_questions]
     
     questions_query = Question.query.filter(~Question.id.in_(cur_user_question_ids),
                                             Question.question_to==user_id, 
@@ -985,8 +1000,16 @@ def question_list_public(current_user_id, user_id, offset, limit, version_code=N
                                             ).offset(offset)
 
     question_objects = questions_query.limit(limit)
-    questions = [{'question':question_to_dict(question, current_user_id), 'type':'question'} for question in question_objects]
-    questions.sort(key=lambda q: q['question']['ask_count']*q['question']['score'], reverse=True)
+
+    questions = questions_to_dict(current_user_questions+question_objects, current_user_id)
+    
+    cur_user_questions = questions[0:len(current_user_questions)]
+    cur_user_questions = [{'question':q, 'type':'question'} for q in cur_user_questions]
+
+    other_questions = questions[len(current_user_questions):]
+    other_questions.sort(key=lambda q: q['ask_count']*q['score'], reverse=True)
+    questions = [{'question':q, 'type':'question'} for q in other_questions]
+
     next_index = str(offset+limit) if questions else "-1"
     return {'current_user_questions':cur_user_questions, 'questions': questions, 'count': len(questions),  'next_index' : next_index}
 

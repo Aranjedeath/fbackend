@@ -206,11 +206,68 @@ def make_celeb_questions_dict(celeb, questions, current_user_id=None):
     return celeb_dict
 
 
-def question_to_dict(question, current_user_id=None):
-    from controllers import get_question_upvote_count, is_upvoted, get_upvoters, get_thumb_users, is_following, get_post_id_from_question_id
+
+def questions_to_dict(questions, cur_user_id=None):
+    from controllers import get_question_upvote_count, is_upvoted, get_thumb_users, get_post_id_from_question_id
+
+    user_ids = []
+    for question in questions:
+        user_ids.append(question.question_to)
+        user_ids.append(question.question_author)
+
+    users = get_thumb_users(user_ids, cur_user_id=cur_user_id)
+
+    questions_dict = []
+
+    for question in questions:
+        ques_dict = {
+            'id': question.id,
+            'question_author': {
+                                'id':users[question.question_author]['id'],
+                                'username': users[question.question_author]['username'] if not question.is_anonymous else 'Anonymous',
+                                'first_name': users[question.question_author]['first_name'] if not question.is_anonymous else 'Anonymous',
+                                'last_name': None,
+                                'profile_picture': users[question.question_author]['profile_picture'] if not question.is_anonymous else None,
+                                'gender':users[question.question_author]['gender']
+                                },
+            'question_to':{
+                            'id':users[question.question_to]['id'],
+                            'username': users[question.question_to]['username'],
+                            'first_name': users[question.question_to]['first_name'],
+                            'last_name': None,
+                            'profile_picture': users[question.question_to]['profile_picture'],
+                            'gender': users[question.question_to]['gender'],
+                            'user_type': users[question.question_to]['user_type'],
+                            'user_title': users[question.question_to]['user_title'],
+                            'is_following':users[question.question_to]['is_following']
+
+                            },
+            'tags': [],
+            'body': question.body,        
+            'timestamp': int(time.mktime(question.timestamp.timetuple())),
+            'location': location_dict(question.lat, question.lon, question.location_name, question.country_name, question.country_code),
+            'is_anonymous' : question.is_anonymous,
+            'ask_count': get_question_upvote_count(question.id)+1,
+            #'askers': [{'id':users[upvoter]['id'], 'profile_picture':users[upvoter]['profile_picture'], 'gender':users[upvoter]['gender']} for upvoter in upvoters],
+            'background_image':"http://dev.frankly.me/question/bg_image/%s"%(str(question.id)),
+            'is_voted': is_upvoted(question.id, cur_user_id) if cur_user_id else False,
+            'web_link':'http://frankly.me/q/{short_id}'.format(short_id=question.short_id),
+            'short_id': question.short_id,
+            'is_answered':question.is_answered,
+            'score':question.score
+        }
+        if question.is_answered:
+            ques_dict['post_id'] = get_post_id_from_question_id(question.id)
+        questions_dict.append(ques_dict)
+
+    return questions_dict
+
+
+def question_to_dict(question, cur_user_id=None):
+    from controllers import get_question_upvote_count, is_upvoted, get_thumb_users, get_post_id_from_question_id
     
-    upvoters = get_upvoters(question.id, count=5)
-    users = get_thumb_users([question.question_author, question.question_to]+upvoters)
+    #upvoters = get_upvoters(question.id, count=5)
+    users = get_thumb_users([question.question_author, question.question_to], cur_user_id=cur_user_id)
 
     ques_dict = {
         'id': question.id,
@@ -231,7 +288,7 @@ def question_to_dict(question, current_user_id=None):
                         'gender': users[question.question_to]['gender'],
                         'user_type': users[question.question_to]['user_type'],
                         'user_title': users[question.question_to]['user_title'],
-                        'is_following':is_following(question.question_to, current_user_id)
+                        'is_following':users[question.question_to]['is_following']
 
                         },
         'tags': [],
@@ -240,9 +297,9 @@ def question_to_dict(question, current_user_id=None):
         'location': location_dict(question.lat, question.lon, question.location_name, question.country_name, question.country_code),
         'is_anonymous' : question.is_anonymous,
         'ask_count': get_question_upvote_count(question.id)+1,
-        'askers': [{'id':users[upvoter]['id'], 'profile_picture':users[upvoter]['profile_picture'], 'gender':users[upvoter]['gender']} for upvoter in upvoters],
+        #'askers': [{'id':users[upvoter]['id'], 'profile_picture':users[upvoter]['profile_picture'], 'gender':users[upvoter]['gender']} for upvoter in upvoters],
         'background_image':"http://dev.frankly.me/question/bg_image/%s"%(str(question.id)),
-        'is_voted': is_upvoted(question.id, current_user_id) if current_user_id else False,
+        'is_voted': is_upvoted(question.id, cur_user_id) if cur_user_id else False,
         'web_link':'http://frankly.me/q/{short_id}'.format(short_id=question.short_id),
         'short_id': question.short_id,
         'is_answered':question.is_answered,
@@ -254,9 +311,9 @@ def question_to_dict(question, current_user_id=None):
 
 def post_to_dict(post, cur_user_id=None, distance=None):
     from configs import config
-    from controllers import get_video_states, is_liked, is_reshared, get_questions, is_following, get_thumb_users, get_post_stats, get_user_stats
-    users = get_thumb_users([post.question_author, post.answer_author])
-    questions = get_questions([post.question])
+    from controllers import get_video_states, is_liked, get_questions, get_thumb_users, get_post_stats, get_user_stats
+    users = get_thumb_users([post.question_author, post.answer_author], cur_user_id=cur_user_id)
+    questions = get_questions([post.question], cur_user_id=cur_user_id)
     
     post_stats = get_post_stats(post.id)
     answer_author_stats = get_user_stats(post.answer_author)
@@ -283,7 +340,7 @@ def post_to_dict(post, cur_user_id=None, distance=None):
             'user_type':users[post.answer_author]['user_type'],
             'user_title':users[post.answer_author]['user_title'],
             'allow_anonymous_question': users[post.answer_author]['user_title'],
-            'is_following':is_following(post.answer_author, cur_user_id) if cur_user_id else False,
+            'is_following':users[post.answer_author]['is_following'],
             'follower_count': answer_author_stats['follower_count']
 
         },
@@ -305,7 +362,6 @@ def post_to_dict(post, cur_user_id=None, distance=None):
         },
 
         'liked_count': post_stats['like_count'],
-        'is_reshared': is_reshared(post.id, cur_user_id),
         # to store count and list of user ids
         'comment_count': post_stats['comment_count'],
         'is_liked': is_liked(post.id, cur_user_id),
@@ -326,7 +382,7 @@ def post_to_dict(post, cur_user_id=None, distance=None):
 
 def posts_to_dict(posts, cur_user_id=None, distance=None):
     from configs import config
-    from controllers import get_video_states, get_questions, is_liked, is_reshared, is_following, get_thumb_users, get_post_stats, get_user_stats
+    from controllers import get_video_states, get_questions, is_liked, get_thumb_users, get_post_stats, get_user_stats
     user_list = set()
     answer_media_urls = {}
     question_ids = []
@@ -337,9 +393,9 @@ def posts_to_dict(posts, cur_user_id=None, distance=None):
         answer_media_urls[p.media_url] = p.thumbnail_url
         question_ids.append(p.question)
 
-    users = get_thumb_users(user_list)
+    users = get_thumb_users(user_list, cur_user_id=cur_user_id)
     media_urls = get_video_states(answer_media_urls)
-    questions = get_questions(question_ids)
+    questions = get_questions(question_ids, cur_user_id=cur_user_id)
 
 
     posts_dict = []
@@ -370,7 +426,7 @@ def posts_to_dict(posts, cur_user_id=None, distance=None):
                 'user_type':users[post.answer_author]['user_type'],
                 'user_title':users[post.answer_author]['user_title'],
                 'allow_anonymous_question': users[post.answer_author]['user_title'],
-                'is_following':is_following(post.answer_author, cur_user_id) if cur_user_id else False,
+                'is_following':users[post.answer_author]['is_following'],
                 'follower_count': answer_author_stats['follower_count']
 
             },
@@ -394,7 +450,7 @@ def posts_to_dict(posts, cur_user_id=None, distance=None):
             # to store count and list of user ids
             'comment_count': post_stats['comment_count'],
             'is_liked': is_liked(post.id, cur_user_id),
-            'is_reshared': is_reshared(post.id, cur_user_id),
+            #'is_reshared': is_reshared(post.id, cur_user_id),
             'deleted': post.deleted,
             'tags':[],
             'location': location_dict(post.lat, post.lon, post.location_name, post.country_name, post.country_code),
