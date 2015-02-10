@@ -319,6 +319,7 @@ def has_blocked(cur_user_id, user_id):
 def get_follower_count(user_id):
     from math import log, sqrt
     from datetime import datetime, timedelta
+    user = User.query.filter(User.id==user_id).one()
 
     d = datetime.now() - timedelta(minutes = 5)
     count_to_pump =  Follow.query.filter(Follow.followed==user_id, Follow.unfollowed==False, Follow.timestamp <= d).count() 
@@ -438,7 +439,8 @@ def get_posts_stats(post_ids, cur_user_id=None):
                                                     AND post_likes.unliked=false) AS like_count,
                                             
                                             (SELECT count(*) FROM comments
-                                                WHERE comments.on_post=posts.id, comments.deleted=false) AS comment_count,
+                                                WHERE comments.on_post=posts.id
+                                                AND comments.deleted=false) AS comment_count,
                                             
                                             (SELECT count(*) FROM post_likes 
                                                 WHERE post_likes.post=posts.id
