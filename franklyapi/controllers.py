@@ -363,7 +363,13 @@ def get_users_stats(user_ids, cur_user_id=None):
                                             (SELECT count(*) FROM user_follows
                                                 WHERE user_follows.user=:cur_user_id
                                                     AND user_follows.followed=users.id
-                                                    AND user_follows.unfollowed=false) AS is_following
+                                                    AND user_follows.unfollowed=false) AS is_following,
+                                            
+                                            (SELECT count(questions.id) FROM questions
+                                                WHERE questions.question_to=users.id
+                                                    AND questions.deleted=false,
+                                                    AND questions.is_ignored=false,
+                                                    AND questions.is_answered=false) AS question_count,
                                     FROM users
                                     WHERE users.id in :user_ids"""),
                                 params={'cur_user_id':cur_user_id, 'user_ids':list(user_ids), 'trend_time':trend_time}
@@ -384,7 +390,8 @@ def get_users_stats(user_ids, cur_user_id=None):
                         'follower_count':follower_count,
                         'view_count':row[2],
                         'answer_count':row[5],
-                        'is_following':bool(row[6])
+                        'is_following':bool(row[6]),
+                        'question_count':row[7]
                         }
 
     inflated_stats = InflatedStat.query.filter(InflatedStat.user.in_(user_ids)).all()
@@ -694,24 +701,26 @@ def get_questions(question_ids, cur_user_id=None):
 
 def user_view_profile(current_user_id, user_id, username=None):
     try:
-        cur_user = None
-        if current_user_id:
-            cur_user = User.query.get(current_user_id)
-            if (username and cur_user.username.lower() == username.lower()) or (current_user_id == user_id):
-                return {'user': user_to_dict(cur_user)}
-
+        user = None
         if username:
             user = User.query.filter(User.username==username).one()
-        else:
+        
+        elif user_id:
             user = User.query.get(user_id)
+
+        if user and user.id == current_user_id:
+            return {'user': user_to_dict(user)}
+
         if not user:
             raise NoResultFound()
 
-        if cur_user:
-            if has_blocked(cur_user.id, user.id):
+        if current_user_id:
+            if has_blocked(current_user_id, user.id):
                 raise CustomExceptions.BlockedUserException()
-        if str(current_user_id) in config.ADMIN_USERS:
+        
+        if current_user_id in config.ADMIN_USERS:
             return {'user': user_to_dict(user)}
+        
         return {'user': guest_user_to_dict(user, current_user_id)}
     
     except NoResultFound:

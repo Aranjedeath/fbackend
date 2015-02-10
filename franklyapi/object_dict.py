@@ -21,9 +21,9 @@ def media_dict(media_url, thumbnail_url):
 
 def user_to_dict(user):
     from configs import config
-    from controllers import get_video_states, get_user_stats
+    from controllers import get_video_states, get_users_stats
     
-    user_stats = get_user_stats(user.id)
+    user_stats = get_users_stats([user.id])
 
     user_dict = {
         'id': user.id,
@@ -40,20 +40,21 @@ def user_to_dict(user):
         'cover_picture': user.cover_picture,
         'profile_video': user.profile_video,
         'gender': user.gender,
-        'follower_count': user_stats['follower_count'],
-        'following_count': user_stats['following_count'],
-        'answer_count': user_stats['answer_count'],
+        'follower_count': user_stats[user.id]['follower_count'],
+        'following_count': user_stats[user.id]['following_count'],
+        'answer_count': user_stats[user.id]['answer_count'],
         'likes_count': 0,
         'location': location_dict(user.lat, user.lon, user.location_name, user.country_name, user.country_code),
         'last_updated': int(time.mktime(user.last_updated.timetuple())),
         'fb_write_perm' : user.facebook_write_permission,
         'fb_perm':'none',
         'admin_level':1 if user.id in config.ADMIN_USERS else 0,
-        'view_count' : user_stats['view_count'],
+        'view_count' : user_stats[user.id]['view_count'],
         'web_link':'http://frankly.me/{username}'.format(username=user.username),
         
         'user_type':user.user_type,
         'user_title':user.user_title,
+        'question_count': user_stats[user.id]['question_count'],
         'interests':[],
         'profile_videos':get_video_states({user.profile_video:user.cover_picture})[user.profile_video] if user.profile_video else {}
     }
@@ -65,11 +66,12 @@ def user_to_dict(user):
 
 def guest_user_to_dict(user, current_user_id, cur_user_interest_tags=None):
     from configs import config
-    from controllers import get_video_states, get_user_stats, is_follower, is_following
+    from controllers import get_video_states, get_users_stats
+    
     if user.deleted == True:
         return thumb_user_to_dict(user)
     
-    user_stats = get_user_stats(user.id)
+    user_stats = get_users_stats([user.id], cur_user_id=current_user_id)
 
     user_dict = {
         'id': user.id,
@@ -81,15 +83,15 @@ def guest_user_to_dict(user, current_user_id, cur_user_interest_tags=None):
         'cover_picture': user.cover_picture,
         'profile_video': user.profile_video,
         'gender': user.gender,
-        'follower_count': user_stats['follower_count'],
-        'following_count': user_stats['following_count'],
-        'answer_count': user_stats['answer_count'],
+        'follower_count': user_stats[user.id]['follower_count'],
+        'following_count': user_stats[user.id]['following_count'],
+        'answer_count': user_stats[user.id]['answer_count'],
         'likes_count': 0,
         'location': location_dict(user.lat, user.lon, user.location_name, user.country_name, user.country_code),
-        'is_follower':is_follower(user.id, current_user_id) if current_user_id else False,
-        'is_following':is_following(user.id, current_user_id) if current_user_id else False,
+        'is_follower':False,
+        'is_following':user_stats[user.id]['is_following'],
         'allow_anonymous_question': user.allow_anonymous_question,
-        'view_count' : user_stats['view_count'],
+        'view_count' : user_stats[user.id]['view_count'],
         'user_type':user.user_type,
         'user_title':user.user_title,
         'profile_videos':get_video_states({user.profile_video:user.cover_picture})[user.profile_video] if user.profile_video else {},
