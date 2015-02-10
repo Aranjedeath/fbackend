@@ -2056,6 +2056,12 @@ def search_default(cur_user_id=None):
                     'bio':row[7],
                     'gender':row[8],
                     'is_following':row[9],
+                    'location':{
+                                'coordinate_point':{'coordinates':None},
+                                'location_name':None,
+                                'country_name':None,
+                                'country_code':None
+                                },
                     'allow_anonymous_question':False
                     }
         category_results[row[0]].append(user_dict)
