@@ -2034,7 +2034,7 @@ def search_default(cur_user_id=None):
     
     results = db.session.execute(text("""SELECT search_defaults.category, users.id, users.username, users.first_name,
                                                     users.user_type, users.user_title, users.profile_picture,
-                                                    users.bio,
+                                                    users.bio, users.gender,
                                                     (SELECT count(*) FROM user_follows
                                                         WHERE user_follows.user=:cur_user_id
                                                             AND user_follows.followed=users.id
@@ -2054,7 +2054,9 @@ def search_default(cur_user_id=None):
                     'user_title':row[5],
                     'profile_picture':row[6],
                     'bio':row[7],
-                    'is_following':row[8]
+                    'gender':row[8],
+                    'is_following':row[9],
+                    'allow_anonymous_question':False
                     }
         category_results[row[0]].append(user_dict)
 
