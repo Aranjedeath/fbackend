@@ -2032,16 +2032,16 @@ def search_default(cur_user_id=None):
     from collections import defaultdict
     categories_order = ['Politicians', 'Authors', 'Trending Now', 'New on Frankly', 'Singers', 'Actors', 'Radio Jockeys', 'Chefs', 'Entrepreneurs', 'Subject Experts']
     
-    results = db.session.execute(text("""SELECT search_default.category, users.id, users.username, users.first_name,
+    results = db.session.execute(text("""SELECT search_defaults.category, users.id, users.username, users.first_name,
                                                     users.user_type, users.user_title, users.profile_picture,
                                                     users.bio,
                                                     (SELECT count(*) FROM user_follows
                                                         WHERE user_follows.user=:cur_user_id
                                                             AND user_follows.followed=users.id
                                                             AND user_follows.unfollowed=false) AS is_following
-                                            FROM users JOIN search_default ON users.id=search_default.user
-                                            WHERE search_default.category IN :categories
-                                            ORDER BY search_default.score"""),
+                                            FROM users JOIN search_defaults ON users.id=search_defaults.user
+                                            WHERE search_defaults.category IN :categories
+                                            ORDER BY search_defaults.score"""),
                                         params = {'cur_user_id':cur_user_id, 'categories':categories_order}
                                 )
     category_results = defaultdict(list)
