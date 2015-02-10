@@ -2057,7 +2057,7 @@ def search_default(cur_user_id=None):
                     'gender':row[8],
                     'is_following':row[9],
                     'location':{
-                                'coordinate_point':{'coordinates':None},
+                                'coordinate_point':{'coordinates':[None, None]},
                                 'location_name':None,
                                 'country_name':None,
                                 'country_code':None
