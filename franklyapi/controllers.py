@@ -999,7 +999,7 @@ def question_list_public(current_user_id, user_id, offset, limit, version_code=N
                                             ).order_by(func.count(Upvote.id).desc()
                                             ).offset(offset)
 
-    question_objects = questions_query.limit(limit)
+    question_objects = questions_query.limit(limit).all()
 
     questions = questions_to_dict(cur_user_questions+question_objects, current_user_id)
     
