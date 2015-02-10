@@ -2031,31 +2031,40 @@ def discover_post_in_cqm(cur_user_id, offset, limit, device_id, version_code, we
 def search_default(cur_user_id=None):
     from collections import defaultdict
     categories_order = ['Politicians', 'Authors', 'Trending Now', 'New on Frankly', 'Singers', 'Actors', 'Radio Jockeys', 'Chefs', 'Entrepreneurs', 'Subject Experts']
-    results = defaultdict(list)
-
-    search_results = SearchDefault.query.filter(SearchDefault.category.in_(categories_order)).order_by(SearchDefault.score).all()
     
-    
-    for item in search_results:
-        results[item.category].append(item.user)
+    results = db.session.execute(text("""SELECT search_default.category, users.id, users.username, users.first_name,
+                                                    users.user_type, users.user_title, users.profile_picture,
+                                                    users.bio
+                                                    (SELECT count(*) FROM user_follows
+                                                        WHERE user_follows.user=:cur_user_id
+                                                            AND user_follows.followed=users.id
+                                                            AND user_follows.unfollowed=false) AS is_following
+                                            FROM users JOIN search_default ON users.id=search_default.user
+                                            WHERE search_default.category IN :categories
+                                            ORDER BY search_default.score"""),
+                                        params = {'cur_user_id':cur_user_id, 'categories':categories_order}
+                                )
+    category_results = defaultdict(list)
+    for row in results:
+        user_dict = {'id':row[1],
+                    'username':row[2],
+                    'first_name':row[3],
+                    'user_type':row[4],
+                    'user_title':row[5],
+                    'profile_picture':row[6],
+                    'bio':row[7],
+                    'is_following':row[8]
+                    }
+        category_results[row[0]].append(user_dict)
 
-    users_to_fetch = []
-    user_category_mapping = {}
-    for cat in results:
-        results[cat] = random.sample(results[cat], min(3, len(results[cat])))
-        users_to_fetch.extend(results[cat])
-        for user in results[cat]:
-            user_category_mapping[user] = cat
 
-    users = User.query.filter(User.id.in_(users_to_fetch)).all()
-
-    results = defaultdict(list)
-    for user in users:
-        results[user_category_mapping[user.id]].append(thumb_user_to_dict(user, cur_user_id))
+    for category, users in category_results.items():
+        category_results[category] = random.sample(category_results[category], min(3, len(category_results[category])))
 
     resp = []
     for cat in categories_order:
-        resp.append({'category_name':cat, 'users':results[cat]})
+        if category_results.get(cat):
+            resp.append({'category_name':cat, 'users':category_results[cat]})
 
     return {'results':resp}
 
