@@ -354,7 +354,7 @@ def get_users_stats(user_ids, cur_user_id=None):
                                             (SELECT count(*) FROM user_follows
                                                 WHERE user_follows.followed=users.id
                                                     AND user_follows.unfollowed=false
-                                                    AND user_follows.timestamp>:trend_time) AS follow_count_as_such
+                                                    AND user_follows.timestamp>:trend_time) AS follow_count_as_such,
                                             
                                             (SELECT count(posts.id) FROM posts
                                                 WHERE posts.answer_author=users.id
