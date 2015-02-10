@@ -26,7 +26,7 @@ from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
 from app import redis_client, raygun, db, redis_views
 
 from object_dict import user_to_dict, guest_user_to_dict,\
-                        thumb_user_to_dict, question_to_dict, post_to_dict, comment_to_dict,\
+                        thumb_user_to_dict, question_to_dict,questions_to_dict, post_to_dict, comment_to_dict,\
                         comments_to_dict, posts_to_dict, make_celeb_questions_dict, media_dict,invitable_to_dict
 
 from video_db import add_video_to_db
