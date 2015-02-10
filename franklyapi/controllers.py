@@ -367,8 +367,8 @@ def get_users_stats(user_ids, cur_user_id=None):
                                             
                                             (SELECT count(questions.id) FROM questions
                                                 WHERE questions.question_to=users.id
-                                                    AND questions.deleted=false,
-                                                    AND questions.is_ignored=false,
+                                                    AND questions.deleted=false
+                                                    AND questions.is_ignored=false
                                                     AND questions.is_answered=false) AS question_count,
                                     FROM users
                                     WHERE users.id in :user_ids"""),
