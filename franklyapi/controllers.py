@@ -342,6 +342,9 @@ def get_answer_count(user_id):
 
 
 def get_users_stats(user_ids, cur_user_id=None):
+    from math import log, sqrt
+    from datetime import datetime, timedelta
+    trend_time = datetime.now() - timedelta(minutes = 5)
     result = db.session.execute(text("""SELECT users.id, users.user_type, users.total_view_count,
                                             (SELECT count(*) FROM user_follows
                                                 WHERE user_follows.followed=users.id
@@ -363,7 +366,7 @@ def get_users_stats(user_ids, cur_user_id=None):
                                                     AND user_follows.unfollowed=false) AS is_following
                                     FROM users
                                     WHERE users.id in :user_ids"""),
-                                params={'cur_user_id':cur_user_id, 'user_ids':user_ids}
+                                params={'cur_user_id':cur_user_id, 'user_ids':user_ids, 'trend_time':trend_time}
                                 )
     data = {}
     for row in results:
