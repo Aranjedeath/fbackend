@@ -1918,12 +1918,13 @@ def search_default(cur_user_id=None):
     categories_order = ['Politicians', 'Authors', 'Trending Now', 'New on Frankly', 'Singers', 'Actors', 'Radio Jockeys', 'Chefs', 'Entrepreneurs', 'Subject Experts']
     results = {cat:[] for cat in categories_order}
 
-    users = SearchDefault.query.order_by(SearchDefault.score).all()
-    for item in users:
-        user = User.query.filter(User.id==item.user).first()
-        if user:
-            results[item.category].append(thumb_user_to_dict(user, cur_user_id))
-
+    for cat in categories_order:
+        users = SearchDefault.query.filter(SearchDefault.category == cat).order_by(SearchDefault.score).all()
+        users = random.sample(users, min(3, len(users)))
+        for item in users:
+            user = User.query.filter(User.id==item.user).first()
+            if user:
+                results[item.category].append(thumb_user_to_dict(user, cur_user_id))
     resp = []
     for cat in categories_order:
         resp.append({'category_name':cat, 'users':results[cat]})
