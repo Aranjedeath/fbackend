@@ -1001,9 +1001,9 @@ def question_list_public(current_user_id, user_id, offset, limit, version_code=N
 
     question_objects = questions_query.limit(limit)
 
-    questions = questions_to_dict(current_user_questions+question_objects, current_user_id)
+    questions = questions_to_dict(cur_user_questions+question_objects, current_user_id)
     
-    cur_user_questions = questions[0:len(current_user_questions)]
+    cur_user_questions = questions[0:len(cur_user_questions)]
     cur_user_questions = [{'question':q, 'type':'question'} for q in cur_user_questions]
 
     other_questions = questions[len(current_user_questions):]
