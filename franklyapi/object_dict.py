@@ -311,12 +311,12 @@ def question_to_dict(question, cur_user_id=None):
 
 def post_to_dict(post, cur_user_id=None, distance=None):
     from configs import config
-    from controllers import get_video_states, is_liked, get_questions, get_thumb_users, get_post_stats, get_user_stats
+    from controllers import get_video_states, get_questions, get_thumb_users, get_posts_stats, get_users_stats
     users = get_thumb_users([post.question_author, post.answer_author], cur_user_id=cur_user_id)
     questions = get_questions([post.question], cur_user_id=cur_user_id)
     
-    post_stats = get_post_stats(post.id)
-    answer_author_stats = get_user_stats(post.answer_author)
+    post_stats = get_posts_stats([post.id], cur_user_id=cur_user_id)
+    user_stats = get_users_stats([post.answer_author], cur_user_id=cur_user_id)
     
     post_dict = {
         'id': post.id,
@@ -341,7 +341,7 @@ def post_to_dict(post, cur_user_id=None, distance=None):
             'user_title':users[post.answer_author]['user_title'],
             'allow_anonymous_question': users[post.answer_author]['user_title'],
             'is_following':users[post.answer_author]['is_following'],
-            'follower_count': answer_author_stats['follower_count']
+            'follower_count': user_stats[post.answer_author]['follower_count']
 
         },
         'question': {
@@ -361,10 +361,10 @@ def post_to_dict(post, cur_user_id=None, distance=None):
             'media_urls':get_video_states({post.media_url:post.thumbnail_url})[post.media_url]
         },
 
-        'liked_count': post_stats['like_count'],
+        'liked_count': post_stats[post.id]['like_count'],
         # to store count and list of user ids
-        'comment_count': post_stats['comment_count'],
-        'is_liked': is_liked(post.id, cur_user_id),
+        'comment_count': post_stats[post.id]['comment_count'],
+        'is_liked': post_stats[post.id]['is_liked'],
         'deleted': post.deleted,
         'tags':[],
         'location': location_dict(post.lat, post.lon, post.location_name, post.country_name, post.country_code),
@@ -372,7 +372,7 @@ def post_to_dict(post, cur_user_id=None, distance=None):
         'client_id':post.client_id,
         'ready':post.ready,
         'popular':post.popular,
-        'view_count':post_stats['view_count'],
+        'view_count':post_stats[post.id]['view_count'],
         'web_link':'http://frankly.me/p/{client_id}'.format(client_id=post.client_id)
     }
     post_dict['answer']['media']['thumbnail_url'] = post_dict['answer']['media_urls']['thumb']
@@ -382,27 +382,28 @@ def post_to_dict(post, cur_user_id=None, distance=None):
 
 def posts_to_dict(posts, cur_user_id=None, distance=None):
     from configs import config
-    from controllers import get_video_states, get_questions, is_liked, get_thumb_users, get_post_stats, get_user_stats
+    from controllers import get_video_states, get_questions, get_thumb_users, get_posts_stats, get_users_stats
     user_list = set()
     answer_media_urls = {}
     question_ids = []
+    post_ids = []
     
     for p in posts:
         user_list.add(p.question_author)
         user_list.add(p.answer_author)
         answer_media_urls[p.media_url] = p.thumbnail_url
         question_ids.append(p.question)
+        post_ids.append(p.id)
 
     users = get_thumb_users(user_list, cur_user_id=cur_user_id)
     media_urls = get_video_states(answer_media_urls)
     questions = get_questions(question_ids, cur_user_id=cur_user_id)
+    post_stats = get_posts_stats(post_ids, cur_user_id)
+    user_stats = get_users_stats(user_list, cur_user_id)
 
 
     posts_dict = []
     for post in posts:
-        
-        post_stats = get_post_stats(post.id)
-        answer_author_stats = get_user_stats(post.answer_author)
         
         p_dict = {
             'id': post.id,
@@ -427,7 +428,7 @@ def posts_to_dict(posts, cur_user_id=None, distance=None):
                 'user_title':users[post.answer_author]['user_title'],
                 'allow_anonymous_question': users[post.answer_author]['user_title'],
                 'is_following':users[post.answer_author]['is_following'],
-                'follower_count': answer_author_stats['follower_count']
+                'follower_count': user_stats[post.answer_author]['follower_count']
 
             },
             'question': {
@@ -446,10 +447,10 @@ def posts_to_dict(posts, cur_user_id=None, distance=None):
                 'tags': [],
                 'media_urls':media_urls[post.media_url]
             },
-            'liked_count': post_stats['like_count'],
+            'liked_count': post_stats[post.id]['like_count'],
             # to store count and list of user ids
-            'comment_count': post_stats['comment_count'],
-            'is_liked': is_liked(post.id, cur_user_id),
+            'comment_count': post_stats[post.id]['comment_count'],
+            'is_liked': post_stats[post.id]['is_liked'],
             #'is_reshared': is_reshared(post.id, cur_user_id),
             'deleted': post.deleted,
             'tags':[],
@@ -458,7 +459,7 @@ def posts_to_dict(posts, cur_user_id=None, distance=None):
             'client_id':post.client_id,
             'ready':post.ready,
             'popular':post.popular,
-            'view_count':post_stats['view_count'],
+            'view_count':post_stats[post.id]['view_count'],
             'web_link':'http://frankly.me/p/{client_id}'.format(client_id=post.client_id)
         }
         p_dict['answer']['media']['thumbnail_url'] = p_dict['answer']['media_urls']['thumb']
