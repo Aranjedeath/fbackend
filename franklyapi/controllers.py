@@ -366,7 +366,7 @@ def get_users_stats(user_ids, cur_user_id=None):
                                                     AND user_follows.unfollowed=false) AS is_following
                                     FROM users
                                     WHERE users.id in :user_ids"""),
-                                params={'cur_user_id':cur_user_id, 'user_ids':user_ids, 'trend_time':trend_time}
+                                params={'cur_user_id':cur_user_id, 'user_ids':list(user_ids), 'trend_time':trend_time}
                                 )
     data = {}
     for row in results:
