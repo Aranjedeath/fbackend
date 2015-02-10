@@ -46,7 +46,7 @@ def log_to_time_log(response_time,request,response):
     try:
         now = datetime.now()
         now_string = now.strftime(datetime_format)
-        log_string = '::'.join([now_string, str(response_time), request.url, json.dumps(request.args), response.status]) + '\n'
+        log_string = '::'.join([str(response_time), request.url, json.dumps(request.args), response.status, now_string]) + '\n'
         f.write(log_string)
         print log_string
         pass
