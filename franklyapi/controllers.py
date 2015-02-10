@@ -2043,7 +2043,7 @@ def search_default(cur_user_id=None):
     user_category_mapping = {}
     for cat in results:
         results[cat] = random.sample(results[cat], min(3, len(results[cat])))
-        users_to_fetch.extent(results[cat])
+        users_to_fetch.extend(results[cat])
         for user in results[cat]:
             user_category_mapping[user] = cat
 
