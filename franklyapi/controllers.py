@@ -152,12 +152,13 @@ def set_access_token(device_id, device_type, user_id, access_token, push_id=None
 
 
 def get_data_from_external_access_token(social_type, external_access_token, external_token_secret=None):
-    print external_access_token
-    user_data = social_helpers.get_user_data(social_type, external_access_token, external_token_secret)
-    print user_data
-    if not user_data:
-        raise CustomExceptions.BadRequestException('Invalid access_tokens')
-    return user_data
+    try:
+        print external_access_token
+        user_data = social_helpers.get_user_data(social_type, external_access_token, external_token_secret)
+        return user_data
+    except Exception as e:
+        raise e
+
 
 def get_user_from_social_id(social_type, social_id):
     try:
