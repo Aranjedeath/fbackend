@@ -2034,7 +2034,7 @@ def search_default(cur_user_id=None):
     
     results = db.session.execute(text("""SELECT search_default.category, users.id, users.username, users.first_name,
                                                     users.user_type, users.user_title, users.profile_picture,
-                                                    users.bio
+                                                    users.bio,
                                                     (SELECT count(*) FROM user_follows
                                                         WHERE user_follows.user=:cur_user_id
                                                             AND user_follows.followed=users.id
