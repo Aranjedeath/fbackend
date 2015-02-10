@@ -369,7 +369,7 @@ def get_users_stats(user_ids, cur_user_id=None):
                                                 WHERE questions.question_to=users.id
                                                     AND questions.deleted=false
                                                     AND questions.is_ignored=false
-                                                    AND questions.is_answered=false) AS question_count,
+                                                    AND questions.is_answered=false) AS question_count
                                     FROM users
                                     WHERE users.id in :user_ids"""),
                                 params={'cur_user_id':cur_user_id, 'user_ids':list(user_ids), 'trend_time':trend_time}
