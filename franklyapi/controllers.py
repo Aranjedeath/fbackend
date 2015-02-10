@@ -2049,6 +2049,7 @@ def search_default(cur_user_id=None):
         user_dict = {'id':row[1],
                     'username':row[2],
                     'first_name':row[3],
+                    'last_name':None,
                     'user_type':row[4],
                     'user_title':row[5],
                     'profile_picture':row[6],
