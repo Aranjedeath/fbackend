@@ -210,6 +210,8 @@ def make_celeb_questions_dict(celeb, questions, current_user_id=None):
 
 
 def questions_to_dict(questions, cur_user_id=None):
+    if not questions:
+        return []
     from controllers import get_question_upvote_count, is_upvoted, get_thumb_users, get_post_id_from_question_id
 
     user_ids = []
@@ -383,8 +385,12 @@ def post_to_dict(post, cur_user_id=None, distance=None):
 
 
 def posts_to_dict(posts, cur_user_id=None, distance=None):
+    if not posts:
+        return []
+
     from configs import config
     from controllers import get_video_states, get_questions, get_thumb_users, get_posts_stats, get_users_stats
+    
     user_list = set()
     answer_media_urls = {}
     question_ids = []
