@@ -1361,7 +1361,8 @@ def home_feed(cur_user_id, offset, limit, web):
         question_user['questions'] = []
         for q in questions:
             question_user['questions'].append(question_to_dict(q, cur_user_id))
-            from random import randint
+            if len(q.body) > 300:
+                break
             if randint(0,9) % 2 == 0:
                 break
         if posts:

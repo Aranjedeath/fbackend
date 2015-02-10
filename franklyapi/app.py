@@ -7,6 +7,7 @@ from raygun4py import raygunprovider
 from flask.ext.sqlalchemy import SQLAlchemy
 from datetime import datetime
 from configs import config
+import traceback
 
 class FlaskConfig():
     DEBUG = config.DEBUG
@@ -36,7 +37,7 @@ redis_search = redis.Redis(config.REDIS_HOST, db=4)
 
 login_manager.login_view = '/login/email'
 
-time_log_file_name = "tmp/flask-timelog.txt"
+time_log_file_name = "/tmp/flask-timelog.txt"
 
 
 def log_to_time_log(response_time,request,response):
@@ -50,7 +51,7 @@ def log_to_time_log(response_time,request,response):
         print log_string
         pass
     except Exception, e:
-        raise e
+        print traceback.format_exc(e)
     f.close()
 @app.before_request
 def add_begin_time_to_g():
