@@ -451,7 +451,7 @@ def get_posts_stats(post_ids, cur_user_id=None):
                                                     AND post_likes.unliked=false) AS is_liked
                                         FROM posts
                                         WHERE posts.id in :post_ids"""),
-                                    params = {'post_ids':post_ids, 'cur_user_id':cur_user_id}
+                                    params = {'post_ids':list(post_ids), 'cur_user_id':cur_user_id}
                                 )
     
     data = {}
@@ -1342,7 +1342,7 @@ def get_user_timeline(cur_user_id, user_id, offset, limit, include_reshares=Fals
 
     total_count = posts_query.count()
     posts = posts_query.offset(offset).limit(limit).all()
-    posts = posts_to_dict(posts, cur_user_id)
+    posts = posts_to_dict(posts, cur_user_id) if posts else []
     posts = [{'type':'post', 'post':post} for post in posts]
     next_index = offset+limit if posts else -1
     return {'stream': posts, 'count':len(posts), 'next_index':next_index, 'total':total_count}
