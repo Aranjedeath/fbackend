@@ -366,3 +366,71 @@ def update_total_view_count(user_id, count):
     User.query.filter(User.id == user_id).update({'total_view_count':count})
     db.session.commit()
 
+def add_to_date_sorted(_type, obj_id, score, date):
+    item = DateSortedItems(_type, obj_id)
+    item.date = date
+    db.session.add(item)
+    return {'success' : True}
+
+def _get_users_for_date_sorted_list(items):
+    users_dict = {item.user:{'score':item.score,'date':item.date} for item in items}
+    user_objs = db.session.execute(text('SELECT * FROM users WHERE user in :user_ids'), params = {'user_ids':users_dict.keys()})
+    res_list = []
+    for user in user_objs:
+        user_dict = {}
+        user_dict['type'] = 'user'
+        user_dict['score'] = users_dict[user.id]['score']
+        user_dict['date'] = users_dict[user.id]['date'] 
+        user_thumb = thumb_user_to_dict(user)
+        user_dict['user'] = user_thumb
+        res_list.append(user_dict)
+    return res_list
+
+def _get_posts_for_date_sorted_list(items):
+    posts_dict = {item.post:{'score':item.score,'date':item.date} for item in items}
+    post_objs = db.session.execute(text('SELECT * FROM post WHERE id in :post_ids'), params = {'post_ids':posts_dict.keys()})
+    post_thumbs = posts_to_dict(post_objs)
+    res_list = []
+    for post in post_thumbs:
+        post_dict = {'type':'post'}
+        post_dict['score'] = posts_dict[post['id']]['score']
+        post_dict['date'] = posts_dict[post['id']]['date'] 
+        post_dict['post'] = post
+        res_list.append(post_dict)
+    return res_list
+    
+def get_date_sorted_list(offset=0, limit=100):
+    items = DateSortedItems.query.all()
+    users = filter(lambda x:x if x.user else False, items)  # users in DateSortedItems
+    posts = filter(lambda x:x if x.post else False, items) # posts in DateSortedItems
+    user_thumbs = _get_users_for_date_sorted_list(users)
+    post_thumbs = _get_posts_for_date_sorted_list(posts)
+    res = []
+    res.extend(user_thumbs)
+    res.extend(post_thumbs)
+    res = sorted(res, key=lambda x:x['date'])
+    return {'result' : res}
+
+def udpate_date_sorted_order_for_date(date, items):
+    '''
+    item contains obj_id, score, _type
+    '''
+    type_dict = {
+                'user' : DateSortedItems.user,
+                'post' : DateSortedItems.post
+            }
+    for item in items:
+        d = DateSortedItems.query.filter(type_dict[item['_type']] == obj_id, DateSortedItems.date == date).first()
+        if d:
+            d.score = item['score']
+        db.session.add(d)
+    db.session.commit()
+
+def delete_date_sorted_item(_type, obj_id):
+    type_dict = {
+                'user' : DateSortedItems.user,
+                'post' : DateSortedItems.post
+            }
+    DateSortedItems.query.filter(type_dict[_type] == obj_id).delete()
+    db.session.commit()
+    return {'success' : True}

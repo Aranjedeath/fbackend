@@ -58,3 +58,26 @@ class IntervalCountMap(Base):
 
     def __repr__(self):
         return '<Hour Count: %s, %s, %s>'%(self.id, self.minutes, self.count)
+
+class DateSortedItems(Base):
+    __tablename__ = 'date_sorted_items'
+    id            = Column(Integer, primary_key = True)
+    user          = Column(CHAR(32), ForeignKey('users'))
+    post          = Column(CHAR(32), ForeignKey('posts'))
+    score         = Column(Integer, default = 0)
+    date          = Column(DateTime, default = datetime.datetime.now())
+
+    def __init__(self, _type, obj_id):
+        if _type == 'user':
+            self.user = obj_id
+        elif _type == 'post':
+            self.post = obj_id
+        else:
+            raise Exception('Type not supported.')
+        self.date = datetime.datetime.now()
+    
+    def __repr__(self):
+        if self.user:
+            return '<DateSortedItems: %r -- User: %r >' %(self.id, self.user)
+        elif self.post:
+            return '<DateSortedItems: %r -- Post: %r >' %(self.id, self.post)
