@@ -41,30 +41,27 @@ def create_event(user, action, foreign_data, event_date=datetime.date.today()):
 
 
 def check_access_token(access_token, device_id):
-    start = datetime.datetime.now()
     try:
         print access_token, device_id
+        device_type = get_device_type(device_id)
         user = None
+        
+        if device_type == 'web':
+            user_id = redis_client.get(access_token)
+            user = User.query.filter(User.id==user_id).first()
 
-        user_id = redis_client.get(access_token)
-        if user_id:
-            user = User.query.get(user_id)
         else:
-            user = User.query.join(AccessToken, User.id==AccessToken.user
+            user = User.query.join(AccessToken, AccessToken.user==User.id
                                             ).filter(AccessToken.access_token==access_token,
                                                         AccessToken.device_id==device_id,
-                                            ).one()
-            redis_client.setex(access_token, user.id, 3600)
-
-        print 'TIME:: ', str(datetime.datetime.now()-start)
+                                            ).first()
         return user
-    except NoResultFound:
-        return None
+    
     except Exception as e:
         err = sys.exc_info()
         raygun.send(err[0],err[1],err[2])
         print traceback.format_exc(e)
-        raise e()
+        raise e
 
 def password_is_valid(password):
     if len(password)<6:
