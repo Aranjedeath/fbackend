@@ -676,7 +676,7 @@ def get_thumb_users(user_ids, cur_user_id=None):
                                     'allow_anonymous_question':bool(row[12]),
                                     'user_type':row[13],
                                     'user_title':row[14],
-                                    'is_following':bool(row[15])
+                                    'is_following':bool(row[15]),
                                     'channel_id':'user_{user_id}'.format(user_id=row[0])
                                     }
                         })
