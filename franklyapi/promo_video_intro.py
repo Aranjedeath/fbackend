@@ -17,7 +17,6 @@ class Q:
 		path=""
 		pass
 def makeCelebPic(canvas,celebPicQ):
-	print celebPicQ.path
 	if celebPicQ.path:
 
 		img = Image.open(celebPicQ.path)
