@@ -135,7 +135,7 @@ def encode_video_to_profile(file_path, video_url, profile_name, username):
             output_file_path = temp_path + ".jpeg"
         else:
             if profile_name=='promo':
-                video_data = video_db.video_data(video_url)
+                video_data = video_db.get_video_data(video_url)
 
                 answer_author_name= video_data["answer_author_name"]
                 answer_author_username= video_data['answer_author_username']
