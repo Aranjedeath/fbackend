@@ -4,7 +4,7 @@ import traceback
 import os
 import shutil
 import promo_video_intro
-
+import video_db
 from configs import config
 import media_uploader
 
@@ -114,7 +114,7 @@ def make_thumbnail(file_path):
     os.chdir(cdir)
     return output_file_path
 
-def encode_video_to_profile(file_path, video_url, profile_name, username):
+def encode_video_to_profile(file_path, video_url, profile_name, username,video_type):
     cdir = os.getcwd()
     print_output('BEGINNING: '+file_path+' '+video_url )
     transpose_command = get_transpose_command(file_path)
@@ -135,8 +135,18 @@ def encode_video_to_profile(file_path, video_url, profile_name, username):
             output_file_path = temp_path + ".jpeg"
         else:
             if profile_name=='promo':
-                temp_path, output_file_name = make_promo_video(file_path,username,transpose_command)
-                output_file_path = temp_path + '/' + output_file_name + ".mp4"
+                video_data = video_db.video_data(video_url)
+
+                answer_author_name= video_data["answer_author_name"]
+                answer_author_username= video_data['answer_author_username']
+                video_file_path = "'/home/satyender/rg/kiran.mp4'"
+                question = video_data['question_body']
+                question_author_username = video_data['question_author_name']
+                answer_author_image_filepath=video_data['answer_author_profile_picture']
+            
+                temp_path, output_file_name = make_promo_video(answer_author_username,video_file_path,transpose_command,answer_author_name,question,question_author_username,answer_author_image_filepath)
+                
+                output_file_path = '/tmp/' + output_file_name + ".mp4"
             else:
                 temp_path = temp_dir+'/{random_string}'.format(random_string=uuid.uuid1().hex)
                 check_make_dir(temp_dir)
@@ -167,7 +177,7 @@ def encode_video_to_profile(file_path, video_url, profile_name, username):
     return result
 
 def make_promo_video(answer_author_username,video_file_path,transpose_command='',answer_author_name=None,question=None,question_author_username=None,answer_author_image_filepath=None):
-    temp_path = 'tmp/{random_string}'.format(random_string=uuid.uuid1().hex)
+    temp_path = '/tmp/{random_string}'.format(random_string=uuid.uuid1().hex)
     output_file_name = '{random_string}'.format(random_string=uuid.uuid1().hex)
     #os.mkdir(temp_path)
     promo_video_intro.makeFinalPromo(answer_author_username,video_file_path,transpose_command,temp_path,output_file_name,answer_author_name,question,question_author_username,answer_author_image_filepath)

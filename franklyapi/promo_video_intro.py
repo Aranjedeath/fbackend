@@ -16,27 +16,28 @@ class Q:
 		path=""
 		pass
 def makeCelebPic(canvas,celebPicQ):
-	img = Image.open(celebPicQ.path)
-	bigsize = (img.size[0] * 3, img.size[1] * 3)
-	# inbigsize = (int(img.size[0] * 2.8), int(img.size[1] * 2.8))
-	mask = Image.open('d57og.png').convert('L')
-	
-	# circle = Image.new('L', bigsize, 0)
-	# draw = ImageDraw.Draw(circle) 
-	# draw.ellipse((0, 0) + bigsize, fill=255)
-	# circle = circle.resize(img.size, Image.ANTIALIAS)
-	
-	# incircle = Image.new('L', bigsize, 255)
-	# indraw = ImageDraw.Draw(incircle) 
-	# indraw.ellipse((bigsize-inbigsize)/2 + inbigsize , fill=0)
-	# incircle = incircle.resize(img.size, Image.ANTIALIAS)
-	# circle.putalpha(incircle)
-	
-	img = img.resize((celebPicQ.w,celebPicQ.w))
-	mask = mask.resize((celebPicQ.w,celebPicQ.w))
+	if celebPicQ.path:
+		img = Image.open(celebPicQ.path)
+		bigsize = (img.size[0] * 3, img.size[1] * 3)
+		# inbigsize = (int(img.size[0] * 2.8), int(img.size[1] * 2.8))
+		mask = Image.open('d57og.png').convert('L')
+		
+		# circle = Image.new('L', bigsize, 0)
+		# draw = ImageDraw.Draw(circle) 
+		# draw.ellipse((0, 0) + bigsize, fill=255)
+		# circle = circle.resize(img.size, Image.ANTIALIAS)
+		
+		# incircle = Image.new('L', bigsize, 255)
+		# indraw = ImageDraw.Draw(incircle) 
+		# indraw.ellipse((bigsize-inbigsize)/2 + inbigsize , fill=0)
+		# incircle = incircle.resize(img.size, Image.ANTIALIAS)
+		# circle.putalpha(incircle)
+		
+		img = img.resize((celebPicQ.w,celebPicQ.w))
+		mask = mask.resize((celebPicQ.w,celebPicQ.w))
 
-	canvas.paste(img,(celebPicQ.x,celebPicQ.y),mask)
-	# canvas.paste(circle,(celebPicQ.x,celebPicQ.y))
+		canvas.paste(img,(celebPicQ.x,celebPicQ.y),mask)
+		# canvas.paste(circle,(celebPicQ.x,celebPicQ.y))
 	return canvas
 def makeCelebName(canvas,celebNameQ):
 	draw = ImageDraw.Draw(canvas)
@@ -129,7 +130,9 @@ def makeFinalPromo(answer_author_username,video_file_path,transpose_command='',t
 		fontfaceItalics = "Bariol_Regular_Italic.otf"
 
 		fadeimage_filename = "fade1.png"
+
 		celebPicQ.path = answer_author_image_filepath
+
 		framesFolder = "final"
 		bgQ.file="snapshot.png"
 		referencepic = "bg1.png"
@@ -198,8 +201,13 @@ def makeFinalPromo(answer_author_username,video_file_path,transpose_command='',t
 		stage7=190 # fade out
 	#------------ratio positioning -----------------
 		celebPicYRatio=0.30
-		celebPicWidthRatio=0.40
-		celebPicHeightRatio=0.40
+
+		if celebPicQ.path:
+			celebPicWidthRatio=0.40
+			celebPicHeightRatio=0.40
+		else:
+			celebPicWidthRatio=0.1
+			celebPicHeightRatio=0.1
 
 		celebNameYGapRatio = 0.04
 
