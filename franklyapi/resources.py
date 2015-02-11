@@ -1881,7 +1881,6 @@ class FeedBackResponse(restful.Resource):
     post_parser.add_argument('message', type=str, location='json', required=True)
     post_parser.add_argument('X-Version-Code', dest='version_code', type=str, location='headers', default=None)
 
-
     @login_required
     def post(self):
         """
@@ -1895,6 +1894,35 @@ class FeedBackResponse(restful.Resource):
         args = self.post_parser.parse_args()
         try:
             return controllers.save_feedback_response(current_user.id, args['medium'], args['message'], args['version_code'])
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0], err[1], err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
+
+
+
+class ChannelFeed(restful.Resource):
+
+    get_parser = reqparse.RequestParser()
+    get_parser.add_argument('offset', type=int, location='args', required=True)
+    get_parser.add_argument('limit', type=int, location='args', required=True)
+    get_parser.add_argument('X-Version-Code', dest='version_code', type=int, location='headers', default=None)
+
+    @login_required
+    def post(self, channel_id):
+        """
+        Returns the feed of a given Channel
+
+        Controller Functions Used:
+            - 
+
+        Authentication: Optional
+        """
+        args = self.get_parser.parse_args()
+        try:
+
+            return controllers.channe
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0], err[1], err[2])

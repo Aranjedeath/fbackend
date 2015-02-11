@@ -38,6 +38,7 @@ def create_event(user, action, foreign_data, event_date=datetime.date.today()):
     return
 
 def check_access_token(access_token, device_id):
+    start = datetime.datetime.now()
     try:
         print access_token, device_id
         device_type = get_device_type(device_id)
@@ -52,8 +53,8 @@ def check_access_token(access_token, device_id):
                                             ).filter(AccessToken.access_token==access_token,
                                                         AccessToken.device_id==device_id,
                                             ).first()
+        print 'TIME:: ', str(datetime.datetime.now()-start)
         return user
-    
     except Exception as e:
         err = sys.exc_info()
         raygun.send(err[0],err[1],err[2])
