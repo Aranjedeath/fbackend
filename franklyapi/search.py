@@ -149,10 +149,11 @@ def search(cur_user_id, q, offset, limit):
                                         )
                                         and monkness=-1 
                                         and profile_video is not null
-                                        and user_type=2
+                                        
                                         {remove_current_user}
 
-                                    order by name_start_match desc,
+                                    order by user_type desc,
+                                            name_start_match desc,
                                             top_user_score desc,
                                             {order_by_processed_username}
                                             exact_title_match desc,
@@ -168,10 +169,9 @@ def search(cur_user_id, q, offset, limit):
 
                                     )
 
-    results = db.session.execute(query,
-                        
-                                params = params
-                                )
+    results = db.session.execute(query, params = params)
+
+    from controllers import is_following
 
     results = [{'type':'user',
                 'user':{'id':row[0],
@@ -181,7 +181,8 @@ def search(cur_user_id, q, offset, limit):
                         'profile_picture':row[3],
                         'user_type':row[4],
                         'user_title':row[5],
-                        'bio':row[6]
+                        'bio':row[6],
+                        'is_following':is_following(row[0], cur_user_id) if cur_user_id else False
                         }
                 } for row in results]
     results.sort(key=lambda x: top_users.index(x['user']['username'].lower()) if  x['user']['username'].lower() in top_users else 999)

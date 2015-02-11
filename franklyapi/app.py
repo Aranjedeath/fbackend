@@ -1,12 +1,13 @@
 import redis
-
-from flask import Flask
+import json
+from flask import Flask,request,g
 from flask.ext import restful
 from flask.ext.login import LoginManager
 from raygun4py import raygunprovider
 from flask.ext.sqlalchemy import SQLAlchemy
-
+from datetime import datetime
 from configs import config
+import traceback
 
 class FlaskConfig():
     DEBUG = config.DEBUG
@@ -36,6 +37,26 @@ redis_search = redis.Redis(config.REDIS_HOST, db=4)
 
 login_manager.login_view = '/login/email'
 
+time_log_file_name = "/tmp/flask-timelog.txt"
+
+
+def log_to_time_log(response_time,request,response):
+    datetime_format = "%Y-%m-%d %H:%M:%S.%f"
+    f=open(time_log_file_name, 'a')
+    try:
+        now = datetime.now()
+        now_string = now.strftime(datetime_format)
+        log_string = ' :: '.join([str(response_time),  response.status, request.url, json.dumps(request.args), now_string]) + '\n'
+        f.write(log_string)
+        print log_string
+        pass
+    except Exception, e:
+        print traceback.format_exc(e)
+    f.close()
+@app.before_request
+def add_begin_time_to_g():
+    g.begin_time = datetime.now()
+
 @app.after_request
 def add_access_control_headers(response):
     import json
@@ -52,6 +73,12 @@ def add_access_control_headers(response):
             response.set_data(json.dumps(data))
         except Exception as e:
             print e
+
+    now = datetime.now()
+    diff = now - g.begin_time
+    
+    log_to_time_log(diff,request,response)
+
     return response
 
 @app.teardown_appcontext
@@ -66,5 +93,3 @@ def load_header(header_vals):
     if not (access_token and device_id):
         return None
     return check_access_token(access_token, device_id)
-
-

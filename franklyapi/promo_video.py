@@ -98,20 +98,23 @@ def promo_video(in_file="", out_file="out.jpg", end_file="end.mp4", final_file="
     i1_vid = call("ffmpeg -loglevel 0 -i "+in_file+" "+transpose_command2+" -qscale:v 1 intermediate1.mpg",shell=True)
     i2_vid = call("ffmpeg -loglevel 0 -i "+end_file+" -qscale:v 1 intermediate2.mpg",shell=True)
     fvid = call("ffmpeg -loglevel 0 -i concat:\"intermediate1.mpg|intermediate2.mpg\" -c copy final.mpg",shell=True)
+    print "final.mpg created"
     #finalvid = call("ffmpeg -loglevel 0 -i final.mpg -qscale:v 2 "+final_file,shell=True)
-    fcall = 'avconv -y -i "final.mpg" -r 25 -vf scale="320:trunc(ow/a/2)*2" -strict experimental -preset veryslow -b:v 256k -pass 1 -c:v libx264  -ar 22050 -ac 1 -ab 44k -f mp4 /dev/null && avconv -y -i "final.mpg" -r 25 -vf scale="320:trunc(ow/a/2)*2" -strict experimental -preset veryslow -b:v 256k -pass 2 -c:v libx264  -ar 22050 -ac 1 -ab 25k '+final_file
-    print fcall
-    finalvid = call(fcall,shell=True)
+    #fcall = 'avconv -y -i "final.mpg" -r 25 -vf scale="320:trunc(ow/a/2)*2" -strict experimental -preset veryslow -b:v 256k -pass 1 -c:v libx264  -ar 22050 -ac 1 -ab 44k -f mp4 /dev/null && avconv -y -i "final.mpg" -r 25 -vf scale="320:trunc(ow/a/2)*2" -strict experimental -preset veryslow -b:v 256k -pass 2 -c:v libx264  -ar 22050 -ac 1 -ab 25k '+final_file
+    #print fcall
     rimage = call('rm '+out_file,shell=True)
-    rinter = call('rm intermediate1.mpg intermediate2.mpg final.mpg',shell=True)
+    rinter = call('rm intermediate1.mpg intermediate2.mpg',shell=True)
     rdir = call('rm -rf '+final_fold,shell=True)
     rend = call('rm '+end_file,shell=True)
     pass
 
 def make_promo(path,in_file,out_file_name,container,infold1,infold2,infold3,font_file,username,transpose_command):
-    shutil.copytree(container+infold1,path+"/"+infold1)
-    shutil.copytree(container+infold2,path+"/"+infold2)
-    shutil.copytree(container+infold3,path+"/"+infold3)
-    shutil.copy(container+font_file,path+"/"+font_file)
+    # shutil.copytree(container+infold1,path+"/"+infold1)
+    # shutil.copytree(container+infold2,path+"/"+infold2)
+    #print container[:-1]
+    shutil.copytree(container[:-1],path)
+    #shutil.copy(container+font_file,path+"/"+font_file)
+
     os.chdir(path)
     promo_video(in_file,text=('/'+username),out_file='temp.jpg',end_file='end.mp4',final_file=(out_file_name+'.mp4'),infold1=infold1,infold3=infold3,infold2=infold2,transpose_command=transpose_command)
+    return 'final.mpg'

@@ -212,7 +212,7 @@ class UserProfile(restful.Resource):
                 user_profile = controllers.user_view_profile(current_user.id, user_id, username=username)
             else:
                 if user_id == 'me':
-                    abort(404, message='User Not Found')
+                    raise CustomExceptions.UserNotFoundException()
                 user_profile = controllers.user_view_profile(None, user_id, username=username)
 
             return user_profile
@@ -1526,6 +1526,27 @@ class NotificationCount(restful.Resource):
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
+
+class QuestionCount(restful.Resource):
+    
+    @login_required
+    def get(self):
+        """
+        Returns count of pending questions for the logged in user
+
+        Controller Functions Used:
+            - question_count
+
+        Authentication: Required
+        """
+        try:
+            resp = controllers.question_count(current_user.id)
+            return resp
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
 
 class Search(restful.Resource):
     

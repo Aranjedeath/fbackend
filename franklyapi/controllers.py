@@ -25,7 +25,7 @@ from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
 from app import redis_client, raygun, db, redis_views
 
 from object_dict import user_to_dict, guest_user_to_dict,\
-                        thumb_user_to_dict, question_to_dict, post_to_dict, comment_to_dict,\
+                        thumb_user_to_dict, question_to_dict,questions_to_dict, post_to_dict, comment_to_dict,\
                         comments_to_dict, posts_to_dict, make_celeb_questions_dict, media_dict,invitable_to_dict
 
 from video_db import add_video_to_db
@@ -148,12 +148,13 @@ def set_access_token(device_id, device_type, user_id, access_token, push_id=None
 
 
 def get_data_from_external_access_token(social_type, external_access_token, external_token_secret=None):
-    print external_access_token
-    user_data = social_helpers.get_user_data(social_type, external_access_token, external_token_secret)
-    print user_data
-    if not user_data:
-        raise CustomExceptions.BadRequestException('Invalid access_tokens')
-    return user_data
+    try:
+        print external_access_token
+        user_data = social_helpers.get_user_data(social_type, external_access_token, external_token_secret)
+        return user_data
+    except Exception as e:
+        raise e
+
 
 def get_user_from_social_id(social_type, social_id):
     try:
@@ -312,6 +313,105 @@ def has_blocked(cur_user_id, user_id):
     return bool(Block.query.filter(or_(Block.user==cur_user_id, Block.blocked_user==cur_user_id)).filter(Block.user==user_id, Block.blocked_user==user_id).limit(1).count())
 
 
+def get_follower_count(user_id):
+    from math import log, sqrt
+    from datetime import datetime, timedelta
+    user = User.query.filter(User.id==user_id).one()
+
+    d = datetime.now() - timedelta(minutes = 5)
+    count_to_pump =  Follow.query.filter(Follow.followed==user_id, Follow.unfollowed==False, Follow.timestamp <= d).count() 
+    count_as_such = Follow.query.filter(Follow.followed==user_id, Follow.unfollowed==False, Follow.timestamp > d).count() +1
+    count = count_as_such + count_to_pump
+
+    if user.user_type == 2:
+        if count_to_pump:
+            count = int(11*count_to_pump + log(count_to_pump,2) + sqrt(count_to_pump)) + count_as_such
+        else:
+            count = count_to_pump + count_as_such
+
+    return count
+
+def get_user_view_count(user_id, user_view_count=None):
+    return User.query.get(user_id).total_view_count
+
+def get_answer_count(user_id):
+    return Post.query.filter(Post.answer_author==user_id, Post.deleted==False).count()
+
+
+def get_users_stats(user_ids, cur_user_id=None):
+    from math import log, sqrt
+    from datetime import datetime, timedelta
+    trend_time = datetime.now() - timedelta(minutes = 5)
+    results = db.session.execute(text("""SELECT users.id, users.user_type, users.total_view_count,
+                                            (SELECT count(*) FROM user_follows
+                                                WHERE user_follows.followed=users.id
+                                                    AND user_follows.unfollowed=false
+                                                    AND user_follows.timestamp<=:trend_time) AS follow_count_to_pump,
+                                            
+                                            (SELECT count(*) FROM user_follows
+                                                WHERE user_follows.followed=users.id
+                                                    AND user_follows.unfollowed=false
+                                                    AND user_follows.timestamp>:trend_time) AS follow_count_as_such,
+                                            
+                                            (SELECT count(posts.id) FROM posts
+                                                WHERE posts.answer_author=users.id
+                                                    AND posts.deleted=false) AS answer_count,
+
+                                            (SELECT count(*) FROM user_follows
+                                                WHERE user_follows.user=:cur_user_id
+                                                    AND user_follows.followed=users.id
+                                                    AND user_follows.unfollowed=false) AS is_following,
+                                            
+                                            (SELECT count(questions.id) FROM questions
+                                                WHERE questions.question_to=users.id
+                                                    AND questions.deleted=false
+                                                    AND questions.is_ignored=false
+                                                    AND questions.is_answered=false) AS question_count
+                                    FROM users
+                                    WHERE users.id in :user_ids"""),
+                                params={'cur_user_id':cur_user_id, 'user_ids':list(user_ids), 'trend_time':trend_time}
+                                )
+    data = {}
+    for row in results:
+        follower_count_to_pump = row[3]
+        follower_count_as_such = row[4]
+        follower_count = follower_count_as_such + follower_count_to_pump
+        if row[1] == 2:
+            if follower_count_to_pump:
+                follower_count = int(11*follower_count_to_pump + log(follower_count_to_pump,2) + sqrt(follower_count_to_pump)) + follower_count_as_such
+            else:
+                follower_count = follower_count_to_pump + follower_count_as_such
+
+        data[row[0]] = {
+                        'following_count':0,
+                        'follower_count':follower_count,
+                        'view_count':row[2],
+                        'answer_count':row[5],
+                        'is_following':bool(row[6]),
+                        'question_count':row[7]
+                        }
+
+    inflated_stats = InflatedStat.query.filter(InflatedStat.user.in_(user_ids)).all()
+    for inflated_stat in inflated_stats:
+        data[inflated_stat.user]['follower_count'] += inflated_stat.follower_count
+        data[inflated_stat.user]['view_count'] += inflated_stat.view_count
+
+    for post_id, values in data.items():
+        if values['view_count'] < values['follower_count']:
+            values['view_count'] += values['follower_count'] + random.randint(50, 200)
+
+    return data
+
+    
+def question_count(user_id):
+    question_count = Question.query.filter(Question.question_to==user_id,
+                            Question.deleted==False,
+                            Question.is_answered==False,
+                            Question.is_ignored==False
+                            ).count()
+    return {'question_count':question_count}
+
+
 def get_user_stats(user_id):
     following_count = 0#get_following_count(user_id)
     follower_count  = get_follower_count(user_id)
@@ -335,6 +435,55 @@ def get_user_stats(user_id):
             'answer_count':answer_count
             }
 
+def get_post_like_count(post_id):
+    count = Like.query.filter(Like.post==post_id, Like.unliked==False).count()
+    return count
+
+def get_post_view_count(post_id):
+    view_count = Post.query.with_entities('view_count').filter(Post.id==post_id).one().view_count
+    return view_count
+
+def get_comment_count(post_id):
+    return Comment.query.filter(Comment.on_post==post_id, Comment.deleted==False).count()
+
+def get_posts_stats(post_ids, cur_user_id=None):
+    results = db.session.execute(text("""SELECT posts.id, posts.view_count,
+                                            (SELECT count(*) FROM post_likes 
+                                                WHERE post_likes.post=posts.id 
+                                                    AND post_likes.unliked=false) AS like_count,
+                                            
+                                            (SELECT count(*) FROM comments
+                                                WHERE comments.on_post=posts.id
+                                                AND comments.deleted=false) AS comment_count,
+                                            
+                                            (SELECT count(*) FROM post_likes 
+                                                WHERE post_likes.post=posts.id
+                                                    AND post_likes.user=:cur_user_id
+                                                    AND post_likes.unliked=false) AS is_liked
+                                        FROM posts
+                                        WHERE posts.id in :post_ids"""),
+                                    params = {'post_ids':list(post_ids), 'cur_user_id':cur_user_id}
+                                )
+    
+    data = {}
+    for row in results:
+        data[row[0]] = {'view_count':row[1],
+                        'like_count':row[2],
+                        'comment_count':row[3],
+                        'is_liked':bool(row[4])
+                        }
+
+    inflated_stats = InflatedStat.query.filter(InflatedStat.post.in_(post_ids)).all()
+    for inflated_stat in inflated_stats:
+        data[inflated_stat.post]['view_count'] += inflated_stat.view_count
+        data[inflated_stat.post]['like_count'] += inflated_stat.like_count
+
+    for post_id, values in data.items():
+        if values['view_count'] < values['like_count']:
+            values['view_count'] += values['like_count'] + random.randint(50, 200)
+
+    return data
+
 
 def get_post_stats(post_id):
     like_count = get_post_like_count(post_id)
@@ -354,6 +503,10 @@ def get_post_stats(post_id):
             'like_count':like_count,
             'comment_count':comment_count
             }
+
+
+
+
 def get_post_id_from_question_id(question_id):
     post = Post.query.with_entities('id').filter(Post.question==question_id).first()
     if post:
@@ -361,23 +514,7 @@ def get_post_id_from_question_id(question_id):
     else:
         return None
 
-def get_follower_count(user_id):
-    from math import log, sqrt
-    from datetime import datetime, timedelta
-    user = User.query.filter(User.id == user_id).first()
 
-    d = datetime.now() - timedelta(minutes = 5)
-    count_to_pump =  Follow.query.filter(Follow.followed==user_id, Follow.unfollowed==False, Follow.timestamp <= d).count() 
-    count_as_such = Follow.query.filter(Follow.followed==user_id, Follow.unfollowed==False, Follow.timestamp > d).count() +1
-    count = count_as_such + count_to_pump
-
-    if user.user_type == 2:
-        if count_to_pump:
-            count = int(11*count_to_pump + log(count_to_pump,2) + sqrt(count_to_pump)) + count_as_such
-        else:
-            count = count_to_pump + count_as_such
-
-    return count
 
 def get_following_count(user_id):
     return Follow.query.filter(Follow.user==user_id, Follow.unfollowed==False).count()
@@ -403,21 +540,11 @@ def get_user_like_count(user_id):
         count = row[0]
     return count
 
-def get_user_view_count(user_id, user_view_count=None):
-    return User.query.get(user_id).total_view_count
-
 def is_following(user_id, current_user_id):
     return bool(Follow.query.filter(Follow.user==current_user_id, Follow.followed==user_id, Follow.unfollowed==False).limit(1).count())
 
 def is_follower(user_id, current_user_id):
     return bool(Follow.query.filter(Follow.user==user_id, Follow.followed==current_user_id, Follow.unfollowed==False).limit(1).count())
-
-def get_post_like_count(post_id):
-    post = Post.query.filter(Post.id == post_id).first()
-    count = Like.query.filter(Like.post==post_id, Like.unliked==False).count()
-    if post.answer_author == '3d75b05d82694b1cbefae6c5ae14012d':
-        count = count + 146
-    return count
 
 def is_liked(post_id, user_id):
     return bool(Like.query.filter(Like.post==post_id, Like.user==user_id, Like.unliked==False).count())
@@ -427,13 +554,6 @@ def get_post_reshare_count(post_id):
 
 def is_reshared(post_id, user_id):
     return bool(Reshare.query.filter(Reshare.post==post_id, Reshare.user==user_id).count())
-
-def get_comment_count(post_id):
-    return Comment.query.filter(Comment.on_post==post_id, Comment.deleted==False).count()
-
-def get_post_view_count(post_id):
-    view_count = Post.query.with_entities('view_count').filter(Post.id==post_id).one().view_count
-    return view_count
 
 def get_question_upvote_count(question_id):
     from math import sqrt, log
@@ -515,15 +635,20 @@ def get_video_states(video_urls={}):
     return result
 
 
-def get_thumb_users(user_ids):
+def get_thumb_users(user_ids, cur_user_id=None):
     data = {}
     if user_ids:
-        result = db.session.execute(text("""SELECT id, username, first_name, profile_picture, deleted,
-                                                lat, lon, location_name, country_name, country_code,
-                                                gender, bio, allow_anonymous_question, user_type, user_title 
+        result = db.session.execute(text("""SELECT users.id, users.username, users.first_name, users.profile_picture, users.deleted,
+                                                users.lat, users.lon, users.location_name, users.country_name, users.country_code,
+                                                users.gender, users.bio, users.allow_anonymous_question, users.user_type, users.user_title,
+                                                (SELECT count(user_follows.user) FROM user_follows 
+                                                        WHERE user_follows.user=:cur_user_id
+                                                                AND user_follows.followed=users.id
+                                                                AND user_follows.unfollowed=False
+                                                                ) as is_following
                                             FROM users 
-                                            WHERE id in :user_ids"""),
-                                        params={'user_ids':list(user_ids)})
+                                            WHERE users.id in :user_ids"""),
+                                        params={'user_ids':list(user_ids), 'cur_user_id':cur_user_id})
         for row in result:
             if not row[5] or not row[6]:
                 coordinate_point = None
@@ -547,24 +672,31 @@ def get_thumb_users(user_ids):
                                     'bio':row[11],
                                     'allow_anonymous_question':bool(row[12]),
                                     'user_type':row[13],
-                                    'user_title':row[14]
+                                    'user_title':row[14],
+                                    'is_following':bool(row[15])
                                     }
                         })
     return data
 
-def get_questions(question_ids):
+def get_questions(question_ids, cur_user_id=None):
     data = {}
     if question_ids:
-        result = db.session.execute(text("""SELECT id, body, is_anonymous, timestamp
+        result = db.session.execute(text("""SELECT questions.id, questions.body,
+                                                   questions.is_anonymous, questions.timestamp,
+                                                   (SELECT count(question_upvotes.user) FROM question_upvotes
+                                                    WHERE question_upvotes.question=questions.id 
+                                                            AND question_upvotes.user=:cur_user_id
+                                                            AND question_upvotes.downvoted=False) as is_upvoted
                                             FROM questions
                                             WHERE id in :question_ids"""),
-                                        params={'question_ids':list(question_ids)})
+                                        params={'question_ids':list(question_ids), 'cur_user_id':cur_user_id})
         for row in result:
             data.update({
                             row[0]:{'id':row[0],
                                     'body':row[1],
                                     'is_anonymous':row[2],
-                                    'timestamp':row[3]
+                                    'timestamp':row[3],
+                                    'is_upvoted':bool(row[4])
                                     }
                         })
     return data
@@ -573,24 +705,26 @@ def get_questions(question_ids):
 
 def user_view_profile(current_user_id, user_id, username=None):
     try:
-        cur_user = None
-        if current_user_id:
-            cur_user = User.query.get(current_user_id)
-            if (username and cur_user.username.lower() == username.lower()) or (current_user_id == user_id):
-                return {'user': user_to_dict(cur_user)}
-
+        user = None
         if username:
             user = User.query.filter(User.username==username).one()
-        else:
+        
+        elif user_id:
             user = User.query.get(user_id)
+
+        if user and user.id == current_user_id:
+            return {'user': user_to_dict(user)}
+
         if not user:
             raise NoResultFound()
 
-        if cur_user:
-            if has_blocked(cur_user.id, user.id):
+        if current_user_id:
+            if has_blocked(current_user_id, user.id):
                 raise CustomExceptions.BlockedUserException()
-        if str(current_user_id) in config.ADMIN_USERS:
+        
+        if current_user_id in config.ADMIN_USERS:
             return {'user': user_to_dict(user)}
+        
         return {'user': guest_user_to_dict(user, current_user_id)}
     
     except NoResultFound:
@@ -921,10 +1055,6 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous):
     
     db.session.add(question)
 
-    event = create_event(user=cur_user_id, action='question', foreign_data=question.id)
-    if event:
-        db.session.add(event)
-
     db.session.commit()
 
     resp = {'success':True, 'id':str(question.id), 'question':question_to_dict(question)}
@@ -943,7 +1073,9 @@ def question_list(user_id, offset, limit):
     #                                        ).order_by(Question.score.desc()
                                             ).offset(offset)
     
-    questions = [{'question':question_to_dict(question), 'type':'question'} for question in questions_query.limit(limit)]
+    questions = questions_to_dict(questions_query.limit(limit))
+    questions = [{'question':q, 'type':'question'} for q in questions]
+
     next_index = str(offset+limit) if questions else "-1"
     return {'questions': questions, 'count': len(questions),  'next_index' : next_index}
 
@@ -964,9 +1096,7 @@ def question_list_public(current_user_id, user_id, offset, limit, version_code=N
                                                     ).order_by(Question.timestamp.desc()
                                                     ).offset(0).limit(5).all()
 
-        cur_user_questions = [{'question':question_to_dict(question, current_user_id), 'type':'question'} for question in cur_user_questions]
-
-    cur_user_question_ids = [q['question']['id'] for q in cur_user_questions]
+    cur_user_question_ids = [q.id for q in cur_user_questions]
     
     questions_query = Question.query.filter(~Question.id.in_(cur_user_question_ids),
                                             Question.question_to==user_id, 
@@ -980,9 +1110,17 @@ def question_list_public(current_user_id, user_id, offset, limit, version_code=N
                                             ).order_by(func.count(Upvote.id).desc()
                                             ).offset(offset)
 
-    question_objects = questions_query.limit(limit)
-    questions = [{'question':question_to_dict(question, current_user_id), 'type':'question'} for question in question_objects]
-    questions.sort(key=lambda q: q['question']['ask_count']*q['question']['score'], reverse=True)
+    question_objects = questions_query.limit(limit).all()
+
+    questions = questions_to_dict(cur_user_questions+question_objects, current_user_id)
+    
+    cur_user_questions = questions[0:len(cur_user_questions)]
+    cur_user_questions = [{'question':q, 'type':'question'} for q in cur_user_questions]
+
+    other_questions = questions[len(cur_user_questions):]
+    other_questions.sort(key=lambda q: q['ask_count']*q['score'], reverse=True)
+    questions = [{'question':q, 'type':'question'} for q in other_questions]
+
     next_index = str(offset+limit) if questions else "-1"
     return {'current_user_questions':cur_user_questions, 'questions': questions, 'count': len(questions),  'next_index' : next_index}
 
@@ -1334,7 +1472,8 @@ def home_feed(cur_user_id, offset, limit, web):
         question_user['questions'] = []
         for q in questions:
             question_user['questions'].append(question_to_dict(q, cur_user_id))
-            from random import randint
+            if len(q.body) > 300:
+                break
             if randint(0,9) % 2 == 0:
                 break
         if posts:
@@ -2020,18 +2159,44 @@ def discover_post_in_cqm(cur_user_id, offset, limit, device_id, version_code, we
            }
 
 def search_default(cur_user_id=None):
+    from collections import defaultdict
     categories_order = ['Politicians', 'Authors', 'Trending Now', 'New on Frankly', 'Singers', 'Actors', 'Radio Jockeys', 'Chefs', 'Entrepreneurs', 'Subject Experts']
-    results = {cat:[] for cat in categories_order}
+    
+    results = db.session.execute(text("""SELECT search_defaults.category, users.id, users.username, users.first_name,
+                                                    users.user_type, users.user_title, users.profile_picture,
+                                                    users.bio, users.gender,
+                                                    (SELECT count(*) FROM user_follows
+                                                        WHERE user_follows.user=:cur_user_id
+                                                            AND user_follows.followed=users.id
+                                                            AND user_follows.unfollowed=false) AS is_following
+                                            FROM users JOIN search_defaults ON users.id=search_defaults.user
+                                            WHERE search_defaults.category IN :categories
+                                            ORDER BY search_defaults.score"""),
+                                        params = {'cur_user_id':cur_user_id, 'categories':categories_order}
+                                )
+    category_results = defaultdict(list)
+    for row in results:
+        user_dict = {'id':row[1],
+                    'username':row[2],
+                    'first_name':row[3],
+                    'last_name':None,
+                    'user_type':row[4],
+                    'user_title':row[5],
+                    'profile_picture':row[6],
+                    'bio':row[7],
+                    'gender':row[8],
+                    'is_following':bool(row[9])
+                    }
+        category_results[row[0]].append(user_dict)
 
-    users = SearchDefault.query.order_by(SearchDefault.score).all()
-    for item in users:
-        user = User.query.filter(User.id==item.user).first()
-        if user:
-            results[item.category].append(thumb_user_to_dict(user, cur_user_id))
+
+    for category, users in category_results.items():
+        category_results[category] = random.sample(category_results[category], min(3, len(category_results[category])))
 
     resp = []
     for cat in categories_order:
-        resp.append({'category_name':cat, 'users':results[cat]})
+        if category_results.get(cat):
+            resp.append({'category_name':cat, 'users':category_results[cat]})
 
     return {'results':resp}
 
