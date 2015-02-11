@@ -40,6 +40,7 @@ def create_event(user, action, foreign_data, event_date=datetime.date.today()):
 
 def check_access_token(access_token, device_id):
     try:
+        start = datetime.datetime.now()
         print access_token, device_id
         device_type = get_device_type(device_id)
         user_id = None
@@ -55,6 +56,7 @@ def check_access_token(access_token, device_id):
         user_id = access_token_object.user
         user = User.query.get(user_id)
         print 'LOGGED IN USER', user.username
+        print 'TIME::', str(datetime.datetime.now() - start)
         return user
     except NoResultFound:
         return None
