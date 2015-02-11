@@ -1928,7 +1928,7 @@ class ChannelFeed(restful.Resource):
             if current_user.is_authenticated():
                 current_user_id = current_user.id                
 
-            return controllers.get_channel_feed(current_user_id, args['offset'], args['limit'], args['X-deviceid'], args['X-Version-Code'], args['append_top'])
+            return controllers.get_channel_feed(current_user_id, channel_id, args['offset'], args['limit'], args['X-deviceid'], args['X-Version-Code'], args['append_top'])
         
         except CustomExceptions.BadRequestException as e:
             abort(404, message=str(e))
