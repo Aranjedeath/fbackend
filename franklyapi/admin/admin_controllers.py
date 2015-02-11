@@ -366,7 +366,7 @@ def update_total_view_count(user_id, count):
     User.query.filter(User.id == user_id).update({'total_view_count':count})
     db.session.commit()
 
-def admin_search_default():
+def admin_search_default(cur_user_id = None):
     from collections import defaultdict
     categories_order = ['Trending Now', 'Politicians', 'Authors', 'New on Frankly', 'Singers', 'Actors', 'Radio Jockeys', 'Chefs', 'Entrepreneurs', 'Subject Experts']
     
