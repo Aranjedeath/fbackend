@@ -1923,7 +1923,7 @@ class ChannelFeed(restful.Resource):
 
         Authentication: Optional
         """
-        args = self.post_parser.parse_args()
+        args = self.get_parser.parse_args()
         try:
             current_user_id = None
             
