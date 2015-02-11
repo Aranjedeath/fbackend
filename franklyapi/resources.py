@@ -1912,8 +1912,6 @@ class ChannelFeed(restful.Resource):
     get_parser.add_argument('X-Version-Code', type=int, location='headers', default=0)
     get_parser.add_argument('append_top', type=str, location='args', default='')
 
-
-    @login_required
     def get(self, channel_id):
         """
         Returns feed of the given channel_id
