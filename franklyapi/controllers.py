@@ -2122,7 +2122,7 @@ def save_feedback_response(cur_user_id, medium, message, version):
 def parse_channel_id(channel_id):
     channel_data = channel_id.split('_')
     channel_type = channel_data[0]
-    channel_id = channel_data[1]
+    channel_id = '_'.join(channel_data[1:])
 
     return channel_type, channel_id
 
