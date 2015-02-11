@@ -366,3 +366,44 @@ def update_total_view_count(user_id, count):
     User.query.filter(User.id == user_id).update({'total_view_count':count})
     db.session.commit()
 
+def admin_search_default():
+    from collections import defaultdict
+    categories_order = ['Trending Now', 'Politicians', 'Authors', 'New on Frankly', 'Singers', 'Actors', 'Radio Jockeys', 'Chefs', 'Entrepreneurs', 'Subject Experts']
+    
+    results = db.session.execute(text("""SELECT search_defaults.category, users.id, users.username, users.first_name,
+                                                    users.user_type, users.user_title, users.profile_picture,
+                                                    users.bio, users.gender,
+                                                    (SELECT count(*) FROM user_follows
+                                                        WHERE user_follows.user=:cur_user_id
+                                                            AND user_follows.followed=users.id
+                                                            AND user_follows.unfollowed=false) AS is_following
+                                            FROM users JOIN search_defaults ON users.id=search_defaults.user
+                                            WHERE search_defaults.category IN :categories
+                                            ORDER BY search_defaults.score"""),
+                                        params = {'cur_user_id':cur_user_id, 'categories':categories_order}
+                                )
+    category_results = defaultdict(list)
+    for row in results:
+        user_dict = {'id':row[1],
+                    'username':row[2],
+                    'first_name':row[3],
+                    'last_name':None,
+                    'user_type':row[4],
+                    'user_title':row[5],
+                    'profile_picture':row[6],
+                    'bio':row[7],
+                    'gender':row[8],
+                    'is_following':bool(row[9])
+                    }
+        category_results[row[0]].append(user_dict)
+
+
+    for category, users in category_results.items():
+        category_results[category] = category_results[category]
+
+    resp = []
+    for cat in categories_order:
+        if category_results.get(cat):
+            resp.append({'category_name':cat, 'users':category_results[cat]})
+
+    return {'results':resp}

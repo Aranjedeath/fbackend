@@ -166,6 +166,7 @@ api.add_resource(admin.AdminDeleteSearchDefaultUser, '/admin/search/default/dele
 api.add_resource(admin.AdminUpdateSearchDefaultCategoryOrder, '/admin/search/default/update')
 api.add_resource(admin.AdminGetUnansweredQuestionListWithSameCount, '/admin/question/list/same')
 api.add_resource(admin.AdminGetSimilarQuestions, '/admin/question/similar')
+api.add_resource(admin.AdminSearchDefault, '/admin/search/default')
 
 if __name__ == '__main__':
     app.run('127.0.0.1', 8000)

@@ -429,3 +429,7 @@ class AdminGetSimilarQuestions(AdminProtectedResource):
             print traceback.format_exc(e)
             abort(500, message='Error')
 
+class AdminSearchDefault(AdminProtectedResource):
+    @login_required
+    def get(self):
+        return admin_controllers.admin_search_default()
