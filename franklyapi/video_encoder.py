@@ -114,7 +114,7 @@ def make_thumbnail(file_path):
     os.chdir(cdir)
     return output_file_path
 
-def encode_video_to_profile(file_path, video_url, profile_name, username,video_type):
+def encode_video_to_profile(file_path, video_url, profile_name, username):
     cdir = os.getcwd()
     print_output('BEGINNING: '+file_path+' '+video_url )
     transpose_command = get_transpose_command(file_path)
