@@ -677,6 +677,7 @@ def get_thumb_users(user_ids, cur_user_id=None):
                                     'user_type':row[13],
                                     'user_title':row[14],
                                     'is_following':bool(row[15])
+                                    'channel_id':'user_{user_id}'.format(user_id=row[0])
                                     }
                         })
     return data
@@ -2055,7 +2056,8 @@ def search_default(cur_user_id=None):
                     'profile_picture':row[6],
                     'bio':row[7],
                     'gender':row[8],
-                    'is_following':bool(row[9])
+                    'is_following':bool(row[9]),
+                    'channel_id':'user_{user_id}'.format(user_id=row[1])
                     }
         category_results[row[0]].append(user_dict)
 
@@ -2110,11 +2112,40 @@ def top_liked_users(cur_user_id, count=5):
     return {'users': get_thumb_users(liked_user_ids).values()}
 
 def save_feedback_response(cur_user_id, medium, message, version):
-    email = User.query.filter(User.id==str(cur_user_id)).one().email
+    from models import Feedback
     feedback = Feedback(user=str(cur_user_id), medium=medium, message=message, version=version)
     db.session.add(feedback)
     db.session.commit()
     return {'success': True}
+
+
+def parse_channel_id(channel_id):
+    channel_data = channel_id.split('_')
+    channel_type = channel_data[0]
+    channel_id = channel_data[1]
+
+    return channel_type, channel_id
+
+
+def channel_feed(cur_user_id, channel_id, offset, limit, device_id=None, version_code=None, append_top=''):
+    channel_type, channel_id = parse_channel_id(channel_id)
+    
+    device_type = get_device_type(device_id) if device_id else None
+    web = True if device_type == 'web' else False
+
+    if channel_type == 'user':
+        return get_user_timeline(cur_user_id, channel_id, offset, limit)
+
+    if channel_type == 'feed':
+        return home_feed(cur_user_id, offset, limit, web)
+
+    if channel_type == 'discover':
+        return discover_post_in_cqm(cur_user_id, offset, limit, device_id, version_code, web, append_top=append_top)
+
+
+
+
+
 
 
 

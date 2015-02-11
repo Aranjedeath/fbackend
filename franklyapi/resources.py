@@ -1902,3 +1902,42 @@ class FeedBackResponse(restful.Resource):
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
+
+class ChannelFeed(restful.Resource):
+
+    get_parser = reqparse.RequestParser()
+    get_parser.add_argument('offset', type=int, location='args', required=True)
+    get_parser.add_argument('limit', type=int, location='args', required=True)
+    get_parser.add_argument('X-deviceid', type=str, location='headers')
+    get_parser.add_argument('X-Version-Code', type=int, location='headers', default=0)
+    get_parser.add_argument('append_top', type=str, location='args', default='')
+
+
+    @login_required
+    def get(self, channel_id):
+        """
+        Returns feed of the given channel_id
+
+        Controller Functions Used:
+            - top_liked_users
+
+        Authentication: Optional
+        """
+        args = self.post_parser.parse_args()
+        try:
+            current_user_id = None
+            
+            if current_user.is_authenticated():
+                current_user_id = current_user.id                
+
+            return controllers.get_channel_feed(current_user_id, args['offset'], args['limit'], args['X-deviceid'], args['X-Version-Code'], args['append_top'])
+        
+        except CustomExceptions.BadRequestException as e:
+            abort(404, message=str(e))
+        except CustomExceptions.UserNotFoundException, e:
+            abort(404, message=str(e))
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0], err[1], err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
