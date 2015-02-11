@@ -53,6 +53,9 @@ class User(Base):
     view_count                = Column(Integer(), default=0)
     total_view_count          = Column(Integer(), default=0)
 
+    def get_user(self,_id):
+        self.id = _id
+        return self
 
     def __init__(self, email, username, first_name, registered_with, password=None, facebook_id=None, twitter_id=None, google_id=None,
                         bio=None, gender=None, profile_picture=None, profile_video=None, cover_picture=None,

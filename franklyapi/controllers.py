@@ -50,7 +50,7 @@ def check_access_token(access_token, device_id):
         if user_id:
             user = User(id=user_id)
         else:
-            user = User.query.with_entities('id').join(AccessToken, User.id==AccessToken.user
+            user = User.query.join(AccessToken, User.id==AccessToken.user
                                             ).filter(AccessToken.access_token==access_token,
                                                         AccessToken.device_id==device_id,
                                             ).one()
@@ -64,7 +64,7 @@ def check_access_token(access_token, device_id):
         err = sys.exc_info()
         raygun.send(err[0],err[1],err[2])
         print traceback.format_exc(e)
-        raise e
+        raise e()
 
 def password_is_valid(password):
     if len(password)<6:
