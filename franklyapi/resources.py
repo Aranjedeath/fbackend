@@ -1906,8 +1906,8 @@ class FeedBackResponse(restful.Resource):
 class ChannelFeed(restful.Resource):
 
     get_parser = reqparse.RequestParser()
-    get_parser.add_argument('offset', type=int, location='args', required=True)
-    get_parser.add_argument('limit', type=int, location='args', required=True)
+    get_parser.add_argument('offset', type=int, location='args', default=0)
+    get_parser.add_argument('limit', type=int, location='args', default=10)
     get_parser.add_argument('X-deviceid', type=str, location='headers')
     get_parser.add_argument('X-Version-Code', type=int, location='headers', default=0)
     get_parser.add_argument('append_top', type=str, location='args', default='')
