@@ -38,26 +38,31 @@ def create_event(user, action, foreign_data, event_date=datetime.date.today()):
         return Event(user=user, action=action, foreign_data=foreign_data, event_date=event_date)
     return
 
+
+
 def check_access_token(access_token, device_id):
+    start = datetime.datetime.now()
     try:
-        start = datetime.datetime.now()
         print access_token, device_id
         device_type = get_device_type(device_id)
-        user_id = None
+        user = None
+        
         if device_type == 'web':
             user_id = redis_client.get(access_token)
-            print 'REDIS USER', user_id
-            return User.query.get(user_id) if user_id else None
+            user = User.query.filter(User.id==user_id).first()
 
-        access_token_object = AccessToken.query.filter(AccessToken.access_token==access_token,
+        else:
+            user = User.query.join(AccessToken, AccessToken.user==User.id
+                                            ).filter(AccessToken.access_token==access_token,
                                                         AccessToken.device_id==device_id,
-                                                        AccessToken.active==True).one()
-
-        user_id = access_token_object.user
-        user = User.query.get(user_id)
-        print 'LOGGED IN USER', user.username
-        print 'TIME::', str(datetime.datetime.now() - start)
+                                            ).first()
+        print 'TIME:: ', str(datetime.datetime.now()-start)
         return user
+    except Exception as e:
+        err = sys.exc_info()
+        raygun.send(err[0],err[1],err[2])
+        print traceback.format_exc(e)
+        raise e
     except NoResultFound:
         return None
     except Exception as e:
