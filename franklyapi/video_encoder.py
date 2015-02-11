@@ -166,11 +166,12 @@ def encode_video_to_profile(file_path, video_url, profile_name, username):
         print traceback.format_exc(e)
     return result
 
-def make_promo_video(answer_author_name,video_file_path,question,question_author_username,answer_author_image_filepath,transpose_command):
+def make_promo_video(answer_author_username,video_file_path,transpose_command='',answer_author_name=None,question=None,question_author_username=None,answer_author_image_filepath=None):
     temp_path = 'tmp/{random_string}'.format(random_string=uuid.uuid1().hex)
     output_file_name = '{random_string}'.format(random_string=uuid.uuid1().hex)
     #os.mkdir(temp_path)
-    promo_video_intro.makeFinalPromo(answer_author_name,video_file_path,question,question_author_username,answer_author_image_filepath,transpose_command,temp_path,output_file_name)
+    promo_video_intro.makeFinalPromo(answer_author_username,video_file_path,transpose_command,temp_path,output_file_name,answer_author_name,question,question_author_username,answer_author_image_filepath)
+    #promo_video_intro.makeFinalPromo(answer_author_name,video_file_path,question,question_author_username,answer_author_image_filepath,transpose_command,temp_path,output_file_name)
     #promo_video.make_promo(temp_path,file_path,output_file_name,'promo_content/','overlay_png1','overlay_png2','overlay_png3','bariol_bold-webfont_0.ttf',username,transpose_command)
     return (temp_path , output_file_name)
 
