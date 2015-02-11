@@ -50,7 +50,7 @@ def check_access_token(access_token, device_id):
         if user_id:
             user = User(id=user_id)
         else:
-            user = User.query.with_entities('id').join(AccessToken, AccessToken.user==User.id
+            user = User.query.with_entities('id').join(AccessToken, User.id==AccessToken.user
                                             ).filter(AccessToken.access_token==access_token,
                                                         AccessToken.device_id==device_id,
                                             ).one()
