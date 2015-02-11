@@ -48,7 +48,7 @@ def check_access_token(access_token, device_id):
 
         user_id = redis_client.get(access_token)
         if user_id:
-            user = User(id=user_id, email='not@not.com', username='not_username', first_name='not_first_name', registered_with='none')
+            user = User.query.get(user_id)
         else:
             user = User.query.join(AccessToken, User.id==AccessToken.user
                                             ).filter(AccessToken.access_token==access_token,
