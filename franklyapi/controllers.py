@@ -2127,7 +2127,7 @@ def parse_channel_id(channel_id):
     return channel_type, channel_id
 
 
-def channel_feed(cur_user_id, channel_id, offset, limit, device_id=None, version_code=None, append_top=''):
+def get_channel_feed(cur_user_id, channel_id, offset, limit, device_id=None, version_code=None, append_top=''):
     channel_type, channel_id = parse_channel_id(channel_id)
     
     device_type = get_device_type(device_id) if device_id else None
