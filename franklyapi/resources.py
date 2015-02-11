@@ -212,7 +212,7 @@ class UserProfile(restful.Resource):
                 user_profile = controllers.user_view_profile(current_user.id, user_id, username=username)
             else:
                 if user_id == 'me':
-                    abort(404, message='User Not Found')
+                    raise CustomExceptions.UserNotFoundException()
                 user_profile = controllers.user_view_profile(None, user_id, username=username)
 
             return user_profile
