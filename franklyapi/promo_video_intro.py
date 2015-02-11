@@ -7,6 +7,7 @@ import shutil
 import os
 from promo_video import make_promo
 
+
 class Q:
 		x,y,w,h = 0,0,0,0
 		font = 0
@@ -203,11 +204,6 @@ def makeFinalPromo(answer_author_username,video_file_path,transpose_command='',t
 		stage7=190 # fade out
 	#------------ratio positioning -----------------
 		celebPicYRatio=0.30
-		try:
-			img = Image.open(celebPicQ.path)
-			pass
-		except Exception, e:
-			celebPicQ.path = None
 
 		if celebPicQ.path:
 			celebPicWidthRatio=0.40

@@ -142,8 +142,15 @@ def encode_video_to_profile(file_path, video_url, profile_name, username):
                 video_file_path = file_path
                 question = video_data['question_body']
                 question_author_username = video_data['question_author_name']
-                answer_author_image_filepath=video_data['answer_author_profile_picture']
-            
+                profile_picture_url = video_data['answer_author_profile_picture']
+                
+                if profile_picture_url:
+                    answer_author_image_filepath= media_uploader.download_file(profile_picture_url)
+                else:
+                    answer_author_image_filepath=None
+
+
+
                 temp_path, output_file_name = make_promo_video(answer_author_username,video_file_path,transpose_command,answer_author_name,question,question_author_username,answer_author_image_filepath)
                 
                 output_file_path = '/tmp/' + output_file_name + ".mp4"
