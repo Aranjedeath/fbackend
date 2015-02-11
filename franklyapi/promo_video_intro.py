@@ -16,7 +16,9 @@ class Q:
 		path=""
 		pass
 def makeCelebPic(canvas,celebPicQ):
+	print celebPicQ.path
 	if celebPicQ.path:
+
 		img = Image.open(celebPicQ.path)
 		bigsize = (img.size[0] * 3, img.size[1] * 3)
 		# inbigsize = (int(img.size[0] * 2.8), int(img.size[1] * 2.8))
@@ -201,6 +203,11 @@ def makeFinalPromo(answer_author_username,video_file_path,transpose_command='',t
 		stage7=190 # fade out
 	#------------ratio positioning -----------------
 		celebPicYRatio=0.30
+		try:
+			img = Image.open(celebPicQ.path)
+			pass
+		except Exception, e:
+			celebPicQ.path = None
 
 		if celebPicQ.path:
 			celebPicWidthRatio=0.40

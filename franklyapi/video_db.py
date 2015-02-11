@@ -1,4 +1,4 @@
-from models import Video, User, Post
+from models import Video, User, Post, Question
 from app import db, redis_views
 from sqlalchemy.sql import text, func
 
@@ -92,8 +92,8 @@ def get_video_data(video_url):
     else:
         post = Post.query.filter(Post.id==video.object_id).one()
         question = Question.query.filter(Question.id==post.question).one()
-        question_author = User.query.filter(User.id==Post.question_author).one()
-        answer_author = User.query.filter(User.id==Post.answer_author).one()
+        question_author = User.query.filter(User.id==post.question_author).one()
+        answer_author = User.query.filter(User.id==post.answer_author).one()
         username = answer_author.username
         answer_author_name = answer_author.first_name
         question_author_name = question_author.first_name

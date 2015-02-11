@@ -139,7 +139,7 @@ def encode_video_to_profile(file_path, video_url, profile_name, username):
 
                 answer_author_name= video_data["answer_author_name"]
                 answer_author_username= video_data['answer_author_username']
-                video_file_path = "'/home/satyender/rg/kiran.mp4'"
+                video_file_path = file_path
                 question = video_data['question_body']
                 question_author_username = video_data['question_author_name']
                 answer_author_image_filepath=video_data['answer_author_profile_picture']
