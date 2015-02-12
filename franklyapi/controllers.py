@@ -1142,9 +1142,9 @@ def question_upvote(cur_user_id, question_id):
                             params={'cur_user_id':cur_user_id, 'question_id':question_id}
                         )
 
-        event = create_event(user=cur_user_id, action='upvote', foreign_data=question_id)
-        if event:
-            db.session.add(event)
+        #event = create_event(user=cur_user_id, action='upvote', foreign_data=question_id)
+        #if event:
+        #   db.session.add(event)
         db.session.commit()
     else:
         raise CustomExceptions.BadRequestException("Question is not available for upvote")
@@ -1668,7 +1668,7 @@ Franksters'''.format(user.first_name, datetime.strftime(datetime.datetime.now(),
                 'message':'Your password has been reset'}
     except NoResultFound:
         raise CustomExceptions.ObjectNotFoundException()
-
+z
 def install_ref(device_id, url):
     #url = "https://play.google.com/store/apps/details?id=me.frankly&referrer=utm_source%3Dsource%26utm_medium%3Dmedium%26utm_term%3Dterm%26utm_content%3Dcontent%26utm_campaign%3Dname"
     from urllib import unquote
@@ -2143,7 +2143,43 @@ def get_channel_feed(cur_user_id, channel_id, offset, limit, device_id=None, ver
         return discover_post_in_cqm(cur_user_id, offset, limit, device_id, version_code, web, append_top=append_top)
 
 
+def get_channel_list(cur_user_id, device_id, version_code):
+    feed_banner = {'type':'banner',
+                    'bg_image':None,
+                    'name':'Feed',
+                    'channel_id':'feed',
+                    'description':None}
+    discover_banner = {'type':'banner',
+                        'bg_image':None,
+                        'name':'Discover',
+                        'channel_id':'discover',
+                        'description':None
+                        }
 
+    search_fragment = {'type':'search',
+                        'bg_image':None,
+                        'views':[]
+                        }
+    
+    search_default_results = search_default(cur_user_id=cur_user_id)['results']
+
+    for item in search_default_results:
+        search_icons = {'type':'icon_list',
+                        'name':item['category_name'],
+                        'items':[]
+                        }
+        for user in item['users']:
+            search_icons['items'].append({'type':'icon_user',
+                        'icon_image':user['profile_picture'],
+                        'name':user['first_name'],
+                        'channel_id':user['channel_id'],
+                        'description':user['user_title'],
+                        'user_type':user['user_type'],
+                        'is_following':user['is_following']
+                        })
+        search_fragment['views'].append(search_icons)
+
+    return {'channel_list':[feed_banner, discover_banner, search_fragment]}
 
 
 

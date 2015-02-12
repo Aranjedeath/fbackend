@@ -67,6 +67,7 @@ class Upvote(Base):
         self.user      = user
         self.question  = question
         self.downvoted = downvoted
+        self.timestamp = datetime.datetime.now()
 
     def __repr__(self):
         return '<Upvote %r:%r>' % (self.user, self.question)

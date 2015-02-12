@@ -1953,7 +1953,7 @@ class ChannelList(restful.Resource):
         Returns list of channel to be shown on remote screen
 
         Controller Functions Used:
-            - top_liked_users
+            - get_channel_list
 
         Authentication: Required
         """
