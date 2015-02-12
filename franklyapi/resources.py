@@ -1946,6 +1946,8 @@ class ChannelFeed(restful.Resource):
 class ChannelList(restful.Resource):
 
     get_parser = reqparse.RequestParser()
+    get_parser.add_argument('X-deviceid', type=str, location='headers')
+    get_parser.add_argument('X-Version-Code', type=int, location='headers', default=0)
 
     @login_required
     def get(self):
