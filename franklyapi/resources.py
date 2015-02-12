@@ -1880,7 +1880,7 @@ class FeedBackResponse(restful.Resource):
     post_parser = reqparse.RequestParser()
     post_parser.add_argument('medium', type=str, location='json', required=True)
     post_parser.add_argument('message', type=str, location='json', required=True)
-    post_parser.add_argument('X-Version-Code', dest='version_code', type=str, location='headers', default=None)
+    post_parser.add_argument('X-Version-Code', dest='version_code', type=int, location='headers', default=0)
 
 
     @login_required
