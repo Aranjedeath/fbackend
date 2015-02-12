@@ -19,11 +19,12 @@ raygun = raygunprovider.RaygunSender(config.RAYGUN_KEY)
 # 700 kbps - 1500kbps => opt
 
 
-VIDEO_ENCODING_PROFILES = {
+VIDEO_ENCODING_PROFILES = {     '''
                                 'promo':{
                                         'file_prefix' : '_promo',
                                         'file_extension' : 'mp4'
                                 },
+                                '''
                                 'thumbnail':{
                                         'command' : 'ffmpeg -ss 0 -i "{input_file}" -vframes 1 {transpose_command2} -t 1 -f image2 {output_file}',
                                         'file_prefix' : '_thumb',
