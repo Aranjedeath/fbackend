@@ -87,6 +87,9 @@ class AdminUserAdd(AdminProtectedResource):
                                                 profile_picture=args['profile_picture'],
                                                 profile_video=args['profile_video']
                                                 )
+        except CustomExceptions.UserAlreadyExistsException as e:
+            abort(409, message=str(e))
+
         except Exception as e:
             print 'Hellllllo'
             err = sys.exc_info()

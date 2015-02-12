@@ -1917,7 +1917,7 @@ class ChannelFeed(restful.Resource):
         Returns feed of the given channel_id
 
         Controller Functions Used:
-            - top_liked_users
+            - get_channed_feed
 
         Authentication: Optional
         """
@@ -1929,6 +1929,37 @@ class ChannelFeed(restful.Resource):
                 current_user_id = current_user.id                
 
             return controllers.get_channel_feed(current_user_id, channel_id, args['offset'], args['limit'], args['X-deviceid'], args['X-Version-Code'], args['append_top'])
+        
+        except CustomExceptions.BadRequestException as e:
+            abort(404, message=str(e))
+        except CustomExceptions.UserNotFoundException, e:
+            abort(404, message=str(e))
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0], err[1], err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
+
+
+
+
+class ChannelList(restful.Resource):
+
+    get_parser = reqparse.RequestParser()
+
+    @login_required
+    def get(self):
+        """
+        Returns list of channel to be shown on remote screen
+
+        Controller Functions Used:
+            - top_liked_users
+
+        Authentication: Required
+        """
+        args = self.get_parser.parse_args()
+        try:
+            return controllers.get_channel_list(current_user.id, args['X-deviceid'], args['X-Version-Code'])
         
         except CustomExceptions.BadRequestException as e:
             abort(404, message=str(e))
