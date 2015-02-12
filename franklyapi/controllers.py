@@ -2172,6 +2172,7 @@ def get_channel_list(cur_user_id, device_id, version_code):
             search_icons['items'].append({'type':'icon_user',
                         'icon_image':user['profile_picture'],
                         'name':user['first_name'],
+                        'bg_image':None,
                         'channel_id':user['channel_id'],
                         'description':user['user_title'],
                         'user_type':user['user_type'],
