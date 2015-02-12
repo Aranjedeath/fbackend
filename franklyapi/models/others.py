@@ -107,7 +107,7 @@ class Feedback(Base):
     version       = Column(String(10))
     timestamp     = Column(DateTime(), onupdate=datetime.datetime.now(), default=datetime.datetime.now())
 
-    def _medium_is_valid(medium):
+    def _medium_is_valid(self, medium):
         medium_components = medium.split('-')
         if not medium_components[0] in ['android', 'ios', 'web']:
             return False
@@ -117,7 +117,7 @@ class Feedback(Base):
 
     def __init__(self, user, medium, message=None, email=None, version=None, timestamp=datetime.datetime.now()):
         medium = medium.lower()
-        if not _medium_is_valid(medium):
+        if not self._medium_is_valid(medium):
             raise Exception('medium should be of format <platform_type>-<screen>')
         self.user    = user
         self.medium  = medium

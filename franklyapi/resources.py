@@ -1889,7 +1889,7 @@ class FeedBackResponse(restful.Resource):
         Saves users feedback (y/n)
 
         Controller Functions Used:
-            - top_liked_users
+            - save_feedback_response
 
         Authentication: Required
         """
