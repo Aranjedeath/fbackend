@@ -92,7 +92,7 @@ class AdminUserAdd(AdminProtectedResource):
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])
             print traceback.format_exc(e)
-            abort(500, message='Error')
+            abort(500, message=str(e))
 
 class AdminPostEdit(AdminProtectedResource):
     @login_required
