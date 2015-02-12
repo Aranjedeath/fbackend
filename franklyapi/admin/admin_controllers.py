@@ -7,6 +7,8 @@ import media_uploader
 import async_encoder
 import video_db
 from sqlalchemy import or_, text
+import time
+import datetime
 
 def user_list(user_type, deleted, offset, limit, order_by, desc):
     user_query = User.query.filter(User.user_type==user_type, User.deleted==deleted)
@@ -291,6 +293,12 @@ def add_celeb_in_queue(item_id, item_type, item_day, item_score):
     db.session.commit()
     return {'success' : True}
 
+def maketimestamp(datetime_obj):
+    if not datetime_obj:
+        return None
+    else:
+        return int(time.mktime(datetime_obj.timetuple()))
+
 def get_celeb_search(query):
     search_filter = or_(  User.username.like('{query}%'.format(query=query)),
                                     User.first_name.like('% {query}%'.format(query=query)),
@@ -309,11 +317,12 @@ def get_celeb_search(query):
         post_ids.append(post.id)
     users_in_date_feed = {item.user:item.date for item in DateSortedItems.query.filter(DateSortedItems.user.in_(user_ids)).all()}
     posts_in_date_feed = {item.post:item.post for item in DateSortedItems.query.filter(DateSortedItems.post.in_(post_ids)).all()}
+    print users_in_date_feed
     for result in results:
         if result['type'] == 'user':
-            result['user']['date'] = users_in_date_feed.get(result['user']['id'])
+            result['user']['timestamp'] = maketimestamp(users_in_date_feed.get(result['user']['id']))
         elif result['type'] == 'post':
-            result['post']['date'] = posts_in_date_feed.get(result['post']['id'])
+            result['post']['timestamp'] = maketimestamp(posts_in_date_feed.get(result['post']['id']))
     return {'results' : results}
     print posts
     

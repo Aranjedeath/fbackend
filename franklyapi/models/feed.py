@@ -62,8 +62,8 @@ class IntervalCountMap(Base):
 class DateSortedItems(Base):
     __tablename__ = 'date_sorted_items'
     id            = Column(Integer, primary_key = True)
-    user          = Column(CHAR(32), ForeignKey('users'))
-    post          = Column(CHAR(32), ForeignKey('posts'))
+    user          = Column(CHAR(32), ForeignKey('users.id'))
+    post          = Column(CHAR(32), ForeignKey('posts.id'))
     score         = Column(Integer, default = 0)
     date          = Column(DateTime, default = datetime.datetime.now())
 
