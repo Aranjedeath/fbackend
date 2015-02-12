@@ -107,6 +107,7 @@ def makeFinalPromo(answer_author_username,video_file_path,transpose_command='',t
 	
 	path = temp_path
 
+	print 'creating last past fisrt :) . . .'
 	end_promo_mpg_name = make_promo(path,video_file_path,'kiran.jpg','promo_content/','overlay_png1','overlay_png2','overlay_png3','bariol_bold-webfont_0.ttf',answer_author_username,transpose_command)
 	
 	mpg_with_front_and_end = end_promo_mpg_name # in case only end promo is to be converted
@@ -326,17 +327,22 @@ def makeFinalPromo(answer_author_username,video_file_path,transpose_command='',t
 			saveImage(canvas,i,framesFolder)
 			i=i+1
 	#-------------------------- make video----
+		print "making question video ..."
 		frontvid = call("ffmpeg -loglevel 0 -i "+framesFolder+"/img%03d.jpeg -c:v libx264 "+end_file,shell=True)
 		front_mpg = call("ffmpeg -loglevel 0 -i "+end_file+" -qscale:v 1 intermediate2.mpg",shell=True) #intro
-		fvid = call("ffmpeg -loglevel 0 -i concat:\"intermediate2.mpg|"+end_promo_mpg_name+"\" -c copy final2.mpg",shell=True)
-		mpg_with_front_and_end = 'final2.mpg'
+		call("ffmpeg -loglevel 0 -i intermediate2.mpg -i "+end_promo_mpg_name+" -vol 0 -map 0:0 -map 1:1 -shortest endfile.mpg",shell=True) #intro
+		
+		fvid = call("ffmpeg -loglevel 0 -i concat:\"endfile.mpg|"+end_promo_mpg_name+"\" -c copy final2.mpg",shell=True)
+		
+  		mpg_with_front_and_end = 'final2.mpg'
+  		print "question video successful"
 	
-	fcall = 'avconv -loglevel 0 -y -i "'+mpg_with_front_and_end+'" -r 25 -vf scale="320:trunc(ow/a/2)*2" -strict experimental -preset veryslow -b:v 256k -pass 1 -c:v libx264  -ar 22050 -ac 1 -ab 44k -f mp4 /dev/null && avconv -y -i "'+mpg_with_front_and_end+'" -r 25 -vf scale="320:trunc(ow/a/2)*2" -strict experimental -preset veryslow -b:v 256k -pass 2 -c:v libx264  -ar 22050 -ac 1 -ab 25k '+final_file
+	print "making final video..."
+	fcall = 'avconv loglevel 0 -y -i "'+mpg_with_front_and_end+'" -r 25 -vf scale="320:trunc(ow/a/2)*2" -strict experimental -preset veryslow -b:v 256k -pass 1 -c:v libx264  -ar 22050 -ac 1 -ab 44k -f mp4 /dev/null && avconv -y -i "'+mpg_with_front_and_end+'" -r 25 -vf scale="320:trunc(ow/a/2)*2" -strict experimental -preset veryslow -b:v 256k -pass 2 -c:v libx264  -ar 22050 -ac 1 -ab 25k '+final_file
 	finalvid = call(fcall,shell=True)
+	print "final video created."
+
 #----------------------------clean up -------------------------------------------		
-	# rdir = call('rm -rf final',shell=True)
-	# rinter = call('rm intermediate2.mpg final.mpg final2.mpg',shell=True)
-	# rinter = call('rm snapshot.png end.mp4',shell=True)	
 	shutil.copy(final_file,"../"+final_file)
 	os.chdir('../../')
 	rdir = call('rm -rf '+path,shell=True)
