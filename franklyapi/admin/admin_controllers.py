@@ -298,11 +298,22 @@ def get_celeb_search(query):
                                )
     results = []
     users = User.query.filter(search_filter, User.user_type == 2).all()
+    user_ids = []
+    post_ids = []
     for user in users:
         results.append({'type':'user', 'user':thumb_user_to_dict(user)})
+        user_ids.append(user.id)
     posts = Post.query.filter(Post.answer_author.in_(map(lambda x:x.id,users))).all()
     for post in posts:
         results.append({'type':'post', 'post':post_to_dict(post)})
+        post_ids.append(post.id)
+    users_in_date_feed = {item.user:item.date for item in DateSortedItems.query.filter(DateSortedItems.user.in_(user_ids)).all()}
+    posts_in_date_feed = {item.post:item.post for item in DateSortedItems.query.filter(DateSortedItems.post.in_(post_ids)).all()}
+    for result in results:
+        if result['type'] == 'user':
+            result['user']['date'] = users_in_date_feed.get(result['user']['id'])
+        elif result['type'] == 'post':
+            result['post']['date'] = posts_in_date_feed.get(result['post']['id'])
     return {'results' : results}
     print posts
     
