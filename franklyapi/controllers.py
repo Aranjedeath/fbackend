@@ -1668,7 +1668,7 @@ Franksters'''.format(user.first_name, datetime.strftime(datetime.datetime.now(),
                 'message':'Your password has been reset'}
     except NoResultFound:
         raise CustomExceptions.ObjectNotFoundException()
-z
+
 def install_ref(device_id, url):
     #url = "https://play.google.com/store/apps/details?id=me.frankly&referrer=utm_source%3Dsource%26utm_medium%3Dmedium%26utm_term%3Dterm%26utm_content%3Dcontent%26utm_campaign%3Dname"
     from urllib import unquote
