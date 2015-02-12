@@ -338,7 +338,7 @@ def makeFinalPromo(answer_author_username,video_file_path,transpose_command='',t
   		print "question video successful"
 	
 	print "making final video..."
-	fcall = 'avconv loglevel 0 -y -i "'+mpg_with_front_and_end+'" -r 25 -vf scale="320:trunc(ow/a/2)*2" -strict experimental -preset veryslow -b:v 256k -pass 1 -c:v libx264  -ar 22050 -ac 1 -ab 44k -f mp4 /dev/null && avconv -y -i "'+mpg_with_front_and_end+'" -r 25 -vf scale="320:trunc(ow/a/2)*2" -strict experimental -preset veryslow -b:v 256k -pass 2 -c:v libx264  -ar 22050 -ac 1 -ab 25k '+final_file
+	fcall = 'avconv -loglevel 0 -y -i "'+mpg_with_front_and_end+'" -r 25 -vf scale="320:trunc(ow/a/2)*2" -strict experimental -preset veryslow -b:v 256k -pass 1 -c:v libx264  -ar 22050 -ac 1 -ab 44k -f mp4 /dev/null && avconv -y -i "'+mpg_with_front_and_end+'" -r 25 -vf scale="320:trunc(ow/a/2)*2" -strict experimental -preset veryslow -b:v 256k -pass 2 -c:v libx264  -ar 22050 -ac 1 -ab 25k '+final_file
 	finalvid = call(fcall,shell=True)
 	print "final video created."
 
