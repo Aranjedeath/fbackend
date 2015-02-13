@@ -26,13 +26,15 @@ def user_list(user_type, deleted, offset, limit, order_by, desc):
 
 def get_random_fake_user(gender=None):
     fake_users = ["harmanRathore", "vivek_verma", "pooja_verma", "minal_singh", "vikrant_thapar", "Anthony_Gonzales", "Pravin_Parvani", "ridhi_kalra", "manoj_singh", "neetu_gupta"]
-    user_query = User.query.filter(User.username.in_(fake_users))
+    genders = ['M', 'F', None]
     if gender:
-        user_query.filter(User.gender==gender)
-
+        genders = [gender]
+    user_query = User.query.filter(User.username.in_(fake_users), user.gender.in_(genders))
     count = user_query.count()
     offset = random.randint(0,count-1)
-    return user_query.offset(offset).limit(1)[0].id
+    user = user_query.offset(offset).limit(1)[0]
+    print user.username, '##############'
+    return user.id
 
 
 
