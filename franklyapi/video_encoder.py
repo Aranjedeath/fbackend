@@ -4,7 +4,7 @@ import traceback
 import os
 import shutil
 import promo_video_intro
-
+import video_db
 from configs import config
 import media_uploader
 
@@ -136,8 +136,25 @@ def encode_video_to_profile(file_path, video_url, profile_name, username):
             output_file_path = temp_path + ".jpeg"
         else:
             if profile_name=='promo':
-                temp_path, output_file_name = make_promo_video(file_path,username,transpose_command)
-                output_file_path = temp_path + '/' + output_file_name + ".mp4"
+                video_data = video_db.get_video_data(video_url)
+
+                answer_author_name= video_data["answer_author_name"]
+                answer_author_username= video_data['answer_author_username']
+                video_file_path = file_path
+                question = video_data['question_body']
+                question_author_username = video_data['question_author_name']
+                profile_picture_url = video_data['answer_author_profile_picture']
+                
+                if profile_picture_url:
+                    answer_author_image_filepath= media_uploader.download_file(profile_picture_url)
+                else:
+                    answer_author_image_filepath=None
+
+
+
+                temp_path, output_file_name = make_promo_video(answer_author_username,video_file_path,transpose_command,answer_author_name,question,question_author_username,answer_author_image_filepath)
+                
+                output_file_path = '/tmp/' + output_file_name + ".mp4"
             else:
                 temp_path = temp_dir+'/{random_string}'.format(random_string=uuid.uuid1().hex)
                 check_make_dir(temp_dir)
@@ -167,11 +184,12 @@ def encode_video_to_profile(file_path, video_url, profile_name, username):
         print traceback.format_exc(e)
     return result
 
-def make_promo_video(answer_author_name,video_file_path,question,question_author_username,answer_author_image_filepath,transpose_command):
-    temp_path = 'tmp/{random_string}'.format(random_string=uuid.uuid1().hex)
+def make_promo_video(answer_author_username,video_file_path,transpose_command='',answer_author_name=None,question=None,question_author_username=None,answer_author_image_filepath=None):
+    temp_path = '/tmp/{random_string}'.format(random_string=uuid.uuid1().hex)
     output_file_name = '{random_string}'.format(random_string=uuid.uuid1().hex)
     #os.mkdir(temp_path)
-    promo_video_intro.makeFinalPromo(answer_author_name,video_file_path,question,question_author_username,answer_author_image_filepath,transpose_command,temp_path,output_file_name)
+    promo_video_intro.makeFinalPromo(answer_author_username,video_file_path,transpose_command,temp_path,output_file_name,answer_author_name,question,question_author_username,answer_author_image_filepath)
+    #promo_video_intro.makeFinalPromo(answer_author_name,video_file_path,question,question_author_username,answer_author_image_filepath,transpose_command,temp_path,output_file_name)
     #promo_video.make_promo(temp_path,file_path,output_file_name,'promo_content/','overlay_png1','overlay_png2','overlay_png3','bariol_bold-webfont_0.ttf',username,transpose_command)
     return (temp_path , output_file_name)
 
