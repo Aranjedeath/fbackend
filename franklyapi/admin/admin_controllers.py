@@ -137,7 +137,6 @@ def question_add(question_to, body, question_author=None, is_anonymous=False, sc
                                  u'd8ace0a534c041bc91ccef22c399f73e',
                                  u'cab4132c540dba153aac284093d3fcca',
                                  u'cab4132c53c6a513df310374a482ef4e',
-                                 u'cab4132c53c6af3edf310377b4a32d13',
                                  u'cab4132c53c6a447df3103743a3fabdf'])
         #question_author = get_random_fake_user(gender=question_author_gender)
     return controllers.question_ask(question_author, question_to=question_to, body=body, is_anonymous=is_anonymous, lat = 0.0, lon=0.0)
