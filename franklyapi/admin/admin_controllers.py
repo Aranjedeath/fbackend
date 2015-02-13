@@ -25,7 +25,8 @@ def user_list(user_type, deleted, offset, limit, order_by, desc):
     return {'next_index':next_index, 'users':users, 'count':len(users), 'offset':offset, 'limit':limit}
 
 def get_random_fake_user(gender=None):
-    user_query = User.query.filter(User.user_type==-1)
+    fake_users = ["harmanRathore", "vivek_verma", "pooja_verma", "minal_singh", "vikrant_thapar", "Anthony_Gonzales", "Pravin_Parvani", "ridhi_kalra", "manoj_singh", "neetu_gupta"]
+    user_query = User.query.filter(User.username.in_(fake_users))
     if gender:
         user_query.filter(User.gender==gender)
 
@@ -128,8 +129,10 @@ def question_list(offset, limit, user_to=[], user_from=[], public=True, deleted=
 
 def question_add(question_to, body, question_author=None, is_anonymous=False, score=500, question_author_gender=None):
     if not question_author:
+        '''
         from random import choice
-        question_author = choice([u'481bc87c43bc4812b0e333ecd9cd4c2c',
+        question_author = choice([
+                                 u'481bc87c43bc4812b0e333ecd9cd4c2c',
                                  u'eead306ebd2a4e8b8b740c2b9462c250',
                                  u'cab4132c5445437ddf31032339d5882f',
                                  u'cab4132c53c79664df310373dba392db',
@@ -137,8 +140,11 @@ def question_add(question_to, body, question_author=None, is_anonymous=False, sc
                                  u'd8ace0a534c041bc91ccef22c399f73e',
                                  u'cab4132c540dba153aac284093d3fcca',
                                  u'cab4132c53c6a513df310374a482ef4e',
-                                 u'cab4132c53c6a447df3103743a3fabdf'])
-        #question_author = get_random_fake_user(gender=question_author_gender)
+                                 u'cab4132c53c6af3edf310377b4a32d13',
+                                 u'cab4132c53c6a447df3103743a3fabdf'
+                                 ])
+        '''
+        question_author = get_random_fake_user(gender=question_author_gender)
     return controllers.question_ask(question_author, question_to=question_to, body=body, is_anonymous=is_anonymous, lat = 0.0, lon=0.0)
 
 
