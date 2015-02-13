@@ -29,7 +29,7 @@ def get_random_fake_user(gender=None):
     genders = ['M', 'F', None]
     if gender:
         genders = [gender]
-    user_query = User.query.filter(User.username.in_(fake_users), user.gender.in_(genders))
+    user_query = User.query.filter(User.username.in_(fake_users), User.gender.in_(genders))
     count = user_query.count()
     offset = random.randint(0,count-1)
     user = user_query.offset(offset).limit(1)[0]
