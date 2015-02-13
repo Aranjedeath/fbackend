@@ -2168,7 +2168,7 @@ def get_channel_list(cur_user_id, device_id, version_code):
                         'name':item['category_name'],
                         'items':[]
                         }
-        for user in item['users']:
+        for user in item['users'][:3]:
             search_icons['items'].append({'type':'icon_user',
                         'icon_image':user['profile_picture'],
                         'name':user['first_name'],
@@ -2178,7 +2178,8 @@ def get_channel_list(cur_user_id, device_id, version_code):
                         'user_type':user['user_type'],
                         'is_following':user['is_following']
                         })
-        search_fragment['views'].append(search_icons)
+    
+    search_fragment['views'].append(search_icons)
 
     return {'channel_list':[feed_banner, discover_banner, search_fragment]}
 

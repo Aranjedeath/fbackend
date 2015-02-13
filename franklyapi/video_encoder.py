@@ -20,10 +20,10 @@ raygun = raygunprovider.RaygunSender(config.RAYGUN_KEY)
 
 
 VIDEO_ENCODING_PROFILES = {     
-                                #'promo':{
-                                #        'file_prefix' : '_promo',
-                                #        'file_extension' : 'mp4'
-                                #},
+                                'promo':{
+                                        'file_prefix' : '_promo',
+                                        'file_extension' : 'mp4'
+                                },
 
                                 'thumbnail':{
                                         'command' : 'ffmpeg -ss 0 -i "{input_file}" -vframes 1 {transpose_command2} -t 1 -f image2 {output_file}',
@@ -52,11 +52,17 @@ VIDEO_ENCODING_PROFILES = {
                                 }
                         }
 
-temp_dir = '/tmp/downloads'
+
 
 def check_make_dir(path):
     if not os.path.exists(path):
         os.mkdir(path)
+
+
+TEMP_DIR = '/tmp/downloads'
+check_make_dir(TEMP_DIR)
+
+
 
 def get_key_name_from_url(url):
     domain = 's3.amazonaws.com/{bucket_name}/'.format(bucket_name=media_uploader.BUCKET_NAME)
@@ -97,74 +103,59 @@ def get_transpose_command(file_path):
     return transpose_command
 
 def make_thumbnail(file_path):
-    cdir = os.getcwd()
-    transpose_command = get_transpose_command(file_path)
     profile = VIDEO_ENCODING_PROFILES['thumbnail']
-    
-    temp_path = temp_dir+'/{random_string}'.format(random_string=uuid.uuid1().hex)
-    check_make_dir(temp_dir)
+
+    temp_file_path = os.path.join(TEMP_DIR, uuid.uuid1().hex+'.'+profile['file_extension'])
 
     print_output("Making thumbnail")
-    transpose_command2 = ''
-    if(transpose_command != ''):
-        transpose_command2 = '-vf '+transpose_command[:-1]
-    command = profile['command'].format(input_file=file_path,transpose_command2=transpose_command2,output_file=temp_path+".jpeg")
+    transpose_command = get_transpose_command(file_path)
+    transpose_command2 = '-vf '+transpose_command[:-1] if transpose_command != '' else ''
+
+    command = profile['command'].format(input_file=file_path,
+                                        transpose_command2=transpose_command2,
+                                        output_file=temp_file_path)
     print_output('COMMAND: '+command)
     subprocess.call(command,shell=True)
-    output_file_path = temp_path + ".jpeg"
-    os.chdir(cdir)
-    return output_file_path
+    return temp_file_path
 
 def encode_video_to_profile(file_path, video_url, profile_name, username):
-    cdir = os.getcwd()
+    current_dir = os.getcwd()
+    
     print_output('BEGINNING: '+file_path+' '+video_url )
+    
     transpose_command = get_transpose_command(file_path)
-    result = {}
+    
     profile = VIDEO_ENCODING_PROFILES[profile_name]
+    temp_path = os.path.join(TEMP_DIR, uuid.uuid1().hex)
+    check_make_dir(temp_path)
+
+    result = {}
     try:
-        if(profile_name == 'thumbnail'):
-            temp_path = temp_dir+'/{random_string}'.format(random_string=uuid.uuid1().hex)
-            check_make_dir(temp_dir)
+        if profile_name == 'thumbnail': 
+            output_file_path = make_thumbnail(file_path)
+
+        elif profile_name=='promo':
+            video_data = video_db.get_video_data(video_url)
             
-            print_output("Making thumbnail")
-            transpose_command2 = ''
-            if(transpose_command != ''):
-                transpose_command2 = '-vf '+transpose_command[:-1]
-            command = profile['command'].format(input_file=file_path,transpose_command2=transpose_command2,output_file=temp_path+".jpeg")
-            print_output('COMMAND: '+command)
-            subprocess.call(command,shell=True)
-            output_file_path = temp_path + ".jpeg"
+            answer_author_image_filepath = None if not video_data['answer_author_profile_picture'] else media_uploader.download_file(video_data['answer_author_profile_picture'])
+
+            output_file_dir, output_file_name = make_promo_video(answer_author_username=video_data['answer_author_username'],
+                                                            video_file_path=file_path,
+                                                            transpose_command=transpose_command,
+                                                            answer_author_name=video_data["answer_author_name"],
+                                                            question=video_data['question_body'], 
+                                                            question_author_username=video_data['question_author_name'],
+                                                            answer_author_image_filepath=answer_author_image_filepath)
+
+            output_file_path = os.path.join(output_file_dir, output_file_name + ".mp4")
+        
         else:
-            if profile_name=='promo':
-                video_data = video_db.get_video_data(video_url)
-
-                answer_author_name= video_data["answer_author_name"]
-                answer_author_username= video_data['answer_author_username']
-                video_file_path = file_path
-                question = video_data['question_body']
-                question_author_username = video_data['question_author_name']
-                profile_picture_url = video_data['answer_author_profile_picture']
-                
-                if profile_picture_url:
-                    answer_author_image_filepath= media_uploader.download_file(profile_picture_url)
-                else:
-                    answer_author_image_filepath=None
-
-
-
-                temp_path, output_file_name = make_promo_video(answer_author_username,video_file_path,transpose_command,answer_author_name,question,question_author_username,answer_author_image_filepath)
-                
-                output_file_path = '/tmp/' + output_file_name + ".mp4"
-            else:
-                temp_path = temp_dir+'/{random_string}'.format(random_string=uuid.uuid1().hex)
-                check_make_dir(temp_dir)
-
-                output_file_path = temp_path + '/{random_string}.mp4'.format(random_string=uuid.uuid1().hex)
-                os.mkdir(temp_path)
-                os.chdir(temp_path)
-                command = profile['command'].format(input_file=file_path, output_file=output_file_path, transpose_command = transpose_command)
-                print_output('COMMAND: '+command)
-                subprocess.call(command, shell=True)
+            output_file_path = os.path.join(temp_path, uuid.uuid1().hex)
+            check_make_dir(TEMP_DIR)
+            os.chdir(temp_path)
+            command = profile['command'].format(input_file=file_path, output_file=output_file_path, transpose_command = transpose_command)
+            print_output('COMMAND: '+command)
+            subprocess.call(command, shell=True)
             
             print_output('MAKING STREAMABLE')
             make_psuedo_streamable(output_file_path)
@@ -178,17 +169,28 @@ def encode_video_to_profile(file_path, video_url, profile_name, username):
         if(profile_name != 'thumbnail'):
             shutil.rmtree(temp_path)
         print_output('RESULT: '+ str(result))
-        os.chdir(cdir)
+        os.chdir(current_dir)
     except Exception as e:
-        os.chdir(cdir)
+        os.chdir(current_dir)
         print traceback.format_exc(e)
     return result
 
-def make_promo_video(answer_author_username,video_file_path,transpose_command='',answer_author_name=None,question=None,question_author_username=None,answer_author_image_filepath=None):
-    temp_path = '/tmp/{random_string}'.format(random_string=uuid.uuid1().hex)
-    output_file_name = '{random_string}'.format(random_string=uuid.uuid1().hex)
-    #os.mkdir(temp_path)
-    promo_video_intro.makeFinalPromo(answer_author_username,video_file_path,transpose_command,temp_path,output_file_name,answer_author_name,question,question_author_username,answer_author_image_filepath)
+def make_promo_video(answer_author_username, video_file_path, transpose_command='',
+                    answer_author_name=None, question=None, question_author_username=None,
+                    answer_author_image_filepath=None):
+
+    temp_path = os.path.join(TEMP_DIR, uuid.uuid1().hex)
+    output_file_name = uuid.uuid1().hex
+    
+    os.mkdir(temp_path)
+    
+    promo_video_intro.makeFinalPromo(answer_author_username, video_file_path,
+                                        transpose_command, temp_path, output_file_name,
+                                        answer_author_name, question, question_author_username,
+                                        answer_author_image_filepath
+                                    )
+    
+
     #promo_video_intro.makeFinalPromo(answer_author_name,video_file_path,question,question_author_username,answer_author_image_filepath,transpose_command,temp_path,output_file_name)
     #promo_video.make_promo(temp_path,file_path,output_file_name,'promo_content/','overlay_png1','overlay_png2','overlay_png3','bariol_bold-webfont_0.ttf',username,transpose_command)
     return (temp_path , output_file_name)
