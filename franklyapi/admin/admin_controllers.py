@@ -447,7 +447,7 @@ def get_date_sorted_list(offset=0, limit=100):
     res = sorted(res, key=lambda x:x['score'])
     return {'result' : res}
 
-def udpate_date_feed_order(date, items):
+def update_date_feed_order(date, items):
     '''
     item contains obj_id, score, type
     '''
