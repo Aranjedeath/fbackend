@@ -468,12 +468,10 @@ class AdminDeleteFromDateFeed(AdminProtectedResource):
 class AdminUpdateDateFeedOrder(AdminProtectedResource):
     @login_required
     def post(self):
-        arg_parser = reqparse.RequestParser()
-        arg_parser.add_argument('date',type=int, required=True)
-        arg_parser.add_argument('items',type=list,  required=True)
-        args = arg_parser.parse_args()
+        from flask import request
+        print request.json
         try:
-            return admin_controllers.update_date_feed_order(args['date'], args['items'])
+            return admin_controllers.update_date_feed_order(request.json['date'], request.json['items'])
         except Exception as e:
             print traceback.format_exc(e)
             abort(500, message='Error')

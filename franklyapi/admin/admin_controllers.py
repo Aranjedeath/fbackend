@@ -457,11 +457,13 @@ def update_date_feed_order(date, items):
             }
     date = datetime.datetime.fromtimestamp(date)
     for item in items:
-        d = DateSortedItems.query.filter(type_dict[item['type']] == obj_id, DateSortedItems.date == date).first()
+        print item
+        d = DateSortedItems.query.filter(type_dict[item['type']] == item['obj_id'], DateSortedItems.date == date).first()
         if d:
             d.score = item['score']
         db.session.add(d)
     db.session.commit()
+    return {'success':True}
 
 def delete_date_sorted_item(_type, obj_id):
     type_dict = {
