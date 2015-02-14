@@ -436,6 +436,7 @@ class AdminGetDateFeed(AdminProtectedResource):
             return admin_controllers.get_date_sorted_list()
         except Exception as e:
             print traceback.format_exc(e)
+            abort(500, message='Error')
 
 class AdminAddToDateFeed(AdminProtectedResource):
     @login_required
@@ -446,9 +447,10 @@ class AdminAddToDateFeed(AdminProtectedResource):
         arg_parser.add_argument('timestamp',type=int,  required=True)
         args = arg_parser.parse_args()
         try:
-            admin_controllers.add_to_date_sorted(args['type'], args['obj_id'], args['timestamp'])
+            return admin_controllers.add_to_date_sorted(args['type'], args['obj_id'], args['timestamp'])
         except Exception as e:
             print traceback.format_exc(e)
+            abort(500, message='Error')
 
 class AdminDeleteFromDateFeed(AdminProtectedResource):
     @login_required
@@ -458,7 +460,20 @@ class AdminDeleteFromDateFeed(AdminProtectedResource):
         arg_parser.add_argument('obj_id',type=str,  required=True)
         args = arg_parser.parse_args()
         try:
-            admin_controllers.delete_date_sorted_item(args['type'],args['obj_id'])
+            return admin_controllers.delete_date_sorted_item(args['type'],args['obj_id'])
         except Exception as e:
             print traceback.format_exc(e)
+            abort(500, message='Error')
 
+class AdminUpdateDateFeedOrder(AdminProtectedResource):
+    @login_required
+    def post(self):
+        arg_parser = reqparse.RequestParser()
+        arg_parser.add_argument('date',type=int, required=True)
+        arg_parser.add_argument('items',type=list,  required=True)
+        args = arg_parser.parse_args()
+        try:
+            return admin_controllers.update_date_feed_order(args['date'], args['items'])
+        except Exception as e:
+            print traceback.format_exc(e)
+            abort(500, message='Error')

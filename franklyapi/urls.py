@@ -167,6 +167,7 @@ api.add_resource(admin.AdminGetSimilarQuestions, '/admin/question/similar')
 api.add_resource(admin.AdminGetDateFeed, '/admin/date/feed')
 api.add_resource(admin.AdminAddToDateFeed, '/admin/date/feed/add')
 api.add_resource(admin.AdminDeleteFromDateFeed, '/admin/date/feed/delete')
+api.add_resource(admin.AdminUpdateDateFeedOrder, '/admin/date/feed/update/order')
 
 if __name__ == '__main__':
     app.run('127.0.0.1', 8000)
