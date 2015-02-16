@@ -127,7 +127,6 @@ def encode_video_to_profile(file_path, video_url, profile_name, username=None):
     
     profile = VIDEO_ENCODING_PROFILES[profile_name]
     temp_path = os.path.join(TEMP_DIR, uuid.uuid1().hex)
-    check_make_dir(temp_path)
 
     result = {}
     try:

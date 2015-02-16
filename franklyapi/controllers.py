@@ -794,6 +794,8 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
     db.session.add(user_archive)
     User.query.filter(User.id==user_id).update(update_dict)
     db.session.commit()
+    
+
     if profile_video:
         add_video_to_db(video_url=profile_video_url,
                         thumbnail_url=cover_picture_url,
@@ -2145,13 +2147,7 @@ def get_channel_list(cur_user_id, device_id, version_code):
 
         for user in item['users']:
             search_icons['icons'].append({'type':'icon_user',
-                                            'icon_image':user['profile_picture'],
-                                            'name':user['first_name'],
-                                            'bg_image':None,
-                                            'channel_id':user['channel_id'],
-                                            'description':user['user_title'],
-                                            'user_type':user['user_type'],
-                                            'is_following':user['is_following']
+                                            'user':user
                                             })
         
         search_fragment['views'].append(search_icons)
@@ -2163,6 +2159,6 @@ def get_channel_list(cur_user_id, device_id, version_code):
 
 
 
-
+config.ANDROID_APP_VERSION 
 
 
