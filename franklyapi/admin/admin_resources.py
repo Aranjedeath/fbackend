@@ -184,11 +184,11 @@ class AdminQuestionAdd(AdminProtectedResource):
         arg_parser.add_argument('question_to', type=str,location = 'json', required = True)
         arg_parser.add_argument('question_author', type=str,location = 'json', default = None)
         arg_parser.add_argument('question_body', type=str,location = 'json', required = True)
-        arg_parser.add_argument('gender', type=str, location ='json', required = True, choices=['M', 'F'])
+        arg_parser.add_argument('gender', type=str, location ='json', choices=['M', 'F'])
 
         args = arg_parser.parse_args()
         try:
-            return admin_controllers.question_add(args['question_to'], args['question_body'], args['question_author'], question_author_gender=args['gender'])
+            return admin_controllers.question_add(args['question_to'], args['question_body'], args['question_author'], question_author_gender=args.get('gender'))
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])
