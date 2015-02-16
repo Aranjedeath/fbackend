@@ -118,7 +118,7 @@ def make_thumbnail(file_path):
     subprocess.call(command,shell=True)
     return temp_file_path
 
-def encode_video_to_profile(file_path, video_url, profile_name, username):
+def encode_video_to_profile(file_path, video_url, profile_name, username=None):
     current_dir = os.getcwd()
     
     print_output('BEGINNING: '+file_path+' '+video_url )
@@ -148,10 +148,10 @@ def encode_video_to_profile(file_path, video_url, profile_name, username):
                                                             answer_author_image_filepath=answer_author_image_filepath)
 
             output_file_path = os.path.join(output_file_dir, output_file_name + ".mp4")
+            make_psuedo_streamable(output_file_path)
         
         else:
             output_file_path = os.path.join(temp_path, uuid.uuid1().hex)
-            check_make_dir(TEMP_DIR)
             os.chdir(temp_path)
             command = profile['command'].format(input_file=file_path, output_file=output_file_path, transpose_command = transpose_command)
             print_output('COMMAND: '+command)
@@ -163,14 +163,18 @@ def encode_video_to_profile(file_path, video_url, profile_name, username):
         new_s3_key = get_key_name_for_profile(video_url, profile)
         print_output('NEW_KEY: '+new_s3_key)
             
-        with open(output_file_path, 'rb') as f:
-            result[profile_name] = media_uploader.upload_to_s3(f, new_s3_key)
-        os.remove(output_file_path)
-        if(profile_name != 'thumbnail'):
-            shutil.rmtree(temp_path)
+        if os.path.exists(output_file_path):
+            with open(output_file_path, 'rb') as f:
+                result[profile_name] = media_uploader.upload_to_s3(f, new_s3_key)
+            os.remove(output_file_path)
+
+        shutil.rmtree(temp_path)
+        
         print_output('RESULT: '+ str(result))
         os.chdir(current_dir)
     except Exception as e:
+        if os.path.exists(temp_path):
+            shutil.rmtree(temp_path)
         os.chdir(current_dir)
         print traceback.format_exc(e)
     return result
