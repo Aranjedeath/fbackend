@@ -126,6 +126,8 @@ def search(cur_user_id, q, offset, limit):
                     'result_limit':limit,
                     })
 
+    print params
+
     if cur_user_id:
         remove_current_user = "and id!=:cur_user_id"
 
@@ -147,8 +149,7 @@ def search(cur_user_id, q, offset, limit):
                                             or user_title like :query_contained
                                             {where_clause}
                                         )
-                                        and monkness=-1 
-                                        and profile_video is not null
+                                        and monkness=-1
                                         
                                         {remove_current_user}
 

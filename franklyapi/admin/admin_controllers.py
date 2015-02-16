@@ -7,6 +7,8 @@ import media_uploader
 import async_encoder
 import video_db
 from sqlalchemy import or_, text
+import time
+import datetime
 
 def user_list(user_type, deleted, offset, limit, order_by, desc):
     user_query = User.query.filter(User.user_type==user_type, User.deleted==deleted)
@@ -25,13 +27,16 @@ def user_list(user_type, deleted, offset, limit, order_by, desc):
     return {'next_index':next_index, 'users':users, 'count':len(users), 'offset':offset, 'limit':limit}
 
 def get_random_fake_user(gender=None):
-    user_query = User.query.filter(User.user_type==-1)
+    fake_users = ["harmanRathore", "vivek_verma", "pooja_verma", "minal_singh", "vikrant_thapar", "Anthony_Gonzales", "Pravin_Parvani", "ridhi_kalra", "manoj_singh", "neetu_gupta"]
+    genders = ['M', 'F', None]
     if gender:
-        user_query.filter(User.gender==gender)
-
+        genders = [gender]
+    user_query = User.query.filter(User.username.in_(fake_users), User.gender.in_(genders))
     count = user_query.count()
     offset = random.randint(0,count-1)
-    return user_query.offset(offset).limit(1)[0].id
+    user = user_query.offset(offset).limit(1)[0]
+    print user.username, '##############'
+    return user.id
 
 
 
@@ -128,8 +133,10 @@ def question_list(offset, limit, user_to=[], user_from=[], public=True, deleted=
 
 def question_add(question_to, body, question_author=None, is_anonymous=False, score=500, question_author_gender=None):
     if not question_author:
+        '''
         from random import choice
-        question_author = choice([u'481bc87c43bc4812b0e333ecd9cd4c2c',
+        question_author = choice([
+                                 u'481bc87c43bc4812b0e333ecd9cd4c2c',
                                  u'eead306ebd2a4e8b8b740c2b9462c250',
                                  u'cab4132c5445437ddf31032339d5882f',
                                  u'cab4132c53c79664df310373dba392db',
@@ -138,8 +145,10 @@ def question_add(question_to, body, question_author=None, is_anonymous=False, sc
                                  u'cab4132c540dba153aac284093d3fcca',
                                  u'cab4132c53c6a513df310374a482ef4e',
                                  u'cab4132c53c6af3edf310377b4a32d13',
-                                 u'cab4132c53c6a447df3103743a3fabdf'])
-        #question_author = get_random_fake_user(gender=question_author_gender)
+                                 u'cab4132c53c6a447df3103743a3fabdf'
+                                 ])
+        '''
+        question_author = get_random_fake_user(gender=question_author_gender)
     return controllers.question_ask(question_author, question_to=question_to, body=body, is_anonymous=is_anonymous, lat = 0.0, lon=0.0)
 
 
@@ -291,6 +300,12 @@ def add_celeb_in_queue(item_id, item_type, item_day, item_score):
     db.session.commit()
     return {'success' : True}
 
+def maketimestamp(datetime_obj):
+    if not datetime_obj:
+        return None
+    else:
+        return int(time.mktime(datetime_obj.timetuple()))
+
 def get_celeb_search(query):
     search_filter = or_(  User.username.like('{query}%'.format(query=query)),
                                     User.first_name.like('% {query}%'.format(query=query)),
@@ -298,11 +313,24 @@ def get_celeb_search(query):
                                )
     results = []
     users = User.query.filter(search_filter, User.user_type == 2).all()
+    user_ids = []
+    post_ids = []
     for user in users:
         results.append({'type':'user', 'user':thumb_user_to_dict(user)})
+        user_ids.append(user.id)
     posts = Post.query.filter(Post.answer_author.in_(map(lambda x:x.id,users))).all()
     for post in posts:
         results.append({'type':'post', 'post':post_to_dict(post)})
+        post_ids.append(post.id)
+    users_in_date_feed = {item.user:item.date for item in DateSortedItems.query.filter(DateSortedItems.user.in_(user_ids)).all()}
+    posts_in_date_feed = {item.post:item.date for item in DateSortedItems.query.filter(DateSortedItems.post.in_(post_ids)).all()}
+    print users_in_date_feed
+    print posts_in_date_feed
+    for result in results:
+        if result['type'] == 'user':
+            result['timestamp'] = maketimestamp(users_in_date_feed.get(result['user']['id']))
+        elif result['type'] == 'post':
+            result['timestamp'] = maketimestamp(posts_in_date_feed.get(result['post']['id']))
     return {'results' : results}
     print posts
     
@@ -407,3 +435,90 @@ def admin_search_default(cur_user_id = None):
             resp.append({'category_name':cat, 'users':category_results[cat]})
 
     return {'results':resp}
+
+def add_to_date_sorted(_type, obj_id, timestamp, score = 0):
+    '''
+    timestamp must be in seconds never in seconds
+    '''
+    type_dict = {
+                'user' : DateSortedItems.user,
+                'post' : DateSortedItems.post
+            }
+    item = DateSortedItems.query.filter(type_dict[_type] == obj_id).first()
+    if not item:
+        item = DateSortedItems(_type, obj_id)
+    item.date = datetime.datetime.fromtimestamp(timestamp)
+    db.session.add(item)
+    db.session.commit()
+    return {'success' : True}
+
+def _get_users_for_date_sorted_list(items):
+    if not items:
+        return items
+    users_dict = {item.user:{'score':item.score,'date':item.date} for item in items}
+    user_objs = db.session.execute(text('SELECT * FROM users WHERE id in :user_ids'), params = {'user_ids':users_dict.keys()})
+    res_list = []
+    for user in user_objs:
+        user_dict = {}
+        user_dict['type'] = 'user'
+        user_dict['score'] = users_dict[user.id]['score']
+        user_dict['timestamp'] = maketimestamp(users_dict[user.id]['date'])
+        user_thumb = thumb_user_to_dict(user)
+        user_dict['user'] = user_thumb
+        res_list.append(user_dict)
+    return res_list
+
+def _get_posts_for_date_sorted_list(items):
+    if not items:
+        return items
+    posts_dict = {item.post:{'score':item.score,'date':item.date} for item in items}
+    post_objs = db.session.execute(text('SELECT * FROM posts WHERE id in :post_ids'), params = {'post_ids':posts_dict.keys()})
+    post_objs = list(post_objs)
+    post_thumbs = posts_to_dict(post_objs)
+    res_list = []
+    for post in post_thumbs:
+        post_dict = {'type':'post'}
+        post_dict['score'] = posts_dict[post['id']]['score']
+        post_dict['timestamp'] = maketimestamp(posts_dict[post['id']]['date'])
+        post_dict['post'] = post
+        res_list.append(post_dict)
+    return res_list
+    
+def get_date_sorted_list(offset=0, limit=100):
+    items = DateSortedItems.query.all()
+    users = filter(lambda x:x if x.user else False, items)  # users in DateSortedItems
+    posts = filter(lambda x:x if x.post else False, items) # posts in DateSortedItems
+    user_thumbs = _get_users_for_date_sorted_list(users)
+    post_thumbs = _get_posts_for_date_sorted_list(posts)
+    res = []
+    res.extend(user_thumbs)
+    res.extend(post_thumbs)
+    res = sorted(res, key=lambda x:x['score'])
+    return {'result' : res}
+
+def update_date_feed_order(date, items):
+    '''
+    item contains obj_id, score, type
+    '''
+    type_dict = {
+                'user' : DateSortedItems.user,
+                'post' : DateSortedItems.post
+            }
+    date = datetime.datetime.fromtimestamp(date)
+    for item in items:
+        print item
+        d = DateSortedItems.query.filter(type_dict[item['type']] == item['obj_id'], DateSortedItems.date == date).first()
+        if d:
+            d.score = item['score']
+        db.session.add(d)
+    db.session.commit()
+    return {'success':True}
+
+def delete_date_sorted_item(_type, obj_id):
+    type_dict = {
+                'user' : DateSortedItems.user,
+                'post' : DateSortedItems.post
+            }
+    DateSortedItems.query.filter(type_dict[_type] == obj_id).delete()
+    db.session.commit()
+    return {'success' : True}
