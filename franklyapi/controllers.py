@@ -2155,10 +2155,3 @@ def get_channel_list(cur_user_id, device_id, version_code):
     return {'channel_list':[feed_banner, discover_banner, search_fragment]}
 
 
-
-
-
-
-config.ANDROID_APP_VERSION 
-
-
