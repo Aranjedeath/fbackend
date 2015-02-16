@@ -103,12 +103,12 @@ def fadeInOriginalVideo():
 		tempimg=makeFaded(n-i,tempimg,bgQ.w,bgQ.h,fadeimage_filename)
 		tempimg.save("tempfade/"+str(k)+".jpeg")
 		i=i+1
-def makeFinalPromo(answer_author_username,video_file_path,transpose_command='',temp_path="temprg/vid3",output_file_name="a.mp4",answer_author_name=None,question=None,question_author_username=None,answer_author_image_filepath=None):
+def makeFinalPromo(answer_author_username,video_file_path,transpose_command,temp_path,output_file_name,answer_author_name=None,question=None,question_author_username=None,answer_author_image_filepath=None):
 	
 	path = temp_path
 
 	print 'creating last past fisrt :) . . .'
-	end_promo_mpg_name = make_promo(path,video_file_path,'kiran.jpg','promo_content/','overlay_png1','overlay_png2','overlay_png3','bariol_bold-webfont_0.ttf',answer_author_username,transpose_command)
+	end_promo_mpg_name = make_promo(path,video_file_path,answer_author_username,transpose_command)
 	
 	mpg_with_front_and_end = end_promo_mpg_name # in case only end promo is to be converted
 
