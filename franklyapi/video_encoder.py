@@ -169,7 +169,8 @@ def encode_video_to_profile(file_path, video_url, profile_name, username=None):
                 result[profile_name] = media_uploader.upload_to_s3(f, new_s3_key)
             os.remove(output_file_path)
 
-        shutil.rmtree(temp_path)
+        if os.path.exists(temp_path):
+            shutil.rmtree(temp_path)
         
         print_output('RESULT: '+ str(result))
         os.chdir(current_dir)
