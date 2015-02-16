@@ -1972,3 +1972,23 @@ class ChannelList(restful.Resource):
             raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
+
+class AppVersion(restful.Resource):
+
+    def get(self):
+        """
+        Returns dictionary of latest app versions
+
+        Controller Functions Used:
+            - get_android_version_code
+
+        Authentication: Optional
+        """
+        try:
+            return controllers.get_android_version_code()
+        
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0], err[1], err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)

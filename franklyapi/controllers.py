@@ -2154,4 +2154,8 @@ def get_channel_list(cur_user_id, device_id, version_code):
 
     return {'channel_list':[feed_banner, discover_banner, search_fragment]}
 
+def get_android_version_code():
+    return {'android_version_code':config.ANDROID_VERSION_CODE,
+    'ios_version_code':config.IOS_VERSION_CODE
+    }
 

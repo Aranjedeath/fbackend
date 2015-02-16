@@ -53,3 +53,5 @@ DEFAULT_BIO = "Ask me anything for video replies."
 
 HOSTNAME = socket.gethostname()
 
+ANDROID_VERSION_CODE = 42
+IOS_VERSION_CODE = 23

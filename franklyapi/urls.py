@@ -90,6 +90,8 @@ api.add_resource(FeedBackResponse, '/feedback')
 api.add_resource(ChannelFeed, '/channel/<channel_id>')
 api.add_resource(ChannelList, '/channel/list')
 
+api.add_resource(AppVersion, '/appversion')
+
 
 
 
