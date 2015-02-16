@@ -150,6 +150,7 @@ def encode_video_to_profile(file_path, video_url, profile_name, username=None):
             make_psuedo_streamable(output_file_path)
         
         else:
+            check_make_dir(temp_path)
             output_file_path = os.path.join(temp_path, uuid.uuid1().hex+'.'+profile['file_extension'])
             os.chdir(temp_path)
             command = profile['command'].format(input_file=file_path, output_file=output_file_path, transpose_command = transpose_command)
@@ -185,8 +186,6 @@ def make_promo_video(answer_author_username, video_file_path, transpose_command=
     profile = VIDEO_ENCODING_PROFILES['promo']
     temp_path = os.path.join(TEMP_DIR, uuid.uuid1().hex)
     output_file_name = uuid.uuid1().hex+'.'+profile['file_extension']
-    
-    os.mkdir(temp_path)
     
     promo_video_intro.makeFinalPromo(answer_author_username, video_file_path,
                                         transpose_command, temp_path, output_file_name,
