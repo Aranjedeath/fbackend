@@ -2156,19 +2156,22 @@ def get_channel_list(cur_user_id, device_id, version_code):
     return {'channel_list':[feed_banner, discover_banner, search_fragment]}
 
 def check_app_version_code(device_type,device_version_code):
+    hard_update_resp = {'hard_update':True,'soft_update':False}
+    soft_update_resp = {'hard_update':False,'soft_update':True}
+    no_update_resp = {'hard_update':False,'soft_update':False}
+    
     if device_type == 'android':
         if device_version_code < config.ANDROID_NECESSARY_VERSION_CODE :
-            android_response = {'hard_update':True,'soft_update':False}
+            resp = hard_update_resp
         elif device_version_code < config.ANDROID_LATEST_VERSION_CODE :
-            android_response = {'hard_update':False,'soft_update':True}
+            resp = soft_update_resp
         else:
-            android_response = {'hard_update':False,'soft_update':False}
-        return android_response    
+            resp = no_update_resp  
     elif device_type == 'ios':
         if device_version_code < config.IOS_NECESSARY_VERSION_CODE :
-            ios_response = {'hard_update':True,'soft_update':False}
+            resp = hard_update_resp
         elif device_version_code < config.IOS_LATEST_VERSION_CODE :
-            ios_response = {'hard_update':False,'soft_update':True}
+            resp = soft_update_resp
         else:
-            ios_response = {'hard_update':False,'soft_update':False}
-        return ios_response
+            resp = no_update_resp
+    return resp
