@@ -147,7 +147,7 @@ def encode_video_to_profile(file_path, video_url, profile_name, username=None):
                                                             question_author_username=video_data['question_author_name'],
                                                             answer_author_image_filepath=answer_author_image_filepath)
 
-            output_file_path = os.path.join(output_file_dir, output_file_name + ".mp4")
+            output_file_path = os.path.join(output_file_dir, output_file_name)
             make_psuedo_streamable(output_file_path)
         
         else:
