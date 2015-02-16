@@ -434,6 +434,55 @@ class AdminGetSimilarQuestions(AdminProtectedResource):
             print traceback.format_exc(e)
             abort(500, message='Error')
 
+
 class AdminSearchDefault(AdminProtectedResource):
     def get(self):
         return admin_controllers.admin_search_default()
+
+class AdminGetDateFeed(AdminProtectedResource):
+    @login_required
+    def get(self):
+        try:
+            return admin_controllers.get_date_sorted_list()
+        except Exception as e:
+            print traceback.format_exc(e)
+            abort(500, message='Error')
+
+class AdminAddToDateFeed(AdminProtectedResource):
+    @login_required
+    def post(self):
+        arg_parser = reqparse.RequestParser()
+        arg_parser.add_argument('type',type=str, choices=['user','post'], required=True)
+        arg_parser.add_argument('obj_id',type=str,  required=True)
+        arg_parser.add_argument('timestamp',type=int,  required=True)
+        args = arg_parser.parse_args()
+        try:
+            return admin_controllers.add_to_date_sorted(args['type'], args['obj_id'], args['timestamp'])
+        except Exception as e:
+            print traceback.format_exc(e)
+            abort(500, message='Error')
+
+class AdminDeleteFromDateFeed(AdminProtectedResource):
+    @login_required
+    def post(self):
+        arg_parser = reqparse.RequestParser()
+        arg_parser.add_argument('type',type=str, choices=['user','post'], required=True)
+        arg_parser.add_argument('obj_id',type=str,  required=True)
+        args = arg_parser.parse_args()
+        try:
+            return admin_controllers.delete_date_sorted_item(args['type'],args['obj_id'])
+        except Exception as e:
+            print traceback.format_exc(e)
+            abort(500, message='Error')
+
+class AdminUpdateDateFeedOrder(AdminProtectedResource):
+    @login_required
+    def post(self):
+        from flask import request
+        print request.json
+        try:
+            return admin_controllers.update_date_feed_order(request.json['date'], request.json['items'])
+        except Exception as e:
+            print traceback.format_exc(e)
+            abort(500, message='Error')
+
