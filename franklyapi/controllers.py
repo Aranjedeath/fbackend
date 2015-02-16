@@ -150,23 +150,20 @@ def set_access_token(device_id, device_type, user_id, access_token, push_id=None
 
 
 def get_data_from_external_access_token(social_type, external_access_token, external_token_secret=None):
-    try:
-        user_data = social_helpers.get_user_data(social_type, external_access_token, external_token_secret)
-        return user_data
-    except Exception as e:
-        raise e
+    user_data = social_helpers.get_user_data(social_type, external_access_token, external_token_secret)
+    return user_data
+
 
 
 def get_user_from_social_id(social_type, social_id):
-    try:
-        if social_id == 'facebook':
-            return User.query.filter(User.facebook_id==social_id).one()
-        elif social_id == 'google':
-            return User.query.filter(User.google_id==social_id).one()
-        elif social_id == 'twitter':
-            return User.query.filter(User.twitter_id==social_id).one()
-    except NoResultFound:
-        return None
+    user = None
+    if social_id == 'facebook':
+        user = User.query.filter(User.facebook_id==social_id).first()
+    elif social_id == 'google':
+        user = User.query.filter(User.google_id==social_id).first()
+    elif social_id == 'twitter':
+        user = User.query.filter(User.twitter_id==social_id).first()
+    return user
 
 def get_device_type(device_id):
     if len(device_id)<17:
@@ -236,26 +233,23 @@ def login_user_social(social_type, social_id, external_access_token, device_id, 
         update_dict.update({'twitter_secret':external_token_secret})
         user_data['email'] = get_twitter_email(user_data['social_id'])
         user_data['social_id'] = str(user_data['social_id']).strip()
-        try:
-            user = User.query.filter(User.twitter_id==user_data['social_id']).one()
-        except:
-            pass
+        user = User.query.filter(User.twitter_id==user_data['social_id']).first()
 
     if social_type in ['facebook', 'google']:
-        try:
-            user = User.query.filter(User.email==user_data['email']).one()
-        except NoResultFound:
-            pass
+        user = User.query.filter(User.email==user_data['email']).first()
 
     if user:
         access_token = generate_access_token(user.id, device_id)
         set_access_token(device_id, device_type, user.id, access_token, push_id)
         activated_now=user.deleted
         User.query.filter(User.id==user.id).update(update_dict)
+        db.session.commit()
         return {'access_token': access_token, 'id':user.id, 'username':user.username, 'activated_now': activated_now, 'new_user' : False, 'user_type' : user.user_type} 
+    
     else:
         username = make_username(user_data['email'], user_data.get('full_name'), user_data.get('social_username'))
-        registered_with = '%s_%s'%(device_type, social_type) 
+        
+        registered_with = '%s_%s'%(device_type, social_type)
 
         new_user = User(email=user_data['email'], username=username, first_name=user_data['full_name'], 
                         registered_with=registered_with, user_type=user_type, gender=user_data.get('gender'), user_title=user_title,
