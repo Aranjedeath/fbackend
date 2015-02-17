@@ -274,7 +274,7 @@ def update_que_order(items):
     db.session.commit()
     return {'success' : True}
 
-def get_celeb_list(offset = 0, limit = 10,since_time):
+def get_celeb_list(since_time,offset = 0, limit = 10):
     #celebs = db.session.execute('select users.id, users.username, users.deleted, users.first_name, users.profile_picture, users.user_type, users.user_title, central_queue_mobile.user, central_queue_mobile.day, central_queue_mobile.score from users left join central_queue_mobile on users.id = central_queue_mobile.user where users.user_type = 2 and user_since : limit %s,%s'%(offset,limit))
     
     celebs = db.session.execute(text("""SELECT users.id, users.username, users.deleted, users.first_name, users.profile_picture, users.user_type, users.user_title, central_queue_mobile.user, central_queue_mobile.day, central_queue_mobile.score 
