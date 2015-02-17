@@ -39,6 +39,7 @@ class AdminUserList(AdminProtectedResource):
         arg_parser.add_argument('deleted', type=int, default=0, location='args')
         arg_parser.add_argument('order_by', type=str, default='user_since', choices=['user_since', 'name'], location='args')
         arg_parser.add_argument('desc', type=int, default=1, choices=[1, 0], location='args')
+        arg_parser.add_argument('since_time', type=int,default=admin_controllers.maketimestamp(datetime(2001,1,1)), location='args')
 
         
         try:
@@ -48,7 +49,8 @@ class AdminUserList(AdminProtectedResource):
                                                     user_type=bool(args['user_type']),
                                                     deleted=bool(args['deleted']),
                                                     order_by=args['order_by'],
-                                                    desc=bool(args['desc'])
+                                                    desc=bool(args['desc']),
+                                                    since_time=datetime.fromtimestamp(args['since_time'])
                                                     )
         except Exception as e:
             err = sys.exc_info()
@@ -485,4 +487,3 @@ class AdminUpdateDateFeedOrder(AdminProtectedResource):
         except Exception as e:
             print traceback.format_exc(e)
             abort(500, message='Error')
-

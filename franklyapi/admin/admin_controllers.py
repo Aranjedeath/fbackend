@@ -10,8 +10,10 @@ from sqlalchemy import or_, text
 import time
 import datetime
 
-def user_list(user_type, deleted, offset, limit, order_by, desc):
-    user_query = User.query.filter(User.user_type==user_type, User.deleted==deleted)
+def user_list(user_type, deleted, offset, limit, order_by, desc,since_time):
+
+    
+    user_query = User.query.filter(User.user_type==user_type, User.deleted==deleted,User.user_since >= since_time)
 
     if order_by == 'user_since':
         order = User.user_since if not desc else User.user_since.desc()
@@ -522,3 +524,22 @@ def delete_date_sorted_item(_type, obj_id):
     DateSortedItems.query.filter(type_dict[_type] == obj_id).delete()
     db.session.commit()
     return {'success' : True}
+
+def user_list_since(user_type, deleted, offset, limit, order_by, desc,timestamp):
+
+    time = datetime.datetime.fromtimestamp(timestamp)
+
+    user_query = User.query.filter(User.user_type==user_type, User.deleted==deleted,User.user_since > time)
+
+    if order_by == 'user_since':
+        order = User.user_since if not desc else User.user_since.desc()
+
+    elif order_by == 'name':
+        order = User.first_name if not desc else User.first_name.desc()
+
+    users = user_query.order_by(order).offset(offset).limit(limit).all()
+    users = [user_to_dict(user) for user in users]
+
+    next_index = -1 if len(users)<limit else offset+limit
+
+    return {'next_index':next_index, 'users':users, 'count':len(users), 'offset':offset, 'limit':limit}
