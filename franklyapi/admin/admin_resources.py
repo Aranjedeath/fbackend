@@ -13,7 +13,7 @@ from app import raygun
 from configs import config
 from functools import wraps
 
-from datetime import datetime
+import datetime
 
 import admin_controllers
 
@@ -293,10 +293,12 @@ class AdminQueOrderEdit(AdminProtectedResource):
 class AdminCelebList(AdminProtectedResource):
     @login_required
     def get(self,offset, limit):
-        arg_parser = reqparse.RequestParser()
-        arg_parser.add_argument('since_time', type=int,default=admin_controllers.maketimestamp(datetime(2001,1,1)), location='args')
-        args = arg_parser.parse_args()
         try:
+            arg_parser = reqparse.RequestParser()
+            arg_parser.add_argument('since_time', type=int,default=admin_controllers.maketimestamp(datetime.datetime(2001,1,1)), location='args')
+        
+            args = arg_parser.parse_args()
+        
             return admin_controllers.get_celeb_list(offset, limit,datetime.fromtimestamp(args['since_time']))
         except Exception as e:
             err = sys.exc_info()
