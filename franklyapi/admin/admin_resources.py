@@ -295,7 +295,7 @@ class AdminCelebList(AdminProtectedResource):
     def get(self,offset, limit):
         arg_parser = reqparse.RequestParser()
         arg_parser.add_argument('since_time', type=int,default=admin_controllers.maketimestamp(datetime(2001,1,1)), location='args')
- 
+        args = arg_parser.parse_args()
         try:
             return admin_controllers.get_celeb_list(offset, limit,datetime.fromtimestamp(args['since_time']))
         except Exception as e:
