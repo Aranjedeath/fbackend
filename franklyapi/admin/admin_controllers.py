@@ -12,7 +12,6 @@ import datetime
 
 def user_list(user_type, deleted, offset, limit, order_by, desc,since_time):
 
-    
     user_query = User.query.filter(User.user_type==user_type, User.deleted==deleted,User.user_since >= since_time)
 
     if order_by == 'user_since':
@@ -275,8 +274,18 @@ def update_que_order(items):
     db.session.commit()
     return {'success' : True}
 
-def get_celeb_list(offset = 0, limit = 10):
-    celebs = db.session.execute('select users.id, users.username, users.deleted, users.first_name, users.profile_picture, users.user_type, users.user_title, central_queue_mobile.user, central_queue_mobile.day, central_queue_mobile.score from users left join central_queue_mobile on users.id = central_queue_mobile.user where users.user_type = 2 limit %s,%s'%(offset,limit))
+def get_celeb_list(offset = 0, limit = 10,since_time):
+    #celebs = db.session.execute('select users.id, users.username, users.deleted, users.first_name, users.profile_picture, users.user_type, users.user_title, central_queue_mobile.user, central_queue_mobile.day, central_queue_mobile.score from users left join central_queue_mobile on users.id = central_queue_mobile.user where users.user_type = 2 and user_since : limit %s,%s'%(offset,limit))
+    
+    celebs = db.session.execute(text("""SELECT users.id, users.username, users.deleted, users.first_name, users.profile_picture, users.user_type, users.user_title, central_queue_mobile.user, central_queue_mobile.day, central_queue_mobile.score 
+                                            from users 
+                                            left join central_queue_mobile 
+                                            on users.id = central_queue_mobile.user 
+                                            where users.user_type = 2 
+                                                and users.user_since > :since_time 
+                                            limit :offset,:limit"""),
+                                params={'since_time':since_time, 'limit':limit, 'offset':offset}
+                                )
     results = []
     for celeb in celebs:
         user = thumb_user_to_dict(celeb)
@@ -524,22 +533,3 @@ def delete_date_sorted_item(_type, obj_id):
     DateSortedItems.query.filter(type_dict[_type] == obj_id).delete()
     db.session.commit()
     return {'success' : True}
-
-def user_list_since(user_type, deleted, offset, limit, order_by, desc,timestamp):
-
-    time = datetime.datetime.fromtimestamp(timestamp)
-
-    user_query = User.query.filter(User.user_type==user_type, User.deleted==deleted,User.user_since > time)
-
-    if order_by == 'user_since':
-        order = User.user_since if not desc else User.user_since.desc()
-
-    elif order_by == 'name':
-        order = User.first_name if not desc else User.first_name.desc()
-
-    users = user_query.order_by(order).offset(offset).limit(limit).all()
-    users = [user_to_dict(user) for user in users]
-
-    next_index = -1 if len(users)<limit else offset+limit
-
-    return {'next_index':next_index, 'users':users, 'count':len(users), 'offset':offset, 'limit':limit}
