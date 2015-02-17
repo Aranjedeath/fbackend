@@ -20,4 +20,9 @@ CELERYBEAT_SCHEDULE = {
         'schedule': timedelta(seconds=3600),
         'options':{'queue': 'periodic'},
     },
+    'task4': {
+        'task': 'periodic_tasks.test',
+        'schedule': timedelta(seconds=10),
+        'options':{'queue': 'periodic'},
+    },
 }

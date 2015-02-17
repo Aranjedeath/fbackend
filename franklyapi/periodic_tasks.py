@@ -50,3 +50,6 @@ def reassign_pending_video_tasks():
 		db.session.commit()
 		if not v.delete:
 			async_encoder.encode_video_task.delay(v.url, username=v.username)
+@celery.task
+def test():
+    print 'yay'
