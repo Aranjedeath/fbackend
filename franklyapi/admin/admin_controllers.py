@@ -10,8 +10,80 @@ from sqlalchemy import or_, text
 import time
 import datetime
 
-def user_list(user_type, deleted, offset, limit, order_by, desc,since_time):
 
+
+def get_user_activity_timeline(user_id, start_time=0, end_time=99999999999):
+    user = User.query.filter(User.id==user_id).one()
+    
+    profile_edits = UserArchive.query.filter(UserArchive.user==user_id,
+                                            UserArchive.timestamp>=datetime.datetime.fromtimestamp(start_time),
+                                            UserArchive.timestamp<datetime.datetime.fromtimestamp(end_time),
+                                            ).order_by(UserArchive.timestamp.desc()
+                                            ).all()
+    posts = Post.query.filter(Post.answer_author==user_id,
+                                Post.timestamp>=datetime.datetime.fromtimestamp(start_time),
+                                Post.timestamp<datetime.datetime.fromtimestamp(end_time),
+                            ).order_by(Post.timestamp.desc()
+                            ).all()
+
+    resp = defaultdict(list)
+    resp[maketimestamp(user.user_since)].append({   
+                                                'action':'account_created',
+                                                'action_by':user.added_by
+                                                })               
+
+    previous_item = UserArchive(user=user_id, username=None, first_name=None,
+                                profile_picture=None, profile_video=None,
+                                cover_picture=None, bio=None, user_title=None)
+    
+    for item in profile_edits:
+        if item.profile_video and item.profile_video!=previous_item.profile_video:
+            resp[maketimestamp(item.timestamp)].append({   
+                                                        'action':'profile_video_changed',
+                                                        'action_by':item.moderated_by
+                                                        })
+        if item.profile_picture and item.profile_picture!=previous_item.profile_picture:
+            resp[maketimestamp(item.timestamp)].append({   
+                                                        'action':'profile_video_changed',
+                                                        'action_by':item.moderated_by
+                                                        })
+        if item.username and item.username!=previous_item.username:
+            resp[maketimestamp(item.timestamp)].append({   
+                                                        'action':'username_changed',
+                                                        'action_by':item.moderated_by
+                                                        })
+        if item.first_name and item.first_name!=previous_item.first_name:
+            resp[maketimestamp(item.timestamp)].append({   
+                                                        'action':'name_changed',
+                                                        'action_by':item.moderated_by
+                                                        })
+        if item.bio and item.bio!=previous_item.bio:
+            resp[maketimestamp(item.timestamp)].append({   
+                                                        'action':'bio_changed',
+                                                        'action_by':item.moderated_by
+                                                        })
+        if item.user_title and item.user_title!=previous_item.user_title:
+            resp[maketimestamp(item.timestamp)].append({   
+                                                        'action':'user_title_changed',
+                                                        'action_by':item.moderated_by
+                                                        })
+        previous_item = item
+
+    for post in posts:
+        resp[maketimestamp(post.timestamp)].append({'action':'post_added',
+                                                    'action_by':post.added_by,
+                                                    'edited_by':post.moderated_by,
+                                                    'web_link':'http://frankly.me/p/{client_id}'.format(client_id=post.client_id)
+                                                    })
+
+    timeline = [{'timestamp':item, 'actions':actions} for timestamp, actions in resp.items()]
+    timeline.sort(key=lambda x: x['timestamp'], reverse=True)
+    return {'user':thumb_user_to_dict(user), 'start_time':start_time, 'end_time':end_time, 'timeline':timeline}
+
+
+
+
+def user_list(user_type, deleted, offset, limit, order_by, desc, since_time):
     user_query = User.query.filter(User.user_type==user_type, User.deleted==deleted,User.user_since >= since_time)
 
     if order_by == 'user_since':
@@ -27,29 +99,38 @@ def user_list(user_type, deleted, offset, limit, order_by, desc,since_time):
 
     return {'next_index':next_index, 'users':users, 'count':len(users), 'offset':offset, 'limit':limit}
 
+
 def get_random_fake_user(gender=None):
     fake_users = ["harmanRathore", "vivek_verma", "pooja_verma", "minal_singh", "vikrant_thapar", "Anthony_Gonzales", "Pravin_Parvani", "ridhi_kalra", "manoj_singh", "neetu_gupta"]
     genders = ['M', 'F', None]
+    
     if gender:
         genders = [gender]
+    
     user_query = User.query.filter(User.username.in_(fake_users), User.gender.in_(genders))
     count = user_query.count()
     offset = random.randint(0,count-1)
     user = user_query.offset(offset).limit(1)[0]
-    print user.username, '##############'
     return user.id
 
 
 
-def user_add(email, username, first_name, bio, password, user_title, user_type, profile_picture, profile_video, gender):
-    resp = controllers.register_email_user(email, password, first_name, device_id='web', username=username, phone_num=None,
-                                    gender=gender, user_type=user_type, user_title=user_title, 
-                                    bio=bio, profile_picture=profile_picture, profile_video=profile_video, admin_upload=True)
-
+def user_add(current_user_id, email, username, first_name, bio, password, user_title, user_type, profile_picture, profile_video, gender):
+    
+    resp = controllers.register_email_user(email, password, first_name, device_id='web',
+                                            username=username, phone_num=None, gender=gender,
+                                            user_type=user_type, user_title=user_title, bio=bio,
+                                            profile_picture=profile_picture, profile_video=profile_video, 
+                                            admin_upload=True, added_by=current_user_id)
+    
+    db.session.commit()
+    
     return {'success':True, 'user':user_to_dict(User.query.get(resp['id']))}
 
 
-def user_edit(user_id, email, username, first_name, bio, password, user_title, user_type, profile_picture, profile_video, deleted=False, phone_num=None):
+def user_edit(current_user_id, user_id, email, username, first_name, bio, 
+                password, user_title, user_type, profile_picture, profile_video,
+                deleted=False, phone_num=None):
     if username:
         controllers.user_change_username(user_id, username)
     if password:
@@ -58,18 +139,23 @@ def user_edit(user_id, email, username, first_name, bio, password, user_title, u
     if deleted:
         User.query.filter(User.id==user_id).update({'deleted':deleted})
 
-    controllers.user_update_profile_form(user_id, first_name=first_name, 
-                                        bio=bio,
-                                        profile_picture=profile_picture,
-                                        profile_video=profile_video,
-                                        user_type=user_type,
-                                        phone_num=phone_num,
-                                        admin_upload=True,
-                                        user_title=user_title,
-                                        email=email)
-
+    controllers.user_update_profile_form(   
+                                            user_id,
+                                            first_name=first_name, 
+                                            bio=bio,
+                                            profile_picture=profile_picture,
+                                            profile_video=profile_video,
+                                            user_type=user_type,
+                                            phone_num=phone_num,
+                                            admin_upload=True,
+                                            user_title=user_title,
+                                            email=email,
+                                            moderated_by=current_user_id
+                                        )
     db.session.commit()
     return {'success':True, 'user':user_to_dict(User.query.get(user_id))}
+
+
 
 def post_list(offset, limit, deleted, order_by, desc, celeb=True, answer_authors=[], question_authors=[]):
     post_query = Post.query.filter(Post.deleted==deleted)
@@ -92,32 +178,36 @@ def post_list(offset, limit, deleted, order_by, desc, celeb=True, answer_authors
 
     return {'next_index':next_index, 'posts':users, 'count':len(posts), 'offset':offset, 'limit':limit}
 
-def post_add(question_id, video, answer_type='video'):
+
+
+def post_add(current_user_id, question_id, video, answer_type='video'):
     from random import choice
-    answer_author = Question.query.get(question_id).question_to
-    show_after = db.session.execute('Select max(show_after) from posts where answer_author = %s'%answer_author).first()
-    if show_after:
-        show_after = show_after[0] + choice([360,720, 1080 ])
-    return controllers.add_video_post(answer_author, question_id, video, answer_type,
-                        lat=None, lon=None, show_after = show_after)
+    answer_author = Question.query.with_entities('answer_author').get(question_id).question_to
 
-def post_unanswer(post_id):
-    post = Post.query.filter(Post.id==post_id).one()
-    question_id = post.question
-    Question.query.filter(Question.id==question_id).update({'is_answered':False})
-    Post.query.filter(Post.id==post_id).delete()
+    show_after = db.session.execute(text("""SELECT max(show_after) 
+                                                FROM posts 
+                                                WHERE answer_author=:answer_author"""),
+                                    params={'answer_author':answer_author}).first()
+    
+    show_after = show_after[0] + choice([360,720, 1080 ]) if show_after else None
+    
+    resp = controllers.add_video_post(cur_user_id=answer_author, question_id=question_id, 
+                                        video=video, answer_type=answer_type,
+                                        lat=None, lon=None, show_after = show_after, added_by=current_user_id)
     db.session.commit()
-    return {'success':True}
+    return resp
 
-def post_edit(post_id, video, answer_type='video'):
+
+def post_edit(current_user_id, post_id, video, answer_type='video'):
     post = Post.query.filter(Post.id==post_id).first()
     video_url, thumbnail_url = media_uploader.upload_user_video(user_id=post.answer_author, video_file=video, video_type='answer')
-    Post.query.filter(Post.id==post_id).update({'media_url':video_url, 'thumbnail_url':thumbnail_url})
+    Post.query.filter(Post.id==post_id).update({'media_url':video_url, 'thumbnail_url':thumbnail_url, 'moderated_by':current_user_id})
 
     username = User.query.with_entities('username').filter(User.id==post.answer_author).one().username
 
     video_db.add_video_to_db(video_url, thumbnail_url, 'answer_video', post_id, username)
     async_encoder.encode_video_task.delay(video_url, username)
+    
     db.session.commit()
 
     return {'success': True, 'id':post_id}
@@ -132,39 +222,35 @@ def question_list(offset, limit, user_to=[], user_from=[], public=True, deleted=
     return {'questions': [question_to_dict(question) for question in questions], 'next_index':offset+limit}
 
 
-def question_add(question_to, body, question_author=None, is_anonymous=False, score=500, question_author_gender=None):
-    if not question_author:
-        '''
-        from random import choice
-        question_author = choice([
-                                 u'481bc87c43bc4812b0e333ecd9cd4c2c',
-                                 u'eead306ebd2a4e8b8b740c2b9462c250',
-                                 u'cab4132c5445437ddf31032339d5882f',
-                                 u'cab4132c53c79664df310373dba392db',
-                                 u'cab4132c53df5eafdf31034108378042',
-                                 u'd8ace0a534c041bc91ccef22c399f73e',
-                                 u'cab4132c540dba153aac284093d3fcca',
-                                 u'cab4132c53c6a513df310374a482ef4e',
-                                 u'cab4132c53c6af3edf310377b4a32d13',
-                                 u'cab4132c53c6a447df3103743a3fabdf'
-                                 ])
-        '''
-        question_author = get_random_fake_user(gender=question_author_gender)
-    return controllers.question_ask(question_author, question_to=question_to, body=body, is_anonymous=is_anonymous, lat = 0.0, lon=0.0)
+def question_add(current_user_id, question_to, body, question_author=None, is_anonymous=False, score=500, question_author_gender=None):
+    question_author = get_random_fake_user(gender=question_author_gender) if not question_author else question_author
+    resp = controllers.question_ask(question_author, 
+                                    question_to=question_to,
+                                    body=body, 
+                                    is_anonymous=is_anonymous,
+                                    lat = 0.0,
+                                    lon=0.0,
+                                    added_by=current_user_id)
+    db.session.commit()
+    return resp
 
 
-def question_delete(question_id):
-    Question.query.filter(Question.id==question_id).update({'deleted':True})
+def question_delete(current_user_id, question_id):
+    Question.query.filter(Question.id==question_id).update({'deleted':True, 'moderated_by':current_user_id})
     db.session.commit()
     return {'success':True, 'question_id':question_id}
 
-def question_undelete(question_id):
-    Question.query.filter(Question.id==question_id).update({'deleted':False})
+def question_undelete(current_user_id, question_id):
+    Question.query.filter(Question.id==question_id).update({'deleted':False, 'moderated_by':current_user_id})
     db.session.commit()
     return {'success':True, 'question_id':question_id}
 
-def question_edit(question_id, body):
-    Question.query.filter(Question.id==question_id).update({'body':body.capitalize()})
+def question_edit(current_user_id, question_id, body, slug=None):
+    update_dict = {'body':body.capitalize(), 'moderated_by':current_user_id}
+    if slug:
+        slug = slugify.slugify(unicode(slug))
+        update_dict.update({'slug':slug})
+    Question.query.filter(Question.id==question_id).update(update_dict)
     db.session.commit()
     return {'success':True, 'question_id':question_id}
 
@@ -174,9 +260,66 @@ def question_redirect(question_ids, redirect_to):
     return {'success':True}
 
 
-stop_words = ["i" , "me" , "my" , "myself" , "we" , "our" , "ours" , "ourselves" , "you" , "your" , "yours" , "yourself" , "yourselves" , "he" , "him" , "his" , "himself" , "she" , "her" , "hers" , "herself" , "it" , "its" , "itself" , "they" , "them" , "their" , "theirs" , "themselves" , "what" , "which" , "who" , "whom" , "this" , "that" , "these" , "those" , "am" , "is" , "are" , "was" , "were" , "be" , "been" , "being" , "have" , "has" , "had" , "having" , "do" , "does" , "did" , "doing" , "a" , "an" , "the" , "and" , "but" , "if" , "or" , "because" , "as" , "until" , "while" , "of" , "at" , "by" , "for" , "with" , "about" , "against" , "between" , "into" , "through" , "during" , "before" , "after" , "above" , "below" , "to" , "from" , "up" , "down" , "in" , "out" , "on" , "off" , "over" , "under" , "again" , "further" , "then" , "once" , "here" , "there" , "when" , "where" , "why" , "how" , "all" , "any" , "both" , "each" , "few" , "more" , "most" , "other" , "some" , "such" , "no" , "nor" , "not" , "only" , "own" , "same" , "so" , "than" , "too" , "very" , "s" , "t" , "can" , "will" , "just" , "don" , "should" , "now"]
+
+def question_change_upvotes(question_id, change_count):
+    if change_count < 0:
+        return question_decrease_upvotes(question_id, change_count)
+    if change_count > 0:
+        return question_increase_upvotes(question_id, change_count)
+
+
+def question_increase_upvotes(question_id, count):
+    from controllers import question_upvote
+    results = db.session.execute(text("""SELECT users.id FROM users JOIN question_upvotes 
+                                                    ON users.id=question_upvotes.user
+                                                WHERE users.monkness in :monkness
+                                                    AND question_upvotes.downvoted=false""")
+                                params = {'monkness':[1, 0]}
+                                )
+
+    for user in User.query.with_entities('id').filter(  User.monkness.in_([1, 0]),
+                                                        ~User.id.in_([row[0] for row in results])
+                                                    ).limit(count/10).all():
+
+        resp = question_upvote(user.id, question_id)
+
+    return {'count': done_count*10}
+
+def question_decrease_upvotes(question_id, count):
+    from controllers import question_downvote
+    results = db.session.execute(text("""SELECT users.id FROM users JOIN question_upvotes 
+                                                    ON users.id=question_upvotes.user
+                                                WHERE users.monkness in :monkness
+                                                    AND question_upvotes.downvoted=false
+                                                ORDER BY question_upvotes.timestamp DESC
+                                                LIMIT 0, :count
+                                                """)
+                                params = {'monkness':[1, 0], 'count':count}
+                                )
+    for row in results:
+        question_downvote(row[0], question_id)
+
+    return {'count':done_count*10}
+
 
 def get_search_words(question_body):
+    stop_words = ["i" , "me" , "my" , "myself" , "we" , "our" , "ours" , "ourselves" ,
+                    "you" , "your" , "yours" , "yourself" , "yourselves" , "he" , "him" ,
+                    "his" , "himself" , "she" , "her" , "hers" , "herself" , "it" , "its" ,
+                    "itself" , "they" , "them" , "their" , "theirs" , "themselves" , "what" ,
+                    "which" , "who" , "whom" , "this" , "that" , "these" , "those" , "am" ,
+                    "is" , "are" , "was" , "were" , "be" , "been" , "being" , "have" , "has" ,
+                    "had" , "having" , "do" , "does" , "did" , "doing" , "a" , "an" , "the" ,
+                    "and" , "but" , "if" , "or" , "because" , "as" , "until" , "while" , "of" ,
+                    "at" , "by" , "for" , "with" , "about" , "against" , "between" , "into" ,
+                    "through" , "during" , "before" , "after" , "above" , "below" , "to" ,
+                    "from" , "up" , "down" , "in" , "out" , "on" , "off" , "over" , "under" ,
+                    "again" , "further" , "then" , "once" , "here" , "there" , "when" , "where" ,
+                    "why" , "how" , "all" , "any" , "both" , "each" , "few" , "more" , "most" ,
+                    "other" , "some" , "such" , "no" , "nor" , "not" , "only" , "own" , "same" ,
+                    "so" , "than" , "too" , "very" , "s" , "t" , "can" , "will" , "just" ,
+                    "don" , "should" , "now"
+                ]
     search_words = filter(lambda x:x, map(lambda x:x.strip() if x not in stop_words else False, question_body.split(' ')))
     return search_words
 

@@ -15,8 +15,10 @@ class Question(Base):
     is_ignored      = Column(Boolean(), default=False)
     public          = Column(Boolean(), default=False)
     deleted         = Column(Boolean(), default=False)
+    added_by        = Column(CHAR(32), ForeignKey('users.id'))
     moderated_by    = Column(CHAR(32), ForeignKey('users.id'))
     short_id        = Column(String(15))
+    slug            = Column(String(250), nullable=False)
 
     lat             = Column(Float())
     lon             = Column(Float())
@@ -25,16 +27,17 @@ class Question(Base):
     country_code    = Column(String(2))
     score           = Column(Integer(), default=0)
 
-    def __init__(self, question_author, question_to, body, short_id, timestamp=datetime.datetime.now(),
+    def __init__(self, question_author, question_to, body, short_id, slug, timestamp=datetime.datetime.now(),
                         is_answered=False, is_anonymous=False, is_ignored=False, public=False,
                         deleted=False, moderated_by=None, lat=None, lon=None, location_name=None, 
-                        country_name=None, country_code=None,id=None, score=0):
+                        country_name=None, country_code=None,id=None, score=0, added_by=None):
+        
         self.id              = get_item_id()
-        print self.id, "is my id"
         self.question_author = question_author
         self.question_to     = question_to
         self.body            = body
         self.short_id        = short_id
+        self.slug            = slug
         self.timestamp       = timestamp
         self.is_answered     = is_answered
         self.is_anonymous    = is_anonymous
@@ -48,7 +51,8 @@ class Question(Base):
         self.country_name    = country_name
         self.country_code    = country_code
         self.score           = score
-
+        self.added_by        = added_by
+        self.moderated_by    = moderated_by
     def __repr__(self):
         return '<Question %r:%r>' % (self.id, self.body)
 
@@ -63,11 +67,11 @@ class Upvote(Base):
     downvoted      = Column(Boolean(), default=False)
 
 
-    def __init__(self, user, question, downvoted=False):
+    def __init__(self, user, question, downvoted=False, timestamp=datetime.datetime.now()):
         self.user      = user
         self.question  = question
         self.downvoted = downvoted
-        self.timestamp = datetime.datetime.now()
+        self.timestamp = timestamp
 
     def __repr__(self):
         return '<Upvote %r:%r>' % (self.user, self.question)

@@ -52,6 +52,7 @@ class User(Base):
     timezone                  = Column(Integer(), default=0)
     view_count                = Column(Integer(), default=0)
     total_view_count          = Column(Integer(), default=0)
+    added_by                  = Column(CHAR(32), ForeignKey('users.id'))
 
     def get_user(self,_id):
         self.id = _id
@@ -65,7 +66,7 @@ class User(Base):
                         user_since=datetime.datetime.now(), last_updated=datetime.datetime.now(),
                         last_seen=datetime.datetime.now(), allow_anonymous_question=True,
                         notify_like=True, notify_follow=True, notify_question=True, notify_comments=True,
-                        notify_mention=None, notify_answer=None, timezone=0, id=None, phone_num=None, view_count=0, total_view_count=0):
+                        notify_mention=None, notify_answer=None, timezone=0, id=None, phone_num=None, view_count=0, total_view_count=0, added_by=None):
         self.id                        = get_item_id()
         self.email                     = email
         self.first_name                = first_name
@@ -110,7 +111,8 @@ class User(Base):
         self.timezone                  = timezone  
         self.phone_num                 = phone_num 
         self.view_count                = view_count 
-        self.total_view_count          = total_view_count             
+        self.total_view_count          = total_view_count   
+        self.added_by                  = added_by          
 
 
     def is_authenticated(self):
@@ -179,10 +181,13 @@ class UserArchive(Base):
     profile_video   = Column(String(250))
     cover_picture   = Column(String(250))
     bio             = Column(String(200))
+    user_title      = Column(String(20))
     timestamp       = Column(DateTime(), onupdate=datetime.datetime.now(), default=datetime.datetime.now())
+    moderated_by    = Column(CHAR(32), ForeignKey('users.id'))
 
 
-    def __init__(self, user, username, first_name, profile_picture, profile_video, cover_picture, bio):
+    def __init__(self, user, username, first_name, profile_picture, profile_video,
+                    cover_picture, bio, user_title, moderated_by=None, timestamp=datetime.datetime.now()):
         self.user            = user
         self.username        = username
         self.first_name      = first_name
@@ -190,6 +195,9 @@ class UserArchive(Base):
         self.profile_video   = profile_video
         self.cover_picture   = cover_picture
         self.bio             = bio
+        self.moderated_by    = moderated_by
+        self.user_title      = user_title
+        self.timestamp       = timestamp
 
     def __repr__(self):
         return '<UserArchive %r>' % (self.user)

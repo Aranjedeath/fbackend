@@ -87,7 +87,8 @@ class AdminUserAdd(AdminProtectedResource):
         print 'bhonsdi wala.'
 
         try:
-            return admin_controllers.user_add(email=args['email'],
+            return admin_controllers.user_add(  current_user_id=current_user.id,
+                                                email=args['email'],
                                                 username=args['username'],
                                                 first_name=args['first_name'],
                                                 bio=args['bio'],
@@ -116,7 +117,8 @@ class AdminPostEdit(AdminProtectedResource):
         arg_parser.add_argument('video', type=file, required=True, location='files')
         args = arg_parser.parse_args()
         try:
-            return admin_controllers.post_edit(post_id=args['post_id'],
+            return admin_controllers.post_edit(current_user_id=current_user.id, 
+                                                post_id=args['post_id'],
                                                 video=args['video'])
         except Exception as e:
             err = sys.exc_info()
@@ -144,7 +146,8 @@ class AdminUserEdit(AdminProtectedResource):
         args = arg_parser.parse_args()
 
         try:
-            return admin_controllers.user_edit(user_id=args['user_id'],
+            return admin_controllers.user_edit( current_user_id=current_user.id,
+                                                user_id=args['user_id'],
                                                 email=args['email'],
                                                 username=args['username'],
                                                 first_name=args['first_name'],
@@ -199,7 +202,11 @@ class AdminQuestionAdd(AdminProtectedResource):
 
         args = arg_parser.parse_args()
         try:
-            return admin_controllers.question_add(args['question_to'], args['question_body'], args['question_author'], question_author_gender=args.get('gender'))
+            return admin_controllers.question_add(  current_user_id=current_user.id,
+                                                    question_to=args['question_to'],
+                                                    body=args['question_body'],
+                                                    question_author=args['question_author'],
+                                                    question_author_gender=args.get('gender'))
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])
@@ -215,7 +222,8 @@ class AdminQuestionDelete(AdminProtectedResource):
         arg_parser.add_argument('question_id', type=str, default=0, location='json')
         args = arg_parser.parse_args()
         try:
-            return admin_controllers.question_delete(question_id=args['question_id'])
+            return admin_controllers.question_delete( current_user_id=current_user.id,
+                                                      question_id=args['question_id'])
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])
@@ -229,7 +237,8 @@ class AdminQuestionUndelete(AdminProtectedResource):
         arg_parser.add_argument('question_id', type=str, default=0, location='json')
         args = arg_parser.parse_args()
         try:
-            return admin_controllers.question_undelete(question_id=args['question_id'])
+            return admin_controllers.question_undelete( current_user_id=current_user.id,
+                                                        question_id=args['question_id'])
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])
@@ -241,10 +250,15 @@ class AdminQuestionEdit(AdminProtectedResource):
     def post(self):
         arg_parser = reqparse.RequestParser()
         arg_parser.add_argument('question_id', type=str, default=0, location='json')
-        arg_parser.add_argument('body', type=str, default=0, location='json')
+        arg_parser.add_argument('body', type=str, required=True, location='json')
+        arg_parser.add_argument('slug', type=str, default=None, location='json')
+
         args = arg_parser.parse_args()
         try:
-            return admin_controllers.question_edit(question_id=args['question_id'], body=args['body'])
+            return admin_controllers.question_edit( current_user_id=current_user.id,
+                                                    question_id=args['question_id'],
+                                                    body=args['body'],
+                                                    slug=args['slug'])
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])
@@ -369,6 +383,26 @@ class AdminQuestionTodayList(AdminProtectedResource):
             raygun.send(err[0],err[1],err[2])
             print traceback.format_exc(e)
             abort(500, message='Error')
+
+class AdminGetUserActivityTimeline(AdminProtectedResource):
+    @login_required
+    def post(self):
+        arg_parser = reqparse.RequestParser()
+        arg_parser.add_argument('user_id', type=str, required=True, location='args')
+        arg_parser.add_argument('start_time', type=int, required=True, location='args')
+        arg_parser.add_argument('end_time', type=int, required=True, location='args')
+        args = arg_parser.parse_args()
+
+        try:
+            return admin_controllers.get_user_activity_timeline(user_id=args['user_id'],
+                                                                start_time=args['start_time'],
+                                                                end_time=args['end_time'])
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message='Error')
+
 
 class AdminDeleteSearchDefaultUser(AdminProtectedResource):
     @login_required
