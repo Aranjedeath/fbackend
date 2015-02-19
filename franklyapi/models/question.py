@@ -17,8 +17,8 @@ class Question(Base):
     deleted         = Column(Boolean(), default=False)
     added_by        = Column(CHAR(32), ForeignKey('users.id'))
     moderated_by    = Column(CHAR(32), ForeignKey('users.id'))
-    short_id        = Column(String(15))
-    slug            = Column(String(250), nullable=False)
+    short_id        = Column(String(15), unique=True)
+    slug            = Column(String(250), nullable=False, unique=True)
 
     lat             = Column(Float())
     lon             = Column(Float())

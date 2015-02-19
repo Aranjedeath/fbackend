@@ -11,7 +11,7 @@ class Post(Base):
     answer_author       = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
     media_url           = Column(String(300), nullable=False)
     thumbnail_url       = Column(String(300), nullable=False)
-    client_id           = Column(String(15), nullable=False)
+    client_id           = Column(String(15), nullable=False, unique=True)
     
     timestamp           = Column(DateTime(), default=datetime.datetime.now())
     answer_type         = Column(Enum('video', 'text', 'picture'), default='video')
