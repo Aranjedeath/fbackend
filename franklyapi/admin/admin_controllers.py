@@ -183,7 +183,7 @@ def user_increase_followers(user_id, count):
     return {'count': count}
 
 def user_decrease_followers(user_id, count):
-    from controllers import user_follow
+    from controllers import user_unfollow
     results = db.session.execute(text("""SELECT users.id FROM users JOIN user_follows
                                                     ON users.id=user_follows.user
                                                 WHERE users.monkness in :monkness
