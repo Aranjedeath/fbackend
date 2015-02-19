@@ -9,4 +9,4 @@ from event import Event
 from invitables import Invitable, Invite
 from inflated_stat import InflatedStat
 from search_default import SearchDefault
-from moderation import AdminUser
+#from moderation import AdminUser
