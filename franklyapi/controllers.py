@@ -2152,12 +2152,14 @@ def get_channel_feed(cur_user_id, channel_id, offset, limit, device_id=None, ver
 def get_channel_list(cur_user_id, device_id, version_code):
     feed_banner = {'type':'banner',
                     'bg_image':None,
+                    'icon':None,
                     'name':'Feed',
                     'channel_id':'feed',
                     'description':None}
     discover_banner = {'type':'banner',
                         'bg_image':None,
                         'name':'Discover',
+                        'icon':None,
                         'channel_id':'discover',
                         'description':None
                         }
