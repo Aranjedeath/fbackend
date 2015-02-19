@@ -11,7 +11,6 @@ import time
 import datetime
 
 
-
 def get_user_activity_timeline(user_id, start_time=0, end_time=99999999999):
     user = User.query.filter(User.id==user_id).one()
     
@@ -263,9 +262,9 @@ def question_redirect(question_ids, redirect_to):
 
 def question_change_upvotes(question_id, change_count):
     if change_count < 0:
-        return question_decrease_upvotes(question_id, change_count)
+        return question_decrease_upvotes(question_id, change_count*-1)
     if change_count > 0:
-        return question_increase_upvotes(question_id, change_count*-1)
+        return question_increase_upvotes(question_id, change_count)
 
 
 def question_increase_upvotes(question_id, count):
