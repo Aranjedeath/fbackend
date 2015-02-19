@@ -273,7 +273,7 @@ def question_increase_upvotes(question_id, count):
     results = db.session.execute(text("""SELECT users.id FROM users JOIN question_upvotes 
                                                     ON users.id=question_upvotes.user
                                                 WHERE users.monkness in :monkness
-                                                    AND question_upvotes.downvoted=false""")
+                                                    AND question_upvotes.downvoted=false"""),
                                 params = {'monkness':[1, 0]}
                                 )
 
@@ -293,7 +293,7 @@ def question_decrease_upvotes(question_id, count):
                                                     AND question_upvotes.downvoted=false
                                                 ORDER BY question_upvotes.timestamp DESC
                                                 LIMIT 0, :count
-                                                """)
+                                                """),
                                 params = {'monkness':[1, 0], 'count':count}
                                 )
     for row in results:
