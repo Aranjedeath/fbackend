@@ -620,7 +620,7 @@ def get_video_states(video_urls={}):
     for key, value in result.items():
         '''
         for bitrate, url in value.items():
-            result[key][bitrate]=url.replace('https://s3.amazonaws.com/franklyapp/', 'http://d35wlof4jnjr70.cloudfront.net/')
+            result[key][bitrate]=url.replace('https://s3.amazonaws.com/franklymestorage/', 'http://d35wlof4jnjr70.cloudfront.net/')
             if bitrate is not 'thumb':
                result[key][bitrate] = 'http://api.frankly.me/videoview?url={vid_url}'.format(vid_url=result[key][bitrate])
         '''
@@ -1885,7 +1885,7 @@ def web_hiring_form(name, email, phone_num, role):
 
 
 def view_video(url, count=1):
-    url = url.replace('http://d35wlof4jnjr70.cloudfront.net/', 'https://s3.amazonaws.com/franklyapp/')
+    url = url.replace('http://d35wlof4jnjr70.cloudfront.net/', 'https://s3.amazonaws.com/franklymestorage/')
     redis_views.incr(url, count)
 
 def query_search(cur_user_id, query, offset, limit, version_code=None):

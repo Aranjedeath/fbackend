@@ -8,8 +8,7 @@ import CustomExceptions
 from configs import config
 import image_processors
 
-REGION_NAME = 'us-east-1'
-BUCKET_NAME = 'franklyapp'
+BUCKET_NAME = 'franklymestorage'
 CONN = S3Connection(config.AWS_KEY, config.AWS_SECRET)
 
 ALLOWED_VIDEO_TYPES = ['video/mp4', 'application/octet-stream']
