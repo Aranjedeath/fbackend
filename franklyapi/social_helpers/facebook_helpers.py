@@ -58,4 +58,4 @@ def get_fb_data(access_token):
         return user_data
     except Exception as e:
         print traceback.format_exc(e)
-        raise e()
+        raise e
