@@ -1975,6 +1975,10 @@ class ChannelList(restful.Resource):
 
 class AppVersion(restful.Resource):
 
+    get_parser = reqparse.RequestParser()
+    get_parser.add_argument('device_type', type=str, location='args', choices=['android','ios'], required=True)
+    get_parser.add_argument('device_version_code', type=int, location='args', default=0, required=True)
+
     def get(self):
         """
         Returns dictionary of latest app versions
@@ -1984,8 +1988,9 @@ class AppVersion(restful.Resource):
 
         Authentication: Optional
         """
+        args = self.get_parser.parse_args()
         try:
-            return controllers.get_android_version_code()
+            return controllers.check_app_version_code(args['device_type'],args['device_version_code'])
         
         except Exception as e:
             err = sys.exc_info()

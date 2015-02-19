@@ -179,7 +179,7 @@ def new_registration_task(user_id):
 def register_email_user(email, password, full_name, device_id, username=None, phone_num=None,
                         push_id=None, gender=None, user_type=0, user_title=None, 
                         lat=None, lon=None, location_name=None, country_name=None, country_code=None,
-                        bio=None, profile_picture=None, profile_video=None, admin_upload=False):
+                        bio=None, profile_picture=None, profile_video=None, admin_upload=False, added_by=None):
     
     if not email_available(email):
         raise CustomExceptions.UserAlreadyExistsException("A user with that email already exists")
@@ -195,13 +195,13 @@ def register_email_user(email, password, full_name, device_id, username=None, ph
     new_user = User(email=email, username=username, first_name=full_name, password=password, 
                     registered_with=registered_with, user_type=user_type, gender=gender, user_title=user_title,
                     phone_num=phone_num, lat=lat, lon=lon, location_name=location_name, country_name=country_name,
-                    country_code=country_code, bio=bio, id=get_item_id())
+                    country_code=country_code, bio=bio, id=get_item_id(), added_by=added_by)
     
     db.session.add(new_user)
     db.session.commit()
     
     if profile_picture or profile_video:
-        user_update_profile_form(new_user.id, profile_picture=profile_picture, profile_video=profile_video)
+        user_update_profile_form(new_user.id, profile_picture=profile_picture, profile_video=profile_video, moderated_by=added_by)
 
     access_token=None
     if not admin_upload:
@@ -724,7 +724,9 @@ def user_view_profile(current_user_id, user_id, username=None):
         raise CustomExceptions.UserNotFoundException('No user with this username/userid found')
 
 
-def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture=None, profile_video=None, user_type=None, phone_num=None, admin_upload=False, user_title=None, email=None):
+def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture=None, 
+                            profile_video=None, user_type=None, phone_num=None, admin_upload=False,
+                            user_title=None, email=None, moderated_by=None):
     update_dict = {}
 
     #user = User.objects.only('id').get(id=user_id)
@@ -741,12 +743,9 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
                         'bio':user.bio,
                         'profile_picture':user.profile_picture,
                         'cover_picture':user.cover_picture,
-                        'profile_video':user.profile_video
+                        'profile_video':user.profile_video,
+                        'user_title':user.user_title
                         }
-    
-    if user_title:
-        update_dict.update({'user_title':user_title})
-
 
     if first_name:
         update_dict.update({'first_name':first_name})
@@ -779,16 +778,21 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
         if user_type!=None:
             update_dict.update({'user_type':user_type})
 
+        if user_title:
+            update_dict.update({'user_title':user_title})
+
     if not update_dict:
         raise CustomExceptions.BadRequestException('Nothing to update')
     
     user_archive =  UserArchive(user=user_id,
-                                username=update_dict['username'] if update_dict.get('username') else existing_values['username'],
-                                first_name=update_dict['first_name'] if update_dict.get('first_name') else existing_values['first_name'],
-                                profile_picture=update_dict['profile_picture'] if update_dict.get('profile_picture') else existing_values['profile_picture'],
-                                cover_picture=update_dict['cover_picture'] if update_dict.get('cover_picture') else existing_values['cover_picture'],
-                                profile_video=update_dict['profile_video'] if update_dict.get('profile_video') else existing_values['profile_video'],
-                                bio=update_dict['bio'] if update_dict.get('bio') else existing_values.get('bio')
+                                username=update_dict.get('username') or existing_values['username'],
+                                first_name=update_dict.get('first_name') or existing_values['first_name'],
+                                profile_picture=update_dict.get('profile_picture') or existing_values['profile_picture'],
+                                cover_picture=update_dict.get('cover_picture') or existing_values['cover_picture'],
+                                profile_video=update_dict.get('profile_video') or existing_values['profile_video'],
+                                bio=update_dict.get('bio') or existing_values.get('bio'),
+                                user_title=update_dict.get('user_title') or existing_values.get('user_title'),
+                                moderated_by=moderated_by
                                 )
 
     db.session.add(user_archive)
@@ -812,11 +816,11 @@ def user_follow(cur_user_id, user_id):
     if cur_user_id == user_id:
         raise CustomExceptions.BadRequestException("Cannot follow yourself")
 
-    db.session.execute(text("""INSERT INTO user_follows (user, followed, unfollowed) 
-                                VALUES(:cur_user_id, :user_id, false) 
+    db.session.execute(text("""INSERT INTO user_follows (user, followed, unfollowed, timestamp) 
+                                VALUES(:cur_user_id, :user_id, false, :timestamp) 
                                 ON DUPLICATE KEY 
-                                UPDATE unfollowed = false"""),
-                        params={'cur_user_id':cur_user_id, 'user_id':user_id}
+                                UPDATE unfollowed = false, timestamp=:timestamp"""),
+                        params={'cur_user_id':cur_user_id, 'user_id':user_id, 'timestamp':datetime.datetime.now()}
                     )
 
     event = create_event(user=cur_user_id, action='follow', foreign_data=user_id)
@@ -1029,7 +1033,28 @@ def user_update_access_token(user_id, acc_type, token):
         raise CustomExceptions.BadRequestException('invalid token')
 
 
-def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous): 
+def make_question_slug(body, question_id):
+    import slugify
+    stop_words = ["in", "it", "its", "is", "it's", "on", "so", "to", 
+                    "were", "are", "was", "at", "in", "so", "be"]
+    body = sanitize_question_body(body)
+    if len(body)>150:
+        for word in stop_words:
+            body = body.replace(word, '')
+    if len(body)>150:
+        body = body[:150]
+    sentence = "{body} {question_id}".format(body=body, question_id=question_id)
+    slug = slugify.slugify(unicode(sentence))
+    return slug
+
+    
+def sanitize_question_body(body):
+    if len(body)>200:
+        body = body.replace('\n', ' ').replace('  ', ' ').strip()
+    return body
+
+
+def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_by=None): 
     if has_blocked(cur_user_id, question_to):
         raise CustomExceptions.BlockedUserException()
 
@@ -1039,9 +1064,14 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous):
         raise CustomExceptions.NoPermissionException('Anonymous question not allowed for the user')
 
     public = True if user_status['user_type']==2 else False #if user is celeb
+
+    question_id = get_item_id()
+    slug = make_question_slug(body, question_id)
+
     question = Question(question_author=cur_user_id, question_to=question_to, 
                 body=body.capitalize(), is_anonymous=is_anonymous, public=public,
-                lat=lat, lon=lon, short_id=get_new_short_id(for_object='question'), id = get_item_id())
+                lat=lat, lon=lon, slug=slug, short_id=get_new_short_id(for_object='question'),
+                id = question_id, added_by=added_by)
     
     db.session.add(question)
 
@@ -1121,16 +1151,14 @@ def question_upvote(cur_user_id, question_id):
                             Question.question_to!=cur_user_id,
                             Question.deleted==False
                             ).count():
-        db.session.execute(text("""INSERT INTO question_upvotes (user, question, downvoted) 
-                                    VALUES(:cur_user_id, :question_id, false) 
+        db.session.execute(text("""INSERT INTO question_upvotes (user, question, downvoted, timestamp) 
+                                    VALUES(:cur_user_id, :question_id, false, :timestamp) 
                                     ON DUPLICATE KEY 
-                                    UPDATE downvoted = false"""),
-                            params={'cur_user_id':cur_user_id, 'question_id':question_id}
-                        )
-
-        #event = create_event(user=cur_user_id, action='upvote', foreign_data=question_id)
-        #if event:
-        #   db.session.add(event)
+                                    UPDATE downvoted = false, timestamp=:timestamp"""),
+                            params={'cur_user_id':cur_user_id,
+                                    'question_id':question_id,
+                                    'timestamp':datetime.datetime.now()}
+                            )
         db.session.commit()
     else:
         raise CustomExceptions.BadRequestException("Question is not available for upvote")
@@ -1182,11 +1210,12 @@ def post_like(cur_user_id, post_id):
     answer_author, question_author= row
 
     if not (has_blocked(cur_user_id, answer_author) or has_blocked(cur_user_id, answer_author)):
-        db.session.execute(text("""INSERT INTO post_likes (user, post, unliked) 
-                                    VALUES(:cur_user_id, :post_id, false) 
+        db.session.execute(text("""INSERT INTO post_likes (user, post, unliked, timestamp) 
+                                    VALUES(:cur_user_id, :post_id, false, :timestamp) 
                                     ON DUPLICATE KEY 
-                                    UPDATE unliked = false"""),
-                            params={'cur_user_id':cur_user_id, 'post_id':post_id}
+                                    UPDATE unliked = false, timestamp=:timestamp"""),
+                            params={'cur_user_id':cur_user_id, 'post_id':post_id,
+                                    'timestamp':datetime.datetime.now()}
                             )
 
         event = create_event(user=cur_user_id, action='like', foreign_data=post_id)
@@ -2155,8 +2184,23 @@ def get_channel_list(cur_user_id, device_id, version_code):
 
     return {'channel_list':[feed_banner, discover_banner, search_fragment]}
 
-def get_android_version_code():
-    return {'android_version_code':config.ANDROID_VERSION_CODE,
-    'ios_version_code':config.IOS_VERSION_CODE
-    }
-
+def check_app_version_code(device_type,device_version_code):
+    hard_update_resp = {'hard_update':True,'soft_update':False}
+    soft_update_resp = {'hard_update':False,'soft_update':True}
+    no_update_resp = {'hard_update':False,'soft_update':False}
+    
+    if device_type == 'android':
+        if device_version_code < config.ANDROID_NECESSARY_VERSION_CODE :
+            resp = hard_update_resp
+        elif device_version_code < config.ANDROID_LATEST_VERSION_CODE :
+            resp = soft_update_resp
+        else:
+            resp = no_update_resp  
+    elif device_type == 'ios':
+        if device_version_code < config.IOS_NECESSARY_VERSION_CODE :
+            resp = hard_update_resp
+        elif device_version_code < config.IOS_LATEST_VERSION_CODE :
+            resp = soft_update_resp
+        else:
+            resp = no_update_resp
+    return resp

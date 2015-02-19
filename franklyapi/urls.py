@@ -178,6 +178,8 @@ api.add_resource(admin.AdminGetDateFeed, '/admin/date/feed')
 api.add_resource(admin.AdminAddToDateFeed, '/admin/date/feed/add')
 api.add_resource(admin.AdminDeleteFromDateFeed, '/admin/date/feed/delete')
 api.add_resource(admin.AdminUpdateDateFeedOrder, '/admin/date/feed/update/order')
+api.add_resource(admin.AdminGetUserActivityTimeline, '/admin/user/activity_timeline')
+api.add_resource(admin.AdminQuestionChangeUpvote, '/admin/question/change_upvote')
 
 if __name__ == '__main__':
     app.run('127.0.0.1', 8000)

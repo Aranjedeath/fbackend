@@ -8,9 +8,12 @@ from app import db
 
 from models import User, Video, Post
 
-cel = Celery(broker=config.ASYNC_ENCODER_BROKER_URL, backend=config.ASYNC_ENCODER_BACKEND_URL)
 
-@periodic_task(run_every=timedelta(seconds=300), queue='periodic')
+celery = Celery('tasks')
+celery.config_from_object('periodic_tasks_config')
+ 
+
+@celery.task
 def update_view_count():
     print 'started'
     for url in redis_views.keys():
@@ -19,13 +22,13 @@ def update_view_count():
 
 
 
-@periodic_task(run_every=timedelta(seconds=600), queue='periodic')
+@celery.task
 def update_user_view_count():
     users = User.query.with_entities(User.id).filter(User.user_type==2)
     update_total_view_count([user.id for user in users])
 
 
-@periodic_task(run_every=timedelta(seconds=3600), queue='periodic')
+@celery.task
 def reassign_pending_video_tasks():
     import async_encoder
     videos = Video.query.filter(Video.process_state.in_(['pending', 'failed'])).all()
