@@ -24,8 +24,8 @@ REDIS_HOST = 'redis-cache-cluster.o5tg28.0001.apse1.cache.amazonaws.com'
 
 MYSQL_HOST = 'franklyapi.ce1zyhcvu8o4.ap-southeast-1.rds.amazonaws.com:3306'
 #MYSQL_USERNAME = 'application_user'
-MYSQL_USERNAME = 'franklyread'
-MYSQL_PASSWORD = 'read123#@!'
+MYSQL_USERNAME = 'franklyapi'
+MYSQL_PASSWORD = 'Jack4Jill$'
 MYSQL_DATABASE_NAME = 'frankly'
 
 DATABASE_URI = 'mysql://{username}:{password}@{host}/{db_name}'.format(username=MYSQL_USERNAME, 
