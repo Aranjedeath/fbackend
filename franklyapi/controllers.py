@@ -1885,6 +1885,7 @@ def web_hiring_form(name, email, phone_num, role):
 
 
 def view_video(url, count=1):
+    return
     url = url.replace('http://d35wlof4jnjr70.cloudfront.net/', 'https://s3.amazonaws.com/franklymestorage/')
     redis_views.incr(url, count)
 

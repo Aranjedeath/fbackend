@@ -28,10 +28,11 @@ def update_video_state(video_url, result={}):
 
 def update_view_count_to_db(url):
     try:
+        return
         original_url = url
         count = redis_views.get(url)
         
-        url = url.replace('http://d35wlof4jnjr70.cloudfront.net/', 'https://s3.amazonaws.com/franklyapp/')
+        url = url.replace('http://d35wlof4jnjr70.cloudfront.net/', 'https://s3.amazonaws.com/franklymestorage/')
         types = ['_ultralow', '_low', '_medium', '_opt', '_promo']
         for suffix in types:
             url = url.replace(suffix, '')
