@@ -417,7 +417,7 @@ def get_user_stats(user_id):
         view_count += inflated_stat.view_count
 
     if view_count < follower_count:
-        view_count += follower_count + random.randint(50, 200)
+        view_count += follower_count + follower_count/3
 
         
 
@@ -489,7 +489,7 @@ def get_post_stats(post_id):
         like_count += inflated_stat.like_count
 
     if view_count < like_count:
-        view_count += like_count + random.randint(50, 200)
+        view_count += like_count + like_count/3
 
     return {
             'view_count':view_count,
