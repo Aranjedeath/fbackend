@@ -20,9 +20,9 @@ AWS_SECRET = 'RFzbvP+kFYxW4PFW828bsF/HVBargsNagvzaBnDo'
 TWITTER_APP_TOKEN = 'aaNDJcxdHadQTxBW8P7B42yoy'
 TWITTER_APP_SECRET = 'AAOwvDBHlci4WmJANTmgOLJg28v3HSx0SogBEfQY9TGamsF9CS'
 
-REDIS_HOST = 'franklyapi.wocnxz.0001.use1.cache.amazonaws.com'
+REDIS_HOST = 'redis-cache-cluster.o5tg28.0001.apse1.cache.amazonaws.com'
 
-MYSQL_HOST = 'franklyapi.c0gm6ruawjoo.us-east-1.rds.amazonaws.com:3306'
+MYSQL_HOST = 'franklyapi.ce1zyhcvu8o4.ap-southeast-1.rds.amazonaws.com:3306'
 #MYSQL_USERNAME = 'application_user'
 MYSQL_USERNAME = 'franklyread'
 MYSQL_PASSWORD = 'read123#@!'
