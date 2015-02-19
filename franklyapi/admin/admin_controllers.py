@@ -184,7 +184,7 @@ def user_increase_followers(user_id, count):
 
 def user_decrease_followers(user_id, count):
     from controllers import user_follow
-    results = db.session.execute(text("""SELECT users.id FROM users JOIN question_upvotes 
+    results = db.session.execute(text("""SELECT users.id FROM users JOIN user_follows
                                                     ON users.id=user_follows.user
                                                 WHERE users.monkness in :monkness
                                                     AND user_follows.followed=:user_id
@@ -285,7 +285,7 @@ def post_increase_likes(post_id, count):
 
 def post_decrease_likes(post_id, count):
     from controllers import post_unlike
-    results = db.session.execute(text("""SELECT users.id FROM users JOIN question_upvotes 
+    results = db.session.execute(text("""SELECT users.id FROM users JOIN post_likes
                                                     ON users.id=post_likes.user
                                                 WHERE users.monkness in :monkness
                                                     AND post_likes.post=:post_id
