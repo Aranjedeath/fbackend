@@ -156,6 +156,50 @@ def user_edit(current_user_id, user_id, email, username, first_name, bio,
 
 
 
+
+def user_change_followers(user_id, change_count):
+    if change_count < 0:
+        return user_decrease_followers(user_id, change_count*-1)
+    if change_count > 0:
+        return user_increase_followers(user_id, change_count)
+
+
+def user_increase_followers(user_id, count):
+    from controllers import user_follow
+    results = db.session.execute(text("""SELECT users.id FROM users JOIN user_follows 
+                                                    ON users.id=user_follows.user
+                                                WHERE users.monkness in :monkness
+                                                    AND user_follows.followed=:user_id
+                                                    AND user_follows.unfollowed=false"""),
+                                params = {'monkness':[1, 0], 'user_id':user_id}
+                                )
+
+    for user in User.query.with_entities('id').filter(  User.monkness.in_([1, 0]),
+                                                        ~User.id.in_([row[0] for row in results])
+                                                    ).limit(count/10).all():
+
+        resp = user_follow(user.id, user_id)
+
+    return {'count': count}
+
+def user_decrease_followers(user_id, count):
+    from controllers import user_follow
+    results = db.session.execute(text("""SELECT users.id FROM users JOIN question_upvotes 
+                                                    ON users.id=user_follows.user
+                                                WHERE users.monkness in :monkness
+                                                    AND user_follows.followed=:user_id
+                                                    AND user_follows.unfollowed=false
+                                                ORDER BY user_follows.timestamp DESC
+                                                LIMIT 0, :count
+                                                """),
+                                params = {'monkness':[1, 0], 'count':count/10, 'user_id':user_id}
+                                )
+    for row in results:
+        user_unfollow(row[0], user_id)
+
+    return {'count':count}
+
+
 def post_list(offset, limit, deleted, order_by, desc, celeb=True, answer_authors=[], question_authors=[]):
     post_query = Post.query.filter(Post.deleted==deleted)
 
@@ -212,6 +256,51 @@ def post_edit(current_user_id, post_id, video, answer_type='video'):
     return {'success': True, 'id':post_id}
 
 
+
+
+def post_change_likes(post_id, change_count):
+    if change_count < 0:
+        return post_decrease_likes(post_id, change_count*-1)
+    if change_count > 0:
+        return post_increase_likes(post_id, change_count)
+
+
+def post_increase_likes(post_id, count):
+    from controllers import post_like
+    results = db.session.execute(text("""SELECT users.id FROM users JOIN post_likes 
+                                                    ON users.id=post_likes.user
+                                                WHERE users.monkness in :monkness
+                                                    AND post_likes.post=:post_id
+                                                    AND post_likes.unliked=false"""),
+                                params = {'monkness':[1, 0], 'post_id':post_id}
+                                )
+
+    for user in User.query.with_entities('id').filter(  User.monkness.in_([1, 0]),
+                                                        ~User.id.in_([row[0] for row in results])
+                                                    ).limit(count).all():
+
+        resp = post_like(user.id, post_id)
+
+    return {'count': count}
+
+def post_decrease_likes(post_id, count):
+    from controllers import post_unlike
+    results = db.session.execute(text("""SELECT users.id FROM users JOIN question_upvotes 
+                                                    ON users.id=post_likes.user
+                                                WHERE users.monkness in :monkness
+                                                    AND post_likes.post=:post_id
+                                                    AND post_likes.unliked=false
+                                                ORDER BY post_likes.timestamp DESC
+                                                LIMIT 0, :count
+                                                """),
+                                params = {'monkness':[1, 0], 'count':count, 'post_id':post_id}
+                                )
+    for row in results:
+        post_unlike(row[0], post_id)
+
+    return {'count':count}
+
+
 def question_list(offset, limit, user_to=[], user_from=[], public=True, deleted=False):
     questions = Question.query.filter(Question.deleted==deleted, Question.public==public, Question.is_answered==False, Question.is_ignored==False
                                     ).order_by(Question.timestamp.desc()
@@ -259,7 +348,6 @@ def question_redirect(question_ids, redirect_to):
     return {'success':True}
 
 
-
 def question_change_upvotes(question_id, change_count):
     if change_count < 0:
         return question_decrease_upvotes(question_id, change_count*-1)
@@ -272,8 +360,9 @@ def question_increase_upvotes(question_id, count):
     results = db.session.execute(text("""SELECT users.id FROM users JOIN question_upvotes 
                                                     ON users.id=question_upvotes.user
                                                 WHERE users.monkness in :monkness
+                                                    AND question_upvotes.question = :question_id
                                                     AND question_upvotes.downvoted=false"""),
-                                params = {'monkness':[1, 0]}
+                                params = {'monkness':[1, 0], 'question_id':question_id}
                                 )
 
     for user in User.query.with_entities('id').filter(  User.monkness.in_([1, 0]),
@@ -289,11 +378,12 @@ def question_decrease_upvotes(question_id, count):
     results = db.session.execute(text("""SELECT users.id FROM users JOIN question_upvotes 
                                                     ON users.id=question_upvotes.user
                                                 WHERE users.monkness in :monkness
+                                                    AND question_upvotes.question = :question_id
                                                     AND question_upvotes.downvoted=false
                                                 ORDER BY question_upvotes.timestamp DESC
                                                 LIMIT 0, :count
                                                 """),
-                                params = {'monkness':[1, 0], 'count':count}
+                                params = {'monkness':[1, 0], 'count':count/10, 'question_id':question_id}
                                 )
     for row in results:
         question_downvote(row[0], question_id)

@@ -21,7 +21,10 @@ def admin_only(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         try:
-            if not current_user or not current_user.id in config.ADMIN_USERS:
+            if current_user:
+
+
+            or not current_user.id in config.ADMIN_USERS:
                 abort(403, message='Invalid Login')
             return f(*args, **kwargs)
         except Exception as e:
@@ -109,6 +112,28 @@ class AdminUserAdd(AdminProtectedResource):
             print traceback.format_exc(e)
             abort(500, message=str(e))
 
+
+
+class AdminUserChangeFollowers(AdminProtectedResource):
+    @login_required
+    def post(self):
+        arg_parser = reqparse.RequestParser()
+        arg_parser.add_argument('user_id', type=str, required=True, location='json')
+        arg_parser.add_argument('change_count', type=int, required=True, location='json')
+
+        args = arg_parser.parse_args()
+        try:
+            return admin_controllers.user_change_followers(
+                                                        user_id=args['user_id'],
+                                                        change_count=args['change_count']
+                                                        )
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message='Error')
+
+
 class AdminPostEdit(AdminProtectedResource):
     @login_required
     def post(self):
@@ -125,6 +150,31 @@ class AdminPostEdit(AdminProtectedResource):
             raygun.send(err[0],err[1],err[2])
             print traceback.format_exc(e)
             abort(500, message='Error')
+
+
+class AdminPostChangeLike(AdminProtectedResource):
+    @login_required
+    def post(self):
+        arg_parser = reqparse.RequestParser()
+        arg_parser.add_argument('post_id', type=str, required=True, location='json')
+        arg_parser.add_argument('change_count', type=int, required=True, location='json')
+
+        args = arg_parser.parse_args()
+        try:
+            return admin_controllers.post_change_likes(
+                                                        post_id=args['post_id'],
+                                                        change_count=args['change_count']
+                                                        )
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message='Error')
+
+
+
+
+
 
 class AdminUserEdit(AdminProtectedResource):
     @login_required

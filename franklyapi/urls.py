@@ -180,6 +180,10 @@ api.add_resource(admin.AdminDeleteFromDateFeed, '/admin/date/feed/delete')
 api.add_resource(admin.AdminUpdateDateFeedOrder, '/admin/date/feed/update/order')
 api.add_resource(admin.AdminGetUserActivityTimeline, '/admin/user/activity_timeline')
 api.add_resource(admin.AdminQuestionChangeUpvote, '/admin/question/change_upvote')
+api.add_resource(admin.AdminPostChangeLike, '/admin/post/change_like')
+api.add_resource(admin.AdminUserChangeFollowers, '/admin/user/change_followers')
+
+
 
 if __name__ == '__main__':
     app.run('127.0.0.1', 8000)
