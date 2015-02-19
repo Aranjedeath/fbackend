@@ -265,7 +265,7 @@ def question_change_upvotes(question_id, change_count):
     if change_count < 0:
         return question_decrease_upvotes(question_id, change_count)
     if change_count > 0:
-        return question_increase_upvotes(question_id, change_count)
+        return question_increase_upvotes(question_id, change_count*-1)
 
 
 def question_increase_upvotes(question_id, count):
@@ -283,7 +283,7 @@ def question_increase_upvotes(question_id, count):
 
         resp = question_upvote(user.id, question_id)
 
-    return {'count': done_count*10}
+    return {'count': count}
 
 def question_decrease_upvotes(question_id, count):
     from controllers import question_downvote
@@ -299,7 +299,7 @@ def question_decrease_upvotes(question_id, count):
     for row in results:
         question_downvote(row[0], question_id)
 
-    return {'count':done_count*10}
+    return {'count':count}
 
 
 def get_search_words(question_body):

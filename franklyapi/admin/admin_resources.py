@@ -245,6 +245,26 @@ class AdminQuestionUndelete(AdminProtectedResource):
             print traceback.format_exc(e)
             abort(500, message='Error')
 
+class AdminQuestionChangeUpvote(AdminProtectedResource):
+    @login_required
+    def post(self):
+        arg_parser = reqparse.RequestParser()
+        arg_parser.add_argument('question_id', type=str, required=True, location='json')
+        arg_parser.add_argument('change_count', type=int, required=True, location='json')
+
+        args = arg_parser.parse_args()
+        try:
+            return admin_controllers.question_change_upvotes(
+                                                                question_id=args['question_id'],
+                                                                change_count=args['change_count']
+                                                            )
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message='Error')
+
+
 class AdminQuestionEdit(AdminProtectedResource):
     @login_required
     def post(self):
