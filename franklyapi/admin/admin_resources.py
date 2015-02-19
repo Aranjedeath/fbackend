@@ -21,10 +21,7 @@ def admin_only(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         try:
-            if current_user:
-
-
-            or not current_user.id in config.ADMIN_USERS:
+            if current_user or not current_user.id in config.ADMIN_USERS:
                 abort(403, message='Invalid Login')
             return f(*args, **kwargs)
         except Exception as e:
