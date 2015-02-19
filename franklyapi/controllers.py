@@ -1038,10 +1038,10 @@ def make_question_slug(body, question_id):
     stop_words = ["in", "it", "its", "is", "it's", "on", "so", "to", 
                     "were", "are", "was", "at", "in", "so", "be"]
     body = sanitize_question_body(body)
-    if len(body>150):
+    if len(body)>150:
         for word in stop_words:
             body = body.replace(word, '')
-    if len(body>150):
+    if len(body)>150:
         body = body[:150]
     sentence = "{body} {question_id}".format(body=body, question_id=question_id)
     slug = slugify.slugify(unicode(sentence))
@@ -1049,7 +1049,7 @@ def make_question_slug(body, question_id):
 
     
 def sanitize_question_body(body):
-    if len(body>200):
+    if len(body)>200:
         body = body.replace('\n', ' ').replace('  ', ' ').strip()
     return body
 
