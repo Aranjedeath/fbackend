@@ -22,7 +22,7 @@ def get_fb_data(access_token):
     
     user_data = {}
 
-    user_data['social_id']       = profile['id'],
+    user_data['social_id']       = profile['id']
     user_data['email']           = profile['email'] if profile.get('email') else '{username}@facebook.com'.format(username=profile.get('username', profile['id']))
     user_data['full_name']       = profile.get('name', profile['first_name']+' '+profile.get('last_name', '')).strip()
     user_data['gender']          = 'M' if profile.get('gender')=='male' else 'F' if profile.get('gender')=='femaile' else None
