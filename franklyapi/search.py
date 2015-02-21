@@ -183,7 +183,8 @@ def search(cur_user_id, q, offset, limit):
                         'user_type':row[4],
                         'user_title':row[5],
                         'bio':row[6],
-                        'is_following':is_following(row[0], cur_user_id) if cur_user_id else False
+                        'is_following':is_following(row[0], cur_user_id) if cur_user_id else False,
+                        'channel_id':'user_{user_id}'.format(user_id=row[0])
                         }
                 } for row in results]
     results.sort(key=lambda x: top_users.index(x['user']['username'].lower()) if  x['user']['username'].lower() in top_users else 999)
