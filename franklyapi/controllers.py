@@ -2124,7 +2124,10 @@ def get_channel_feed(cur_user_id, channel_id, offset, limit, device_id=None, ver
     web = True if device_type == 'web' else False
 
     if channel_type == 'user':
-        return get_user_timeline(cur_user_id, channel_id, offset, limit)
+        response = get_user_timeline(cur_user_id, channel_id, offset, limit)
+        response['header'] = user_view_profile(cur_user_id, channel_id)
+        response['header'].update({'type':'user'})
+        return response
 
     if channel_type == 'feed':
         return home_feed(cur_user_id, offset, limit, web)
@@ -2167,7 +2170,6 @@ def get_channel_list(cur_user_id, device_id, version_code):
                                             })
         
         search_fragment['views'].append(search_icons)
-
     return {'channel_list':[feed_banner, discover_banner, search_fragment]}
 
 def check_app_version_code(device_type,device_version_code):
