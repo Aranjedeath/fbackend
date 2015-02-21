@@ -201,7 +201,7 @@ def get_twitter_email(twitter_id):
 def login_user_social(social_type, social_id, external_access_token, device_id, push_id=None, 
                         external_token_secret = None, user_type=0, user_title=None):
     user_data = get_data_from_external_access_token(social_type, external_access_token, external_token_secret)
-    print user_data['social_id'], social_id
+    print '********', user_data['social_id'], social_id
     token_valid = str(user_data['social_id']).strip()==str(social_id).strip()
     
     if not token_valid:    
