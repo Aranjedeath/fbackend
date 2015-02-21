@@ -2116,7 +2116,8 @@ def top_liked_users(cur_user_id, count=5):
         liked_user_ids.extend(user_follows_list(cur_user_id, count))
     if len(liked_user_ids) < count:
         liked_user_ids.extend(random_celebrity_list(count))
-    return {'users': get_thumb_users(liked_user_ids).values()}
+
+    return {'users': get_thumb_users(liked_user_ids[:count]).values()}
 
 def save_feedback_response(cur_user_id, medium, message, version):
     from models import Feedback
