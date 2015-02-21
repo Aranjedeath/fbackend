@@ -89,45 +89,27 @@ def sanitize_username(username):
     return username 
 
 def make_username(email, full_name=None, social_username=None):
-    username = ''
+    username_candidates = [full_name, social_username, email.split('@')[0]]
+    for item in username_candidates:
+        if item:
+            sanitized_item = sanitize_username(item)
+            if username_available(sanitized_item):
+                return sanitized_item
+    
+    for item in username_candidates:
+        if item:
+            sanitized_item = sanitize_username(item) + str(random.random_int(1, 9999))
+            if username_available(sanitized_item):
+                return sanitized_item
+
+    suffix = random.choice(['red', 'big', 'small', 'pink', 'thin', 'smart', 'genius', 'black', 'evil', 'purple'])
+    prefix = random.choice(['tomato', 'potato', 'cup', 'rabbit', 'bowl', 'book', 'ball', 'wall', 'chocolate'])
+    
     uname_valid = False
-    if full_name:
-        username = sanitize_username(full_name)
-        num_of_attempt = 0
-        while not uname_valid and num_of_attempt<3:
-            uname_valid = username_available(username)
-            num_of_attempt += 1
-            if not uname_valid:
-                username = username+str(random.randint(0, 9000))
-
-    if not uname_valid and social_username:
-        username = sanitize_username(social_username)
-        num_of_attempt = 0
-        while not uname_valid and num_of_attempt<3:
-            uname_valid = username_available(username)
-            num_of_attempt += 1
-            if not uname_valid:
-                username = username+str(random.randint(0, 9000))
-
-    if not uname_valid and email:
-        username = sanitize_username(email.split('@')[0])
-        num_of_attempt = 0
-        while not uname_valid and num_of_attempt<3:
-            uname_valid = username_available(username)
-            num_of_attempt += 1
-            if not uname_valid:
-                username = username+str(random.randint(0, 9000))
-
-    if not uname_valid:
-        suffix = random.choice(['red', 'big', 'small', 'pink', 'thin', 'smart', 'genius', 'black', 'evil', 'purple'])
-        prefix = random.choice(['tomato', 'potato', 'cup', 'rabbit', 'bowl', 'book', 'ball', 'wall', 'chocolate'])
+    while not uname_valid:
         username = '%s_%s'%(suffix,prefix)
-        num_of_attempt = 0
-        while not uname_valid and num_of_attempt<3:
-            uname_valid = username_available(username)
-            num_of_attempt += 1
-            if not uname_valid:
-                username = username+str(random.randint(0, 9000))
+        uname_valid = username_available(username)
+        username = username+str(random.randint(0, 9999))
     return username
 
 
