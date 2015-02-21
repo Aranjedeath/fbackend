@@ -27,7 +27,7 @@ def get_fb_data(access_token):
     user_data['full_name']       = profile.get('name', profile['first_name']+profile.get('last_name', ''))
     user_data['gender']          = 'M' if profile.get('gender')=='male' else 'F' if profile.get('gender')=='femaile' else None
     user_data['bio']             = profile['about'].replace('\n', ' ') if profile.get('about') else None
-    user_data['location_name']   = profile.get['location']['name'] if profile.get('location') and profile.get('location').get('name') else None
+    user_data['location_name']   = profile['location']['name'] if profile.get('location') and profile.get('location').get('name') else None
     user_data['birthday']        = datetime.datetime.strptime(profile['birthday'], '%m/%d/%Y') if profile.get('birthday') else None
 
     user_data['profile_picture'] = get_facebook_profile_picture(user_data['social_id'])
