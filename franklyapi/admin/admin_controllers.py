@@ -1,6 +1,7 @@
 from models import *
 from object_dict import *
 from app import db
+from collections import defaultdict
 import controllers
 import random
 import media_uploader
