@@ -449,8 +449,8 @@ class AdminGetUserActivityTimeline(AdminProtectedResource):
     def post(self):
         arg_parser = reqparse.RequestParser()
         arg_parser.add_argument('user_id', type=str, required=True, location='args')
-        arg_parser.add_argument('start_time' , type=int, location='args')
-        arg_parser.add_argument('end_time', type=int, location='args')
+        arg_parser.add_argument('start_time' , type=int, default=0, location='args')
+        arg_parser.add_argument('end_time', type=int,default=99999999999, location='args')
         args = arg_parser.parse_args()
 
         try:

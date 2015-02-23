@@ -76,7 +76,7 @@ def get_user_activity_timeline(user_id, start_time=0, end_time=99999999999):
                                                     'web_link':'http://frankly.me/p/{client_id}'.format(client_id=post.client_id)
                                                     })
 
-    timeline = [{'timestamp':item, 'actions':actions} for timestamp, actions in resp.items()]
+    timeline = [{'timestamp':timestamp, 'actions':actions} for timestamp, actions in resp.items()]
     timeline.sort(key=lambda x: x['timestamp'], reverse=True)
     return {'user':thumb_user_to_dict(user), 'start_time':start_time, 'end_time':end_time, 'timeline':timeline}
 
