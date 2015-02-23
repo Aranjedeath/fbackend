@@ -98,7 +98,7 @@ def make_username(email, full_name=None, social_username=None):
     
     for item in username_candidates:
         if item:
-            sanitized_item = sanitize_username(item) + str(random.random_int(1, 9999))
+            sanitized_item = sanitize_username(item) + str(random.randint(1, 9999))
             if username_available(sanitized_item):
                 return sanitized_item
 
