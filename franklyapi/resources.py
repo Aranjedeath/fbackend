@@ -1879,7 +1879,7 @@ class FeedBackResponse(restful.Resource):
     post_parser = reqparse.RequestParser()
     post_parser.add_argument('medium', type=str, location='json', required=True)
     post_parser.add_argument('message', type=str, location='json', required=True)
-    post_parser.add_argument('X-Version-Code', dest='version_code', type=str, location='headers', default=None)
+    post_parser.add_argument('X-Version-Code', dest='version_code', type=int, location='headers', default=0)
 
     @login_required
     def post(self):
@@ -1887,7 +1887,7 @@ class FeedBackResponse(restful.Resource):
         Saves users feedback (y/n)
 
         Controller Functions Used:
-            - top_liked_users
+            - save_feedback_response
 
         Authentication: Required
         """
@@ -1905,27 +1905,99 @@ class FeedBackResponse(restful.Resource):
 class ChannelFeed(restful.Resource):
 
     get_parser = reqparse.RequestParser()
-    get_parser.add_argument('offset', type=int, location='args', required=True)
-    get_parser.add_argument('limit', type=int, location='args', required=True)
-    get_parser.add_argument('X-Version-Code', dest='version_code', type=int, location='headers', default=None)
+    get_parser.add_argument('offset', type=int, location='args', default=0)
+    get_parser.add_argument('limit', type=int, location='args', default=10)
+    get_parser.add_argument('X-deviceid', type=str, location='headers')
+    get_parser.add_argument('X-Version-Code', type=int, location='headers', default=0)
+    get_parser.add_argument('append_top', type=str, location='args', default='')
 
-    @login_required
-    def post(self, channel_id):
+    def get(self, channel_id):
         """
-        Returns the feed of a given Channel
+        Returns feed of the given channel_id
 
         Controller Functions Used:
-            - 
+            - get_channed_feed
 
         Authentication: Optional
         """
         args = self.get_parser.parse_args()
         try:
 
-            return controllers.channe
+            current_user_id = None
+            
+            if current_user.is_authenticated():
+                current_user_id = current_user.id                
+
+            return controllers.get_channel_feed(current_user_id, channel_id, args['offset'], args['limit'], args['X-deviceid'], args['X-Version-Code'], args['append_top'])
+        
+        except CustomExceptions.BadRequestException as e:
+            abort(404, message=str(e))
+        except CustomExceptions.UserNotFoundException, e:
+            abort(404, message=str(e))
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
+
+
+
+class ChannelList(restful.Resource):
+
+    get_parser = reqparse.RequestParser()
+    get_parser.add_argument('X-deviceid', type=str, location='headers')
+    get_parser.add_argument('X-Version-Code', type=int, location='headers', default=0)
+
+    @login_required
+    def get(self):
+        """
+        Returns list of channel to be shown on remote screen
+
+        Controller Functions Used:
+            - get_channel_list
+
+        Authentication: Required
+        """
+        args = self.get_parser.parse_args()
+        try:
+            return controllers.get_channel_list(current_user.id, args['X-deviceid'], args['X-Version-Code'])
+        
+        except CustomExceptions.BadRequestException as e:
+            abort(404, message=str(e))
+        except CustomExceptions.UserNotFoundException, e:
+            abort(404, message=str(e))
+>>>>>>> master
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0], err[1], err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
+
+<<<<<<< HEAD
+=======
+class AppVersion(restful.Resource):
+
+    get_parser = reqparse.RequestParser()
+    get_parser.add_argument('device_type', type=str, location='args', choices=['android','ios'], required=True)
+    get_parser.add_argument('device_version_code', type=int, location='args', default=0, required=True)
+
+    def get(self):
+        """
+        Returns dictionary of latest app versions
+
+        Controller Functions Used:
+            - get_android_version_code
+
+        Authentication: Optional
+        """
+        args = self.get_parser.parse_args()
+        try:
+            return controllers.check_app_version_code(args['device_type'],args['device_version_code'])
+        
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0], err[1], err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
+>>>>>>> master

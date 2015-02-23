@@ -13,14 +13,16 @@ from app import raygun
 from configs import config
 from functools import wraps
 
+import datetime
+
 import admin_controllers
 
 def admin_only(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        if not current_user or not current_user.id in config.ADMIN_USERS:
-            abort(403, message='Invalid Login')
-        return f(*args, **kwargs)
+            if not current_user or not current_user.id in config.ADMIN_USERS:
+                abort(403, message='Invalid Login')
+            return f(*args, **kwargs)
     return decorated
 
 
@@ -39,6 +41,7 @@ class AdminUserList(AdminProtectedResource):
         arg_parser.add_argument('deleted', type=int, default=0, location='args')
         arg_parser.add_argument('order_by', type=str, default='user_since', choices=['user_since', 'name'], location='args')
         arg_parser.add_argument('desc', type=int, default=1, choices=[1, 0], location='args')
+        arg_parser.add_argument('since_time', type=int,default=admin_controllers.maketimestamp(datetime(2001,1,1)), location='args')
 
         
         try:
@@ -48,7 +51,8 @@ class AdminUserList(AdminProtectedResource):
                                                     user_type=bool(args['user_type']),
                                                     deleted=bool(args['deleted']),
                                                     order_by=args['order_by'],
-                                                    desc=bool(args['desc'])
+                                                    desc=bool(args['desc']),
+                                                    since_time=datetime.fromtimestamp(args['since_time'])
                                                     )
         except Exception as e:
             err = sys.exc_info()
@@ -76,7 +80,8 @@ class AdminUserAdd(AdminProtectedResource):
         print 'bhonsdi wala.'
 
         try:
-            return admin_controllers.user_add(email=args['email'],
+            return admin_controllers.user_add(  current_user_id=current_user.id,
+                                                email=args['email'],
                                                 username=args['username'],
                                                 first_name=args['first_name'],
                                                 bio=args['bio'],
@@ -87,12 +92,37 @@ class AdminUserAdd(AdminProtectedResource):
                                                 profile_picture=args['profile_picture'],
                                                 profile_video=args['profile_video']
                                                 )
+        except CustomExceptions.UserAlreadyExistsException as e:
+            abort(409, message=str(e))
+
         except Exception as e:
             print 'Hellllllo'
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])
             print traceback.format_exc(e)
+            abort(500, message=str(e))
+
+
+
+class AdminUserChangeFollowers(AdminProtectedResource):
+    @login_required
+    def post(self):
+        arg_parser = reqparse.RequestParser()
+        arg_parser.add_argument('user_id', type=str, required=True, location='json')
+        arg_parser.add_argument('change_count', type=int, required=True, location='json')
+
+        args = arg_parser.parse_args()
+        try:
+            return admin_controllers.user_change_followers(
+                                                        user_id=args['user_id'],
+                                                        change_count=args['change_count']
+                                                        )
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
             abort(500, message='Error')
+
 
 class AdminPostEdit(AdminProtectedResource):
     @login_required
@@ -102,13 +132,39 @@ class AdminPostEdit(AdminProtectedResource):
         arg_parser.add_argument('video', type=file, required=True, location='files')
         args = arg_parser.parse_args()
         try:
-            return admin_controllers.post_edit(post_id=args['post_id'],
+            return admin_controllers.post_edit(current_user_id=current_user.id, 
+                                                post_id=args['post_id'],
                                                 video=args['video'])
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])
             print traceback.format_exc(e)
             abort(500, message='Error')
+
+
+class AdminPostChangeLike(AdminProtectedResource):
+    @login_required
+    def post(self):
+        arg_parser = reqparse.RequestParser()
+        arg_parser.add_argument('post_id', type=str, required=True, location='json')
+        arg_parser.add_argument('change_count', type=int, required=True, location='json')
+
+        args = arg_parser.parse_args()
+        try:
+            return admin_controllers.post_change_likes(
+                                                        post_id=args['post_id'],
+                                                        change_count=args['change_count']
+                                                        )
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message='Error')
+
+
+
+
+
 
 class AdminUserEdit(AdminProtectedResource):
     @login_required
@@ -130,7 +186,8 @@ class AdminUserEdit(AdminProtectedResource):
         args = arg_parser.parse_args()
 
         try:
-            return admin_controllers.user_edit(user_id=args['user_id'],
+            return admin_controllers.user_edit( current_user_id=current_user.id,
+                                                user_id=args['user_id'],
                                                 email=args['email'],
                                                 username=args['username'],
                                                 first_name=args['first_name'],
@@ -181,9 +238,15 @@ class AdminQuestionAdd(AdminProtectedResource):
         arg_parser.add_argument('question_to', type=str,location = 'json', required = True)
         arg_parser.add_argument('question_author', type=str,location = 'json', default = None)
         arg_parser.add_argument('question_body', type=str,location = 'json', required = True)
+        arg_parser.add_argument('gender', type=str, location ='json', choices=['M', 'F'])
+
         args = arg_parser.parse_args()
         try:
-            return admin_controllers.question_add(args['question_to'], args['question_body'], args['question_author'])
+            return admin_controllers.question_add(  current_user_id=current_user.id,
+                                                    question_to=args['question_to'],
+                                                    body=args['question_body'],
+                                                    question_author=args['question_author'],
+                                                    question_author_gender=args.get('gender'))
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])
@@ -199,7 +262,8 @@ class AdminQuestionDelete(AdminProtectedResource):
         arg_parser.add_argument('question_id', type=str, default=0, location='json')
         args = arg_parser.parse_args()
         try:
-            return admin_controllers.question_delete(question_id=args['question_id'])
+            return admin_controllers.question_delete( current_user_id=current_user.id,
+                                                      question_id=args['question_id'])
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])
@@ -213,22 +277,48 @@ class AdminQuestionUndelete(AdminProtectedResource):
         arg_parser.add_argument('question_id', type=str, default=0, location='json')
         args = arg_parser.parse_args()
         try:
-            return admin_controllers.question_undelete(question_id=args['question_id'])
+            return admin_controllers.question_undelete( current_user_id=current_user.id,
+                                                        question_id=args['question_id'])
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])
             print traceback.format_exc(e)
             abort(500, message='Error')
 
+class AdminQuestionChangeUpvote(AdminProtectedResource):
+    @login_required
+    def post(self):
+        arg_parser = reqparse.RequestParser()
+        arg_parser.add_argument('question_id', type=str, required=True, location='json')
+        arg_parser.add_argument('change_count', type=int, required=True, location='json')
+
+        args = arg_parser.parse_args()
+        try:
+            return admin_controllers.question_change_upvotes(
+                                                                question_id=args['question_id'],
+                                                                change_count=args['change_count']
+                                                            )
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message='Error')
+
+
 class AdminQuestionEdit(AdminProtectedResource):
     @login_required
     def post(self):
         arg_parser = reqparse.RequestParser()
         arg_parser.add_argument('question_id', type=str, default=0, location='json')
-        arg_parser.add_argument('body', type=str, default=0, location='json')
+        arg_parser.add_argument('body', type=str, required=True, location='json')
+        arg_parser.add_argument('slug', type=str, default=None, location='json')
+
         args = arg_parser.parse_args()
         try:
-            return admin_controllers.question_edit(question_id=args['question_id'], body=args['body'])
+            return admin_controllers.question_edit( current_user_id=current_user.id,
+                                                    question_id=args['question_id'],
+                                                    body=args['body'],
+                                                    slug=args['slug'])
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])
@@ -285,7 +375,12 @@ class AdminCelebList(AdminProtectedResource):
     @login_required
     def get(self,offset, limit):
         try:
-            return admin_controllers.get_celeb_list(offset, limit)
+            arg_parser = reqparse.RequestParser()
+            arg_parser.add_argument('since_time', type=int,default=admin_controllers.maketimestamp(datetime.datetime(2001,1,1)), location='args')
+        
+            args = arg_parser.parse_args()
+        
+            return admin_controllers.get_celeb_list(offset, limit,datetime.fromtimestamp(args['since_time']))
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])
@@ -348,6 +443,26 @@ class AdminQuestionTodayList(AdminProtectedResource):
             raygun.send(err[0],err[1],err[2])
             print traceback.format_exc(e)
             abort(500, message='Error')
+
+class AdminGetUserActivityTimeline(AdminProtectedResource):
+    @login_required
+    def post(self):
+        arg_parser = reqparse.RequestParser()
+        arg_parser.add_argument('user_id', type=str, required=True, location='args')
+        arg_parser.add_argument('start_time' , type=int, default=0, location='args')
+        arg_parser.add_argument('end_time', type=int,default=99999999999, location='args')
+        args = arg_parser.parse_args()
+
+        try:
+            return admin_controllers.get_user_activity_timeline(user_id=args['user_id'],
+                                                                start_time=args['start_time'],
+                                                                end_time=args['end_time'])
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message='Error')
+
 
 class AdminDeleteSearchDefaultUser(AdminProtectedResource):
     @login_required
@@ -429,3 +544,54 @@ class AdminGetSimilarQuestions(AdminProtectedResource):
             print traceback.format_exc(e)
             abort(500, message='Error')
 
+
+class AdminSearchDefault(AdminProtectedResource):
+    def get(self):
+        return admin_controllers.admin_search_default()
+
+class AdminGetDateFeed(AdminProtectedResource):
+    @login_required
+    def get(self):
+        try:
+            return admin_controllers.get_date_sorted_list()
+        except Exception as e:
+            print traceback.format_exc(e)
+            abort(500, message='Error')
+
+class AdminAddToDateFeed(AdminProtectedResource):
+    @login_required
+    def post(self):
+        arg_parser = reqparse.RequestParser()
+        arg_parser.add_argument('type',type=str, choices=['user','post'], required=True)
+        arg_parser.add_argument('obj_id',type=str,  required=True)
+        arg_parser.add_argument('timestamp',type=int,  required=True)
+        args = arg_parser.parse_args()
+        try:
+            return admin_controllers.add_to_date_sorted(args['type'], args['obj_id'], args['timestamp'])
+        except Exception as e:
+            print traceback.format_exc(e)
+            abort(500, message='Error')
+
+class AdminDeleteFromDateFeed(AdminProtectedResource):
+    @login_required
+    def post(self):
+        arg_parser = reqparse.RequestParser()
+        arg_parser.add_argument('type',type=str, choices=['user','post'], required=True)
+        arg_parser.add_argument('obj_id',type=str,  required=True)
+        args = arg_parser.parse_args()
+        try:
+            return admin_controllers.delete_date_sorted_item(args['type'],args['obj_id'])
+        except Exception as e:
+            print traceback.format_exc(e)
+            abort(500, message='Error')
+
+class AdminUpdateDateFeedOrder(AdminProtectedResource):
+    @login_required
+    def post(self):
+        from flask import request
+        print request.json
+        try:
+            return admin_controllers.update_date_feed_order(request.json['date'], request.json['items'])
+        except Exception as e:
+            print traceback.format_exc(e)
+            abort(500, message='Error')

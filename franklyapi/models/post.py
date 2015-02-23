@@ -11,7 +11,7 @@ class Post(Base):
     answer_author       = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
     media_url           = Column(String(300), nullable=False)
     thumbnail_url       = Column(String(300), nullable=False)
-    client_id           = Column(String(15), nullable=False)
+    client_id           = Column(String(15), nullable=False, unique=True)
     
     timestamp           = Column(DateTime(), default=datetime.datetime.now())
     answer_type         = Column(Enum('video', 'text', 'picture'), default='video')
@@ -27,9 +27,13 @@ class Post(Base):
     view_count          = Column(Integer(), default=0)
     show_after          = Column(SmallInteger(), default = 0)
 
+    added_by            = Column(CHAR(32), ForeignKey('users.id'))
+    moderated_by        = Column(CHAR(32), ForeignKey('users.id'))
+
     def __init__(self, question, question_author, answer_author, media_url, thumbnail_url, client_id,
                     timestamp=datetime.datetime.now(), answer_type='video', score=0, deleted=False, ready=True,
-                    popular=False, lat=None, lon=None, location_name=None, country_name=None, country_code=None, id=None, view_count=0, show_after = 0):
+                    popular=False, lat=None, lon=None, location_name=None, country_name=None, country_code=None,
+                    id=None, view_count=0, show_after = 0, added_by=None, moderated_by=None):
         self.id              = get_item_id()
         self.question        = question
         self.question_author = question_author
@@ -51,7 +55,10 @@ class Post(Base):
         self.country_name    = country_name
         self.country_code    = country_code
         self.view_count      = 0
-        self.show_after      = self.show_after
+        self.show_after      = show_after
+
+        self.added_by        = added_by
+        self.moderated_by    = moderated_by
 
     def __repr__(self):
         return '<Post %r>' % (self.id)

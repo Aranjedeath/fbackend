@@ -37,6 +37,8 @@ def create_event(user, action, foreign_data, event_date=datetime.date.today()):
         return Event(user=user, action=action, foreign_data=foreign_data, event_date=event_date)
     return
 
+
+
 def check_access_token(access_token, device_id):
     start = datetime.datetime.now()
     try:
@@ -53,8 +55,9 @@ def check_access_token(access_token, device_id):
                                             ).filter(AccessToken.access_token==access_token,
                                                         AccessToken.device_id==device_id,
                                             ).first()
-        print 'TIME:: ', str(datetime.datetime.now()-start)
+
         return user
+    
     except Exception as e:
         err = sys.exc_info()
         raygun.send(err[0],err[1],err[2])
@@ -87,45 +90,27 @@ def sanitize_username(username):
     return username 
 
 def make_username(email, full_name=None, social_username=None):
-    username = ''
+    username_candidates = [full_name, social_username, email.split('@')[0]]
+    for item in username_candidates:
+        if item:
+            sanitized_item = sanitize_username(item)
+            if username_available(sanitized_item):
+                return sanitized_item
+    
+    for item in username_candidates:
+        if item:
+            sanitized_item = sanitize_username(item) + str(random.randint(1, 9999))
+            if username_available(sanitized_item):
+                return sanitized_item
+
+    suffix = random.choice(['red', 'big', 'small', 'pink', 'thin', 'smart', 'genius', 'black', 'evil', 'purple'])
+    prefix = random.choice(['tomato', 'potato', 'cup', 'rabbit', 'bowl', 'book', 'ball', 'wall', 'chocolate'])
+    
     uname_valid = False
-    if full_name:
-        username = sanitize_username(full_name)
-        num_of_attempt = 0
-        while not uname_valid and num_of_attempt<3:
-            uname_valid = username_available(username)
-            num_of_attempt += 1
-            if not uname_valid:
-                username = username+str(random.randint(0, 9000))
-
-    if not uname_valid and social_username:
-        username = sanitize_username(social_username)
-        num_of_attempt = 0
-        while not uname_valid and num_of_attempt<3:
-            uname_valid = username_available(username)
-            num_of_attempt += 1
-            if not uname_valid:
-                username = username+str(random.randint(0, 9000))
-
-    if not uname_valid and email:
-        username = sanitize_username(email.split('@')[0])
-        num_of_attempt = 0
-        while not uname_valid and num_of_attempt<3:
-            uname_valid = username_available(username)
-            num_of_attempt += 1
-            if not uname_valid:
-                username = username+str(random.randint(0, 9000))
-
-    if not uname_valid:
-        suffix = random.choice(['red', 'big', 'small', 'pink', 'thin', 'smart', 'genius', 'black', 'evil', 'purple'])
-        prefix = random.choice(['tomato', 'potato', 'cup', 'rabbit', 'bowl', 'book', 'ball', 'wall', 'chocolate'])
+    while not uname_valid:
         username = '%s_%s'%(suffix,prefix)
-        num_of_attempt = 0
-        while not uname_valid and num_of_attempt<3:
-            uname_valid = username_available(username)
-            num_of_attempt += 1
-            if not uname_valid:
-                username = username+str(random.randint(0, 9000))
+        uname_valid = username_available(username)
+        username = username+str(random.randint(0, 9999))
     return username
 
 
@@ -137,7 +122,6 @@ def set_access_token(device_id, device_type, user_id, access_token, push_id=None
     if device_type == 'web':
         redis_client.setex(access_token, str(user_id), 3600*24*10)
         return
-    print {'device_id':device_id, 'device_type':device_type ,'access_token':access_token, 'user_id':user_id, 'push_id':push_id, 'last_login':datetime.datetime.now()}
     db.session.execute(text("""INSERT INTO access_tokens (access_token, user, device_id, device_type, active, push_id, last_login) 
                                 VALUES(:access_token, :user_id, :device_id, :device_type, true, :push_id, :last_login) 
                                 ON DUPLICATE KEY 
@@ -149,29 +133,24 @@ def set_access_token(device_id, device_type, user_id, access_token, push_id=None
 
 
 def get_data_from_external_access_token(social_type, external_access_token, external_token_secret=None):
-    try:
-        print external_access_token
-        user_data = social_helpers.get_user_data(social_type, external_access_token, external_token_secret)
-        return user_data
-    except Exception as e:
-        raise e
+    user_data = social_helpers.get_user_data(social_type, external_access_token, external_token_secret)
+    return user_data
+
 
 
 def get_user_from_social_id(social_type, social_id):
-    try:
-        if social_id == 'facebook':
-            return User.query.filter(User.facebook_id==social_id).one()
-        elif social_id == 'google':
-            return User.query.filter(User.google_id==social_id).one()
-        elif social_id == 'twitter':
-            return User.query.filter(User.twitter_id==social_id).one()
-    except NoResultFound:
-        return None
+    user = None
+    if social_id == 'facebook':
+        user = User.query.filter(User.facebook_id==social_id).first()
+    elif social_id == 'google':
+        user = User.query.filter(User.google_id==social_id).first()
+    elif social_id == 'twitter':
+        user = User.query.filter(User.twitter_id==social_id).first()
+    return user
 
 def get_device_type(device_id):
     if len(device_id)<17:
         if 'web' in device_id:
-            print 'DEVICE TYPE', device_id
             return 'web'
         return 'android'
     return 'ios'
@@ -183,7 +162,7 @@ def new_registration_task(user_id):
 def register_email_user(email, password, full_name, device_id, username=None, phone_num=None,
                         push_id=None, gender=None, user_type=0, user_title=None, 
                         lat=None, lon=None, location_name=None, country_name=None, country_code=None,
-                        bio=None, profile_picture=None, profile_video=None, admin_upload=False):
+                        bio=None, profile_picture=None, profile_video=None, admin_upload=False, added_by=None):
     
     if not email_available(email):
         raise CustomExceptions.UserAlreadyExistsException("A user with that email already exists")
@@ -199,13 +178,13 @@ def register_email_user(email, password, full_name, device_id, username=None, ph
     new_user = User(email=email, username=username, first_name=full_name, password=password, 
                     registered_with=registered_with, user_type=user_type, gender=gender, user_title=user_title,
                     phone_num=phone_num, lat=lat, lon=lon, location_name=location_name, country_name=country_name,
-                    country_code=country_code, bio=bio, id=get_item_id())
+                    country_code=country_code, bio=bio, id=get_item_id(), added_by=added_by)
     
     db.session.add(new_user)
     db.session.commit()
     
     if profile_picture or profile_video:
-        user_update_profile_form(new_user.id, profile_picture=profile_picture, profile_video=profile_video)
+        user_update_profile_form(new_user.id, profile_picture=profile_picture, profile_video=profile_video, moderated_by=added_by)
 
     access_token=None
     if not admin_upload:
@@ -223,6 +202,7 @@ def get_twitter_email(twitter_id):
 def login_user_social(social_type, social_id, external_access_token, device_id, push_id=None, 
                         external_token_secret = None, user_type=0, user_title=None):
     user_data = get_data_from_external_access_token(social_type, external_access_token, external_token_secret)
+    print '********', user_data['social_id'], social_id
     token_valid = str(user_data['social_id']).strip()==str(social_id).strip()
     
     if not token_valid:    
@@ -237,27 +217,23 @@ def login_user_social(social_type, social_id, external_access_token, device_id, 
         update_dict.update({'twitter_secret':external_token_secret})
         user_data['email'] = get_twitter_email(user_data['social_id'])
         user_data['social_id'] = str(user_data['social_id']).strip()
-        try:
-            user = User.query.filter(User.twitter_id==user_data['social_id']).one()
-        except:
-            pass
-        print 'USER', user
+        user = User.query.filter(User.twitter_id==user_data['social_id']).first()
 
     if social_type in ['facebook', 'google']:
-        try:
-            user = User.query.filter(User.email==user_data['email']).one()
-        except NoResultFound:
-            pass
+        user = User.query.filter(User.email==user_data['email']).first()
 
     if user:
         access_token = generate_access_token(user.id, device_id)
         set_access_token(device_id, device_type, user.id, access_token, push_id)
         activated_now=user.deleted
         User.query.filter(User.id==user.id).update(update_dict)
+        db.session.commit()
         return {'access_token': access_token, 'id':user.id, 'username':user.username, 'activated_now': activated_now, 'new_user' : False, 'user_type' : user.user_type} 
+    
     else:
         username = make_username(user_data['email'], user_data.get('full_name'), user_data.get('social_username'))
-        registered_with = '%s_%s'%(device_type, social_type) 
+        
+        registered_with = '%s_%s'%(device_type, social_type)
 
         new_user = User(email=user_data['email'], username=username, first_name=user_data['full_name'], 
                         registered_with=registered_with, user_type=user_type, gender=user_data.get('gender'), user_title=user_title,
@@ -425,7 +401,7 @@ def get_user_stats(user_id):
         view_count += inflated_stat.view_count
 
     if view_count < follower_count:
-        view_count += follower_count + random.randint(50, 200)
+        view_count += follower_count + follower_count/3
 
         
 
@@ -497,7 +473,7 @@ def get_post_stats(post_id):
         like_count += inflated_stat.like_count
 
     if view_count < like_count:
-        view_count += like_count + random.randint(50, 200)
+        view_count += like_count + like_count/3
 
     return {
             'view_count':view_count,
@@ -567,7 +543,6 @@ def get_question_upvote_count(question_id):
         time_factor = int(time.mktime(t.timetuple())) % 7
     count_to_pump = Upvote.query.filter(Upvote.question==question_id, Upvote.downvoted==False, Upvote.timestamp <= d).count() 
     count_as_such = Upvote.query.filter(Upvote.question==question_id, Upvote.downvoted==False, Upvote.timestamp > d).count() 
-    print count_to_pump, count_as_such
     if count_to_pump:
         count = int(11*count_to_pump+ log(count_to_pump, 2) + sqrt(count_to_pump)) + count_as_such
         count += time_factor
@@ -629,7 +604,7 @@ def get_video_states(video_urls={}):
     for key, value in result.items():
         '''
         for bitrate, url in value.items():
-            result[key][bitrate]=url.replace('https://s3.amazonaws.com/franklyapp/', 'http://d35wlof4jnjr70.cloudfront.net/')
+            result[key][bitrate]=url.replace('https://s3.amazonaws.com/franklymestorage/', 'http://d35wlof4jnjr70.cloudfront.net/')
             if bitrate is not 'thumb':
                result[key][bitrate] = 'http://api.frankly.me/videoview?url={vid_url}'.format(vid_url=result[key][bitrate])
         '''
@@ -674,7 +649,8 @@ def get_thumb_users(user_ids, cur_user_id=None):
                                     'allow_anonymous_question':bool(row[12]),
                                     'user_type':row[13],
                                     'user_title':row[14],
-                                    'is_following':bool(row[15])
+                                    'is_following':bool(row[15]),
+                                    'channel_id':'user_{user_id}'.format(user_id=row[0])
                                     }
                         })
     return data
@@ -732,7 +708,9 @@ def user_view_profile(current_user_id, user_id, username=None):
         raise CustomExceptions.UserNotFoundException('No user with this username/userid found')
 
 
-def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture=None, profile_video=None, user_type=None, phone_num=None, admin_upload=False, user_title=None, email=None):
+def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture=None, 
+                            profile_video=None, user_type=None, phone_num=None, admin_upload=False,
+                            user_title=None, email=None, moderated_by=None):
     update_dict = {}
 
     #user = User.objects.only('id').get(id=user_id)
@@ -749,12 +727,9 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
                         'bio':user.bio,
                         'profile_picture':user.profile_picture,
                         'cover_picture':user.cover_picture,
-                        'profile_video':user.profile_video
+                        'profile_video':user.profile_video,
+                        'user_title':user.user_title
                         }
-    
-    if user_title:
-        update_dict.update({'user_title':user_title})
-
 
     if first_name:
         update_dict.update({'first_name':first_name})
@@ -765,9 +740,7 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
         update_dict.update({'bio':bio})
 
     if profile_video:
-        print profile_video
         profile_video_url, cover_picture_url = media_uploader.upload_user_video(user_id=user_id, video_file=profile_video, video_type='profile_video')
-        print profile_video_url, cover_picture_url
         update_dict.update({'profile_video':profile_video_url, 'cover_picture':cover_picture_url})
 
     if profile_picture:
@@ -775,7 +748,6 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
         profile_picture.save(tmp_path)
         profile_picture_url = media_uploader.upload_user_image(user_id=user_id, image_file_path=tmp_path, image_type='profile_picture')
         update_dict.update({'profile_picture':profile_picture_url})
-        print profile_picture_url
         try:
             os.remove(tmp_path)
         except:
@@ -790,21 +762,28 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
         if user_type!=None:
             update_dict.update({'user_type':user_type})
 
+        if user_title:
+            update_dict.update({'user_title':user_title})
+
     if not update_dict:
         raise CustomExceptions.BadRequestException('Nothing to update')
     
     user_archive =  UserArchive(user=user_id,
-                                username=update_dict['username'] if update_dict.get('username') else existing_values['username'],
-                                first_name=update_dict['first_name'] if update_dict.get('first_name') else existing_values['first_name'],
-                                profile_picture=update_dict['profile_picture'] if update_dict.get('profile_picture') else existing_values['profile_picture'],
-                                cover_picture=update_dict['cover_picture'] if update_dict.get('cover_picture') else existing_values['cover_picture'],
-                                profile_video=update_dict['profile_video'] if update_dict.get('profile_video') else existing_values['profile_video'],
-                                bio=update_dict['bio'] if update_dict.get('bio') else existing_values.get('bio')
+                                username=update_dict.get('username') or existing_values['username'],
+                                first_name=update_dict.get('first_name') or existing_values['first_name'],
+                                profile_picture=update_dict.get('profile_picture') or existing_values['profile_picture'],
+                                cover_picture=update_dict.get('cover_picture') or existing_values['cover_picture'],
+                                profile_video=update_dict.get('profile_video') or existing_values['profile_video'],
+                                bio=update_dict.get('bio') or existing_values.get('bio'),
+                                user_title=update_dict.get('user_title') or existing_values.get('user_title'),
+                                moderated_by=moderated_by
                                 )
 
     db.session.add(user_archive)
     User.query.filter(User.id==user_id).update(update_dict)
     db.session.commit()
+    
+
     if profile_video:
         add_video_to_db(video_url=profile_video_url,
                         thumbnail_url=cover_picture_url,
@@ -821,11 +800,11 @@ def user_follow(cur_user_id, user_id):
     if cur_user_id == user_id:
         raise CustomExceptions.BadRequestException("Cannot follow yourself")
 
-    db.session.execute(text("""INSERT INTO user_follows (user, followed, unfollowed) 
-                                VALUES(:cur_user_id, :user_id, false) 
+    db.session.execute(text("""INSERT INTO user_follows (user, followed, unfollowed, timestamp) 
+                                VALUES(:cur_user_id, :user_id, false, :timestamp) 
                                 ON DUPLICATE KEY 
-                                UPDATE unfollowed = false"""),
-                        params={'cur_user_id':cur_user_id, 'user_id':user_id}
+                                UPDATE unfollowed = false, timestamp=:timestamp"""),
+                        params={'cur_user_id':cur_user_id, 'user_id':user_id, 'timestamp':datetime.datetime.now()}
                     )
 
     event = create_event(user=cur_user_id, action='follow', foreign_data=user_id)
@@ -996,8 +975,6 @@ def user_update_settings(user_id, allow_anonymous_question, notify_like, notify_
 def user_update_location(user_id, lat, lon, country=None, country_code=None, loc_name=None):
     if lat == 0.0 and lon == 0.0:
         return
-
-    print '**Location: ',user_id, lat, lon, country , country_code , loc_name 
    
     if loc_name and country_code:
         User.query.filter(User.id==user_id).update({   "lat":lat,
@@ -1040,7 +1017,28 @@ def user_update_access_token(user_id, acc_type, token):
         raise CustomExceptions.BadRequestException('invalid token')
 
 
-def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous): 
+def make_question_slug(body, question_id):
+    import slugify
+    stop_words = ["in", "it", "its", "is", "it's", "on", "so", "to", 
+                    "were", "are", "was", "at", "in", "so", "be"]
+    body = sanitize_question_body(body)
+    if len(body)>150:
+        for word in stop_words:
+            body = body.replace(word, '')
+    if len(body)>150:
+        body = body[:150]
+    sentence = "{body} {question_id}".format(body=body, question_id=question_id)
+    slug = slugify.slugify(unicode(sentence))
+    return slug
+
+    
+def sanitize_question_body(body):
+    if len(body)>200:
+        body = body.replace('\n', ' ').replace('  ', ' ').strip()
+    return body
+
+
+def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_by=None): 
     if has_blocked(cur_user_id, question_to):
         raise CustomExceptions.BlockedUserException()
 
@@ -1050,9 +1048,14 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous):
         raise CustomExceptions.NoPermissionException('Anonymous question not allowed for the user')
 
     public = True if user_status['user_type']==2 else False #if user is celeb
+
+    question_id = get_item_id()
+    slug = make_question_slug(body, question_id)
+
     question = Question(question_author=cur_user_id, question_to=question_to, 
                 body=body.capitalize(), is_anonymous=is_anonymous, public=public,
-                lat=lat, lon=lon, short_id=get_new_short_id(for_object='question'), id = get_item_id())
+                lat=lat, lon=lon, slug=slug, short_id=get_new_short_id(for_object='question'),
+                id = question_id, added_by=added_by)
     
     db.session.add(question)
 
@@ -1132,16 +1135,14 @@ def question_upvote(cur_user_id, question_id):
                             Question.question_to!=cur_user_id,
                             Question.deleted==False
                             ).count():
-        db.session.execute(text("""INSERT INTO question_upvotes (user, question, downvoted) 
-                                    VALUES(:cur_user_id, :question_id, false) 
+        db.session.execute(text("""INSERT INTO question_upvotes (user, question, downvoted, timestamp) 
+                                    VALUES(:cur_user_id, :question_id, false, :timestamp) 
                                     ON DUPLICATE KEY 
-                                    UPDATE downvoted = false"""),
-                            params={'cur_user_id':cur_user_id, 'question_id':question_id}
-                        )
-
-        event = create_event(user=cur_user_id, action='upvote', foreign_data=question_id)
-        if event:
-            db.session.add(event)
+                                    UPDATE downvoted = false, timestamp=:timestamp"""),
+                            params={'cur_user_id':cur_user_id,
+                                    'question_id':question_id,
+                                    'timestamp':datetime.datetime.now()}
+                            )
         db.session.commit()
     else:
         raise CustomExceptions.BadRequestException("Question is not available for upvote")
@@ -1193,11 +1194,12 @@ def post_like(cur_user_id, post_id):
     answer_author, question_author= row
 
     if not (has_blocked(cur_user_id, answer_author) or has_blocked(cur_user_id, answer_author)):
-        db.session.execute(text("""INSERT INTO post_likes (user, post, unliked) 
-                                    VALUES(:cur_user_id, :post_id, false) 
+        db.session.execute(text("""INSERT INTO post_likes (user, post, unliked, timestamp) 
+                                    VALUES(:cur_user_id, :post_id, false, :timestamp) 
                                     ON DUPLICATE KEY 
-                                    UPDATE unliked = false"""),
-                            params={'cur_user_id':cur_user_id, 'post_id':post_id}
+                                    UPDATE unliked = false, timestamp=:timestamp"""),
+                            params={'cur_user_id':cur_user_id, 'post_id':post_id,
+                                    'timestamp':datetime.datetime.now()}
                             )
 
         event = create_event(user=cur_user_id, action='like', foreign_data=post_id)
@@ -1333,12 +1335,10 @@ def comment_list(cur_user_id, post_id, offset, limit):
 
 
 def get_user_timeline(cur_user_id, user_id, offset, limit, include_reshares=False):
+    
     if cur_user_id and has_blocked(cur_user_id, user_id):
         raise CustomExceptions.UserNotFoundException('User does not exist')
-
-
-
-
+    
     if include_reshares:    
         posts_query = Post.query.filter(or_(Post.answer_author==user_id,
                                             Post.id.in_(Reshare.query.filter(Reshare.user==user_id))
@@ -1351,10 +1351,13 @@ def get_user_timeline(cur_user_id, user_id, offset, limit, include_reshares=Fals
         posts_query = Post.query.filter(Post.answer_author==user_id, Post.deleted==False).order_by(Post.timestamp.desc())
 
     total_count = posts_query.count()
+    if offset == -1:
+        return {'stream': [], 'count':0, 'next_index':-1, 'total':total_count}
     posts = posts_query.offset(offset).limit(limit).all()
     posts = posts_to_dict(posts, cur_user_id)
     posts = [{'type':'post', 'post':post} for post in posts]
     next_index = offset+limit if posts else -1
+    
     return {'stream': posts, 'count':len(posts), 'next_index':next_index, 'total':total_count}
     
 
@@ -1403,7 +1406,6 @@ def get_question_from_followings(followings, count = 2, cur_user_id=None):
                                             ).limit(40)
     questions = questions_query.all()
     _q_len = len(questions)
-    print _q_len
     if _q_len < 2:
         return _q_len, [], following
     else:
@@ -1512,7 +1514,6 @@ def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None, visit=0)
     
     if offset != 0:
         skip = skip+celeb_limit
-    print 'DISCOVER USERS OFFSET/LIMIT:', skip, celeb_limit
     
     users_to_ignore = []
     if cur_user_id:
@@ -1558,8 +1559,7 @@ def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None, visit=0)
         last_extra_feed_position = random_index+count
     
     next_index = offset+limit if feeds else -1
-    print 'DISCOVER NEXT INDEX', next_index
-    print 'DISCOVER FEEDS LEN', len(feeds)
+
 
     return {'stream': feeds, 'count':len(feeds), 'next_index':next_index}
 
@@ -1629,7 +1629,6 @@ def check_forgot_password_token(token):
 
 def reset_password(token, password):
     try:
-        print datetime.strftime(datetime.datetime.now(), '%d %b %Y %I:%M:%S %p UTC')
         token_object = ForgotPasswordToken.query.filter(ForgotPasswordToken.token==token).one()
         
         now_time = datetime.now()
@@ -1998,18 +1997,17 @@ def web_hiring_form(name, email, phone_num, role):
                 'submitted': cur_datetime
         }
 
-    print row_data
     spr_client.InsertRow(row_data, spreadsheet_key, worksheet_id)
     return {'success':True}
 
 
 def view_video(url, count=1):
-    url = url.replace('http://d35wlof4jnjr70.cloudfront.net/', 'https://s3.amazonaws.com/franklyapp/')
+    return
+    url = url.replace('http://d35wlof4jnjr70.cloudfront.net/', 'https://s3.amazonaws.com/franklymestorage/')
     redis_views.incr(url, count)
 
 def query_search(cur_user_id, query, offset, limit, version_code=None):
     results = []
-    print version_code
     if 'test' in query:
         return {
                 "q": query,
@@ -2036,7 +2034,6 @@ def query_search(cur_user_id, query, offset, limit, version_code=None):
     response = search.search(cur_user_id, query.lower(), offset, limit)
     response['results'] = results + response['results']
     response['q'] = query
-    print response
     return response
 
 def add_contact(name, email, organisation, message, phone):
@@ -2061,7 +2058,6 @@ def return_none_feed():
 
 def prompt_for_profile_video(user_id):
     time_threshold = datetime.datetime.now() - datetime.timedelta(hours=48)
-    print time_threshold
     return not bool(User.query.filter(User.id==user_id, User.user_since<time_threshold, User.profile_picture!=None).count())
 
 def discover_post_in_cqm(cur_user_id, offset, limit, device_id, version_code, web = None, lat = None, lon = None, visit = None, append_top=''):
@@ -2105,7 +2101,6 @@ def discover_post_in_cqm(cur_user_id, offset, limit, device_id, version_code, we
     feeds_count = sum(map(lambda x:x.count, count_arr))
     if feeds_count > item_count:
         feeds_count = item_count
-    print feeds_count
     if offset > feeds_count:
         return return_none_feed()
 
@@ -2127,7 +2122,6 @@ def discover_post_in_cqm(cur_user_id, offset, limit, device_id, version_code, we
 
     results = []
     for obj in feeds:
-        #print obj.user
         if obj.user:
             if obj.user in filter_these_from_feeds: continue
             user = User.query.filter(User.id == obj.user, User.profile_video != None, ~User.username.in_(append_top_usernames)).first() 
@@ -2161,7 +2155,7 @@ def discover_post_in_cqm(cur_user_id, offset, limit, device_id, version_code, we
 
 def search_default(cur_user_id=None):
     from collections import defaultdict
-    categories_order = ['Politicians', 'Authors', 'Trending Now', 'New on Frankly', 'Singers', 'Actors', 'Radio Jockeys', 'Chefs', 'Entrepreneurs', 'Subject Experts']
+    categories_order = ['Trending Now', 'Politicians', 'Authors', 'New on Frankly', 'Singers', 'Actors', 'Radio Jockeys', 'Chefs', 'Entrepreneurs', 'Subject Experts']
     
     results = db.session.execute(text("""SELECT search_defaults.category, users.id, users.username, users.first_name,
                                                     users.user_type, users.user_title, users.profile_picture,
@@ -2186,7 +2180,8 @@ def search_default(cur_user_id=None):
                     'profile_picture':row[6],
                     'bio':row[7],
                     'gender':row[8],
-                    'is_following':bool(row[9])
+                    'is_following':bool(row[9]),
+                    'channel_id':'user_{user_id}'.format(user_id=row[1])
                     }
         category_results[row[0]].append(user_dict)
 
@@ -2238,18 +2233,97 @@ def top_liked_users(cur_user_id, count=5):
         liked_user_ids.extend(user_follows_list(cur_user_id, count))
     if len(liked_user_ids) < count:
         liked_user_ids.extend(random_celebrity_list(count))
-    return {'users': get_thumb_users(liked_user_ids).values()}
+
+    return {'users': get_thumb_users(liked_user_ids[:count]).values()}
 
 def save_feedback_response(cur_user_id, medium, message, version):
-    email = User.query.filter(User.id==str(cur_user_id)).one().email
+    from models import Feedback
     feedback = Feedback(user=str(cur_user_id), medium=medium, message=message, version=version)
     db.session.add(feedback)
     db.session.commit()
     return {'success': True}
 
 
+def parse_channel_id(channel_id):
+    channel_data = channel_id.split('_')
+    channel_type = channel_data[0]
+    channel_id = '_'.join(channel_data[1:])
+
+    return channel_type, channel_id
 
 
+def get_channel_feed(cur_user_id, channel_id, offset, limit, device_id=None, version_code=None, append_top=''):
+    channel_type, channel_id = parse_channel_id(channel_id)
+    
+    device_type = get_device_type(device_id) if device_id else None
+    web = True if device_type == 'web' else False
+
+    if channel_type == 'user':
+        response = get_user_timeline(cur_user_id, channel_id, offset, limit)
+        response['header'] = user_view_profile(cur_user_id, channel_id)
+        response['header'].update({'type':'user'})
+        return response
+
+    if channel_type == 'feed':
+        return home_feed(cur_user_id, offset, limit, web)
+
+    if channel_type == 'discover':
+        return discover_post_in_cqm(cur_user_id, offset, limit, device_id, version_code, web, append_top=append_top)
 
 
+def get_channel_list(cur_user_id, device_id, version_code):
+    feed_banner = {'type':'banner',
+                    'bg_image':None,
+                    'icon':None,
+                    'name':'Feed',
+                    'channel_id':'feed',
+                    'description':None}
+    discover_banner = {'type':'banner',
+                        'bg_image':None,
+                        'name':'Discover',
+                        'icon':None,
+                        'channel_id':'discover',
+                        'description':None
+                        }
 
+    search_fragment = {'type':'search',
+                        'bg_image':None,
+                        'views':[]
+                        }
+    
+    search_default_results = search_default(cur_user_id=cur_user_id)['results']
+
+    for item in search_default_results:
+        search_icons = {'type':'icon_list',
+                        'name':item['category_name'],
+                        'icons':[]
+                        }
+
+        for user in item['users']:
+            search_icons['icons'].append({'type':'icon_user',
+                                            'user':user
+                                            })
+        
+        search_fragment['views'].append(search_icons)
+    return {'channel_list':[feed_banner, discover_banner, search_fragment]}
+
+def check_app_version_code(device_type,device_version_code):
+    hard_update_resp = {'hard_update':True,'soft_update':False}
+    soft_update_resp = {'hard_update':False,'soft_update':True}
+    no_update_resp = {'hard_update':False,'soft_update':False}
+    
+    if device_type == 'android':
+        if device_version_code < config.ANDROID_NECESSARY_VERSION_CODE :
+            resp = hard_update_resp
+        elif device_version_code < config.ANDROID_LATEST_VERSION_CODE :
+            resp = soft_update_resp
+        else:
+            resp = no_update_resp  
+    elif device_type == 'ios':
+        if device_version_code < config.IOS_NECESSARY_VERSION_CODE :
+            resp = hard_update_resp
+        elif device_version_code < config.IOS_LATEST_VERSION_CODE :
+            resp = soft_update_resp
+        else:
+            resp = no_update_resp
+    return resp

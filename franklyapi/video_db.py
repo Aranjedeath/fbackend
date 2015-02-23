@@ -1,4 +1,4 @@
-from models import Video, User
+from models import Video, User, Post, Question
 from app import db, redis_views
 from sqlalchemy.sql import text, func
 
@@ -28,10 +28,11 @@ def update_video_state(video_url, result={}):
 
 def update_view_count_to_db(url):
     try:
+        return
         original_url = url
         count = redis_views.get(url)
         
-        url = url.replace('http://d35wlof4jnjr70.cloudfront.net/', 'https://s3.amazonaws.com/franklyapp/')
+        url = url.replace('http://d35wlof4jnjr70.cloudfront.net/', 'https://s3.amazonaws.com/franklymestorage/')
         types = ['_ultralow', '_low', '_medium', '_opt', '_promo']
         for suffix in types:
             url = url.replace(suffix, '')
@@ -77,4 +78,38 @@ def update_total_view_count(user_ids):
         db.session.commit()
     except:
         db.session.rollback()
+
+def get_video_data(video_url):
+    video = Video.query.filter(Video.url== video_url).one()
+
+    if video.video_type == 'profile_video':
+        user = User.query.filter(User.id==video.object_id).one()
+        username = user.username
+        answer_author_name = None
+        question_author_name = None
+        profile_picture = None
+        question_body = None
+
+    else:
+        post = Post.query.filter(Post.id==video.object_id).one()
+        question = Question.query.filter(Question.id==post.question).one()
+        question_author = User.query.filter(User.id==post.question_author).one()
+        answer_author = User.query.filter(User.id==post.answer_author).one()
+        username = answer_author.username
+        answer_author_name = answer_author.first_name
+        question_author_name = question_author.first_name
+        profile_picture = answer_author.profile_picture
+        question_body = question.body
+
+    return {
+    'video_type':video.video_type,
+    'answer_author_username': username,
+    'answer_author_name': answer_author_name,
+    'question_author_name': question_author_name,
+    'question_body':question_body,
+    'answer_author_profile_picture': profile_picture
+    }
+
+
+
 
