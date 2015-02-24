@@ -78,7 +78,7 @@ class EncodeLog(Base):
         self.success        = success
 
     def __repr__(self):
-        return '<EventLog %r:%r>' % (self.video_url,self.video_quality)
+        return '<EventLog %r:%r>' % (self.start_time,self.finish_time)
 
 
 class ReportAbuse(Base):
