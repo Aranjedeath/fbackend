@@ -40,6 +40,8 @@ api.add_resource(QuestionListPublic, '/question/list/public/<user_id>')
 api.add_resource(QuestionUpvote, '/question/upvote/<question_id>')
 api.add_resource(QuestionDownvote, '/question/downvote/<question_id>')
 api.add_resource(QuestionIgnore, '/question/ignore')
+api.add_resource(SlugItem, '/slug/<username>/<slug>')
+
 
 
 api.add_resource(PostAdd, '/post/media/add', '/post/add')

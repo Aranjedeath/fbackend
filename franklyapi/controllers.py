@@ -201,7 +201,6 @@ def get_twitter_email(twitter_id):
 def login_user_social(social_type, social_id, external_access_token, device_id, push_id=None, 
                         external_token_secret = None, user_type=0, user_title=None):
     user_data = get_data_from_external_access_token(social_type, external_access_token, external_token_secret)
-    print '********', user_data['social_id'], social_id
     token_valid = str(user_data['social_id']).strip()==str(social_id).strip()
     
     if not token_valid:    
@@ -806,10 +805,7 @@ def user_follow(cur_user_id, user_id):
                         params={'cur_user_id':cur_user_id, 'user_id':user_id, 'timestamp':datetime.datetime.now()}
                     )
 
-    event = create_event(user=cur_user_id, action='follow', foreign_data=user_id)
-    if event:
-        db.session.add(event)
-    
+
     db.session.commit()
 
     return {'user_id': user_id}
@@ -1023,7 +1019,7 @@ def make_question_slug(body, question_id):
     body = sanitize_question_body(body)
     if len(body)>150:
         for word in stop_words:
-            body = body.replace(word, '')
+            body = body.replace(' '+word+' ', ' ')
     if len(body)>150:
         body = body[:150]
     sentence = "{body} {question_id}".format(body=body, question_id=question_id)
@@ -1201,9 +1197,6 @@ def post_like(cur_user_id, post_id):
                                     'timestamp':datetime.datetime.now()}
                             )
 
-        event = create_event(user=cur_user_id, action='like', foreign_data=post_id)
-        if event:
-            db.session.add(event)
         db.session.commit()
         #send notification
         return {'id': post_id, 'success':True}
@@ -1268,10 +1261,6 @@ def comment_add(cur_user_id, post_id, body, lat, lon):
         from database import get_item_id
         comment = Comment(id=get_item_id(), on_post=post_id, body=body, comment_author=cur_user_id, lat=lat, lon=lon)
         db.session.add(comment)
-
-        event = create_event(user=cur_user_id, action='comment', foreign_data=comment.id)
-        if event:
-            db.session.add(event)
 
         db.session.commit()
     
@@ -1738,12 +1727,6 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
 
         Question.query.filter(Question.id==question_id).update({'is_answered':True})
 
-        event = create_event(user=cur_user_id, action='answer', foreign_data=post.id)
-        if event:
-            db.session.add(event)
-        
-        
-
         add_video_to_db(video_url=video_url,
                         thumbnail_url=thumbnail_url,
                         video_type='answer_video',
@@ -2172,6 +2155,26 @@ def get_channel_list(cur_user_id, device_id, version_code):
         
         search_fragment['views'].append(search_icons)
     return {'channel_list':[feed_banner, discover_banner, search_fragment]}
+
+
+def get_item_from_slug(current_user_id, username, slug):
+    try:
+        question = Question.query.filter(Question.slug==slug, 
+                                            Question.deleted==False,
+                                            Question.is_ignored==False
+                                            or_(Question.public==True,
+                                                Question.question_to==current_user_id)
+                                            ).one()
+        question_to = User.query.filter(User.id==question.question_to).one()
+        if question_to.username.lower() != username.lower():
+            raise CustomExceptions.WrongUsernameSlugExcetion(question_to.username)
+        if question.is_answered:
+            post = Post.query.filter(Post.question==question.id, Post.deleted==False).one()
+            return {'is_answered':question.is_answered, 'post':post_to_dict(current_user_id, post)}
+        return {'is_answered':question.is_answered, 'question':question_to_dict(current_user_id, question)}
+    except NoResultFound:
+        raise CustomExceptions.ObjectNotFoundException('The question does not exist or has been deleted.')
+
 
 def check_app_version_code(device_type,device_version_code):
     hard_update_resp = {'hard_update':True,'soft_update':False}

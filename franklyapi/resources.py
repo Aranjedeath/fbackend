@@ -282,6 +282,46 @@ class UserUpdateForm(restful.Resource):
             raygun.send(err[0],err[1],err[2])
             abort(500, message=internal_server_error_message)
 
+class SlugItem(restful.Resource):
+
+    @login_required
+    def get(self, username, slug):
+        """
+        Returns question if question for slug is not answered, returns post instead.
+
+        username: is username of the question_to/answer_author
+                    user will be redirected to the right url if the username is wrong.
+        slug: is the question slug
+
+        Controller Functions Used:
+            - get_item_from_slug
+
+        Authentication: Optional
+        """
+
+        from app import api
+        from flask import redirect
+
+        current_user_id = None
+        if current_user.is_authenticated():
+            current_user_id = current_user.id        
+        try:
+            resp = controllers.get_item_from_slug(current_user_id, username, slug)
+            return resp
+
+        except CustomExceptions.WrongUsernameSlugExcetion as e:
+            redirect(api.url_for(SlugItem, username=str(e), slug=slug), code=301)
+
+        except CustomExceptions.ObjectNotFoundException as e:
+            abort(404, message=str(e))
+
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
+
+
 
 class UserFollow(restful.Resource):
     
