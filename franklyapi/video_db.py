@@ -10,6 +10,25 @@ def add_video_to_db(video_url, thumbnail_url, video_type, object_id, username=No
         db.session.add(v)
         db.session.commit()
 
+def add_video_encode_log_start(video_url,video_quality):
+    log = EncodeLog(video_url=video_url, video_quality=video_quality)
+    db.session.add(log)
+    db.session.commit()
+    return log.id
+
+def update_video_encode_log_finish(encode_log_id,result):
+    try:
+        if result:
+            success = True
+        else:
+            result = False
+        EncodeLog.query.filter(EncodeLog.id==encode_log_id).update({'finish_time':datetime.datetime.now(),'success':success})
+        db.session.commit()
+        
+    except Exception as e:
+        print e
+        db.session.rollback()
+
 
 def update_video_state(video_url, result={}):
     try:
