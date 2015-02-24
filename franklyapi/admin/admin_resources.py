@@ -544,6 +544,21 @@ class AdminGetSimilarQuestions(AdminProtectedResource):
             print traceback.format_exc(e)
             abort(500, message='Error')
 
+class AdminGetSimilarQuestionsBody(AdminProtectedResource):
+    @login_required
+    def get(self):
+        arg_parser = reqparse.RequestParser()
+        arg_parser.add_argument('question_to',required=True, location='args', type=str)
+        arg_parser.add_argument('question_body',required=True, location='args', type=str)
+        args = arg_parser.parse_args()
+        try:
+            return admin_controllers.get_similar_questions_body(question_to=args['question_to'], question_body=args['question_body'])
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message='Error')
+
 
 class AdminSearchDefault(AdminProtectedResource):
     def get(self):

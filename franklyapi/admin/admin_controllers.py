@@ -421,6 +421,13 @@ def get_similar_questions(question_id):
     print result
     return result
 
+def get_similar_questions_body(question_to, question_body):
+    search_words = get_search_words(question_body)
+    questions = Question.query.filter(Question.question_to==question_to, Question.body.op('regexp')('|'.join(search_words))).all()
+    result = {'questions' : [question_to_dict(q) for q in questions[0:10]]}
+    print result
+    return result
+
 def get_unanswered_questions_with_same_count(user_id, offset, limit):
     questions = Question.query.filter(Question.question_to == user_id, Question.is_answered == False).offset(offset).limit(limit).all()
     print questions

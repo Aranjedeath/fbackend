@@ -175,6 +175,7 @@ api.add_resource(admin.AdminDeleteSearchDefaultUser, '/admin/search/default/dele
 api.add_resource(admin.AdminUpdateSearchDefaultCategoryOrder, '/admin/search/default/update')
 api.add_resource(admin.AdminGetUnansweredQuestionListWithSameCount, '/admin/question/list/same')
 api.add_resource(admin.AdminGetSimilarQuestions, '/admin/question/similar')
+api.add_resource(admin.AdminGetSimilarQuestionsBody, '/admin/question/similar/body')
 api.add_resource(admin.AdminSearchDefault, '/admin/search/default')
 api.add_resource(admin.AdminGetDateFeed, '/admin/date/feed')
 api.add_resource(admin.AdminAddToDateFeed, '/admin/date/feed/add')
@@ -184,6 +185,7 @@ api.add_resource(admin.AdminGetUserActivityTimeline, '/admin/user/activity_timel
 api.add_resource(admin.AdminQuestionChangeUpvote, '/admin/question/change_upvote')
 api.add_resource(admin.AdminPostChangeLike, '/admin/post/change_like')
 api.add_resource(admin.AdminUserChangeFollowers, '/admin/user/change_followers')
+
 
 
 
