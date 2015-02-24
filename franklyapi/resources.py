@@ -284,7 +284,6 @@ class UserUpdateForm(restful.Resource):
 
 class SlugItem(restful.Resource):
 
-    @login_required
     def get(self, username, slug):
         """
         Returns question if question for slug is not answered, returns post instead.
