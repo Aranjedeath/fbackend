@@ -1,4 +1,4 @@
-from models import Video, User, Post, Question
+from models import Video, User, Post, Question, EncodeLog
 from app import db, redis_views
 from sqlalchemy.sql import text, func
 
