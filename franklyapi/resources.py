@@ -309,7 +309,7 @@ class SlugItem(restful.Resource):
             return resp
 
         except CustomExceptions.WrongUsernameSlugExcetion as e:
-            redirect(api.url_for(SlugItem, username=str(e), slug=slug), code=301)
+            return redirect(api.url_for(SlugItem, username=str(e), slug=slug), code=301)
 
         except CustomExceptions.ObjectNotFoundException as e:
             abort(404, message=str(e))
