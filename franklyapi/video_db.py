@@ -31,6 +31,35 @@ def update_video_encode_log_finish(encode_log_id,result):
         print e
         db.session.rollback()
 
+def get_encode_statictics(count=100):
+    logs = EncodeLog.query.filter().order_by(EncodeLog.start_time.desc()).limit(count).all()
+    print len(logs), 'logs found'
+    times = []
+    fails = 0
+    success = 0
+    time = 0
+    average = 0
+    median = 0
+    
+    for log in logs:
+        if log.success :
+            success += 1
+            times.append((log.finish_time-log.start_time).total_seconds())
+        else:
+            fails += 1
+
+    if success>0:    
+        average = sum(times) / success
+        median = get_median(times)
+    return {'average':average, 'median':median, 'success':success , 'fails':fails}
+
+def get_median(l):
+    half = len(l) / 2
+    l.sort()
+    if len(l) % 2 == 0:
+        return (l[half-1] + l[half]) / 2.0
+    else:
+        return l[half]
 
 def update_video_state(video_url, result={}):
     try:
