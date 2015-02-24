@@ -19,6 +19,7 @@ def add_video_encode_log_start(video_url,video_quality):
 
 def update_video_encode_log_finish(encode_log_id,result):
     try:
+        success = False
         if result:
             success = True
         else:
