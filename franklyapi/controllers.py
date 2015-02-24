@@ -2168,7 +2168,7 @@ def get_item_from_slug(current_user_id, username, slug):
                                             ).one()
         question_to = User.query.filter(User.id==question.question_to).one()
         if question_to.username.lower() != username.lower():
-            raise CustomExceptions.WrongUsernameSlugExcetion(question_to.username)
+            return {'redirect':question_to.username}
         if question.is_answered:
             post = Post.query.filter(Post.question==question.id, Post.deleted==False).one()
             return {'is_answered':question.is_answered, 'post':post_to_dict(post, current_user_id)}

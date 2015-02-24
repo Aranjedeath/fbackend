@@ -306,10 +306,9 @@ class SlugItem(restful.Resource):
             current_user_id = current_user.id        
         try:
             resp = controllers.get_item_from_slug(current_user_id, username, slug)
+            if resp.get('redirect'):
+                return redirect(api.url_for(SlugItem, username=resp['redirect'], slug=slug), code=301)
             return resp
-
-        except CustomExceptions.WrongUsernameSlugExcetion as e:
-            return redirect(api.url_for(SlugItem, username=str(e), slug=slug), code=301)
 
         except CustomExceptions.ObjectNotFoundException as e:
             abort(404, message=str(e))
