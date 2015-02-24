@@ -11,8 +11,8 @@ def add_video_to_db(video_url, thumbnail_url, video_type, object_id, username=No
         db.session.add(v)
         db.session.commit()
 
-def add_video_encode_log_start(video_url,video_quality):
-    log = EncodeLog(video_url=video_url, video_quality=video_quality)
+def add_video_encode_log_start(video_url):
+    log = EncodeLog(video_url=video_url)
     db.session.add(log)
     db.session.commit()
     return log.id

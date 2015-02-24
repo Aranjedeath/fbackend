@@ -70,7 +70,7 @@ class EncodeLog(Base):
     start_time      = Column(DateTime(), default=datetime.datetime.now())
     finish_time     = Column(DateTime(), default=None, nullable=True)
     success         = Column(Boolean, default=False)
-    def __init__(self,video_url,video_quality,start_time=datetime.datetime.now(),finish_time=None,success=None):
+    def __init__(self,video_url,video_quality='',start_time=datetime.datetime.now(),finish_time=None,success=None):
         self.video_url      = video_url
         self.video_quality  = video_quality
         self.start_time     = start_time
