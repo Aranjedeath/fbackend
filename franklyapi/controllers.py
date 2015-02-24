@@ -657,7 +657,7 @@ def get_questions(question_ids, cur_user_id=None):
     data = {}
     if question_ids:
         result = db.session.execute(text("""SELECT questions.id, questions.body,
-                                                   questions.is_anonymous, questions.timestamp, questions.slug
+                                                   questions.is_anonymous, questions.timestamp, questions.slug,
                                                    (SELECT count(question_upvotes.user) FROM question_upvotes
                                                     WHERE question_upvotes.question=questions.id 
                                                             AND question_upvotes.user=:cur_user_id
