@@ -2171,8 +2171,8 @@ def get_item_from_slug(current_user_id, username, slug):
             return {'redirect':True, 'username':question_to.username}
         if question.is_answered:
             post = Post.query.filter(Post.question==question.id, Post.deleted==False).one()
-            return {'is_answered':question.is_answered, 'post':post_to_dict(post, current_user_id)}
-        return {'is_answered':question.is_answered, 'question':question_to_dict(question, current_user_id)}
+            return {'redirect':False, 'is_answered':question.is_answered, 'post':post_to_dict(post, current_user_id)}
+        return {'redirect':False, 'is_answered':question.is_answered, 'question':question_to_dict(question, current_user_id)}
     except NoResultFound:
         raise CustomExceptions.ObjectNotFoundException('The question does not exist or has been deleted.')
 
