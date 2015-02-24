@@ -1,6 +1,7 @@
 from models import Video, User, Post, Question, EncodeLog
 from app import db, redis_views
 from sqlalchemy.sql import text, func
+import datetime
 
 def add_video_to_db(video_url, thumbnail_url, video_type, object_id, username=None):
     if not Video.query.filter(Video.url==video_url).count():
