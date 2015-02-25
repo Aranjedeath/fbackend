@@ -65,8 +65,8 @@ def get_discover_multitype(current_user_id, offset, limit=10, day_count=0, add_s
     resp = get_discover_list(current_user_id, offset, limit, day_count, add_super)
     
     users = filter(lambda x:resp[x]['type']=='user', resp)
-    posts = filter(lambda x:resp[x]['type']=='posts', resp)
-    questions = filter(lambda x:resp[x]['type']=='questions', resp)
+    posts = filter(lambda x:resp[x]['type']=='post', resp)
+    questions = filter(lambda x:resp[x]['type']=='question', resp)
 
     user_objects = User.query.filter(User.id.in_(users)).all()
     post_objects = Post.query.filter(Post.id.in_(posts)).all()
