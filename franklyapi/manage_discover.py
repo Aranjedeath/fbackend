@@ -26,7 +26,7 @@ def get_discover_list(current_user_id, offset, limit=10, day_count=0, add_super=
         super_items = db.session.execute(text("""SELECT discover_list.post,
                                                         discover_list.question,
                                                         discover_list.user,
-                                                        ROUND(discover_list.show_order, 10)
+                                                        ROUND(discover_list.show_order, 20)
                                                     FROM discover_list
                                                     WHERE discover_list.is_super=true
                                                         AND discover_list.display_on_day=:day_count 
@@ -36,7 +36,7 @@ def get_discover_list(current_user_id, offset, limit=10, day_count=0, add_super=
     items = db.session.execute(text("""SELECT discover_list.post, 
                                                 discover_list.question,
                                                 discover_list.user,
-                                                ROUND(discover_list.show_order, 10)
+                                                ROUND(discover_list.show_order, 20)
                                         FROM discover_list
                                         WHERE discover_list.removed=false
                                             AND discover_list.display_on_day<=:day_count
