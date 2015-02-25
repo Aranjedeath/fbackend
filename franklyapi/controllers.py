@@ -2150,9 +2150,7 @@ def get_channel_list(cur_user_id, device_id, version_code):
                         }
 
         for user in item['users']:
-            search_icons['icons'].append({'type':'icon_user',
-                                            'user':user
-                                            })
+            search_icons['icons'].append({'type':'icon_user', 'user':user})
         
         search_fragment['views'].append(search_icons)
     return {'channel_list':[feed_banner, discover_banner, search_fragment]}
@@ -2163,7 +2161,8 @@ def get_item_from_slug(current_user_id, username, slug):
         question = Question.query.filter(Question.slug==slug, 
                                             Question.deleted==False,
                                             Question.is_ignored==False,
-                                            or_(Question.public==True,
+                                            or_(Question.is_answered==True,
+                                                Question.public==True,
                                                 Question.question_to==current_user_id)
                                             ).one()
         question_to = User.query.filter(User.id==question.question_to).one()
@@ -2175,6 +2174,20 @@ def get_item_from_slug(current_user_id, username, slug):
         return {'redirect':False, 'is_answered':question.is_answered, 'question':question_to_dict(question, current_user_id)}
     except NoResultFound:
         raise CustomExceptions.ObjectNotFoundException('The question does not exist or has been deleted.')
+
+
+def check_app_version_code(device_type,device_version_code):
+    hard_update = False
+    soft_update= False
+    if device_type == 'android':
+        hard_update = device_version_code < config.ANDROID_NECESSARY_VERSION_CODE
+        soft_update = device_version_code < config.ANDROID_LATEST_VERSION_CODE
+
+    elif device_type == 'ios':
+        hard_update = device_version_code < config.IOS_NECESSARY_VERSION_CODE
+        soft_update = device_version_code < config.IOS_LATEST_VERSION_CODE
+
+    return {'hard_update':hard_update, 'soft_update':soft_update}
 
 
 def check_app_version_code(device_type,device_version_code):

@@ -304,6 +304,7 @@ def post_decrease_likes(post_id, count):
 
 def question_list(offset, limit, user_to=[], user_from=[], public=True, deleted=False):
     questions = Question.query.filter(Question.deleted==deleted, Question.public==public, Question.is_answered==False, Question.is_ignored==False
+                                    ).order_by(Question.added_by.desc()
                                     ).order_by(Question.timestamp.desc()
                                     ).offset(offset
                                     ).limit(limit

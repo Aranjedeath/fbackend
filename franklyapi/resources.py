@@ -299,7 +299,6 @@ class SlugItem(restful.Resource):
         """
 
         from app import api
-        from flask import redirect
 
         current_user_id = None
         if current_user.is_authenticated():
