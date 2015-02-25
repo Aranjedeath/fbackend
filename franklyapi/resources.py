@@ -2035,3 +2035,27 @@ class AppVersion(restful.Resource):
             raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
+class EncodeStatistics(restful.Resource):
+
+    get_parser = reqparse.RequestParser()
+    get_parser.add_argument('count', type=int, location='args', default=20)
+    
+    def get(self):
+        """
+        Returns dictionary of latest app versions
+
+        Controller Functions Used:
+            - get_android_version_code
+
+        Authentication: Optional
+        """
+        args = self.get_parser.parse_args()
+        try:
+            import video_db
+            return video_db.get_encode_statictics(args['count'])
+        
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0], err[1], err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)

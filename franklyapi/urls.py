@@ -93,6 +93,7 @@ api.add_resource(ChannelFeed, '/channel/<channel_id>')
 api.add_resource(ChannelList, '/channel/list')
 
 api.add_resource(AppVersion, '/appversion')
+api.add_resource(EncodeStatistics, '/encodestats')
 
 
 
