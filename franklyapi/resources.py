@@ -1,6 +1,6 @@
 import sys
 import traceback
-
+import flask
 from flask.ext import restful
 from flask.ext.restful import abort
 from flask.ext.restful import reqparse
@@ -2053,6 +2053,29 @@ class EncodeStatistics(restful.Resource):
         try:
             import video_db
             return video_db.get_encode_statictics(args['count'])
+        
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0], err[1], err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
+class RSS(restful.Resource):
+
+    
+    def get(self):
+        """
+        Returns RSS in xml form
+
+        Controller Functions Used:
+            - get_rss
+
+        Authentication: Optional
+        """
+        try:
+
+            resp = flask.make_response(controllers.get_rss())
+            resp.headers['content-type'] = 'application/xml'
+            return resp
         
         except Exception as e:
             err = sys.exc_info()

@@ -94,6 +94,7 @@ api.add_resource(ChannelList, '/channel/list')
 
 api.add_resource(AppVersion, '/appversion')
 api.add_resource(EncodeStatistics, '/encodestats')
+api.add_resource(RSS, '/rss')
 
 
 

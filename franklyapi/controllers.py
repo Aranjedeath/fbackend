@@ -2197,3 +2197,7 @@ def check_app_version_code(device_type,device_version_code):
         else:
             resp = no_update_resp
     return resp
+def get_rss():
+    with open('/tmp/franklymeanswers.xml','r') as f:
+        s = f.read()
+    return s
