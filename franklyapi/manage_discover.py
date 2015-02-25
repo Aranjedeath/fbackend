@@ -81,7 +81,7 @@ def get_discover_multitype(current_user_id, offset, limit=10, day_count=0, add_s
     post_objects_json = [{'type':'post', 'show_order':resp[p['id']]['show_order'], 'post':p} for p in post_objects_json]
 
     final_list = user_objects_json + question_objects_json + post_objects_json
-    final_list.sort(lambda item: item['show_order'], reverse=True)
+    final_list.sort(key=lambda item: item['show_order'], reverse=True)
 
     return final_list
 
