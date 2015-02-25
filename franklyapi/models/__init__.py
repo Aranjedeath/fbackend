@@ -4,7 +4,7 @@ from post import Post, Like, View, Reshare
 from comment import Comment
 from auth_models import AccessToken, ForgotPasswordToken
 from others import Install, ReportAbuse, Email, Feedback, Interest, UserData, Contact, Package, UserAccount, Video, ContactUs, EncodeLog
-from feed import UserFeed, CentralQueueMobile, IntervalCountMap, DateSortedItems
+from feed import UserFeed, CentralQueueMobile, IntervalCountMap, DateSortedItems, DiscoverList
 from event import Event
 from invitables import Invitable, Invite
 from inflated_stat import InflatedStat
