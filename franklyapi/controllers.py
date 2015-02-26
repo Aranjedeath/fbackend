@@ -6,6 +6,7 @@ import hashlib
 import uuid
 import traceback
 import sys
+import json
 
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy import or_
@@ -2005,6 +2006,9 @@ def discover_post_in_cqm(cur_user_id, offset, limit, device_id, version_code, we
 
 def search_default(cur_user_id=None):
     from collections import defaultdict
+    resp = redis_client.get('search_default')
+    if resp:
+        return {'results' : json.loads(resp)}
     categories_order = ['Trending Now', 'Politicians', 'Authors', 'New on Frankly', 'Singers', 'Actors', 'Radio Jockeys', 'Chefs', 'Entrepreneurs', 'Subject Experts']
     
     results = db.session.execute(text("""SELECT search_defaults.category, users.id, users.username, users.first_name,
@@ -2013,7 +2017,8 @@ def search_default(cur_user_id=None):
                                                     (SELECT count(*) FROM user_follows
                                                         WHERE user_follows.user=:cur_user_id
                                                             AND user_follows.followed=users.id
-                                                            AND user_follows.unfollowed=false) AS is_following
+                                                            AND user_follows.unfollowed=false) AS is_following, 
+                                                search_defaults.show_always
                                             FROM users JOIN search_defaults ON users.id=search_defaults.user
                                             WHERE search_defaults.category IN :categories
                                             ORDER BY search_defaults.score"""),
@@ -2031,19 +2036,29 @@ def search_default(cur_user_id=None):
                     'bio':row[7],
                     'gender':row[8],
                     'is_following':bool(row[9]),
-                    'channel_id':'user_{user_id}'.format(user_id=row[1])
+                    'channel_id':'user_{user_id}'.format(user_id=row[1]),
+                    'show_always': bool(row[10])
                     }
         category_results[row[0]].append(user_dict)
 
 
     for category, users in category_results.items():
-        category_results[category] = random.sample(category_results[category], min(3, len(category_results[category])))
+        if len(category_results[category]) > 3:
+            show_always_users = filter(lambda x: x['show_always'], users)
+            show_always_count = len(show_always_users)
+            if show_always_count < 3:
+                random_users = [user for user in users if user not in show_always_users]
+                random_count = 3 - show_always_count
+                category_results[category] = random.sample(show_always_users, show_always_count)
+                category_results[category].extend(random.sample(random_users, random_count))
+            else: 
+                category_results[category] = random.sample(show_always_users, 3)
 
     resp = []
     for cat in categories_order:
         if category_results.get(cat):
             resp.append({'category_name':cat, 'users':category_results[cat]})
-
+    redis_client.setex('search_default', json.dumps(resp), 600)
     return {'results':resp}
 
 def invite_celeb(cur_user_id, invitable_id):

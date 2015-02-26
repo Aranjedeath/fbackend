@@ -4,7 +4,7 @@ from sqlalchemy import Column, Integer, String, Boolean, Float, DateTime, Foreig
 from database import Base, get_item_id
 
 class DiscoverList(Base):
-    __tablename__  = 'discover_list'
+    __tablename__  = 'discover_list1'
     id             = Column(Integer(), primary_key=True)
     post           = Column(CHAR(32), ForeignKey('posts.id'))
     question       = Column(CHAR(32), ForeignKey('questions.id'))
@@ -12,7 +12,7 @@ class DiscoverList(Base):
     is_super       = Column(Boolean(), default=False, nullable=False)
     display_on_day = Column(Integer(), nullable=False)
     added_at       = Column(DateTime(), nullable=False)
-    show_order     = Column(Float(), nullable=False)
+    #show_order     = Column(Integer())
     removed        = Column(Boolean(), default=False)
 
     def __init__(self, post=None, question=None, user=None,

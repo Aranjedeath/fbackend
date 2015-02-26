@@ -447,7 +447,7 @@ def update_category_order_search_default(category_name, user_cat_data):
     '''
     user_cat_data example : {
                                 'user_id' : string user id,
-                                'score' : integer score
+                                'show_always' : bool
                             }
     '''
     cat_users_count = SearchDefault.query.filter(SearchDefault.category == category_name).count()
@@ -458,7 +458,7 @@ def update_category_order_search_default(category_name, user_cat_data):
         if not s:
             s = SearchDefault(user = user_data['user_id'],
                               category = category_name)
-        s.score = user_data['score']
+        s.show_always = user_data['show_always']
         db.session.add(s)
         db.session.commit()
     return {'success':True}

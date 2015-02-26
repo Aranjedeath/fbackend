@@ -40,7 +40,7 @@ def get_discover_list(current_user_id, offset, limit=10, day_count=0, add_super=
                                         FROM discover_list
                                         WHERE discover_list.removed=false
                                             AND discover_list.display_on_day<=:day_count
-                                        ORDER BY discover_list.show_order DESC
+                                        ORDER BY discover_list.id DESC
                                         LIMIT :offset, :limit
                                     """),
                                 params = {'day_count':day_count, 'offset':offset, 'limit':limit-len(super_items)}
