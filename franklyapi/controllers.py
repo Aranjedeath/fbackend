@@ -2008,7 +2008,7 @@ def search_default(cur_user_id=None):
     from collections import defaultdict
     resp = redis_client.get('search_default')
     if resp:
-        return json.loads(resp)
+        return json.loads(resp)[0]
     categories_order = ['Trending Now', 'Politicians', 'Authors', 'New on Frankly', 'Singers', 'Actors', 'Radio Jockeys', 'Chefs', 'Entrepreneurs', 'Subject Experts']
     
     results = db.session.execute(text("""SELECT search_defaults.category, users.id, users.username, users.first_name,
