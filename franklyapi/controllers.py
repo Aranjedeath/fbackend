@@ -2211,6 +2211,8 @@ def check_app_version_code(device_type,device_version_code):
             resp = no_update_resp
     return resp
 def get_rss():
+    import rss_manager
+    rss_manager.generate_answers_rss()
     with open('/tmp/franklymeanswers.xml','r') as f:
         s = f.read()
     return s

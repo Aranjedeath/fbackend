@@ -284,8 +284,8 @@ class RSS2(WriteXmlMixin):
                  lastBuildDate = None, # a datetime
                  
                  categories = None, # list of strings or Category
-                 generator = _generator_name,
-                 docs = "http://blogs.law.harvard.edu/tech/rss",
+                 generator = None,
+                 docs = None,
                  cloud = None,    # a Cloud
                  ttl = None,      # integer number of minutes
 
