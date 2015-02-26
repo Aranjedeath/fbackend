@@ -2055,7 +2055,7 @@ def search_default(cur_user_id=None):
         if category_results.get(cat):
             resp.append({'category_name':cat, 'users':category_results[cat]})
 
-    # return {'results':resp}
+    return {'results':resp}
 
 def invite_celeb(cur_user_id, invitable_id):
     try:
