@@ -2005,6 +2005,9 @@ def discover_post_in_cqm(cur_user_id, offset, limit, device_id, version_code, we
 
 def search_default(cur_user_id=None):
     from collections import defaultdict
+    resp = redis_client.get('search_default')
+    if resp:
+        return json.loads(resp)
     categories_order = ['Trending Now', 'Politicians', 'Authors', 'New on Frankly', 'Singers', 'Actors', 'Radio Jockeys', 'Chefs', 'Entrepreneurs', 'Subject Experts']
     
     results = db.session.execute(text("""SELECT search_defaults.category, users.id, users.username, users.first_name,
@@ -2054,7 +2057,7 @@ def search_default(cur_user_id=None):
     for cat in categories_order:
         if category_results.get(cat):
             resp.append({'category_name':cat, 'users':category_results[cat]})
-
+    redis_client.setex('search_default', json.dumps(resp))
     return {'results':resp}
 
 def invite_celeb(cur_user_id, invitable_id):
