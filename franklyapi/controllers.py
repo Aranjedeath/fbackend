@@ -2046,7 +2046,7 @@ def search_default(cur_user_id=None):
                 random_users = [user for user in users if user not in show_always_users]
                 random_count = 3 - show_always_count
                 category_results[category] = random.sample(show_always_users, show_always_count)
-                category_results[category].append(random.sample(random_users, random_count))
+                category_results[category].extend(random.sample(random_users, random_count))
             else: 
                 category_results[category] = random.sample(show_always_users, 3)
 
@@ -2055,7 +2055,7 @@ def search_default(cur_user_id=None):
         if category_results.get(cat):
             resp.append({'category_name':cat, 'users':category_results[cat]})
 
-    return {'results':resp}
+    # return {'results':resp}
 
 def invite_celeb(cur_user_id, invitable_id):
     try:
