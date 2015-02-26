@@ -2058,7 +2058,7 @@ def search_default(cur_user_id=None):
     for cat in categories_order:
         if category_results.get(cat):
             resp.append({'category_name':cat, 'users':category_results[cat]})
-    redis_client.setex('search_default', json.dumps(resp))
+    redis_client.setex('search_default', json.dumps(resp), 600)
     return {'results':resp}
 
 def invite_celeb(cur_user_id, invitable_id):
