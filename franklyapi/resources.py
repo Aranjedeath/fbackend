@@ -1407,15 +1407,14 @@ class DiscoverPost(restful.Resource):
                 
             else:
                 current_user_id = None
-            
-            resp = controllers.discover_post_in_cqm(cur_user_id=current_user_id,
-                                                offset=args['offset'],
-                                                limit=args['limit'],
-                                                device_id=args['device_id'],
-                                                version_code=args['version_code'],
-                                                web = args.get('web'),
-                                                append_top = args['append_top'],
-                                                visit=args['visit'])
+
+            resp = controllers.get_new_discover(current_user_id=current_user_id,
+                                    offset=args['offset'],
+                                    limit=args['limit'],
+                                    device_id=args['device_id'],
+                                    version_code=args['version_code'],
+                                    visit=args['visit'],
+                                    append_top=args['append_top'])
             return resp
 
         except Exception as e:
