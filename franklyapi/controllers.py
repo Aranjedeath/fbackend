@@ -2031,7 +2031,7 @@ def get_is_following(cur_user_id, user_ids):
                                         FROM user_follows
                                         WHERE user_follows.user = :user_id AND user_follows.followed IN :user_ids
                                       """),
-                                        params={'user_id': cur_user_id, 'user_ids': str(tuple(user_ids))}
+                                        params={'user_id': cur_user_id, 'user_ids': user_ids)}
                                 )
 
     followed = [row[0] for row in results]
