@@ -2096,7 +2096,7 @@ def search_default(cur_user_id=None):
         user_ids = []
         for result in resp:
             for user in result['users']:
-                user_ids.append(user.id)
+                user_ids.append(user['id'])
         followed_ids = get_followed_ids(cur_user_id, user_ids)
         for result in resp:
             for user in result['users']:
