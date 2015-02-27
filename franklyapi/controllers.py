@@ -1920,8 +1920,12 @@ def get_new_discover(current_user_id, offset, limit, device_id, version_code, vi
     
     resp = [{'type':'user', 'user':guest_user_to_dict(current_user_id, u)} for u in users]
 
+    day_count = 0
+    if get_device_type(device_id)=='web':
+        day_count = visit/3600*24
+    
     resp.extend(get_discover_list(current_user_id, offset, limit, 
-                                    day_count=visit, add_super=True, 
+                                    day_count=day_count, add_super=True, 
                                     exclude_users=[u.id for u in users]))
     
     next_index = offset+limit if len(resp) else -1
