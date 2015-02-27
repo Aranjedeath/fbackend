@@ -12,14 +12,15 @@ def get_discover_list(current_user_id, offset, limit=10, day_count=0, add_super=
         day_count=0
     
     if current_user_id:
-        result_row = db.session.execute(text("""SELECT users.user_since 
+        result = db.session.execute(text("""SELECT users.user_since 
                                                 FROM users 
                                                 WHERE users.id=:current_user_id
                                             """),
                                         params={'current_user_id':current_user_id}
-                                        ).one()
-        user_since = result_row[0]
-        day_count = int((datetime.datetime.now() - user_since).total_seconds())/(3600*24)
+                                        )
+        for row in result:
+            user_since = row[0]
+            day_count = int((datetime.datetime.now() - user_since).total_seconds())/(3600*24)
 
     super_inclusion = [False, True, None]
     count_of_dirty_sent = 0
