@@ -95,6 +95,7 @@ class ReportAbuse(Base):
         self.entity_type = entity_type
         self.entity_id   = entity_id
         self.reason      = reason
+        self.timestamp   = datetime.datetime.now()
 
     def __repr__(self):
         return '<ReportAbuse %r:%r>' % (self.entity_type, self.entity_id)

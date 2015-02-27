@@ -2013,7 +2013,7 @@ class AppVersion(restful.Resource):
 
     get_parser = reqparse.RequestParser()
     get_parser.add_argument('device_type', type=str, location='args', choices=['android','ios'], required=True)
-    get_parser.add_argument('device_version_code', type=int, location='args', default=0, required=True)
+    get_parser.add_argument('device_version_code', type=int, location='args', required=True)
 
     def get(self):
         """
@@ -2033,6 +2033,35 @@ class AppVersion(restful.Resource):
             raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
+
+class ReportAbuse(restful.Resource):
+
+    post_parser = reqparse.RequestParser()
+    post_parser.add_argument('object_type', type=str, location='json', required=True)
+    post_parser.add_argument('object_id', type=str, location='json', required=True)
+    post_parser.add_argument('reason', type=str, location='json', default=None)
+
+    @login_required
+    def post(self):
+        """
+        Logs an abuse report
+
+        Controller Functions Used:
+            - get_android_version_code
+
+        Authentication: Required
+        """
+        args = self.post_parser.parse_args()
+        try:
+            return controllers.report_abuse(current_user.id, args['object_type'], args['object_id'], args['reason'])
+        
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0], err[1], err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
+
+
 class EncodeStatistics(restful.Resource):
 
     get_parser = reqparse.RequestParser()
@@ -2057,9 +2086,9 @@ class EncodeStatistics(restful.Resource):
             raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
-class RSS(restful.Resource):
 
-    
+
+class RSS(restful.Resource):
     def get(self):
         """
         Returns RSS in xml form

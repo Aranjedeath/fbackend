@@ -2272,9 +2272,20 @@ def check_app_version_code(device_type,device_version_code):
         else:
             resp = no_update_resp
     return resp
+
+def report_abuse(current_user_id, object_type, object_id, reason):
+    report_abuse = ReportAbuse(user=current_user_id, entity_type=object_type, entity_id=object_id, reason=reason)
+    db.session.add(report_abuse)
+    db.session.commit()
+    return {'success':True, 'object_type':object_type, 'object_id':object_id}
+
 def get_rss():
     import rss_manager
     rss_manager.generate_answers_rss()
     with open('/tmp/franklymeanswers.xml','r') as f:
         s = f.read()
     return s
+
+
+
+

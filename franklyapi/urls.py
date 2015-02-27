@@ -96,9 +96,7 @@ api.add_resource(AppVersion, '/appversion')
 api.add_resource(EncodeStatistics, '/encodestats')
 api.add_resource(RSS, '/rss')
 
-
-
-
+api.add_resource(ReportAbuse, '/reportabuse')
 
 
 #api.add_resource(PostLikeUsers, '/post/like/users')
@@ -106,7 +104,6 @@ api.add_resource(RSS, '/rss')
 '''
 
 
-api.add_resource(ReportAbuse, '/reportabuse')
 
 api.add_resource(AddEmail, '/addemail/<token>/<email_type>')
 api.add_resource(ContactUs, '/contact_us')
