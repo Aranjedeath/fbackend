@@ -4,7 +4,7 @@ from sqlalchemy import Column, Integer, String, Boolean, Float, DateTime, Foreig
 from database import Base, get_item_id
 
 class DiscoverList(Base):
-    __tablename__  = 'discover_list1'
+    __tablename__  = 'discover_list'
     id             = Column(Integer(), primary_key=True)
     post           = Column(CHAR(32), ForeignKey('posts.id'))
     question       = Column(CHAR(32), ForeignKey('questions.id'))
@@ -14,11 +14,12 @@ class DiscoverList(Base):
     added_at       = Column(DateTime(), nullable=False)
     #show_order     = Column(Integer())
     removed        = Column(Boolean(), default=False)
+    dirty_index    = Column(Integer())
 
     def __init__(self, post=None, question=None, user=None,
                                     is_super=False, display_on_day=0,
                                     added_at=datetime.datetime.now(),
-                                    show_order=None, removed=False):            
+                                    show_order=None, removed=False, dirty_index=None):            
         if post:
             self.post = post
         elif question:
@@ -36,7 +37,7 @@ class DiscoverList(Base):
 
 
     def __repr__(self):
-        return '<DiscoverList %r:%r>' %(self.id, self.show_order)
+        return '<DiscoverList %r:%r>' %(self.id, self.is_super)
 
 
 class UserFeed(Base):

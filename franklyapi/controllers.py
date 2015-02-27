@@ -1911,6 +1911,27 @@ def prompt_for_profile_video(user_id):
     time_threshold = datetime.datetime.now() - datetime.timedelta(hours=48)
     return not bool(User.query.filter(User.id==user_id, User.user_since<time_threshold, User.profile_picture!=None).count())
 
+
+
+def get_new_discover(current_user_id, offset, limit, device_id, version_code, visit=None, append_top=''):
+    from manage_discover import get_discover_list
+    append_top_usernames = [username.strip().lower() for username in append_top.split(',')]
+    users = User.query.filter(User.username.in_(append_top_usernames)).all()
+    
+    resp = [{'type':'user', 'user':guest_user_to_dict(current_user_id, u)} for u in users]
+
+    resp.extend(get_discover_list(current_user_id, offset, limit, 
+                                    day_count=visit, add_super=True, 
+                                    exclude_users=[u.id for u in users]))
+    
+    next_index = offset+limit if len(resp) else -1
+    
+    return {
+            'next_index' : next_index,
+            'count' : len(resp),
+            'stream' : resp
+           }
+
 def discover_post_in_cqm(cur_user_id, offset, limit, device_id, version_code, web = None, lat = None, lon = None, visit = None, append_top=''):
     from models import CentralQueueMobile, User, Question, Post
     
@@ -2003,7 +2024,6 @@ def discover_post_in_cqm(cur_user_id, offset, limit, device_id, version_code, we
             'count' : len(response),
             'stream' : response
            }
-
 def search_default(cur_user_id=None):
     from collections import defaultdict
     resp = redis_client.get('search_default')
