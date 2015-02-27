@@ -2037,7 +2037,7 @@ class AppVersion(restful.Resource):
 class ReportAbuse(restful.Resource):
 
     post_parser = reqparse.RequestParser()
-    post_parser.add_argument('object_type', type=str, location='json', required=True)
+    post_parser.add_argument('object_type', type=str, choices=['user', 'post', 'question'], location='json', required=True)
     post_parser.add_argument('object_id', type=str, location='json', required=True)
     post_parser.add_argument('reason', type=str, location='json', default=None)
 
