@@ -326,7 +326,7 @@ def question_add(current_user_id, question_to, body, question_author=None, is_an
 
 
 def question_delete(current_user_id, question_id):
-    Question.query.filter(Question.id==question_id, Question.is_answered=False, Question.is_ignored=False).update({'deleted':True, 'moderated_by':current_user_id})
+    Question.query.filter(Question.id==question_id, Question.is_answered==False, Question.is_ignored==False).update({'deleted':True, 'moderated_by':current_user_id})
     db.session.commit()
     return {'success':True, 'question_id':question_id}
 
