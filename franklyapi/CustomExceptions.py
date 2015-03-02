@@ -6,6 +6,16 @@ class UserNotFoundException(Exception):
     def __str__(self):
         return repr(self.value)
 
+
+class WrongUsernameSlugExcetion(Exception):
+
+    def __init__(self, value='Username is wrong or has been changed'):
+        self.value = value
+
+    def __str__(self):
+        return repr(self.value)
+
+
 class PasswordTooShortException(Exception):
 
     def __init__(self, value='Password too short.'):

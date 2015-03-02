@@ -1,4 +1,5 @@
 import time
+import os
 
 
 def location_dict(lat, lon, location_name, country_name, country_code):
@@ -208,7 +209,8 @@ def make_celeb_questions_dict(celeb, questions, current_user_id=None):
         'askers': [{'id':users[upvoter]['id'], 'profile_picture':users[upvoter]['profile_picture'], 'gender':users[upvoter]['gender']} for upvoter in upvoters],
         'background_image':"http://api.frankly.me/question/bg_image/%s"%(str(question.id)),
         'is_voted': is_upvoted(question.id, current_user_id) if current_user_id else False,
-        'web_link':'http://frankly.me'
+        'web_link':'http://frankly.me',
+        'slug':question.slug
         }
         celeb_dict['questions'].append(ques_dict)
     return celeb_dict
@@ -266,7 +268,8 @@ def questions_to_dict(questions, cur_user_id=None):
             'web_link':'http://frankly.me/q/{short_id}'.format(short_id=question.short_id),
             'short_id': question.short_id,
             'is_answered':question.is_answered,
-            'score':question.score
+            'score':question.score,
+            'slug':question.slug
         }
         if question.is_answered:
             ques_dict['post_id'] = get_post_id_from_question_id(question.id)
@@ -318,7 +321,8 @@ def question_to_dict(question, cur_user_id=None):
         'web_link':'http://frankly.me/q/{short_id}'.format(short_id=question.short_id),
         'short_id': question.short_id,
         'is_answered':question.is_answered,
-        'score':question.score
+        'score':question.score,
+        'slug':question.slug
     }
     if question.is_answered:
         ques_dict['post_id'] = get_post_id_from_question_id(question.id)
@@ -367,7 +371,8 @@ def post_to_dict(post, cur_user_id=None, distance=None):
                 'question_type': 'text',
                 'timestamp': int(time.mktime(questions[post.question]['timestamp'].timetuple())),
                 'tags': [],
-                'is_anonymous': bool(questions[post.question]['is_anonymous'])
+                'is_anonymous': bool(questions[post.question]['is_anonymous']),
+                'slug':questions[post.question]['slug']
         },
         'answer': {
             'body': '',
@@ -460,7 +465,8 @@ def posts_to_dict(posts, cur_user_id=None, distance=None):
                 'question_type': 'text',
                 'timestamp': int(time.mktime(questions[post.question]['timestamp'].timetuple())),
                 'tags': [],
-                'is_anonymous': bool(questions[post.question]['is_anonymous'])
+                'is_anonymous': bool(questions[post.question]['is_anonymous']),
+                'slug':questions[post.question]['slug']
             },
             'answer': {
                 'body': '',

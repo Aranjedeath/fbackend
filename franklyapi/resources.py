@@ -1,6 +1,6 @@
 import sys
 import traceback
-
+import flask
 from flask.ext import restful
 from flask.ext.restful import abort
 from flask.ext.restful import reqparse
@@ -280,6 +280,43 @@ class UserUpdateForm(restful.Resource):
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])
             abort(500, message=internal_server_error_message)
+
+class SlugItem(restful.Resource):
+
+    def get(self, username, slug):
+        """
+        Returns question if question for slug is not answered, returns post instead.
+
+        username: is username of the question_to/answer_author
+                    user will be redirected to the right url if the username is wrong.
+        slug: is the question slug
+
+        Controller Functions Used:
+            - get_item_from_slug
+
+        Authentication: Optional
+        """
+
+        from app import api
+
+        current_user_id = None
+        if current_user.is_authenticated():
+            current_user_id = current_user.id        
+        try:
+            resp = controllers.get_item_from_slug(current_user_id, username, slug)
+            if resp['redirect']:
+                return {'redirect':True, 'location':api.url_for(SlugItem, username=resp['username'], slug=slug), 'code':301}
+            return resp
+
+        except CustomExceptions.ObjectNotFoundException as e:
+            abort(404, message=str(e))
+
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
+
 
 
 class UserFollow(restful.Resource):
@@ -1369,15 +1406,14 @@ class DiscoverPost(restful.Resource):
                 
             else:
                 current_user_id = None
-            
-            resp = controllers.discover_post_in_cqm(cur_user_id=current_user_id,
-                                                offset=args['offset'],
-                                                limit=args['limit'],
-                                                device_id=args['device_id'],
-                                                version_code=args['version_code'],
-                                                web = args.get('web'),
-                                                append_top = args['append_top'],
-                                                visit=args['visit'])
+
+            resp = controllers.get_new_discover(current_user_id=current_user_id,
+                                    offset=args['offset'],
+                                    limit=args['limit'],
+                                    device_id=args['device_id'],
+                                    version_code=args['version_code'],
+                                    visit=args['visit'],
+                                    append_top=args['append_top'])
             return resp
 
         except Exception as e:
@@ -1967,20 +2003,18 @@ class ChannelList(restful.Resource):
             abort(404, message=str(e))
         except CustomExceptions.UserNotFoundException, e:
             abort(404, message=str(e))
->>>>>>> master
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
-<<<<<<< HEAD
-=======
+
 class AppVersion(restful.Resource):
 
     get_parser = reqparse.RequestParser()
     get_parser.add_argument('device_type', type=str, location='args', choices=['android','ios'], required=True)
-    get_parser.add_argument('device_version_code', type=int, location='args', default=0, required=True)
+    get_parser.add_argument('device_version_code', type=int, location='args', required=True)
 
     def get(self):
         """
@@ -1994,6 +2028,83 @@ class AppVersion(restful.Resource):
         args = self.get_parser.parse_args()
         try:
             return controllers.check_app_version_code(args['device_type'],args['device_version_code'])
+        
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0], err[1], err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
+
+
+class ReportAbuse(restful.Resource):
+
+    post_parser = reqparse.RequestParser()
+    post_parser.add_argument('object_type', type=str, choices=['user', 'post', 'question'], location='json', required=True)
+    post_parser.add_argument('object_id', type=str, location='json', required=True)
+    post_parser.add_argument('reason', type=str, location='json', default=None)
+
+    @login_required
+    def post(self):
+        """
+        Logs an abuse report
+
+        Controller Functions Used:
+            - get_android_version_code
+
+        Authentication: Required
+        """
+        args = self.post_parser.parse_args()
+        try:
+            return controllers.report_abuse(current_user.id, args['object_type'], args['object_id'], args['reason'])
+        
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0], err[1], err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
+
+
+class EncodeStatistics(restful.Resource):
+
+    get_parser = reqparse.RequestParser()
+    get_parser.add_argument('count', type=int, location='args', default=20)
+    
+    def get(self):
+        """
+        Returns dictionary of latest app versions
+
+        Controller Functions Used:
+            - get_android_version_code
+
+        Authentication: Optional
+        """
+        args = self.get_parser.parse_args()
+        try:
+            import video_db
+            return video_db.get_encode_statictics(args['count'])
+        
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0], err[1], err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
+
+
+class RSS(restful.Resource):
+    def get(self):
+        """
+        Returns RSS in xml form
+
+        Controller Functions Used:
+            - get_rss
+
+        Authentication: Optional
+        """
+        try:
+
+            resp = flask.make_response(controllers.get_rss())
+            resp.headers['content-type'] = 'application/xml'
+            return resp
         
         except Exception as e:
             err = sys.exc_info()

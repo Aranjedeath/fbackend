@@ -40,6 +40,8 @@ api.add_resource(QuestionListPublic, '/question/list/public/<user_id>')
 api.add_resource(QuestionUpvote, '/question/upvote/<question_id>')
 api.add_resource(QuestionDownvote, '/question/downvote/<question_id>')
 api.add_resource(QuestionIgnore, '/question/ignore')
+api.add_resource(SlugItem, '/slug/<username>/<slug>')
+
 
 
 api.add_resource(PostAdd, '/post/media/add', '/post/add')
@@ -92,10 +94,10 @@ api.add_resource(ChannelFeed, '/channel/<channel_id>')
 api.add_resource(ChannelList, '/channel/list')
 
 api.add_resource(AppVersion, '/appversion')
+api.add_resource(EncodeStatistics, '/encodestats')
+api.add_resource(RSS, '/rss')
 
-
-
-
+api.add_resource(ReportAbuse, '/reportabuse')
 
 
 #api.add_resource(PostLikeUsers, '/post/like/users')
@@ -103,7 +105,6 @@ api.add_resource(AppVersion, '/appversion')
 '''
 
 
-api.add_resource(ReportAbuse, '/reportabuse')
 
 api.add_resource(AddEmail, '/addemail/<token>/<email_type>')
 api.add_resource(ContactUs, '/contact_us')
@@ -174,6 +175,7 @@ api.add_resource(admin.AdminDeleteSearchDefaultUser, '/admin/search/default/dele
 api.add_resource(admin.AdminUpdateSearchDefaultCategoryOrder, '/admin/search/default/update')
 api.add_resource(admin.AdminGetUnansweredQuestionListWithSameCount, '/admin/question/list/same')
 api.add_resource(admin.AdminGetSimilarQuestions, '/admin/question/similar')
+api.add_resource(admin.AdminGetSimilarQuestionsBody, '/admin/question/similar/body')
 api.add_resource(admin.AdminSearchDefault, '/admin/search/default')
 api.add_resource(admin.AdminGetDateFeed, '/admin/date/feed')
 api.add_resource(admin.AdminAddToDateFeed, '/admin/date/feed/add')
@@ -183,6 +185,7 @@ api.add_resource(admin.AdminGetUserActivityTimeline, '/admin/user/activity_timel
 api.add_resource(admin.AdminQuestionChangeUpvote, '/admin/question/change_upvote')
 api.add_resource(admin.AdminPostChangeLike, '/admin/post/change_like')
 api.add_resource(admin.AdminUserChangeFollowers, '/admin/user/change_followers')
+
 
 
 

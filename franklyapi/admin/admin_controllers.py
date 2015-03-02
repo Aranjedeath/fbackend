@@ -304,6 +304,7 @@ def post_decrease_likes(post_id, count):
 
 def question_list(offset, limit, user_to=[], user_from=[], public=True, deleted=False):
     questions = Question.query.filter(Question.deleted==deleted, Question.public==public, Question.is_answered==False, Question.is_ignored==False
+                                    ).order_by(Question.added_by.desc()
                                     ).order_by(Question.timestamp.desc()
                                     ).offset(offset
                                     ).limit(limit
@@ -325,7 +326,7 @@ def question_add(current_user_id, question_to, body, question_author=None, is_an
 
 
 def question_delete(current_user_id, question_id):
-    Question.query.filter(Question.id==question_id).update({'deleted':True, 'moderated_by':current_user_id})
+    Question.query.filter(Question.id==question_id, Question.is_answered=False, Question.is_ignored=False).update({'deleted':True, 'moderated_by':current_user_id})
     db.session.commit()
     return {'success':True, 'question_id':question_id}
 
@@ -421,6 +422,13 @@ def get_similar_questions(question_id):
     print result
     return result
 
+def get_similar_questions_body(question_to, question_body):
+    search_words = get_search_words(question_body)
+    questions = Question.query.filter(Question.question_to==question_to, Question.body.op('regexp')('|'.join(search_words))).all()
+    result = {'questions' : [question_to_dict(q) for q in questions[0:10]]}
+    print result
+    return result
+
 def get_unanswered_questions_with_same_count(user_id, offset, limit):
     questions = Question.query.filter(Question.question_to == user_id, Question.is_answered == False).offset(offset).limit(limit).all()
     print questions
@@ -439,7 +447,7 @@ def update_category_order_search_default(category_name, user_cat_data):
     '''
     user_cat_data example : {
                                 'user_id' : string user id,
-                                'score' : integer score
+                                'show_always' : bool
                             }
     '''
     cat_users_count = SearchDefault.query.filter(SearchDefault.category == category_name).count()
@@ -450,7 +458,7 @@ def update_category_order_search_default(category_name, user_cat_data):
         if not s:
             s = SearchDefault(user = user_data['user_id'],
                               category = category_name)
-        s.score = user_data['score']
+        s.show_always = user_data['show_always']
         db.session.add(s)
         db.session.commit()
     return {'success':True}

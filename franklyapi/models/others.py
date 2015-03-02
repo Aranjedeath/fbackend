@@ -62,6 +62,25 @@ class Video(Base):
         return '<Video %r:%r>' % (self.process_state, self.url)
 
 
+class EncodeLog(Base):
+    __tablename__ = 'encode_log'
+    id              = Column(Integer, primary_key=True)
+    video_url       = Column(String(300))
+    video_quality   = Column(String(20))
+    start_time      = Column(DateTime(), default=datetime.datetime.now())
+    finish_time     = Column(DateTime(), default=None, nullable=True)
+    success         = Column(Boolean, default=False)
+    def __init__(self,video_url,video_quality='',start_time=datetime.datetime.now(),finish_time=None,success=None):
+        self.video_url      = video_url
+        self.video_quality  = video_quality
+        self.start_time     = start_time
+        self.finish_time    = finish_time
+        self.success        = success
+
+    def __repr__(self):
+        return '<EventLog %r:%r>' % (self.start_time,self.finish_time)
+
+
 class ReportAbuse(Base):
     __tablename__ = 'report_abuse'
     id            = Column(Integer, primary_key=True)
@@ -76,6 +95,7 @@ class ReportAbuse(Base):
         self.entity_type = entity_type
         self.entity_id   = entity_id
         self.reason      = reason
+        self.timestamp   = datetime.datetime.now()
 
     def __repr__(self):
         return '<ReportAbuse %r:%r>' % (self.entity_type, self.entity_id)

@@ -6,6 +6,7 @@ import hashlib
 import uuid
 import traceback
 import sys
+import json
 
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy import or_
@@ -202,7 +203,6 @@ def get_twitter_email(twitter_id):
 def login_user_social(social_type, social_id, external_access_token, device_id, push_id=None, 
                         external_token_secret = None, user_type=0, user_title=None):
     user_data = get_data_from_external_access_token(social_type, external_access_token, external_token_secret)
-    print '********', user_data['social_id'], social_id
     token_valid = str(user_data['social_id']).strip()==str(social_id).strip()
     
     if not token_valid:    
@@ -659,7 +659,7 @@ def get_questions(question_ids, cur_user_id=None):
     data = {}
     if question_ids:
         result = db.session.execute(text("""SELECT questions.id, questions.body,
-                                                   questions.is_anonymous, questions.timestamp,
+                                                   questions.is_anonymous, questions.timestamp, questions.slug,
                                                    (SELECT count(question_upvotes.user) FROM question_upvotes
                                                     WHERE question_upvotes.question=questions.id 
                                                             AND question_upvotes.user=:cur_user_id
@@ -673,7 +673,8 @@ def get_questions(question_ids, cur_user_id=None):
                                     'body':row[1],
                                     'is_anonymous':row[2],
                                     'timestamp':row[3],
-                                    'is_upvoted':bool(row[4])
+                                    'slug':row[4],
+                                    'is_upvoted':bool(row[5])
                                     }
                         })
     return data
@@ -807,10 +808,7 @@ def user_follow(cur_user_id, user_id):
                         params={'cur_user_id':cur_user_id, 'user_id':user_id, 'timestamp':datetime.datetime.now()}
                     )
 
-    event = create_event(user=cur_user_id, action='follow', foreign_data=user_id)
-    if event:
-        db.session.add(event)
-    
+
     db.session.commit()
 
     return {'user_id': user_id}
@@ -1024,7 +1022,7 @@ def make_question_slug(body, question_id):
     body = sanitize_question_body(body)
     if len(body)>150:
         for word in stop_words:
-            body = body.replace(word, '')
+            body = body.replace(' '+word+' ', ' ')
     if len(body)>150:
         body = body[:150]
     sentence = "{body} {question_id}".format(body=body, question_id=question_id)
@@ -1202,9 +1200,6 @@ def post_like(cur_user_id, post_id):
                                     'timestamp':datetime.datetime.now()}
                             )
 
-        event = create_event(user=cur_user_id, action='like', foreign_data=post_id)
-        if event:
-            db.session.add(event)
         db.session.commit()
         #send notification
         return {'id': post_id, 'success':True}
@@ -1269,10 +1264,6 @@ def comment_add(cur_user_id, post_id, body, lat, lon):
         from database import get_item_id
         comment = Comment(id=get_item_id(), on_post=post_id, body=body, comment_author=cur_user_id, lat=lat, lon=lon)
         db.session.add(comment)
-
-        event = create_event(user=cur_user_id, action='comment', foreign_data=comment.id)
-        if event:
-            db.session.add(event)
 
         db.session.commit()
     
@@ -1739,12 +1730,6 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
 
         Question.query.filter(Question.id==question_id).update({'is_answered':True})
 
-        event = create_event(user=cur_user_id, action='answer', foreign_data=post.id)
-        if event:
-            db.session.add(event)
-        
-        
-
         add_video_to_db(video_url=video_url,
                         thumbnail_url=thumbnail_url,
                         video_type='answer_video',
@@ -2060,6 +2045,31 @@ def prompt_for_profile_video(user_id):
     time_threshold = datetime.datetime.now() - datetime.timedelta(hours=48)
     return not bool(User.query.filter(User.id==user_id, User.user_since<time_threshold, User.profile_picture!=None).count())
 
+
+
+def get_new_discover(current_user_id, offset, limit, device_id, version_code, visit=None, append_top=''):
+    from manage_discover import get_discover_list
+    append_top_usernames = [username.strip().lower() for username in append_top.split(',')]
+    users = User.query.filter(User.username.in_(append_top_usernames)).all()
+    
+    resp = [{'type':'user', 'user':guest_user_to_dict(current_user_id, u)} for u in users]
+
+    day_count = 0
+    if get_device_type(device_id)=='web':
+        day_count = visit/3600*24
+    
+    resp.extend(get_discover_list(current_user_id, offset, limit, 
+                                    day_count=day_count, add_super=True, 
+                                    exclude_users=[u.id for u in users]))
+    
+    next_index = offset+limit if len(resp) else -1
+    
+    return {
+            'next_index' : next_index,
+            'count' : len(resp),
+            'stream' : resp
+           }
+
 def discover_post_in_cqm(cur_user_id, offset, limit, device_id, version_code, web = None, lat = None, lon = None, visit = None, append_top=''):
     from models import CentralQueueMobile, User, Question, Post
     
@@ -2153,46 +2163,82 @@ def discover_post_in_cqm(cur_user_id, offset, limit, device_id, version_code, we
             'stream' : response
            }
 
+                                                  
+def get_is_following(cur_user_id, user_ids):
+    results = db.session.execute(text("""SELECT user_follows.followed
+                                        FROM user_follows
+                                        WHERE user_follows.user = :user_id AND user_follows.followed IN :user_ids
+                                      """),
+                                        params={'user_id': cur_user_id, 'user_ids': user_ids}
+                                )
+
+    followed = [row[0] for row in results]
+    followed_ids = {id:id in followed for id in user_ids}  
+    return followed_ids                                               
+
+
 def search_default(cur_user_id=None):
     from collections import defaultdict
-    categories_order = ['Trending Now', 'Politicians', 'Authors', 'New on Frankly', 'Singers', 'Actors', 'Radio Jockeys', 'Chefs', 'Entrepreneurs', 'Subject Experts']
+    resp = redis_client.get('search_default')
+    if resp:
+        resp = json.loads(resp)
+    else:
+        categories_order = ['Trending Now', 'Politicians', 'Authors', 'New on Frankly', 'Singers', 'Actors', 'Radio Jockeys', 'Chefs', 'Entrepreneurs', 'Subject Experts']
     
-    results = db.session.execute(text("""SELECT search_defaults.category, users.id, users.username, users.first_name,
+        results = db.session.execute(text("""SELECT search_defaults.category, users.id, users.username, users.first_name,
                                                     users.user_type, users.user_title, users.profile_picture,
                                                     users.bio, users.gender,
-                                                    (SELECT count(*) FROM user_follows
-                                                        WHERE user_follows.user=:cur_user_id
-                                                            AND user_follows.followed=users.id
-                                                            AND user_follows.unfollowed=false) AS is_following
+                                                    search_defaults.show_always
                                             FROM users JOIN search_defaults ON users.id=search_defaults.user
                                             WHERE search_defaults.category IN :categories
                                             ORDER BY search_defaults.score"""),
-                                        params = {'cur_user_id':cur_user_id, 'categories':categories_order}
+                                        params = {'categories':categories_order}
                                 )
-    category_results = defaultdict(list)
-    for row in results:
-        user_dict = {'id':row[1],
-                    'username':row[2],
-                    'first_name':row[3],
-                    'last_name':None,
-                    'user_type':row[4],
-                    'user_title':row[5],
-                    'profile_picture':row[6],
-                    'bio':row[7],
-                    'gender':row[8],
-                    'is_following':bool(row[9]),
-                    'channel_id':'user_{user_id}'.format(user_id=row[1])
-                    }
-        category_results[row[0]].append(user_dict)
+        category_results = defaultdict(list)
+        for row in results:
+            user_dict = {'id':row[1],
+                        'username':row[2],
+                        'first_name':row[3],
+                        'last_name':None,
+                        'user_type':row[4],
+                        'user_title':row[5],
+                        'profile_picture':row[6],
+                        'bio':row[7],
+                        'gender':row[8],
+                        'is_following':False,
+                        'channel_id':'user_{user_id}'.format(user_id=row[1]),
+                        'show_always': bool(row[9])
+                        }
+            category_results[row[0]].append(user_dict)
 
 
-    for category, users in category_results.items():
-        category_results[category] = random.sample(category_results[category], min(3, len(category_results[category])))
+        for category, users in category_results.items():
+            if len(category_results[category]) > 3:
+                show_always_users = filter(lambda x: x['show_always'], users)
+                show_always_count = len(show_always_users)
+                if show_always_count < 3:
+                    random_users = [user for user in users if user not in show_always_users]
+                    random_count = 3 - show_always_count
+                    category_results[category] = random.sample(show_always_users, show_always_count)
+                    category_results[category].extend(random.sample(random_users, random_count))
+                else: 
+                    category_results[category] = random.sample(show_always_users, 3)
 
-    resp = []
-    for cat in categories_order:
-        if category_results.get(cat):
-            resp.append({'category_name':cat, 'users':category_results[cat]})
+        resp = []
+        for cat in categories_order:
+            if category_results.get(cat):
+                resp.append({'category_name':cat, 'users':category_results[cat]})
+        redis_client.setex('search_default', json.dumps(resp), 600)
+
+    if cur_user_id:
+        user_ids = []
+        for result in resp:
+            for user in result['users']:
+                user_ids.append(user['id'])
+        followed_ids = get_is_following(cur_user_id, user_ids)
+        for result in resp:
+            for user in result['users']:
+                user['is_following'] = followed_ids[user['id']]
 
     return {'results':resp}
 
@@ -2300,12 +2346,45 @@ def get_channel_list(cur_user_id, device_id, version_code):
                         }
 
         for user in item['users']:
-            search_icons['icons'].append({'type':'icon_user',
-                                            'user':user
-                                            })
+            search_icons['icons'].append({'type':'icon_user', 'user':user})
         
         search_fragment['views'].append(search_icons)
     return {'channel_list':[feed_banner, discover_banner, search_fragment]}
+
+
+def get_item_from_slug(current_user_id, username, slug):
+    try:
+        question = Question.query.filter(Question.slug==slug, 
+                                            Question.deleted==False,
+                                            Question.is_ignored==False,
+                                            or_(Question.is_answered==True,
+                                                Question.public==True,
+                                                Question.question_to==current_user_id)
+                                            ).one()
+        question_to = User.query.filter(User.id==question.question_to).one()
+        if question_to.username.lower() != username.lower():
+            return {'redirect':True, 'username':question_to.username, 'slug':question.slug}
+        if question.is_answered:
+            post = Post.query.filter(Post.question==question.id, Post.deleted==False).one()
+            return {'redirect':False, 'is_answered':question.is_answered, 'post':post_to_dict(post, current_user_id)}
+        return {'redirect':False, 'is_answered':question.is_answered, 'question':question_to_dict(question, current_user_id)}
+    except NoResultFound:
+        raise CustomExceptions.ObjectNotFoundException('The question does not exist or has been deleted.')
+
+
+def check_app_version_code(device_type,device_version_code):
+    hard_update = False
+    soft_update= False
+    if device_type == 'android':
+        hard_update = device_version_code < config.ANDROID_NECESSARY_VERSION_CODE
+        soft_update = device_version_code < config.ANDROID_LATEST_VERSION_CODE
+
+    elif device_type == 'ios':
+        hard_update = device_version_code < config.IOS_NECESSARY_VERSION_CODE
+        soft_update = device_version_code < config.IOS_LATEST_VERSION_CODE
+
+    return {'hard_update':hard_update, 'soft_update':soft_update}
+
 
 def check_app_version_code(device_type,device_version_code):
     hard_update_resp = {'hard_update':True,'soft_update':False}
@@ -2327,3 +2406,17 @@ def check_app_version_code(device_type,device_version_code):
         else:
             resp = no_update_resp
     return resp
+
+
+def report_abuse(current_user_id, object_type, object_id, reason):
+    report_abuse = ReportAbuse(user=current_user_id, entity_type=object_type, entity_id=object_id, reason=reason)
+    db.session.add(report_abuse)
+    db.session.commit()
+    return {'success':True, 'object_type':object_type, 'object_id':object_id}
+
+def get_rss():
+    import rss_manager
+    rss_manager.generate_answers_rss()
+    with open('/tmp/franklymeanswers.xml','r') as f:
+        s = f.read()
+    return s

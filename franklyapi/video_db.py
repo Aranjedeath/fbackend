@@ -1,6 +1,7 @@
-from models import Video, User, Post, Question
+from models import Video, User, Post, Question, EncodeLog
 from app import db, redis_views
 from sqlalchemy.sql import text, func
+import datetime
 
 def add_video_to_db(video_url, thumbnail_url, video_type, object_id, username=None):
     if not Video.query.filter(Video.url==video_url).count():
@@ -10,6 +11,55 @@ def add_video_to_db(video_url, thumbnail_url, video_type, object_id, username=No
         db.session.add(v)
         db.session.commit()
 
+def add_video_encode_log_start(video_url):
+    log = EncodeLog(video_url=video_url,start_time=datetime.datetime.now())
+    db.session.add(log)
+    db.session.commit()
+    return log.id
+
+def update_video_encode_log_finish(encode_log_id,result):
+    try:
+        success = False
+        if result:
+            success = True
+        else:
+            result = False
+        EncodeLog.query.filter(EncodeLog.id==encode_log_id).update({'finish_time':datetime.datetime.now(),'success':success})
+        db.session.commit()
+        
+    except Exception as e:
+        print e
+        db.session.rollback()
+
+def get_encode_statictics(count=100):
+    logs = EncodeLog.query.filter().order_by(EncodeLog.start_time.desc()).limit(count).all()
+    print len(logs), 'logs found'
+    times = []
+    fails = 0
+    success = 0
+    time = 0
+    average = 0
+    median = 0
+    
+    for log in logs:
+        if log.success :
+            success += 1
+            times.append((log.finish_time-log.start_time).total_seconds())
+        else:
+            fails += 1
+
+    if success>0:    
+        average = sum(times) / success
+        median = get_median(times)
+    return {'average':average, 'median':median, 'success':success , 'fails':fails}
+
+def get_median(l):
+    half = len(l) / 2
+    l.sort()
+    if len(l) % 2 == 0:
+        return (l[half-1] + l[half]) / 2.0
+    else:
+        return l[half]
 
 def update_video_state(video_url, result={}):
     try:

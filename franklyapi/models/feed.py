@@ -1,6 +1,44 @@
 import datetime
-from sqlalchemy import Column, Integer, String, Boolean, Float, DateTime, Enum, ForeignKey, CHAR, UniqueConstraint
-from database import Base
+import time
+from sqlalchemy import Column, Integer, String, Boolean, Float, DateTime, ForeignKey, CHAR
+from database import Base, get_item_id
+
+class DiscoverList(Base):
+    __tablename__  = 'discover_list'
+    id             = Column(Integer(), primary_key=True)
+    post           = Column(CHAR(32), ForeignKey('posts.id'))
+    question       = Column(CHAR(32), ForeignKey('questions.id'))
+    user           = Column(CHAR(32), ForeignKey('users.id'))
+    is_super       = Column(Boolean(), default=False, nullable=False)
+    display_on_day = Column(Integer(), nullable=False)
+    added_at       = Column(DateTime(), nullable=False)
+    #show_order     = Column(Integer())
+    removed        = Column(Boolean(), default=False)
+    dirty_index    = Column(Integer())
+
+    def __init__(self, post=None, question=None, user=None,
+                                    is_super=False, display_on_day=0,
+                                    added_at=datetime.datetime.now(),
+                                    show_order=None, removed=False, dirty_index=None):            
+        if post:
+            self.post = post
+        elif question:
+            self.question = question
+        elif user:
+            self.user = user
+        else:
+            raise Exception('Either post or question or user should be provided')
+        self.is_super       = is_super
+        self.display_on_day = display_on_day 
+        self.added_at       = added_at
+        self.show_order     = show_order
+        self.id             = id
+        self.removed        = removed
+
+
+    def __repr__(self):
+        return '<DiscoverList %r:%r>' %(self.id, self.is_super)
+
 
 class UserFeed(Base):
     __tablename__ = 'user_feeds'

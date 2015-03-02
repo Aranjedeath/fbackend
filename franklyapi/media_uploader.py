@@ -109,17 +109,17 @@ def upload_user_video(user_id, video_type, video_file):
     from video_encoder import make_thumbnail, make_psuedo_streamable
 
     random_string = uuid.uuid1().hex
-    video_file_path = temp_path+'/'+random_string+".mp4"
+    video_file_path = os.path.join(temp_path, random_string+".mp4")
     video_file_new = open(video_file_path, "w")
     video_file_new.write(video_file.read())
     video_file_new.close()
     
-    video_thumbnail_path = make_thumbnail(temp_path+"/"+random_string+".mp4")
-    video_thumbnail_file = open(video_thumbnail_path,"rb")
+    video_thumbnail_path = make_thumbnail(video_file_path)
+    video_thumbnail_file = open(video_thumbnail_path, "rb")
     try:
-        video_file_path = make_psuedo_streamable(temp_path+"/"+random_string+".mp4")
+        video_file_path = make_psuedo_streamable(video_file_path)
     except:
-        print 'err'
+        pass
 
     video_file = open(video_file_path, 'rb')
 
@@ -131,7 +131,7 @@ def upload_user_video(user_id, video_type, video_file):
         video_url = upload_to_s3(video_file, video_key_name)
         thumb_url = upload_to_s3(video_thumbnail_file, thumb_key_name)
         os.remove(video_thumbnail_path)
-        os.remove(temp_path+"/"+random_string+".mp4")
+        os.remove(video_file_path)
         return video_url, thumb_url
     raise CustomExceptions.BadRequestException('Video/Image type is not valid.')
 
