@@ -2043,13 +2043,14 @@ def get_is_following(cur_user_id, user_ids):
     return followed_ids                                               
 
 
+
 def search_default(cur_user_id=None):
     from collections import defaultdict
     resp = redis_client.get('search_default')
     if resp:
         resp = json.loads(resp)
     else:
-        categories_order = ['Trending Now', 'Politicians', 'Authors', 'New on Frankly', 'Singers', 'Actors', 'Radio Jockeys', 'Chefs', 'Entrepreneurs', 'Subject Experts']
+        categories_order = ["Trending Now", "Actors", "Singers", "Twitter Celebrities", "Radio Jockeys", "Subject Experts", "New on Frankly", "Authors", "Entrepreneurs", "Chefs", "Politicians"]
     
         results = db.session.execute(text("""SELECT search_defaults.category, users.id, users.username, users.first_name,
                                                     users.user_type, users.user_title, users.profile_picture,
