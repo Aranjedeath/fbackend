@@ -2111,4 +2111,3 @@ class RSS(restful.Resource):
             raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
->>>>>>> master
