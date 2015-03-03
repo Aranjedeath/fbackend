@@ -252,6 +252,8 @@ class UserUpdateForm(restful.Resource):
 
         Authentication: Required
         """
+        from flask import request
+        print '****', request.form, request.files
         args = self.post_parser.parse_args()
         print args
                
