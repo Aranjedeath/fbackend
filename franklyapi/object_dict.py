@@ -124,7 +124,7 @@ def invitable_to_dict(invitable, current_user_id):
             'twitter_text' : invitable.twitter_text,
             'mail_text' : invitable.mail_text,
             'has_invited' : has_invited(current_user_id, invitable.id) if current_user_id else False,
-            'cur_invite_count' : get_invite_count(invitable.id),
+            'cur_invite_count' : get_invite_count(invitable.id)+1,
             'max_invite_count' : invitable.max_invite_count,
             'profile_picture' : invitable.profile_picture,
             'user_title' : invitable.user_title,
@@ -185,7 +185,7 @@ def make_celeb_questions_dict(celeb, questions, current_user_id=None):
                             'last_name': None,
                             'profile_picture': users[question.question_author]['profile_picture'] if not question.is_anonymous else None,
                             'gender':users[question.question_author]['gender'],
-                            'channel_id':'user_{user_id}'.format(user_id=question.question_author)
+                            'channel_id':'                                      user_{user_id}'.format(user_id=question.question_author)
                             },
         'question_to':{
                         'id':celeb.id,
