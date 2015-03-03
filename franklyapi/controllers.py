@@ -1128,9 +1128,11 @@ def question_list_public(current_user_id, user_id, offset, limit, version_code=N
 def question_upvote(cur_user_id, question_id):
     if Question.query.filter(
                             Question.id==question_id, 
-                            Question.public==True, 
+                            #Question.public==True, 
                             Question.question_to!=cur_user_id,
-                            Question.deleted==False
+                            Question.deleted==False,
+                            Question.is_ignored==False,
+                            Question.is_answered==False
                             ).count():
         db.session.execute(text("""INSERT INTO question_upvotes (user, question, downvoted, timestamp) 
                                     VALUES(:cur_user_id, :question_id, false, :timestamp) 
