@@ -1104,7 +1104,7 @@ def question_list_public(current_user_id, user_id, offset, limit, version_code=N
                                             Question.deleted==False,
                                             Question.is_answered==False,
                                             Question.is_ignored==False,
-                                            Question.public==True
+                                            #Question.public==True
                                             ).outerjoin(Upvote
                                             ).group_by(Question.id
                                             ).order_by(Question.score.desc()
