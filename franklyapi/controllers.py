@@ -1092,8 +1092,8 @@ def question_list_public(current_user_id, user_id, offset, limit, version_code=N
                                                     Question.question_author==current_user_id,
                                                     Question.deleted==False,
                                                     Question.is_answered==False,
-                                                    Question.is_ignored==False,
-                                                    Question.public==True
+                                                    Question.is_ignored==False
+                                                    #Question.public==True
                                                     ).order_by(Question.timestamp.desc()
                                                     ).offset(0).limit(5).all()
 
@@ -1465,7 +1465,7 @@ def home_feed(cur_user_id, offset, limit, web):
         question_user['questions'] = []
         for q in questions:
             question_user['questions'].append(question_to_dict(q, cur_user_id))
-            if len(q.body) > 300:
+            if len(q.body) > 150:
                 break
             if randint(0,9) % 2 == 0:
                 break
