@@ -11,13 +11,13 @@ from app import raygun, db, redis_search
 
 reverse_index = defaultdict(list)
 
-reverse_index['sportsman'] = ['wrestler', 'shooter', 'cricketer', 'tennis']
+reverse_index['sportsman']    = ['wrestler', 'shooter', 'cricketer', 'tennis']
 reverse_index['sportsperson'] = ['wrestler', 'shooter', 'cricketer']
-reverse_index['experts'] = ['marketing', 'guru', 'yoga', 'doctor', 'astrologer', 'tattoo', 'entrepreneur', 'dancer', 'advocate', 'anchor', 'psychologist']
-reverse_index['television'] = ['masterchef', 'actor', 'actress', 'stylist', 'media', 'dancer', 'anchor', 'makeup', 'tattoo', 'models']
-reverse_index['tv'] = ['masterchefs', 'actor', 'actress', 'media', 'dancer', 'anchor', 'makeup', 'tattoo', 'models']
-reverse_index['stars'] = ['actor', 'actress', 'media', 'dancer', 'anchor', 'makeup', 'tattoo', 'models']
-reverse_index['authors'] = ['author']
+reverse_index['experts']      = ['marketing', 'guru', 'yoga', 'doctor', 'astrologer', 'tattoo', 'entrepreneur', 'dancer', 'advocate', 'anchor', 'psychologist']
+reverse_index['television']   = ['masterchef', 'actor', 'actress', 'stylist', 'media', 'dancer', 'anchor', 'makeup', 'tattoo', 'models']
+reverse_index['tv']           = ['masterchefs', 'actor', 'actress', 'media', 'dancer', 'anchor', 'makeup', 'tattoo', 'models']
+reverse_index['stars']        = ['actor', 'actress', 'media', 'dancer', 'anchor', 'makeup', 'tattoo', 'models']
+reverse_index['authors']      = ['author']
 
 keyword_map = {
                 'aap'           :[
@@ -76,15 +76,16 @@ def search(cur_user_id, q, offset, limit):
     processed_queries_freq = defaultdict(int)
     q = q.lower()
     for i in q.split():
+        processed_queries_freq[i] += 1
         if i.strip():
             for match in reverse_index[i.strip()]:
-                processed_queries_freq[match] = processed_queries_freq[match]+1
+                processed_queries_freq[match] += 1
         
         if len(i) > 3:
             for key, value in reverse_index.items():
                 if i in key:
                     for match in value:
-                        processed_queries_freq[match] = processed_queries_freq[match]+1
+                        processed_queries_freq[match] += 1
 
     print processed_queries_freq
     processed_queries = processed_queries_freq.keys()
@@ -95,25 +96,20 @@ def search(cur_user_id, q, offset, limit):
     where_clause = ''
     order_by_processed_username = ''
     order_by_title = ''
-    order_by_bio = ''
     remove_current_user = ''
-    bio_query = ''
-    bio_where = ''
-    bio_order = ''
     params = {}
 
 
     for i in processed_queries:
         idx = processed_queries.index(i)
 
-        select_query += """ user_title like :processed_query_contained_{idx} as processed_title_match_{idx},
-                            username like :processed_query_contained_{idx} as processed_username_match_{idx}, """.format(idx=idx)
+        select_query += """ user_title LIKE :processed_query_contained_{idx} AS processed_title_match_{idx},
+                            username LIKE :processed_query_contained_{idx} AS processed_username_match_{idx}, """.format(idx=idx)
 
-        where_clause += """or user_title like :processed_query_contained_{idx} or username like :processed_query_contained_{idx} """.format(idx=idx)
+        where_clause += """OR user_title LIKE :processed_query_contained_{idx} OR username LIKE :processed_query_contained_{idx} """.format(idx=idx)
 
-        order_by_processed_username += """processed_username_match_{idx} desc, """.format(idx=idx)
-        order_by_title += """processed_title_match_{idx} desc, """.format(idx=idx)
-        order_by_bio += """processed_bio_match_{idx} desc, """.format(idx=idx)
+        order_by_processed_username += """processed_username_match_{idx} DESC, """.format(idx=idx)
+        order_by_title += """processed_title_match_{idx} DESC, """.format(idx=idx)
 
         params.update({'processed_query_contained_{idx}'.format(idx=idx): '%{pq}%'.format(pq=i)})
 
@@ -131,37 +127,38 @@ def search(cur_user_id, q, offset, limit):
     if cur_user_id:
         remove_current_user = "and id!=:cur_user_id"
 
-    if len(q.strip()) > 4:
-        bio_where = " or bio like :query_contained "
-        bio_query = " bio like :query_contained as bio_match, "
-
-
 
     query = text("""SELECT id, username, first_name, profile_picture, user_type, user_title, bio,
-                                    username like :query_start or first_name like :query_start as name_start_match,
-                                    first_name like :query_word_start as name_word_start_match,
-                                    user_title like :query_contained as exact_title_match,
+                                    username LIKE :query_start OR first_name LIKE :query_start AS name_start_match,
+                                    first_name LIKE :query_word_start AS name_word_start_match,
+                                    user_title LIKE :query_contained AS exact_title_match,
+                                    (SELECT count(1) FROM questions WHERE questions.question_to=users.id) AS question_count,
+                                    (SELECT count(1) FROM user_follows WHERE user_follows.followed=users.id AND user_follows.unfollowed=false) AS followed_count,
+                                    (SELECT count(1) FROM user_follows WHERE user_follows.followed=users.id AND user_follows.user=:cur_user_id AND user_follows.unfollowed=false) AS is_following,
                                     {select_query}
-                                    username in :top_users as top_user_score
+                                    username IN :top_users AS top_user_score
 
-                                    from users WHERE 
-                                        (   username like :query_start or first_name like :query_start or first_name like :query_word_start
-                                            or user_title like :query_contained
+                                    FROM users WHERE 
+                                        (   username LIKE :query_start OR first_name LIKE :query_start OR first_name LIKE :query_word_start
+                                            or user_title LIKE :query_contained
                                             {where_clause}
                                         )
                                         and monkness=-1
                                         
                                         {remove_current_user}
 
-                                    order by user_type desc,
-                                            name_start_match desc,
-                                            top_user_score desc,
+                                    ORDER BY user_type DESC,
+                                            is_following DESC,
+                                            question_count DESC,
+                                            followed_count DESC,
+                                            name_start_match DESC,
+                                            top_user_score DESC,
                                             {order_by_processed_username}
-                                            exact_title_match desc,
+                                            exact_title_match DESC,
                                             {order_by_title}
-                                            name_word_start_match desc
+                                            name_word_start_match DESC
 
-                                    limit :result_offset, :result_limit""".format( select_query=select_query,
+                                    LIMIT :result_offset, :result_limit""".format( select_query=select_query,
                                                                                    where_clause=where_clause,
                                                                                    order_by_title=order_by_title,
                                                                                    order_by_processed_username=order_by_processed_username,
