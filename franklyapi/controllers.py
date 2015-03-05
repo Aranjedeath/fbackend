@@ -219,7 +219,10 @@ def login_user_social(social_type, social_id, external_access_token, device_id, 
         user = User.query.filter(User.twitter_id==user_data['social_id']).first()
 
     if social_type in ['facebook', 'google']:
-        user = User.query.filter(User.email==user_data['email']).first()
+        existing_user = User.query.filter(User.email==user_data['email']).first()
+
+    if existing_user and not user:
+        user = existing_user
 
     if user:
         access_token = generate_access_token(user.id, device_id)
