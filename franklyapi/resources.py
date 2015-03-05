@@ -253,7 +253,7 @@ class UserUpdateForm(restful.Resource):
         Authentication: Required
         """
         from flask import request
-        print '****', request.form, request.files
+        #print '****', request.form, request.files
         args = self.post_parser.parse_args()
         print args
                
@@ -1071,6 +1071,38 @@ class PostUnLike(restful.Resource):
             raygun.send(err[0],err[1],err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
+
+
+
+
+class PostShared(restful.Resource):
+    
+    post_parser = reqparse.RequestParser()
+    post_parser.add_argument('post_id', type=str, required=True, location='json')
+    post_parser.add_argument('platform', type=str, required=True, location='json', choices=['whatsapp', 'facebook', 'hike', 'twitter'], help='platform is the lowercase name of the plaform the post is being shared on.')
+    
+    @login_required
+    def post(self):
+        """
+        Updates the count of shares for a post on a given platform
+
+        Controller Functions Used:
+            - update_post_share
+
+        Authentication: Required
+        """
+    
+        args = self.post_parser.parse_args()
+        try:
+            resp = controllers.update_post_share(current_user.id, post_id=args['post_id'], platform=args['platform'].lower())
+            return resp
+
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
+
 
 
 class PostReshare(restful.Resource):

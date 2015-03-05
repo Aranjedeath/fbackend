@@ -424,18 +424,27 @@ def get_comment_count(post_id):
 
 def get_posts_stats(post_ids, cur_user_id=None):
     results = db.session.execute(text("""SELECT posts.id, posts.view_count,
-                                            (SELECT count(*) FROM post_likes 
+                                            (SELECT count(1) FROM post_likes 
                                                 WHERE post_likes.post=posts.id 
                                                     AND post_likes.unliked=false) AS like_count,
                                             
-                                            (SELECT count(*) FROM comments
+                                            (SELECT count(1) FROM comments
                                                 WHERE comments.on_post=posts.id
                                                 AND comments.deleted=false) AS comment_count,
                                             
-                                            (SELECT count(*) FROM post_likes 
+                                            (SELECT count(1) FROM post_likes 
                                                 WHERE post_likes.post=posts.id
                                                     AND post_likes.user=:cur_user_id
-                                                    AND post_likes.unliked=false) AS is_liked
+                                                    AND post_likes.unliked=false) AS is_liked,
+
+                                            (SELECT count(1) FROM post_share
+                                                WHERE post_share.post=posts.id
+                                                    AND post_share.platform='whatsapp') as whatsapp_share_count,
+                                            
+                                            (SELECT count(1) FROM post_share
+                                                WHERE post_share.post=posts.id
+                                                    AND post_share.platform!='whatsapp') as other_share_count
+                                        
                                         FROM posts
                                         WHERE posts.id in :post_ids"""),
                                     params = {'post_ids':list(post_ids), 'cur_user_id':cur_user_id}
@@ -446,7 +455,9 @@ def get_posts_stats(post_ids, cur_user_id=None):
         data[row[0]] = {'view_count':row[1],
                         'like_count':row[2],
                         'comment_count':row[3],
-                        'is_liked':bool(row[4])
+                        'is_liked':bool(row[4]),
+                        'whatsapp_share_count':row[5],
+                        'other_share_count':row[6]
                         }
 
     inflated_stats = InflatedStat.query.filter(InflatedStat.post.in_(post_ids)).all()
@@ -2157,6 +2168,14 @@ def save_feedback_response(cur_user_id, medium, message, version):
     db.session.add(feedback)
     db.session.commit()
     return {'success': True}
+
+
+def update_post_share(current_user_id, post_id, platform):
+    from models import PostShare
+    post_share = PostShare(user=current_user_id, post=post_id, platform=platform)
+    db.session.add(post_share)
+    db.session.commit()
+    return {'success':True, 'id':post_id}
 
 
 def parse_channel_id(channel_id):
