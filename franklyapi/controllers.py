@@ -1095,7 +1095,13 @@ def question_list(user_id, offset, limit):
     return {'questions': questions, 'count': len(questions),  'next_index' : next_index}
 
 
-def question_list_public(current_user_id, user_id, offset, limit, version_code=None):
+def question_list_public(current_user_id, user_id, username=None, offset=0, limit=10, version_code=None):
+    if username:
+        try:
+            user_id = User.query.with_entities('username').filter(User.username==username).one().id
+        except NoResultFound:
+            raise CustomExceptions.UserNotFoundException('User Not Found')
+            
     if has_blocked(current_user_id, user_id):
         raise CustomExceptions.BlockedUserException('User Not Found')
 
