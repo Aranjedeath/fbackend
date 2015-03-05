@@ -882,6 +882,7 @@ class QuestionListPublic(restful.Resource):
     def get(self, user_id):
         """
         Returns list of public questions asked to the user with user_id.
+            user_id can be the id or username of the user whose question list id to be fetched.
 
         Controller Functions Used:
             - question_list_public
@@ -890,11 +891,18 @@ class QuestionListPublic(restful.Resource):
         """
         args = self.get_parser.parse_args()
         try:
-            resp = controllers.question_list_public(current_user.id, user_id=user_id, offset=args['offset'], limit=args['limit'], version_code=args['X-Version-Code'])
+            username = None
+            if len(user_id)<32:
+                username = user_id
+            resp = controllers.question_list_public(current_user.id, user_id=user_id, username=username, offset=args['offset'], limit=args['limit'], version_code=args['X-Version-Code'])
             return resp
 
         except CustomExceptions.BlockedUserException as e:
             abort(404, message=str(e))
+
+        except CustomExceptions.UserNotFoundException as e:
+            abort(404, message=str(e))
+
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])
