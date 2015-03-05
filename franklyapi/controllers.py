@@ -437,13 +437,13 @@ def get_posts_stats(post_ids, cur_user_id=None):
                                                     AND post_likes.user=:cur_user_id
                                                     AND post_likes.unliked=false) AS is_liked,
 
-                                            (SELECT count(1) FROM post_share
-                                                WHERE post_share.post=posts.id
-                                                    AND post_share.platform='whatsapp') as whatsapp_share_count,
+                                            (SELECT count(1) FROM post_shares
+                                                WHERE post_shares.post=posts.id
+                                                    AND post_shares.platform='whatsapp') as whatsapp_share_count,
                                             
-                                            (SELECT count(1) FROM post_share
-                                                WHERE post_share.post=posts.id
-                                                    AND post_share.platform!='whatsapp') as other_share_count
+                                            (SELECT count(1) FROM post_shares
+                                                WHERE post_shares.post=posts.id
+                                                    AND post_shares.platform!='whatsapp') as other_share_count
                                         
                                         FROM posts
                                         WHERE posts.id in :post_ids"""),
