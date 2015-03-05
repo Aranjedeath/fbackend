@@ -220,7 +220,10 @@ def login_user_social(social_type, social_id, external_access_token, device_id, 
         user = User.query.filter(User.twitter_id==user_data['social_id']).first()
 
     if social_type in ['facebook', 'google']:
-        user = User.query.filter(User.email==user_data['email']).first()
+        existing_user = User.query.filter(User.email==user_data['email']).first()
+
+    if existing_user and not user:
+        user = existing_user
 
     if user:
         access_token = generate_access_token(user.id, device_id)
@@ -425,18 +428,27 @@ def get_comment_count(post_id):
 
 def get_posts_stats(post_ids, cur_user_id=None):
     results = db.session.execute(text("""SELECT posts.id, posts.view_count,
-                                            (SELECT count(*) FROM post_likes 
+                                            (SELECT count(1) FROM post_likes 
                                                 WHERE post_likes.post=posts.id 
                                                     AND post_likes.unliked=false) AS like_count,
                                             
-                                            (SELECT count(*) FROM comments
+                                            (SELECT count(1) FROM comments
                                                 WHERE comments.on_post=posts.id
                                                 AND comments.deleted=false) AS comment_count,
                                             
-                                            (SELECT count(*) FROM post_likes 
+                                            (SELECT count(1) FROM post_likes 
                                                 WHERE post_likes.post=posts.id
                                                     AND post_likes.user=:cur_user_id
-                                                    AND post_likes.unliked=false) AS is_liked
+                                                    AND post_likes.unliked=false) AS is_liked,
+
+                                            (SELECT count(1) FROM post_shares
+                                                WHERE post_shares.post=posts.id
+                                                    AND post_shares.platform='whatsapp') as whatsapp_share_count,
+                                            
+                                            (SELECT count(1) FROM post_shares
+                                                WHERE post_shares.post=posts.id
+                                                    AND post_shares.platform!='whatsapp') as other_share_count
+                                        
                                         FROM posts
                                         WHERE posts.id in :post_ids"""),
                                     params = {'post_ids':list(post_ids), 'cur_user_id':cur_user_id}
@@ -447,7 +459,9 @@ def get_posts_stats(post_ids, cur_user_id=None):
         data[row[0]] = {'view_count':row[1],
                         'like_count':row[2],
                         'comment_count':row[3],
-                        'is_liked':bool(row[4])
+                        'is_liked':bool(row[4]),
+                        'whatsapp_share_count':row[5],
+                        'other_share_count':row[6]
                         }
 
     inflated_stats = InflatedStat.query.filter(InflatedStat.post.in_(post_ids)).all()
@@ -1082,7 +1096,13 @@ def question_list(user_id, offset, limit):
     return {'questions': questions, 'count': len(questions),  'next_index' : next_index}
 
 
-def question_list_public(current_user_id, user_id, offset, limit, version_code=None):
+def question_list_public(current_user_id, user_id, username=None, offset=0, limit=10, version_code=None):
+    if username:
+        try:
+            user_id = User.query.with_entities('username').filter(User.username==username).one().id
+        except NoResultFound:
+            raise CustomExceptions.UserNotFoundException('User Not Found')
+            
     if has_blocked(current_user_id, user_id):
         raise CustomExceptions.BlockedUserException('User Not Found')
 
@@ -1093,8 +1113,8 @@ def question_list_public(current_user_id, user_id, offset, limit, version_code=N
                                                     Question.question_author==current_user_id,
                                                     Question.deleted==False,
                                                     Question.is_answered==False,
-                                                    Question.is_ignored==False,
-                                                    Question.public==True
+                                                    Question.is_ignored==False
+                                                    #Question.public==True
                                                     ).order_by(Question.timestamp.desc()
                                                     ).offset(0).limit(5).all()
 
@@ -1105,7 +1125,7 @@ def question_list_public(current_user_id, user_id, offset, limit, version_code=N
                                             Question.deleted==False,
                                             Question.is_answered==False,
                                             Question.is_ignored==False,
-                                            Question.public==True
+                                            #Question.public==True
                                             ).outerjoin(Upvote
                                             ).group_by(Question.id
                                             ).order_by(Question.score.desc()
@@ -1129,9 +1149,11 @@ def question_list_public(current_user_id, user_id, offset, limit, version_code=N
 def question_upvote(cur_user_id, question_id):
     if Question.query.filter(
                             Question.id==question_id, 
-                            Question.public==True, 
+                            #Question.public==True, 
                             Question.question_to!=cur_user_id,
-                            Question.deleted==False
+                            Question.deleted==False,
+                            Question.is_ignored==False,
+                            Question.is_answered==False
                             ).count():
         db.session.execute(text("""INSERT INTO question_upvotes (user, question, downvoted, timestamp) 
                                     VALUES(:cur_user_id, :question_id, false, :timestamp) 
@@ -1466,7 +1488,7 @@ def home_feed(cur_user_id, offset, limit, web):
         question_user['questions'] = []
         for q in questions:
             question_user['questions'].append(question_to_dict(q, cur_user_id))
-            if len(q.body) > 300:
+            if len(q.body) > 150:
                 break
             if randint(0,9) % 2 == 0:
                 break
@@ -2177,13 +2199,14 @@ def get_is_following(cur_user_id, user_ids):
     return followed_ids                                               
 
 
+
 def search_default(cur_user_id=None):
     from collections import defaultdict
     resp = redis_client.get('search_default')
     if resp:
         resp = json.loads(resp)
     else:
-        categories_order = ['Trending Now', 'Politicians', 'Authors', 'New on Frankly', 'Singers', 'Actors', 'Radio Jockeys', 'Chefs', 'Entrepreneurs', 'Subject Experts']
+        categories_order = ["Trending Now", "Actors", "Singers", "Twitter Celebrities", "Radio Jockeys", "Subject Experts", "New on Frankly", "Authors", "Entrepreneurs", "Chefs", "Politicians"]
     
         results = db.session.execute(text("""SELECT search_defaults.category, users.id, users.username, users.first_name,
                                                     users.user_type, users.user_title, users.profile_picture,
@@ -2288,6 +2311,14 @@ def save_feedback_response(cur_user_id, medium, message, version):
     db.session.add(feedback)
     db.session.commit()
     return {'success': True}
+
+
+def update_post_share(current_user_id, post_id, platform):
+    from models import PostShare
+    post_share = PostShare(user=current_user_id, post=post_id, platform=platform)
+    db.session.add(post_share)
+    db.session.commit()
+    return {'success':True, 'id':post_id}
 
 
 def parse_channel_id(channel_id):

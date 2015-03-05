@@ -124,7 +124,7 @@ def invitable_to_dict(invitable, current_user_id):
             'twitter_text' : invitable.twitter_text,
             'mail_text' : invitable.mail_text,
             'has_invited' : has_invited(current_user_id, invitable.id) if current_user_id else False,
-            'cur_invite_count' : get_invite_count(invitable.id),
+            'cur_invite_count' : get_invite_count(invitable.id)+1,
             'max_invite_count' : invitable.max_invite_count,
             'profile_picture' : invitable.profile_picture,
             'user_title' : invitable.user_title,
@@ -185,7 +185,7 @@ def make_celeb_questions_dict(celeb, questions, current_user_id=None):
                             'last_name': None,
                             'profile_picture': users[question.question_author]['profile_picture'] if not question.is_anonymous else None,
                             'gender':users[question.question_author]['gender'],
-                            'channel_id':'user_{user_id}'.format(user_id=question.question_author)
+                            'channel_id':'                                      user_{user_id}'.format(user_id=question.question_author)
                             },
         'question_to':{
                         'id':celeb.id,
@@ -395,7 +395,9 @@ def post_to_dict(post, cur_user_id=None, distance=None):
         'ready':post.ready,
         'popular':post.popular,
         'view_count':post_stats[post.id]['view_count'],
-        'web_link':'http://frankly.me/p/{client_id}'.format(client_id=post.client_id)
+        'web_link':'http://frankly.me/p/{client_id}'.format(client_id=post.client_id),
+        'whatsapp_share_count':post_stats[post.id]['whatsapp_share_count'],
+        'other_share_count':post_stats[post.id]['other_share_count']
     }
     post_dict['answer']['media']['thumbnail_url'] = post_dict['answer']['media_urls']['thumb']
     return post_dict
@@ -489,7 +491,9 @@ def posts_to_dict(posts, cur_user_id=None, distance=None):
             'ready':post.ready,
             'popular':post.popular,
             'view_count':post_stats[post.id]['view_count'],
-            'web_link':'http://frankly.me/p/{client_id}'.format(client_id=post.client_id)
+            'web_link':'http://frankly.me/p/{client_id}'.format(client_id=post.client_id),
+            'whatsapp_share_count':post_stats[post.id]['whatsapp_share_count'],
+            'other_share_count':post_stats[post.id]['other_share_count']
         }
         p_dict['answer']['media']['thumbnail_url'] = p_dict['answer']['media_urls']['thumb']
         posts_dict.append(p_dict)

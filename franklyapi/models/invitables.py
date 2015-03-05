@@ -4,33 +4,39 @@ from database import get_item_id
 import datetime
 
 class Invitable(Base):
-    __tablename__ = 'invitables'
-    id = Column(CHAR(32), primary_key=True)
-    name = Column(String(40), nullable=False)
-    twitter_handle = Column(String(40))
-    email = Column(String(50))
-    profile_picture = Column(String(200))
-    gender = Column(Enum('M', 'F'))
-    user_title = Column(String(40))
+    __tablename__    = 'invitables'
+    id               = Column(CHAR(32), primary_key=True)
+    name             = Column(String(40), nullable=False)
+    twitter_handle   = Column(String(40))
+    email            = Column(String(50))
+    profile_picture  = Column(String(200))
+    gender           = Column(Enum('M', 'F'))
+    user_title       = Column(String(40))
     max_invite_count = Column(Integer(), default=1000)
-    twitter_text = Column(String(400))
-    mail_text = Column(String(400))
-    bio = Column(String(300))
-    mail_subject = Column(String(500))
+    twitter_text     = Column(String(400))
+    mail_text        = Column(String(400))
+    bio              = Column(String(300))
+    mail_subject     = Column(String(500))
+    active           = Column(Boolean(), default=False)
 
-    def __init__(self, name, twitter_handle, email, twitter_text, mail_text, bio, gender, user_title, mail_subject, profile_picture = None, max_invite_count = 1000, id =None):
-        self.id = get_item_id()
-        self.name = name
-        self.twitter_handle = twitter_handle
-        self.email = email
-        self.profile_picture = profile_picture
-        self.gender = gender
-        self.user_title = user_title
+
+
+    def __init__(self, name, twitter_handle, email, twitter_text,
+                        mail_text, bio, gender, user_title, mail_subject,
+                        profile_picture=None, max_invite_count=1000, id=None, active=False):
+        self.id               = get_item_id()
+        self.name             = name
+        self.twitter_handle   = twitter_handle
+        self.email            = email
+        self.profile_picture  = profile_picture
+        self.gender           = gender
+        self.user_title       = user_title
         self.max_invite_count = max_invite_count
-        self.twitter_text = twitter_text
-        self.mail_text = mail_text
-        self.bio = bio
-        self.mail_subject = mail_subject
+        self.twitter_text     = twitter_text
+        self.mail_text        = mail_text
+        self.bio              = bio
+        self.mail_subject     = mail_subject
+        self.active           = active
 
     def __repr__(self):
         return '<Invitable %r:%r>' % (self.id, self.name)

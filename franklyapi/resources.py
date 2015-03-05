@@ -252,6 +252,8 @@ class UserUpdateForm(restful.Resource):
 
         Authentication: Required
         """
+        from flask import request
+        #print '****', request.form, request.files
         args = self.post_parser.parse_args()
         print args
                
@@ -879,6 +881,7 @@ class QuestionListPublic(restful.Resource):
     def get(self, user_id):
         """
         Returns list of public questions asked to the user with user_id.
+            user_id can be the id or username of the user whose question list id to be fetched.
 
         Controller Functions Used:
             - question_list_public
@@ -887,11 +890,18 @@ class QuestionListPublic(restful.Resource):
         """
         args = self.get_parser.parse_args()
         try:
-            resp = controllers.question_list_public(current_user.id, user_id=user_id, offset=args['offset'], limit=args['limit'], version_code=args['X-Version-Code'])
+            username = None
+            if len(user_id)<32:
+                username = user_id
+            resp = controllers.question_list_public(current_user.id, user_id=user_id, username=username, offset=args['offset'], limit=args['limit'], version_code=args['X-Version-Code'])
             return resp
 
         except CustomExceptions.BlockedUserException as e:
             abort(404, message=str(e))
+
+        except CustomExceptions.UserNotFoundException as e:
+            abort(404, message=str(e))
+
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])
@@ -1068,6 +1078,38 @@ class PostUnLike(restful.Resource):
             raygun.send(err[0],err[1],err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
+
+
+
+
+class PostShared(restful.Resource):
+    
+    post_parser = reqparse.RequestParser()
+    post_parser.add_argument('post_id', type=str, required=True, location='json')
+    post_parser.add_argument('platform', type=str, required=True, location='json', choices=['whatsapp', 'facebook', 'hike', 'twitter'], help='platform is the lowercase name of the plaform the post is being shared on.')
+    
+    @login_required
+    def post(self):
+        """
+        Updates the count of shares for a post on a given platform
+
+        Controller Functions Used:
+            - update_post_share
+
+        Authentication: Required
+        """
+    
+        args = self.post_parser.parse_args()
+        try:
+            resp = controllers.update_post_share(current_user.id, post_id=args['post_id'], platform=args['platform'].lower())
+            return resp
+
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
+
 
 
 class PostReshare(restful.Resource):
