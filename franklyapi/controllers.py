@@ -713,9 +713,6 @@ def user_view_profile(current_user_id, user_id, username=None):
             if has_blocked(current_user_id, user.id):
                 raise CustomExceptions.BlockedUserException()
         
-        if current_user_id in config.ADMIN_USERS:
-            return {'user': user_to_dict(user)}
-        
         return {'user': guest_user_to_dict(user, current_user_id)}
     
     except NoResultFound:
