@@ -54,7 +54,7 @@ DEFAULT_BIO = "Ask me anything for video replies."
 
 GCM_API_KEY = 'AIzaSyBKa5pjzTdbdLwMcYkic1yK1q_fbHljbxY'
 
-
+WEB_URL = 'http://frankly.me'
 
 HOSTNAME = socket.gethostname()
 
