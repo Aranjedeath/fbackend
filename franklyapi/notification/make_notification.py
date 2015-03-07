@@ -84,7 +84,7 @@ def push_notification(notification_id, user_id, source='application'):
 def notification_question_ask(question_id):
     notification_type = 'question-ask-self_user'
     question = Question.query.get(question_id)
-    users = User.query.with_entities('username', 'first_name').filter(User.id.in_([question.question_to, question.question_author])).all()
+    users = User.query.with_entities('id', 'username', 'first_name').filter(User.id.in_([question.question_to, question.question_author])).all()
     for u in users:
         if u.id == question.question_author:
             question_author = u
@@ -121,7 +121,7 @@ def notification_question_ask(question_id):
 
 def notification_post_add(post_id):
     post = Post.query.get(post_id)
-    users = User.query.with_entities('username', 'first_name').filter(User.id.in_([post.answer_author, post.question_author])).all()
+    users = User.query.with_entities('id', 'username', 'first_name').filter(User.id.in_([post.answer_author, post.question_author])).all()
 
     for u in users:
         if u.id == post.question_author:
