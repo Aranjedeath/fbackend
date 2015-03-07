@@ -157,7 +157,7 @@ def notification_post_add(post_id):
 
 
 
-
+'''
 
 text_config = {
             "question-ask":{
@@ -263,5 +263,5 @@ def user_follow_add(followed, follower, promote=False):
 
     
 
-
+'''
 
