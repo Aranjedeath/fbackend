@@ -21,7 +21,7 @@ class Notification(Base):
         return True
 
     def _icon_is_valid(self, icon):
-        if icon!=None:
+        if icon:
             icon_components = icon.split('-')
             if len(icon_components) != 4:
                 return False
