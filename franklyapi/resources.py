@@ -1086,7 +1086,7 @@ class PostShared(restful.Resource):
     
     post_parser = reqparse.RequestParser()
     post_parser.add_argument('post_id', type=str, required=True, location='json')
-    post_parser.add_argument('platform', type=str, required=True, location='json', choices=['whatsapp', 'facebook', 'hike', 'twitter'], help='platform is the lowercase name of the plaform the post is being shared on.')
+    post_parser.add_argument('platform', type=str, required=True, location='json', choices=['whatsapp', 'facebook', 'hike', 'twitter', 'other'], help='platform is the lowercase name of the plaform the post is being shared on.')
     
     @login_required
     def post(self):
