@@ -84,11 +84,11 @@ def push_notification(notification_id, user_id, source='application'):
 def notification_question_ask(question_id):
     notification_type = 'question-ask-self_user'
     question = Question.query.get(question_id)
-    users = User.query.with_entities('id', 'username', 'first_name').filter(User.id.in_([question.question_to, question.question_author])).all()
+    users = User.query.filter(User.id.in_([question.question_to, question.question_author])).all()
     for u in users:
-        if u[0] == question.question_author:
+        if u.id == question.question_author:
             question_author = u
-        if u[0] == question.question_to:
+        if u.id == question.question_to:
             question_to = u
 
     text = "<question_author_name> asked you '<question_body>'"
@@ -121,12 +121,12 @@ def notification_question_ask(question_id):
 
 def notification_post_add(post_id):
     post = Post.query.get(post_id)
-    users = User.query.with_entities('id', 'username', 'first_name').filter(User.id.in_([post.answer_author, post.question_author])).all()
+    users = User.query.filter(User.id.in_([post.answer_author, post.question_author])).all()
 
     for u in users:
-        if u[0] == post.question_author:
+        if u.id == post.question_author:
             question_author = u
-        if u[0] == post.answer_author:
+        if u.id == post.answer_author:
             answer_author = u
 
     notification_type = 'post-add-self_user'
