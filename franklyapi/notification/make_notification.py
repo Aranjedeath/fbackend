@@ -1,4 +1,5 @@
 import datetime
+import time
 
 from models import User, Question, Notification, Post, Upvote, \
                     UserNotification, UserPushNotification, UserNotificationInfo,\
@@ -69,7 +70,7 @@ def push_notification(notification_id, user_id, source='application'):
                     "group_id": group_id,
                     "link" : notification.link,
                     "deeplink" : notification.link,
-                    "timestamp" : user_push_notification.added_at,
+                    "timestamp" : int(time.mktime(user_push_notification.added_at.timetuple())),
                     "seen" : False,
                     "heading":"Frankly.me"
                 }
