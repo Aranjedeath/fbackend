@@ -10,7 +10,7 @@ class Notification(Base):
     link          = Column(String(200), nullable=False)
     text          = Column(String(300), nullable=False)
     object_id     = Column(CHAR(32), nullable=False)
-    icon          = Column(String(100), nullable=False)
+    icon          = Column(String(100))
     created_at    = Column(DateTime(), default=datetime.datetime.now())
     manual        = Column(Boolean(), default=False)
 
