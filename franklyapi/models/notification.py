@@ -16,7 +16,7 @@ class Notification(Base):
 
     def _type_is_valid(self, type):
         type_components = type.split('-')
-        if len(type_components) != 2:
+        if len(type_components) != 3:
             return False
         return True
 
