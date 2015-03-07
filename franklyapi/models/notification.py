@@ -21,11 +21,12 @@ class Notification(Base):
         return True
 
     def _icon_is_valid(self, icon):
-        icon_components = icon.split('-')
-        if len(icon_components) != 4:
-            return False
-        if icon_components[0] == 'url' and not icon_components[3].startswith('http'):
-            return False
+        if icon!=None:
+            icon_components = icon.split('-')
+            if len(icon_components) != 4:
+                return False
+            if icon_components[0] == 'url' and not icon_components[3].startswith('http'):
+                return False
         return True
 
 
