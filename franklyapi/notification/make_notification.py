@@ -75,7 +75,9 @@ def push_notification(notification_id, user_id, source='application'):
                 }
 
     if gcm_ids:
-        gcm_sender.send_message(gcm_ids, payload)
+        pass
+        print gcm_ids, payload
+        #gcm_sender.send_message(gcm_ids, payload)
 
 
 
@@ -144,7 +146,7 @@ def notification_post_add(post_id):
     upvoters = [upvote.user for upvote in Upvote.query.filter(Upvote.question==post.question, Upvote.downvoted==False).all()]
 
     add_notification_for_user(notification_id=notification.id,
-                                user_ids=[question_to.id],
+                                user_ids=list(set([question_author.id]+upvoters)),
                                 list_type='me',
                                 push_at=datetime.datetime.now()
                             )
