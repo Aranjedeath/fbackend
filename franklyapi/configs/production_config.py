@@ -58,6 +58,8 @@ WEB_URL = 'http://frankly.me'
 
 HOSTNAME = socket.gethostname()
 
+GCM_API_KEY = 'AIzaSyBKa5pjzTdbdLwMcYkic1yK1q_fbHljbxY'
+
 
 ANDROID_LATEST_VERSION_CODE = 42
 ANDROID_NECESSARY_VERSION_CODE = 40

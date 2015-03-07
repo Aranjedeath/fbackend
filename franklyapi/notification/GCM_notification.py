@@ -3,7 +3,7 @@ import gcm
 
 class GCM():
 
-    def __init__(self, api_key=config.API_KEY):
+    def __init__(self, api_key=config.GCM_API_KEY):
         self.gcm = gcm.GCM(api_key)
 
     def send_message(self, registration_ids, data):

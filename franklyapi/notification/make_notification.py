@@ -77,7 +77,7 @@ def push_notification(notification_id, user_id, source='application'):
     if gcm_ids:
         pass
         print gcm_ids, payload
-        #gcm_sender.send_message(gcm_ids, payload)
+        gcm_sender.send_message(gcm_ids, payload)
 
 
 
