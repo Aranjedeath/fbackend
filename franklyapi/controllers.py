@@ -21,7 +21,7 @@ import social_helpers
 from configs import config
 from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
                     UserFeed, Event, Reshare, Invitable, Invite, ContactUs, InflatedStat,\
-                    SearchDefault, IntervalCountMap
+                    SearchDefault, IntervalCountMap, Video
 
 from app import redis_client, raygun, db, redis_views
 
@@ -1069,6 +1069,7 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_b
     db.session.add(question)
 
     db.session.commit()
+    notification.notification_question_ask(question.id)
 
     resp = {'success':True, 'id':str(question.id), 'question':question_to_dict(question)}
     return resp
@@ -1757,6 +1758,7 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
         async_encoder.encode_video_task.delay(video_url, username=curuser.username)
 
         db.session.commit()
+        notification.notification_post_add(post.id)
         return {'success': True, 'id': str(post.id), 'post':post_to_dict(post, cur_user_id)}
 
     except NoResultFound:

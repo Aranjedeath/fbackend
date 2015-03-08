@@ -1,5 +1,6 @@
 import datetime
 import time
+import random
 
 from models import User, Question, Notification, Post, Upvote, \
                     UserNotification, UserPushNotification, UserNotificationInfo,\
@@ -67,7 +68,7 @@ def push_notification(notification_id, user_id, source='application'):
                     "id" : user_push_notification.id,
                     "text" : notification.text,
                     "icon" : None,
-                    "group_id": 3,#group_id,
+                    "group_id": random.randint(0, 10),#group_id,
                     "link" : notification.link,
                     "deeplink" : notification.link,
                     "timestamp" : int(time.mktime(user_push_notification.added_at.timetuple())),
