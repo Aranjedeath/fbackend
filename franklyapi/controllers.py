@@ -17,11 +17,13 @@ import CustomExceptions
 import media_uploader
 import async_encoder
 import social_helpers
+import notification
 
 from configs import config
 from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
+                    Question, Upvote, Comment, ForgotPasswordToken, Install, Video,\
                     UserFeed, Event, Reshare, Invitable, Invite, ContactUs, InflatedStat,\
-                    SearchDefault, IntervalCountMap, Video
+                    SearchDefault, IntervalCountMap
 
 from app import redis_client, raygun, db, redis_views
 
