@@ -1321,22 +1321,28 @@ def comment_list(cur_user_id, post_id, offset, limit):
                                     params={'post_id':post_id}
                                     )
         row = result.fetchone()
-        if not row:
-            raise CustomExceptions.PostNotFoundException("Comments for this post is not available")
-        answer_author, question_author= row
-        
-        if (has_blocked(cur_user_id, answer_author) or has_blocked(cur_user_id, answer_author)):
-            raise CustomExceptions.BlockedUserException("Comments for this post is not available")
+        if cur_user_id:
+            if not row:
+                raise CustomExceptions.PostNotFoundException("Comments for this post is not available")
+            answer_author, question_author= row
+            
+            if (has_blocked(cur_user_id, answer_author) or has_blocked(cur_user_id, answer_author)):
+                raise CustomExceptions.BlockedUserException("Comments for this post is not available")
 
-        blocks = Block.query.filter(or_(Block.user==cur_user_id, Block.blocked_user==cur_user_id)).all()
-        blocked_users = set()
-        for block in blocks:
-            if block.user == cur_user_id:
-                blocked_users.add(block.blocked_user)
-            else:
-                blocked_users.add(block.user)
-        comments = Comment.query.filter(Comment.on_post==post_id, Comment.deleted==False
+            blocks = Block.query.filter(or_(Block.user==cur_user_id, Block.blocked_user==cur_user_id)).all()
+            blocked_users = set()
+            for block in blocks:
+                if block.user == cur_user_id:
+                    blocked_users.add(block.blocked_user)
+                else:
+                    blocked_users.add(block.user)
+            comments = Comment.query.filter(Comment.on_post==post_id, Comment.deleted==False
                                         ).filter(~Comment.comment_author.in_(blocked_users)
+                                        ).order_by(Comment.timestamp.desc()
+                                        ).offset(offset
+                                        ).limit(limit).all()
+        else:
+            comments = Comment.query.filter(Comment.on_post==post_id, Comment.deleted==False
                                         ).order_by(Comment.timestamp.desc()
                                         ).offset(offset
                                         ).limit(limit).all()

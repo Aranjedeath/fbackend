@@ -1304,7 +1304,6 @@ class CommentList(restful.Resource):
     get_parser.add_argument('since'  , dest='offset', default=0, type=int, location='args')
     get_parser.add_argument('limit'  , type=int, location='args', default=10)
     
-    @login_required
     def get(self):
         """
         Returns a list of comment on a post.
@@ -1316,11 +1315,18 @@ class CommentList(restful.Resource):
         """
         args = self.get_parser.parse_args()
         try:
-            resp = controllers.comment_list(current_user.id,
-                                            post_id=args['post_id'],
-                                            offset=args['offset'],
-                                            limit=args['limit'])
-            return resp
+            if current_user.is_authenticated():
+                user_id = current_user.id
+                comments = controllers.comment_list(current_user.id,
+                                                    post_id=args['post_id'],
+                                                    offset=args['offset'],
+                                                    limit=args['limit'])
+            else:
+                comments = controllers.comment_list(None,
+                                                    post_id=args['post_id'],
+                                                    offset=args['offset'],
+                                                    limit=args['limit'])
+            return comments
         
         except CustomExceptions.BlockedUserException as e:
             abort(404, message=str(e))
