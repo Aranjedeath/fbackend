@@ -1578,7 +1578,7 @@ class Notifications(restful.Resource):
                                                 device_id=args['X-deviceid'],
                                                 version_code=args['X-Version-Code'],
                                                 notification_category=args['type'],
-                                                offse=args['offset'],
+                                                offset=args['offset'],
                                                 limit=args['limit'])
             return resp
         except Exception as e:

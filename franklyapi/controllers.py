@@ -1788,7 +1788,8 @@ def get_notifications(cur_user_id, device_id, version_code, notification_categor
     
 
     notifications = []
-    if update_required(device_type, version_code):
+    update = check_app_version_code(device_type, version_code)
+    if update['hard_update'] or update['soft_update']:
 
         update_notification = {
                                     "user_to" : cur_user_id,
@@ -1811,17 +1812,18 @@ def get_notifications(cur_user_id, device_id, version_code, notification_categor
                                                 user_notifications.added_at, user_notifications.seen_at
                                             FROM notifications JOIN user_notifications
                                                 ON notifications.id = user_notifications.notification_id
-                                            WHERE user_notifications.user_id = :cur_user_id,
-                                                    user_notifications.list_type = :list_type
-                                                    user_notifications.device_type
+                                            WHERE user_notifications.user_id = :cur_user_id
+                                                AND user_notifications.list_type = :list_type
+                                                AND user_notifications.show_on in :device_type
+                                            GROUP BY notifications.type, notifications.object_id
                                             ORDER BY user_notifications.added_at 
-                                            GROUP BY notifications.type,notification.object_id
                                             LIMIT :offset,:limit
                                         """),
                                     params = {'cur_user_id':cur_user_id,
-                                                'list_type':list_type,
+                                                'list_type':notification_category,
                                                 'limit':limit,
-                                                'offset':offset
+                                                'offset':offset,
+                                                'device_type':['all']
                                             }
                                     )
     
@@ -1829,7 +1831,7 @@ def get_notifications(cur_user_id, device_id, version_code, notification_categor
     icon_object_ids = defaultdict(list)
     icons = {}
     
-    for row in result:
+    for row in results:
         notification = {
                         "user_to" : cur_user_id,
                         "type" : 1,
@@ -1839,30 +1841,14 @@ def get_notifications(cur_user_id, device_id, version_code, notification_categor
                         "group_id": str(row[3])+str(row[4]),
                         "link" : row[5],
                         "deeplink" : row[5],
-                        "timestamp" : row[6],
+                        "timestamp" : int(time.mktime(row[6].timetuple())),
                         "seen" : bool(row[7])
                         }
         notifications.append(notification)
-        icon_data = notification['icon'].split('-')
-        if icon_data[0] not in ['url', 'default']:
-            icon_object_ids[icon_data[1]].append(icon_data[3])
-
-    if icon_object_ids['user']:
-        icons['user'] = {u.id: {'profile_picture':u.profile_picture, 'cover_picture':u.cover_picture} for u in User.query.with_entities('profile_picture', 'cover_picture').filter(User.id.in_(icon_object_ids['user'])).all()}
-    if icon_object_ids['post']:
-        icons['post'] = {p.id: {'thumbnail_url':p.thumbnail_url} for p in Post.query.with_entities('thumbnail_url').filter(Post.id.in_(icon_object_ids['post'])).all()}
-
-    for notification in notifications:
-        icon_data = notification['icon'].split('-')
-        if icon_data[0] == 'default':
-            notification['icon'] = default_icons[icon_data[3]]
-        if icon_data[0] == 'url':
-            notification['icon'] = icon_data[3]
-        else:
-            notification['icon'] = icons[icon_data[1]][icon_data[3]][icon_data[2]]
 
     count = len(notifications)
     next_index = -1 if count<original_limit else offset+limit
+    print {'notifications':notifications, 'count':count, 'next_index':next_index}
 
     return {'notifications':notifications, 'count':count, 'next_index':next_index}
 
@@ -1890,10 +1876,10 @@ def get_notification_count(cur_user_id, device_id, version_code):
                                         FROM notifications JOIN user_notifications
                                             ON notifications.id = user_notifications.notification_id
                                         WHERE user_notifications.user_id = :cur_user_id
-                                        AND user_notifications.seen_at = null
-                                        AND user_notifications.added_at > :last_fetch_time
+                                            AND user_notifications.seen_at = null
+                                            AND user_notifications.added_at > :last_fetch_time
                                         ORDER BY user_notifications.added_at 
-                                        GROUP BY notifications.type,notification.object_id
+                                        GROUP BY notifications.type,notifications.object_id
                                         LIMIT :offset,:limit
                                     """),
                                 params = {'cur_user_id':cur_user_id,
