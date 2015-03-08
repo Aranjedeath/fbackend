@@ -1558,6 +1558,9 @@ class Notifications(restful.Resource):
     get_parser.add_argument('offset', type=int, default=0, location='args')
     get_parser.add_argument('limit' , type=int, default=10, location='args')
     get_parser.add_argument('type'  , type=str, default='me', location='args', choices=['me', 'news'])
+    get_parser.add_argument('X-deviceid', type=str, default='me', location='args', choices=['me', 'news'])
+    get_parser.add_argument('X-Version-Code', type=str, default='me', location='args', choices=['me', 'news'])
+
     
     @login_required
     def get(self):
@@ -1571,10 +1574,12 @@ class Notifications(restful.Resource):
         """
         args = self.get_parser.parse_args()
         try:
-            resp = controllers.get_notifications(current_user.id,
-                                                    notification_category=args['type'],
-                                                    offset = args['offset'],
-                                                    limit = args['limit'])
+            resp = controllers.get_notifications(cur_user_id=current_user.id,
+                                                device_id=args['X-deviceid'],
+                                                version_code=args['X-Version-Code'],
+                                                notification_category=args['type'],
+                                                offse=args['offset'],
+                                                limit=args['limit'])
             return resp
         except Exception as e:
             err = sys.exc_info()
