@@ -4,7 +4,7 @@ import random
 
 from models import User, Question, Notification, Post, Upvote, \
                     UserNotification, UserPushNotification, UserNotificationInfo,\
-                    AccessToken
+                    AccessToken, Follow
 from configs import config
 from database import get_item_id
 from app import db
@@ -132,6 +132,42 @@ def notification_post_add(post_id):
 
     notification_type = 'post-add-self_user'
     text = "<answer_author_name> answered your question"
+    text = text.replace('<answer_author_name>', answer_author.first_name)
+    icon = None
+    link = config.WEB_URL + '/p/{client_id}'.format(client_id=post.client_id)
+    
+    notification = Notification(type=notification_type, text=text,
+                                link=link, object_id=post_id,
+                                icon=icon, created_at=datetime.datetime.now(),
+                                manual=False, id=get_item_id())
+    db.session.add(notification)
+    db.session.commit()
+
+
+    upvoters = [upvote.user for upvote in Upvote.query.filter(Upvote.question==post.question, Upvote.downvoted==False).all()]
+
+    add_notification_for_user(notification_id=notification.id,
+                                user_ids=list(set([question_author.id]+upvoters)),
+                                list_type='me',
+                                push_at=datetime.datetime.now()
+                            )
+    
+
+    return notification
+
+
+def notification_user_follow(follow_id):
+    follow = Follow.query.filter(Follow.id==follow_id, Follow.deleted==False)
+    users = User.query.filter(User.id.in_([follow.user, follow.followed])).all()
+
+    for u in users:
+        if u.id == follow.followed:
+            followed_user = u
+        if u.id == follow.user:
+            follower = u
+
+    notification_type = 'user-follow-self_user'
+    text = "<follower_name> started following you"
     text = text.replace('<answer_author_name>', answer_author.first_name)
     icon = None
     link = config.WEB_URL + '/p/{client_id}'.format(client_id=post.client_id)
