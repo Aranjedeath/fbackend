@@ -885,7 +885,7 @@ class QuestionListPublic(restful.Resource):
         Controller Functions Used:
             - question_list_public
 
-        Authentication: Required
+        Authentication: Optional
         """
         args = self.get_parser.parse_args()
         try:
