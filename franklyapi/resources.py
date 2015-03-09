@@ -1564,8 +1564,8 @@ class Notifications(restful.Resource):
     get_parser.add_argument('offset', type=int, default=0, location='args')
     get_parser.add_argument('limit' , type=int, default=10, location='args')
     get_parser.add_argument('type'  , type=str, default='me', location='args', choices=['me', 'news'])
-    get_parser.add_argument('X-deviceid', type=str, required=True, location='args')
-    get_parser.add_argument('X-Version-Code', type=int, default=0, location='args')
+    get_parser.add_argument('X-deviceid', type=str, required=True, location='headers')
+    get_parser.add_argument('X-Version-Code', type=int, default=0, location='headers')
 
     
     @login_required
@@ -1596,8 +1596,8 @@ class Notifications(restful.Resource):
 
 class NotificationCount(restful.Resource):
     get_parser = reqparse.RequestParser()
-    get_parser.add_argument('X-deviceid', type=str, required=True, location='args')
-    get_parser.add_argument('X-Version-Code', type=int, default=0, location='args')
+    get_parser.add_argument('X-deviceid', type=str, required=True, location='headers')
+    get_parser.add_argument('X-Version-Code', type=int, default=0, location='headers')
 
     
     @login_required
