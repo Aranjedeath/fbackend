@@ -9,10 +9,10 @@ MULTIPLE_AUTH_HEADERS = ['access_token', 'device']
 PORT = 8000
 PROPOGATE_EXCEPTIONS = True
 
-RAYGUN_KEY = "hAmfuTIzQ8jYdMiQdh1fug=="
+RAYGUN_KEY = "JCJgOsDpggkDwtfyTNB6Gw=="
 
 #Raygun username and password is used for documentation
-RAYGUN_USERNAME = "frankly1@mailinator.com" 
+RAYGUN_USERNAME = "frankly2@mailinator.com" 
 RAYGUN_PASSWORD = "dexter123"
 
 AWS_KEY = 'AKIAJ72DWIKVJZNTD2VA'
