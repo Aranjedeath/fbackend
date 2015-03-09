@@ -1564,8 +1564,8 @@ class Notifications(restful.Resource):
     get_parser.add_argument('offset', type=int, default=0, location='args')
     get_parser.add_argument('limit' , type=int, default=10, location='args')
     get_parser.add_argument('type'  , type=str, default='me', location='args', choices=['me', 'news'])
-    get_parser.add_argument('X-deviceid', type=str, default='me', location='args', choices=['me', 'news'])
-    get_parser.add_argument('X-Version-Code', type=str, default='me', location='args', choices=['me', 'news'])
+    get_parser.add_argument('X-deviceid', type=str, required=True, location='args')
+    get_parser.add_argument('X-Version-Code', type=int, default=0, location='args')
 
     
     @login_required
@@ -1595,6 +1595,10 @@ class Notifications(restful.Resource):
 
 
 class NotificationCount(restful.Resource):
+    get_parser = reqparse.RequestParser()
+    get_parser.add_argument('X-deviceid', type=str, required=True, location='args')
+    get_parser.add_argument('X-Version-Code', type=int, default=0, location='args')
+
     
     @login_required
     def get(self):
@@ -1606,8 +1610,9 @@ class NotificationCount(restful.Resource):
 
         Authentication: Required
         """
+        args = self.get_parser.parse_args()
         try:
-            count = controllers.get_notification_count(current_user.id)
+            count = controllers.get_notification_count(current_user.id, device_id=args['X-deviceid'], version_code=args['X-Version-Code'])
             return {'count': count}
         except Exception as e:
             err = sys.exc_info()
