@@ -58,9 +58,8 @@ def push_notification(notification_id, user_id, source='application'):
         if get_device_type(device.device_id)=='ios':
             apn_ids.append(device.push_id)
 
-    notification_group_id = {}
     notification = Notification.query.get(notification_id)
-    group_id = int(str(notification_group_id.get(notification.type, 99))+str(int(notification.object_id, 16)))
+    group_id = '-'.join(str(notification.type), str(notification.object_id))
     
     payload = {
                     "user_to" : user_id,
@@ -68,7 +67,7 @@ def push_notification(notification_id, user_id, source='application'):
                     "id" : user_push_notification.id,
                     "text" : notification.text,
                     "icon" : None,
-                    "group_id": random.randint(0, 10),#group_id,
+                    "group_id": group_id,
                     "link" : notification.link,
                     "deeplink" : notification.link,
                     "timestamp" : int(time.mktime(user_push_notification.added_at.timetuple())),
