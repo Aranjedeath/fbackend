@@ -1846,7 +1846,7 @@ def get_notifications(cur_user_id, device_id, version_code, notification_categor
                         "id" : row[0],
                         "text" : row[1],
                         "icon" : row[2],
-                        "group_id": str(row[3])+str(row[4]),
+                        "group_id": 5,#str(row[3])+str(row[4]),
                         "link" : row[5],
                         "deeplink" : row[5],
                         "timestamp" : int(time.mktime(row[6].timetuple())),
@@ -1862,17 +1862,19 @@ def get_notifications(cur_user_id, device_id, version_code, notification_categor
 
 
 def get_notification_count(cur_user_id, device_id, version_code):
+    return 1
     count = 0
     device_type = get_device_type(device_id)
-    if update_required(device_type, version_code):
+    update = check_app_version_code(device_type, version_code)
+    if update['hard_update'] or update['soft_update']:
         count += 1
 
     last_fetch_time = datetime.datetime.now() - datetime.timedelta(days=100)
     last_fetch_time_query = ''
     results = db.session.execute(text("""SELECT user_notification_info.last_notification_fetch_time 
                                         FROM user_notification_info 
-                                        WHERE user_id == :cur_user_id
-                                        ORDER_BY user_notification_info.last_notification_fetch_time
+                                        WHERE user_id = :cur_user_id
+                                        ORDER BY user_notification_info.last_notification_fetch_time
                                         LIMIT 0,1
                                     """), params={'cur_user_id':cur_user_id}
                                 )
@@ -1880,7 +1882,7 @@ def get_notification_count(cur_user_id, device_id, version_code):
         last_fetch_time = row[0]
 
 
-    results = db.session.execute(text("""SELECT count(notifications.id)
+    results = db.session.execute(text("""SELECT count(1)
                                         FROM notifications JOIN user_notifications
                                             ON notifications.id = user_notifications.notification_id
                                         WHERE user_notifications.user_id = :cur_user_id
