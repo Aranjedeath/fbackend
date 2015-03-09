@@ -59,7 +59,7 @@ def push_notification(notification_id, user_id, source='application'):
             apn_ids.append(device.push_id)
 
     notification = Notification.query.get(notification_id)
-    group_id = '-'.join(str(notification.type), str(notification.object_id))
+    group_id = '-'.join([str(notification.type), str(notification.object_id)])
     
     payload = {
                     "user_to" : user_id,

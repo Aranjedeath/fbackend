@@ -1846,7 +1846,7 @@ def get_notifications(cur_user_id, device_id, version_code, notification_categor
                         "id" : row[0],
                         "text" : row[1],
                         "icon" : row[2],
-                        "group_id": '-'.join(str(row[3]),str(row[4])),
+                        "group_id": '-'.join([str(row[3]),str(row[4])]),
                         "link" : row[5],
                         "deeplink" : row[5],
                         "timestamp" : int(time.mktime(row[6].timetuple())),
