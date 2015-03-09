@@ -877,7 +877,6 @@ class QuestionListPublic(restful.Resource):
     get_parser.add_argument('X-Version-Code', type=int, location='headers', default=None)
 
     
-    @login_required
     def get(self, user_id):
         """
         Returns list of public questions asked to the user with user_id.
@@ -890,10 +889,16 @@ class QuestionListPublic(restful.Resource):
         """
         args = self.get_parser.parse_args()
         try:
+            current_user_id = None
+            if current_user.is_authenticated():
+                current_user_id = current_user.id
+            
             username = None
             if len(user_id)<32:
                 username = user_id
-            resp = controllers.question_list_public(current_user.id, user_id=user_id, username=username, offset=args['offset'], limit=args['limit'], version_code=args['X-Version-Code'])
+            resp = controllers.question_list_public(current_user_id, user_id=user_id,
+                                                    username=username, offset=args['offset'],
+                                                    limit=args['limit'], version_code=args['X-Version-Code'])
             return resp
 
         except CustomExceptions.BlockedUserException as e:

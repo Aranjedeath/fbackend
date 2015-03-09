@@ -1103,7 +1103,7 @@ def question_list_public(current_user_id, user_id, username=None, offset=0, limi
         except NoResultFound:
             raise CustomExceptions.UserNotFoundException('User Not Found')
             
-    if has_blocked(current_user_id, user_id):
+    if current_user_id and has_blocked(current_user_id, user_id):
         raise CustomExceptions.BlockedUserException('User Not Found')
 
     cur_user_questions = []
