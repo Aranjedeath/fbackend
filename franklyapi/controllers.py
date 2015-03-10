@@ -1078,7 +1078,7 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_b
     return resp
 
 
-def question_list(user_id, offset, limit):
+def question_list(user_id, offset, limit, version_code=0):
 
     questions_query = Question.query.filter(Question.question_to==user_id, 
                                             Question.deleted==False,
@@ -1094,10 +1094,12 @@ def question_list(user_id, offset, limit):
     questions = [{'question':q, 'type':'question'} for q in questions]
 
     next_index = str(offset+limit) if questions else "-1"
+    if version_code>51:
+        next_index = offset+limit if questions else -1
     return {'questions': questions, 'count': len(questions),  'next_index' : next_index}
 
 
-def question_list_public(current_user_id, user_id, username=None, offset=0, limit=10, version_code=None):
+def question_list_public(current_user_id, user_id, username=None, offset=0, limit=10, version_code=0):
     if offset<0:
         return {'current_user_questions':[], 'questions': [], 'count': 0,  'next_index' : -1}
 
@@ -1149,6 +1151,9 @@ def question_list_public(current_user_id, user_id, username=None, offset=0, limi
     questions = [{'question':q, 'type':'question'} for q in other_questions]
 
     next_index = str(offset+limit) if questions else "-1"
+    if version_code>51:
+        next_index = offset+limit if questions else -1
+
     return {'current_user_questions':cur_user_questions, 'questions': questions, 'count': len(questions),  'next_index' : next_index}
 
 def question_upvote(cur_user_id, question_id):
@@ -1793,7 +1798,7 @@ def get_notifications(cur_user_id, device_id, version_code, notification_categor
     device_type = get_device_type(device_id)
     
     if device_type == 'ios':
-        playstore_link = config.IOS_APPSTORE_LINK
+        app_store_link = config.IOS_APPSTORE_LINK
     
     if device_type == 'android':
         app_store_link = config.ANDROID_APPSTORE_LINK

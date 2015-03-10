@@ -848,6 +848,8 @@ class QuestionList(restful.Resource):
     get_parser = reqparse.RequestParser()
     get_parser.add_argument('since', dest='offset', type=int, default=0, location='args')
     get_parser.add_argument('limit', type=int, default=10, location='args')
+    get_parser.add_argument('X-Version-Code', type=int, location='headers', default=0)
+
     
     @login_required
     def get(self):
@@ -861,7 +863,11 @@ class QuestionList(restful.Resource):
         """
         args = self.get_parser.parse_args()
         try:
-            resp = controllers.question_list(current_user.id, offset=args['offset'], limit=args['limit'])
+            resp = controllers.question_list(current_user.id,
+                                                offset=args['offset'],
+                                                limit=args['limit'],
+                                                version_code=args['X-Version-Code']
+                                                )
             return resp
         except Exception as e:
             err = sys.exc_info()
