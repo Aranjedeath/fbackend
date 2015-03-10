@@ -9,6 +9,7 @@ from configs import config
 import image_processors
 
 BUCKET_NAME = 'franklymestorage'
+OLD_BUCKET_NAME = 'franklyapp'
 CONN = S3Connection(config.AWS_KEY, config.AWS_SECRET)
 
 ALLOWED_VIDEO_TYPES = ['video/mp4', 'application/octet-stream']

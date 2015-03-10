@@ -66,9 +66,14 @@ check_make_dir(TEMP_DIR)
 
 def get_key_name_from_url(url):
     domain = 's3.amazonaws.com/{bucket_name}/'.format(bucket_name=media_uploader.BUCKET_NAME)
-    if domain not in url:
-        raise Exception("Invalid Url")
-    return url.split(domain)[1]
+    old_domain = 's3.amazonaws.com/{bucket_name}/'.format(bucket_name=media_uploader.OLD_BUCKET_NAME)
+    if domain in url:
+        return url.split(domain)[1]
+    elif old_domain in url:
+        return url.split(domain)[1]
+    
+    raise Exception("Invalid Url")
+    
 
 def get_key_name_for_profile(url, profile):
     original_key = get_key_name_from_url(url)
