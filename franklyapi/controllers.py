@@ -198,7 +198,7 @@ def register_email_user(email, password, full_name, device_id, username=None, ph
     
     return {'access_token':access_token, 'username':username,
             'id':new_user.id, 'new_user':True, 'user_type':new_user.user_type,
-            'user':user_to_dict(user)
+            'user':user_to_dict(new_user)
             }
 
 def get_twitter_email(twitter_id):
@@ -277,7 +277,7 @@ def login_user_social(social_type, social_id, external_access_token, device_id, 
         return {'access_token': access_token, 'id':new_user.id,
                 'username':new_user.username, 'activated_now':False,
                 'new_user' : True, 'user_type': new_user.user_type,
-                'user':user_to_dict(user)
+                'user':user_to_dict(new_user)
                 } 
 
 def login_email_new(user_id, id_type, password, device_id, push_id=None):
