@@ -1818,7 +1818,7 @@ def get_notifications(cur_user_id, device_id, version_code, notification_categor
                                     "group_id": 'update_required',
                                     "link" : app_store_link,
                                     "deeplink" : app_store_link,
-                                    "timestamp" : datetime.datetime.now(),
+                                    "timestamp" : int(time.mktime(datetime.datetime.now().timetuple())),
                                     "seen" : False
                                 }
         notifications.append(update_notification)
