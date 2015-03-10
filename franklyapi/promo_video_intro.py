@@ -345,7 +345,7 @@ def makeFinalPromo(answer_author_username,video_file_path,transpose_command,temp
 #----------------------------clean up -------------------------------------------		
 	shutil.copy(final_file,"../"+final_file)
 	os.chdir('../../')
-	rdir = call('rm -rf '+path,shell=True)
+	#rdir = call('rm -rf '+path,shell=True)
 
 #makeFinalPromo(answer_author_username = 'kejriwal_Arvind',video_file_path = '',transpose_command='',temp_path="temprg/vid3",output_file_name="a.mp4",answer_author_name=None,question=None,question_author_username=None,answer_author_image_filepath=None)
 #makeFinalPromo("Kejriwal Arvind","rawvid2.mp4","Hello bhaiya ji... sab badhiya chal rha h? hello bhaiya ji... sab badhiya chal rha h?","Rishabh Goel","photo.png",'','tempppp/dd','rg2')
