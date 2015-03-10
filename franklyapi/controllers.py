@@ -23,7 +23,7 @@ from configs import config
 from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
                     Question, Upvote, Comment, ForgotPasswordToken, Install, Video,\
                     UserFeed, Event, Reshare, Invitable, Invite, ContactUs, InflatedStat,\
-                    SearchDefault, IntervalCountMap
+                    SearchDefault, IntervalCountMap, ReportAbuse
 
 from app import redis_client, raygun, db, redis_views
 
@@ -1098,6 +1098,10 @@ def question_list(user_id, offset, limit):
 
 
 def question_list_public(current_user_id, user_id, username=None, offset=0, limit=10, version_code=None):
+    if offset<0:
+        return {'current_user_questions':[], 'questions': [], 'count': 0,  'next_index' : -1}
+
+
     if username:
         try:
             user_id = User.query.with_entities('username').filter(User.username==username).one().id

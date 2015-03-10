@@ -31,9 +31,9 @@ def push_notification(notification_id, user_id, source='application'):
     from GCM_notification import GCM
     gcm_sender = GCM()
 
-    gcm_ids = []
-    apn_ids = []
-    
+
+    notification = Notification.query.get(notification_id)
+    group_id = '-'.join([str(notification.type), str(notification.object_id)])
     for device in AccessToken.query.filter(AccessToken.user==user_id,
                                             AccessToken.active==True,
                                             AccessToken.push_id!=None).all():
@@ -53,15 +53,7 @@ def push_notification(notification_id, user_id, source='application'):
                                                      )
         db.session.add(user_push_notification)
         db.session.commit()
-        if get_device_type(device.device_id)=='android':
-            gcm_ids.append(device.push_id)
-        if get_device_type(device.device_id)=='ios':
-            apn_ids.append(device.push_id)
-
-    notification = Notification.query.get(notification_id)
-    group_id = '-'.join([str(notification.type), str(notification.object_id)])
-    
-    payload = {
+        payload = {
                     "user_to" : user_id,
                     "type" : 1,
                     "id" : user_push_notification.id,
@@ -74,11 +66,11 @@ def push_notification(notification_id, user_id, source='application'):
                     "seen" : False,
                     "heading":"Frankly.me"
                 }
-
-    if gcm_ids:
-        pass
-        print gcm_ids, payload
-        gcm_sender.send_message(gcm_ids, payload)
+        if get_device_type(device.device_id)=='android':
+            gcm_sender.send_message([device.push_id], payload)
+        
+        if get_device_type(device.device_id)=='ios':
+            pass        
 
 
 
@@ -168,7 +160,7 @@ def notification_user_follow(follow_id):
 
     notification_type = 'user-follow-self_user'
     text = "<follower_name> started following you"
-    text = text.replace('<answer_author_name>', answer_author.first_name)
+    text = text.replace('<follower_name>', follower.first_name)
     icon = None
     link = config.WEB_URL + '/p/{client_id}'.format(client_id=post.client_id)
     
