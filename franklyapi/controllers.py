@@ -196,7 +196,10 @@ def register_email_user(email, password, full_name, device_id, username=None, ph
     
     new_registration_task(new_user.id)
     
-    return {'access_token': access_token, 'username': username, 'id':new_user.id, 'new_user' : True, 'user_type' : new_user.user_type}
+    return {'access_token':access_token, 'username':username,
+            'id':new_user.id, 'new_user':True, 'user_type':new_user.user_type,
+            'user':user_to_dict(user)
+            }
 
 def get_twitter_email(twitter_id):
     return '{twitter_id}@twitter.com'.format(twitter_id=twitter_id)
@@ -233,7 +236,11 @@ def login_user_social(social_type, social_id, external_access_token, device_id, 
         activated_now=user.deleted
         User.query.filter(User.id==user.id).update(update_dict)
         db.session.commit()
-        return {'access_token': access_token, 'id':user.id, 'username':user.username, 'activated_now': activated_now, 'new_user' : False, 'user_type' : user.user_type} 
+        return {'access_token': access_token, 'id':user.id,
+                'username':user.username, 'activated_now': activated_now,
+                'new_user' : False, 'user_type' : user.user_type,
+                'user':user_to_dict(user)
+                }
     
     else:
         username = make_username(user_data['email'], user_data.get('full_name'), user_data.get('social_username'))
@@ -267,7 +274,11 @@ def login_user_social(social_type, social_id, external_access_token, device_id, 
         set_access_token(device_id, device_type, new_user.id, access_token, push_id)
         new_registration_task(new_user.id)
 
-        return {'access_token': access_token, 'id':new_user.id, 'username':new_user.username, 'activated_now':False, 'new_user' : True, 'user_type': new_user.user_type} 
+        return {'access_token': access_token, 'id':new_user.id,
+                'username':new_user.username, 'activated_now':False,
+                'new_user' : True, 'user_type': new_user.user_type,
+                'user':user_to_dict(user)
+                } 
 
 def login_email_new(user_id, id_type, password, device_id, push_id=None):
     try:
@@ -286,7 +297,11 @@ def login_email_new(user_id, id_type, password, device_id, push_id=None):
         activated_now = user.deleted
         if activated_now:
             User.query.filter(User.id==user.id).update({'deleted':False})
-        return {'access_token': access_token, 'username': user.username, 'activated_now': activated_now, 'id':user.id, 'new_user':False, 'user_type' : user.user_type}
+        return {'access_token': access_token, 'username': user.username,
+                'activated_now': activated_now, 'id':user.id,
+                'new_user':False, 'user_type' : user.user_type,
+                'user':user_to_dict(user)
+                }
     except NoResultFound:
         raise CustomExceptions.UserNotFoundException("No user with the given %s found"%(id_type))
 
