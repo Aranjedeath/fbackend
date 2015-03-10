@@ -70,7 +70,7 @@ def get_key_name_from_url(url):
     if domain in url:
         return url.split(domain)[1]
     elif old_domain in url:
-        return url.split(domain)[1]
+        return url.split(old_domain)[1]
     
     raise Exception("Invalid Url")
     
