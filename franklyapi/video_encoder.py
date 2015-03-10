@@ -20,10 +20,10 @@ raygun = raygunprovider.RaygunSender(config.RAYGUN_KEY)
 
 
 VIDEO_ENCODING_PROFILES = {     
-                                # 'promo':{
-                                #         'file_prefix' : '_promo',
-                                #         'file_extension' : 'mp4'
-                                # },
+                                'promo':{
+                                         'file_prefix' : '_promo',
+                                         'file_extension' : 'mp4'
+                                },
 
                                 'thumbnail':{
                                         'command' : 'ffmpeg -ss 0 -i "{input_file}" -vframes 1 {transpose_command2} -t 1 -f image2 {output_file}',
@@ -184,6 +184,8 @@ def encode_video_to_profile(file_path, video_url, profile_name, username=None):
 def make_promo_video(answer_author_username, video_file_path, transpose_command='',
                     answer_author_name=None, question=None, question_author_username=None,
                     answer_author_image_filepath=None):
+    
+    
     
     profile = VIDEO_ENCODING_PROFILES['promo']
     temp_path = os.path.join(TEMP_DIR, uuid.uuid1().hex)
