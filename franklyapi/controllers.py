@@ -1805,7 +1805,7 @@ def get_notifications(cur_user_id, device_id, version_code, notification_categor
                                     "type" : 1,
                                     "id" : 'update_required_ios',
                                     "text" : "A new version of Frankly.me is available. Click here to update.",
-                                    "icon" : default_icons['frankly_icon'],
+                                    "icon" : None,
                                     "group_id": 'update_required',
                                     "link" : app_store_link,
                                     "deeplink" : app_store_link,
