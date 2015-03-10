@@ -194,7 +194,7 @@ def make_promo_video(answer_author_username, video_file_path, transpose_command=
     
     profile = VIDEO_ENCODING_PROFILES['promo']
     temp_path = os.path.join(TEMP_DIR, uuid.uuid1().hex)
-    output_file_name = uuid.uuid1().hex+'.'+profile['file_extension']
+    output_file_name = uuid.uuid1().hex
     
     promo_video_intro.makeFinalPromo(answer_author_username, video_file_path,
                                         transpose_command, temp_path, output_file_name,
@@ -205,7 +205,7 @@ def make_promo_video(answer_author_username, video_file_path, transpose_command=
 
     #promo_video_intro.makeFinalPromo(answer_author_name,video_file_path,question,question_author_username,answer_author_image_filepath,transpose_command,temp_path,output_file_name)
     #promo_video.make_promo(temp_path,file_path,output_file_name,'promo_content/','overlay_png1','overlay_png2','overlay_png3','bariol_bold-webfont_0.ttf',username,transpose_command)
-    return (temp_path , output_file_name)
+    return (temp_path , output_file_name+'.'+profile['file_extension'])
 
 def print_output(statement):
     print ''
