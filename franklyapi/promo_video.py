@@ -122,7 +122,9 @@ def promo_video(in_file,text,transpose_command=''):
     return 'final.mpg'
 
 def make_promo(path,in_file,username,transpose_command):
-    shutil.copytree('promo_content',path) #copy promo_content folder to temp PATH
+    import os
+    promo_content_path = os.path.abspath(os.curdir)+'/promo_content'
+    shutil.copytree(promo_content_path,path) #copy promo_content folder to temp PATH
     os.chdir(path) #work in currently copied path
     return promo_video(in_file,text=('/'+username),transpose_command=transpose_command) #make video
 
