@@ -224,6 +224,7 @@ def login_user_social(social_type, social_id, external_access_token, device_id, 
         user_data['social_id'] = str(user_data['social_id']).strip()
         user = User.query.filter(User.twitter_id==user_data['social_id']).first()
 
+    existing_user = None
     if social_type in ['facebook', 'google']:
         existing_user = User.query.filter(User.email==user_data['email']).first()
 
