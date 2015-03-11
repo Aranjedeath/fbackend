@@ -1122,7 +1122,7 @@ def question_list_public(current_user_id, user_id, username=None, offset=0, limi
 
     if username:
         try:
-            user_id = User.query.with_entities('username').filter(User.username==username).one().id
+            user_id = User.query.with_entities('id', 'username').filter(User.username==username).one().id
         except NoResultFound:
             raise CustomExceptions.UserNotFoundException('User Not Found')
             
