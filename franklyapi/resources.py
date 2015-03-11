@@ -850,7 +850,8 @@ class QuestionList(restful.Resource):
     get_parser.add_argument('limit', type=int, default=10, location='args')
     get_parser.add_argument('X-Version-Code', type=int, location='headers', default=0)
 
-    
+
+
     @login_required
     def get(self):
         """
@@ -2157,6 +2158,26 @@ class EncodeStatistics(restful.Resource):
             raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
+
+
+class ArrowDirection(restful.Resource):
+    def get(self):
+        """
+        Sends the direction of arrow to be shown on top left corner
+
+        Authentication: Not Required
+        """
+        get_parser = reqparse.RequestParser()
+        get_parser.add_argument('screen', type=str, location='args', required=True, choices=['profile', 'question_list', 'notifications', 'settings'], help="screen should be one of the following ['profile', 'question_list', 'notifications', 'settings']")
+
+        def get(self):
+            args = self.get_parser.parse_args()
+
+            if args['screen'] in ['profile', 'notifications', 'settings']:
+                return {'direction':'left'}
+            else:
+                return {'direction':'right'}
+
 
 
 class RSS(restful.Resource):
