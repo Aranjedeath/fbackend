@@ -100,7 +100,7 @@ api.add_resource(RSS, '/rss')
 
 api.add_resource(ReportAbuse, '/reportabuse')
 
-api.add_resource(ArrowDirection, '/arrow_direction')
+api.add_resource(ArrowDirection, '/one_direction')
 
 
 #api.add_resource(PostLikeUsers, '/post/like/users')
