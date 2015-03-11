@@ -1813,7 +1813,7 @@ def get_notifications(cur_user_id, device_id, version_code, notification_categor
     device_type = get_device_type(device_id)
     
     if device_type == 'ios':
-        app_store_link = config.IOS_APPSTORE_LINK
+        app_store_link = config.IOS_APPSTORE_DEEPLINK
     
     if device_type == 'android':
         app_store_link = config.ANDROID_APPSTORE_LINK

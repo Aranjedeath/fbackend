@@ -62,6 +62,7 @@ GCM_API_KEY = 'AIzaSyBKa5pjzTdbdLwMcYkic1yK1q_fbHljbxY'
 
 ANDROID_APPSTORE_LINK = 'https://play.google.com/store/apps/details?id=me.frankly'
 IOS_APPSTORE_LINK = 'https://itunes.apple.com/in/app/frankly.me-talk-to-celebrities/id929968427'
+IOS_APPSTORE_DEEPLINK='itms-apps://itunes.apple.com/app/id/929968427'
 
 ANDROID_LATEST_VERSION_CODE = 42
 ANDROID_NECESSARY_VERSION_CODE = 40
