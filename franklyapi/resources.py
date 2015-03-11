@@ -2171,6 +2171,7 @@ class ArrowDirection(restful.Resource):
         get_parser.add_argument('screen', type=str, location='args', required=True, choices=['profile', 'question_list', 'notifications', 'settings'], help="screen should be one of the following ['profile', 'question_list', 'notifications', 'settings']")
 
         def get(self):
+            return 'bhonsdika'
             args = self.get_parser.parse_args()
 
             if args['screen'] in ['profile', 'notifications', 'settings']:
