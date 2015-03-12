@@ -110,7 +110,7 @@ def search(cur_user_id, q, offset, limit):
         where_clause += """OR user_title LIKE :processed_query_contained_{idx} OR username LIKE :processed_query_contained_{idx} """.format(idx=idx)
 
         order_by_processed_username += """processed_username_match_{idx} DESC, """.format(idx=idx)
-        order_by_title += """processed_title_match_{idx} DESC """.format(idx=idx)
+        order_by_title += """processed_title_match_{idx} DESC, """.format(idx=idx)
 
         params.update({'processed_query_contained_{idx}'.format(idx=idx): '%{pq}%'.format(pq=i)})
 
@@ -153,11 +153,11 @@ def search(cur_user_id, q, offset, limit):
                                             name_word_start_match DESC,
                                             is_following DESC,
                                             question_count DESC,
-                                            followed_count DESC,
                                             top_user_score DESC,
                                             {order_by_processed_username}
                                             exact_title_match DESC,
                                             {order_by_title}
+                                            followed_count DESC
                                             
 
                                     LIMIT :result_offset, :result_limit""".format( select_query=select_query,
