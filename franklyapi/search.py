@@ -58,6 +58,7 @@ keyword_map = {
                 'media'         :['television', 'tv', 'anchors'],
                 'radio'         :['rj', 'radio', 'jockeys', 'fm'],
                 'singer'        :['singers', 'music', 'musicians'],
+                'music'         :['singer', 'singers'],
                 'chef'          :['chefs', 'master', 'cooks', 'food'],
                 'entrepreneur'  :['businessman', 'entrepreneurs', 'startups', 'company', 'founders']
                 }
@@ -109,7 +110,7 @@ def search(cur_user_id, q, offset, limit):
         where_clause += """OR user_title LIKE :processed_query_contained_{idx} OR username LIKE :processed_query_contained_{idx} """.format(idx=idx)
 
         order_by_processed_username += """processed_username_match_{idx} DESC, """.format(idx=idx)
-        order_by_title += """processed_title_match_{idx} DESC, """.format(idx=idx)
+        order_by_title += """processed_title_match_{idx} DESC """.format(idx=idx)
 
         params.update({'processed_query_contained_{idx}'.format(idx=idx): '%{pq}%'.format(pq=i)})
 
@@ -148,15 +149,16 @@ def search(cur_user_id, q, offset, limit):
                                         {remove_current_user}
 
                                     ORDER BY user_type DESC,
+                                            name_start_match DESC,
+                                            name_word_start_match DESC,
                                             is_following DESC,
                                             question_count DESC,
                                             followed_count DESC,
-                                            name_start_match DESC,
                                             top_user_score DESC,
                                             {order_by_processed_username}
                                             exact_title_match DESC,
                                             {order_by_title}
-                                            name_word_start_match DESC
+                                            
 
                                     LIMIT :result_offset, :result_limit""".format( select_query=select_query,
                                                                                    where_clause=where_clause,
@@ -195,5 +197,7 @@ def search(cur_user_id, q, offset, limit):
 
 
 
-
+comedians - 
+bands
+singers
 

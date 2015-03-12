@@ -38,7 +38,7 @@ def doc_gen(app, resources=None):
 
             method_func = getattr(item, method.lower())
             method_func_doc = method_func.im_func.func_doc
-            doc_item[method]['docstring'] = method_func_doc.strip()
+            doc_item[method]['docstring'] = method_func_doc.strip() if method_func_doc else 'No DocString'
             
             arg_objects = []
             try:

@@ -2161,15 +2161,15 @@ class EncodeStatistics(restful.Resource):
 
 
 class ArrowDirection(restful.Resource):
-    """
-    Sends the direction of arrow to be shown on top left corner
-
-    Authentication: Not Required
-    """
     get_parser = reqparse.RequestParser()
     get_parser.add_argument('screen', type=str, location='args', required=True, choices=['profile', 'question_list', 'notifications', 'settings'], help="screen should be one of the following ['profile', 'question_list', 'notifications', 'settings']")
 
     def get(self):
+        """
+        Sends the direction of arrow to be shown on top left corner
+
+        Authentication: Not Required
+        """
         args = self.get_parser.parse_args()
 
         if args['screen'] in ['profile', 'notifications', 'settings']:
