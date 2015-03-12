@@ -2186,7 +2186,7 @@ class BucketName(restful.Resource):
 
         Authentication: Not Required
         """
-        return {'bucket_name':config.CURRENT_S3_BUCKET}
+        return {'bucket_name':config.CURRENT_S3_BUCKET_NAME}
 
 
 

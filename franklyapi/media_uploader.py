@@ -8,8 +8,8 @@ import CustomExceptions
 from configs import config
 import image_processors
 
-BUCKET_NAME = config.CURRENT_BUCKET_NAME
-OLD_BUCKET_NAME = config.OLD_BUCKET_NAME
+BUCKET_NAME = config.CURRENT_S3_BUCKET_NAME
+OLD_BUCKET_NAME = config.OLD_S3_BUCKET_NAME
 CONN = S3Connection(config.AWS_KEY, config.AWS_SECRET)
 
 ALLOWED_VIDEO_TYPES = ['video/mp4', 'application/octet-stream']
