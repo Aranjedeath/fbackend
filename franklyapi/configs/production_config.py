@@ -1,5 +1,6 @@
 from bad_usernames import UNAVAILABLE_USERNAMES_LAST_UPDATED, UNAVAILABLE_USERNAMES
 import socket
+import os
 
 DEBUG = False
 
@@ -16,7 +17,9 @@ RAYGUN_USERNAME = "frankly2@mailinator.com"
 RAYGUN_PASSWORD = "dexter123"
 
 AWS_KEY = 'AKIAJ72DWIKVJZNTD2VA'
-AWS_SECRET = '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' 
+AWS_SECRET = 'RFzbvP+kFYxW4PFW828bsF/HVBargsNagvzaBnDo'
+CURRENT_BUCKET_NAME = 'franklymestorage'
+OLD_BUCKET_NAME = 'franklyapp'
 
 TWITTER_APP_TOKEN = 'aaNDJcxdHadQTxBW8P7B42yoy'
 TWITTER_APP_SECRET = 'AAOwvDBHlci4WmJANTmgOLJg28v3HSx0SogBEfQY9TGamsF9CS'
@@ -59,6 +62,8 @@ WEB_URL = 'http://frankly.me'
 HOSTNAME = socket.gethostname()
 
 GCM_API_KEY = 'AIzaSyBKa5pjzTdbdLwMcYkic1yK1q_fbHljbxY'
+APN_CERT_PATH = os.path.join(os.path.abspath(os.curdir), 'configs', 'APN_cert.pem')
+APN_KEY_PATH = os.path.join(os.path.abspath(os.curdir), 'configs', 'APN_key.pem')
 
 ANDROID_APPSTORE_LINK = 'https://play.google.com/store/apps/details?id=me.frankly'
 IOS_APPSTORE_LINK = 'https://itunes.apple.com/in/app/frankly.me-talk-to-celebrities/id929968427'

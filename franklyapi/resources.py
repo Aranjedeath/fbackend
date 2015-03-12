@@ -2178,6 +2178,17 @@ class ArrowDirection(restful.Resource):
             return {'direction':'right'}
 
 
+class BucketName(restful.Resource):
+
+    def get(self):
+        """
+        Returns the name of the S3 bucket to upload the media
+
+        Authentication: Not Required
+        """
+        return {'bucket_name':config.CURRENT_S3_BUCKET}
+
+
 
 class RSS(restful.Resource):
     def get(self):

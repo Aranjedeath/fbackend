@@ -9,15 +9,14 @@ class APN():
     def __init__(self, cert_file=config.APN_CERT_PATH, key_file=config.APN_KEY_PATH, use_sandbox=False):
         self.apns = APNs(use_sandbox=use_sandbox, cert_file=cert_file, key_file=key_file)
 
-    def send_message(self, push_ids, data):
-    	payload = Payload(custom=data)
-    	expiry = time.time()+3600*12
-    	priority = 10
-    	identifier = data['id']
+    def send_message(self, apn_ids, data):
+        payload = Payload(custom=data)
+        expiry = time.time()+3600*12
+        priority = 10
+        identifier = data['id']
 
-    	frame = Frame()
+        frame = Frame()
 
-    	for push_id in push_ids:
-    		frame.add_item(push_id, payload, identifier, expiry, priority)
-		self.apns.gateway_server.send_notification_multiple(frame)
-		
+        for apn_id in apn_ids:
+            frame.add_item(apn_id, payload, identifier, expiry, priority)
+        self.apns.gateway_server.send_notification_multiple(frame)

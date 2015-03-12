@@ -29,8 +29,6 @@ api.add_resource(UserUpdateToken, '/user/update_token')
 
 api.add_resource(TopLikedUsers, '/user/top_liked_users')
 
-
-
 api.add_resource(QuestionAsk, '/question/ask')
 api.add_resource(QuestionCount, '/question/count')
 api.add_resource(QuestionView, '/question/view/<question_id>')
@@ -73,6 +71,8 @@ api.add_resource(NotificationCount, '/notifications/count')
 
 api.add_resource(InstallRef, '/utils/install_ref')
 api.add_resource(BadUsernames, '/utils/badusernames')
+api.add_resource(BucketName, '/utils/bucket_name')
+
 
 api.add_resource(Logout, '/logout')
 api.add_resource(VideoView, '/videoview')
