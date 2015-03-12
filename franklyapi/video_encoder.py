@@ -195,7 +195,7 @@ def make_promo_video(answer_author_username, video_file_path, transpose_command=
     profile = VIDEO_ENCODING_PROFILES['promo']
     temp_path = os.path.join(TEMP_DIR, uuid.uuid1().hex) + 'promo'
     output_file_name = uuid.uuid1().hex
-    answer_author_image_filepath = os.path.abspath(os.curdir)+'/'+answer_author_image_filepath
+    
     promo_video_intro.makeFinalPromo(answer_author_username, video_file_path,
                                         transpose_command, temp_path, output_file_name,
                                         answer_author_name, question, question_author_username,
