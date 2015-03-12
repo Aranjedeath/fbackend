@@ -20,9 +20,11 @@ def makeCelebPic(canvas,celebPicQ):
 	if celebPicQ.path:
 
 		img = Image.open(celebPicQ.path)
+
 		bigsize = (img.size[0] * 3, img.size[1] * 3)
 		# inbigsize = (int(img.size[0] * 2.8), int(img.size[1] * 2.8))
 		mask = Image.open('d57og.png').convert('L')
+		gola = Image.open('gola.png')
 		
 		# circle = Image.new('L', bigsize, 0)
 		# draw = ImageDraw.Draw(circle) 
@@ -37,8 +39,10 @@ def makeCelebPic(canvas,celebPicQ):
 		
 		img = img.resize((celebPicQ.w,celebPicQ.w))
 		mask = mask.resize((celebPicQ.w,celebPicQ.w))
-
+		gola = gola.resize((celebPicQ.w,celebPicQ.w))
 		canvas.paste(img,(celebPicQ.x,celebPicQ.y),mask)
+		canvas.paste(gola,(celebPicQ.x,celebPicQ.y),gola)
+
 		# canvas.paste(circle,(celebPicQ.x,celebPicQ.y))
 	return canvas
 def makeCelebName(canvas,celebNameQ):
