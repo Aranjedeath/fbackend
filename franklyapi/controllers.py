@@ -2210,7 +2210,9 @@ def discover_post_in_cqm(cur_user_id, offset, limit, device_id, version_code, we
 def get_is_following(cur_user_id, user_ids):
     results = db.session.execute(text("""SELECT user_follows.followed
                                         FROM user_follows
-                                        WHERE user_follows.user = :user_id AND user_follows.followed IN :user_ids
+                                        WHERE user_follows.user = :user_id
+                                        AND user_follows.followed IN :user_ids
+                                        AND user_follows.unfollowed = false
                                       """),
                                         params={'user_id': cur_user_id, 'user_ids': user_ids}
                                 )
