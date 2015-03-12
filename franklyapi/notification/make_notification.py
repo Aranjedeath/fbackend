@@ -93,7 +93,7 @@ def notification_question_ask(question_id):
 
     icon = None
 
-    link = config.WEB_URL + '/question/{question_id}'.format(question_id=question_id)
+    link = config.WEB_URL + '/q/{question_id}'.format(question_id=question_id)
 
     notification = Notification(type=notification_type, text=text,
                                 link=link, object_id=question_id,
