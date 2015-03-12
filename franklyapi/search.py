@@ -194,10 +194,3 @@ def search(cur_user_id, q, offset, limit):
         next_index = offset+limit
 
     return {'q':q, 'count':count, 'results':results, 'next_index':next_index}
-
-
-
-comedians - 
-bands
-singers
-
