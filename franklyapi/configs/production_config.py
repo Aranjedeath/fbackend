@@ -44,7 +44,6 @@ ALLOWED_PICTURE_FORMATS = ['jpg', 'jpeg', 'png']
 ALLOWED_VIDEO_FORMATS = ['mp4']
 ALLOWED_AUDIO_FORMATS = ['mp3', 'ogg', 'wav', 'aac', '3gp']
 
-BLOCKED_EMAIL_DOMAINS = ['mailinator.com']
 ALLOWED_CHARACTERS = [ chr(item) for item in range(48,58)+range(65,91)+[95]+range(97,123)]
 
 ADMIN_USERS = ['cab4132c53c6b197df310373dba38e5f','cab4132c53c6a513df310374a482ef4e','cab4132c53c6a447df3103743a3fabdf']
@@ -73,3 +72,18 @@ ANDROID_LATEST_VERSION_CODE = 42
 ANDROID_NECESSARY_VERSION_CODE = 40
 IOS_LATEST_VERSION_CODE = 42
 IOS_NECESSARY_VERSION_CODE = 41
+
+
+
+
+
+
+BLOCKED_EMAIL_DOMAINS = ['mailinator.com', 'spambooger.com', 'zippymail.info',
+						'mailinator.net', 'streetwisemail.com', 'thisisnotmyrealemail.com',
+						'mailinator2.com', 'tradermail.info', 'reconmail.com']
+
+
+
+
+		]
+

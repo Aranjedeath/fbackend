@@ -117,6 +117,13 @@ def make_username(email, full_name=None, social_username=None):
     return username
 
 
+def make_password():
+    suffix = random.choice(['red', 'big', 'small', 'pink', 'thin', 'smart', 'genius', 'black', 'evil', 'purple'])
+    prefix = random.choice(['tomato', 'potato', 'cup', 'rabbit', 'bowl', 'book', 'ball', 'wall', 'chocolate'])
+    password = random.choice(suffix) + random.choice(prefix) + str(random.randint(0, 10000))
+    return password
+
+
 def generate_access_token(user_id, device_id=None):
     return hashlib.sha1('%s%s' % (user_id, int(time.time()))).hexdigest()
 
@@ -162,10 +169,12 @@ def new_registration_task(user_id):
     # add any task that should be done for a first time user
     pass
 
-def register_email_user(email, password, full_name, device_id, username=None, phone_num=None,
+
+def register_email_user(email, full_name, device_id, password=None, username=None, phone_num=None,
                         push_id=None, gender=None, user_type=0, user_title=None, 
                         lat=None, lon=None, location_name=None, country_name=None, country_code=None,
-                        bio=None, profile_picture=None, profile_video=None, admin_upload=False, added_by=None):
+                        bio=None, profile_picture=None, profile_video=None, admin_upload=False,
+                        added_by=None, IP_address=None):
     
     if not email_available(email):
         raise CustomExceptions.UserAlreadyExistsException("A user with that email already exists")
@@ -176,7 +185,12 @@ def register_email_user(email, password, full_name, device_id, username=None, ph
         username = make_username(email, full_name)
 
     device_type = get_device_type(device_id)
-    registered_with = device_type + '_email'
+    registered_with = 'auto'+device_type + '_email'
+    mail_password = False
+    if not password:
+        mail_password = True
+        password=make_password
+        registered_with = 'auto'+registered_with
 
     new_user = User(email=email, username=username, first_name=full_name, password=password, 
                     registered_with=registered_with, user_type=user_type, gender=gender, user_title=user_title,
@@ -194,7 +208,7 @@ def register_email_user(email, password, full_name, device_id, username=None, ph
         access_token = generate_access_token(new_user.id, device_id)
         set_access_token(device_id, device_type, new_user.id, access_token, push_id)
     
-    new_registration_task(new_user.id)
+    new_registration_task(new_user.id, mail_password=mail_password)
     
     return {'access_token':access_token, 'username':username,
             'id':new_user.id, 'new_user':True, 'user_type':new_user.user_type,
@@ -1065,7 +1079,8 @@ def sanitize_question_body(body):
     return body
 
 
-def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_by=None): 
+def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_by=None):
+
     if has_blocked(cur_user_id, question_to):
         raise CustomExceptions.BlockedUserException()
 

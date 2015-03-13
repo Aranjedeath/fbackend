@@ -26,10 +26,10 @@ class RegisterEmail(restful.Resource):
 
     #==POST==#
     post_parser = reqparse.RequestParser()
-    post_parser.add_argument('password'     , type=str, required=True, location='json')
     post_parser.add_argument('email'        , type=str, required=True, location='json')
     post_parser.add_argument('device_id'    , type=str, required=True, location='json', help=device_id_argument_help)
     post_parser.add_argument('full_name'    , type=str, required=True, location='json')
+    post_parser.add_argument('password'     , type=str, default=None, location='json')
     post_parser.add_argument('username'     , type=str, required=False, location='json', default = None, help="username should be 6 to 24 characters and can only contain A-Z, a-z, 0-9 and _ ")
     
     post_parser.add_argument('gender'       , type=str, default='M', location='json', choices=['M', 'F'])
