@@ -193,7 +193,7 @@ def make_promo_video(answer_author_username, video_file_path, transpose_command=
     
     
     profile = VIDEO_ENCODING_PROFILES['promo']
-    temp_path = os.path.join(TEMP_DIR, uuid.uuid1().hex)
+    temp_path = os.path.join(TEMP_DIR, uuid.uuid1().hex) + 'promo'
     output_file_name = uuid.uuid1().hex
     
     promo_video_intro.makeFinalPromo(answer_author_username, video_file_path,
