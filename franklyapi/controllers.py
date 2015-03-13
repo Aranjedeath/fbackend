@@ -165,7 +165,7 @@ def get_device_type(device_id):
         return 'android'
     return 'ios'
 
-def new_registration_task(user_id):
+def new_registration_task(user_id, mail_password=False):
     # add any task that should be done for a first time user
     pass
 
