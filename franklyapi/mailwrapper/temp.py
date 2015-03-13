@@ -1,6 +1,7 @@
 import boto.ses
+import json
 
-from flask import Flask, url_for
+from flask import Flask, url_for, request
 
 app = Flask(__name__)
 
@@ -31,12 +32,14 @@ def send_mail(sender_id, reciever_id, message_subject, message_body):
 
 @app.route('/endpoint', methods=['GET', 'POST'])
 def hello_world():
-    assert 0
+    print request.headers
+    data = json.loads(request.data)
+    print "\n\n Data \n -------------\n",json.loads(data['Message'])['mail']['destination'][0]
     return 'Hello World!'
 
 if __name__ == '__main__':
     # add_email_sender('nikhil@frankly.me')
     # for elem in get_verified_emails():
     # 	print elem
-    send_mail()
-    app.run()
+    # send_mail()
+    app.run(debug=True, host='0.0.0.0', port=8888)
