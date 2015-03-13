@@ -1,4 +1,9 @@
 import boto.ses
+
+from flask import Flask, url_for
+
+app = Flask(__name__)
+
 conn = boto.ses.connect_to_region(
     'us-east-1',
     aws_access_key_id='AKIAJQQLEO5Q4TXXD2ZQ',
