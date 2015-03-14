@@ -1885,7 +1885,7 @@ def get_notifications(cur_user_id, device_id, version_code, notification_categor
                                                 AND user_notifications.list_type = :list_type
                                                 AND user_notifications.show_on in :device_type
                                             GROUP BY notifications.type, notifications.object_id
-                                            ORDER BY user_notifications.added_at 
+                                            ORDER BY user_notifications.added_at DESC
                                             LIMIT :offset,:limit
                                         """),
                                     params = {'cur_user_id':cur_user_id,
@@ -1911,6 +1911,7 @@ def get_notifications(cur_user_id, device_id, version_code, notification_categor
                         "link" : row[5],
                         "deeplink" : row[5],
                         "timestamp" : int(time.mktime(row[6].timetuple())),
+                        'updated_at':int(time.mktime(row[6].timetuple())),
                         "seen" : bool(row[7])
                         }
         notifications.append(notification)
@@ -2452,10 +2453,13 @@ def get_item_from_slug(current_user_id, username, slug):
                                             ).one()
         question_to = User.query.filter(User.id==question.question_to).one()
         if question_to.username.lower() != username.lower():
+            
             return {'redirect':True, 'username':question_to.username, 'slug':question.slug}
+        
         if question.is_answered:
             post = Post.query.filter(Post.question==question.id, Post.deleted==False).one()
             return {'redirect':False, 'is_answered':question.is_answered, 'post':post_to_dict(post, current_user_id)}
+        
         return {'redirect':False, 'is_answered':question.is_answered, 'question':question_to_dict(question, current_user_id)}
     except NoResultFound:
         raise CustomExceptions.ObjectNotFoundException('The question does not exist or has been deleted.')
