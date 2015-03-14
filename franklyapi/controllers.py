@@ -1920,7 +1920,7 @@ def get_notifications(cur_user_id, device_id, version_code, notification_categor
     next_index = -1 if count<original_limit else offset+limit
     print {'notifications':notifications, 'count':count, 'next_index':next_index}
 
-    return {'notifications':notifications, 'count':count, 'next_index':next_index}
+    return {'notifications':notifications, 'count':count, 'next_index':next_index, 'current_time':int(time.mktime(datetime.datetime.now().timetuple()))}
 
 
 def get_notification_count(cur_user_id, device_id, version_code):
