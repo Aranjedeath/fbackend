@@ -863,7 +863,8 @@ def user_follow(cur_user_id, user_id):
     if cur_user_id == user_id:
         raise CustomExceptions.BadRequestException("Cannot follow yourself")
 
-    db.session.execute(text("""INSERT INTO user_follows (user, followed, unfollowed, timestamp) 
+    if user_id!=cur_user_id:
+        db.session.execute(text("""INSERT INTO user_follows (user, followed, unfollowed, timestamp) 
                                 VALUES(:cur_user_id, :user_id, false, :timestamp) 
                                 ON DUPLICATE KEY 
                                 UPDATE unfollowed = false, timestamp=:timestamp"""),
@@ -2508,3 +2509,4 @@ def get_rss():
     with open('/tmp/franklymeanswers.xml','r') as f:
         s = f.read()
     return s
+

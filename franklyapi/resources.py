@@ -2211,36 +2211,3 @@ class RSS(restful.Resource):
             raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
-
-
-
-class TeamFrankly(restful.Resource):
-
-    post_parser = reqparse.RequestParser()
-    post_parser.add_argument('token_type', type=str, location='json', required=True)
-    post_parser.add_argument('token', type=str, location='json', required=True)
-    post_parser.add_argument('external_id', type=str, location='json', required=True)
-    post_parser.add_argument('token_secret', type=str, location='json')
-
-    def post(self):
-        """
-        Adds social account of team frankly
-
-        Controller Functions Used:
-            - get_rss
-
-        Authentication: Optional
-        """
-        try:
-            pass
-            #resp = controllers.add_to_team_frankly(token_type=,
-            #                                        token=,
-            #                                        )
-            resp.headers['content-type'] = 'application/xml'
-            return resp
-        
-        except Exception as e:
-            err = sys.exc_info()
-            raygun.send(err[0], err[1], err[2])
-            print traceback.format_exc(e)
-            abort(500, message=internal_server_error_message)
