@@ -21,6 +21,8 @@ AWS_SECRET = 'RFzbvP+kFYxW4PFW828bsF/HVBargsNagvzaBnDo'
 CURRENT_S3_BUCKET_NAME = 'franklymestorage'
 OLD_S3_BUCKET_NAME = 'franklyapp'
 
+SENDER_EMAIL = 'hello@frankly.me'
+
 TWITTER_APP_TOKEN = 'aaNDJcxdHadQTxBW8P7B42yoy'
 TWITTER_APP_SECRET = 'AAOwvDBHlci4WmJANTmgOLJg28v3HSx0SogBEfQY9TGamsF9CS'
 
@@ -73,17 +75,7 @@ ANDROID_NECESSARY_VERSION_CODE = 40
 IOS_LATEST_VERSION_CODE = 42
 IOS_NECESSARY_VERSION_CODE = 41
 
-
-
-
-
-
 BLOCKED_EMAIL_DOMAINS = ['mailinator.com', 'spambooger.com', 'zippymail.info',
 						'mailinator.net', 'streetwisemail.com', 'thisisnotmyrealemail.com',
 						'mailinator2.com', 'tradermail.info', 'reconmail.com']
-
-
-
-
-		]
 

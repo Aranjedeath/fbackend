@@ -35,6 +35,11 @@ from video_db import add_video_to_db
 from database import get_item_id
 from trends import most_liked_users
 
+from mailwrapper import text_mails, SimpleMailer
+
+mailer = SimpleMailer(config.SENDER_EMAIL)
+
+
 def create_event(user, action, foreign_data, event_date=datetime.date.today()):
     if not Event.query.filter(Event.user==user, Event.action==action, Event.foreign_data==foreign_data, Event.event_date==event_date).count():
         return Event(user=user, action=action, foreign_data=foreign_data, event_date=event_date)
@@ -165,9 +170,23 @@ def get_device_type(device_id):
         return 'android'
     return 'ios'
 
+def send_registration_mail(user_id, mail_password=False):
+    user = User.query.filter(User.id==user_id).one()
+    if 'twitter' not in user.registered_with:
+        if mail_password:
+            message_body = text_mails.password_registration_mail.format(full_name=user.first_name,
+                                                username=user.username,
+                                                password=user.password)
+        else:
+            message_body = text_mails.non_password_registration_mail.format(full_name=user.first_name)
+
+        mailer.send_mail(reciever_id=user.email, message_subject='Welcome to Frankly.me', message_body=message_body)
+
+
 def new_registration_task(user_id, mail_password=False):
     # add any task that should be done for a first time user
-    pass
+    if mail_password:
+        send_registration_mail(user_id, mail_password=mail_password)
 
 
 def register_email_user(email, full_name, device_id, password=None, username=None, phone_num=None,

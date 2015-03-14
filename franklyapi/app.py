@@ -1,5 +1,7 @@
 import redis
 import json
+import traceback
+
 from flask import Flask,request,g
 from flask.ext import restful
 from flask.ext.login import LoginManager
@@ -7,7 +9,7 @@ from raygun4py import raygunprovider
 from flask.ext.sqlalchemy import SQLAlchemy
 from datetime import datetime
 from configs import config
-import traceback
+from mailwrapper import SimpleMailer
 
 class FlaskConfig():
     DEBUG = config.DEBUG
