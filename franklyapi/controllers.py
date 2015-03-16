@@ -2175,7 +2175,7 @@ def discover_post_in_cqm(cur_user_id, offset, limit, device_id, version_code, we
     append_top_usernames = []
     if offset ==0: 
         if cur_user_id and not prompt_for_profile_video(cur_user_id) and (device_type!='android' or version_code>46):
-            response.appen 
+            response.append({'type':'upload_profile_video', 'upload_profile_video':{}})
             limit -= 1
             
 
