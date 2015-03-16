@@ -57,7 +57,8 @@ def push_notification(notification_id, user_id, source='application'):
                     "user_to" : user_id,
                     "type" : 1,
                     "id" : user_push_notification.id,
-                    "text" : notification.text,
+                    "text" : notification.text.replace('<b>', '').replace('</b>', ''),
+                    "styled_text":notification.text,
                     "icon" : None,
                     "group_id": group_id,
                     "link" : notification.link,
@@ -70,7 +71,7 @@ def push_notification(notification_id, user_id, source='application'):
             gcm_sender.send_message([device.push_id], payload)
         
         if get_device_type(device.device_id)=='ios':
-            pass        
+            pass
 
 
 
@@ -84,7 +85,7 @@ def notification_question_ask(question_id):
         if u.id == question.question_to:
             question_to = u
 
-    text = "<question_author_name> asked you '<question_body>'"
+    text = "<b><question_author_name></b> asked you '<question_body>'"
     text = text.replace('<question_author_name>', question_author.first_name)
     text = text.replace('<question_body>', question.body)
     text = text.replace('<question_to_name>', question_to.first_name)
@@ -123,7 +124,7 @@ def notification_post_add(post_id):
             answer_author = u
 
     notification_type = 'post-add-self_user'
-    text = "<answer_author_name> answered your question"
+    text = "<b><answer_author_name></b> answered your question"
     text = text.replace('<answer_author_name>', answer_author.first_name)
     icon = None
     link = config.WEB_URL + '/p/{client_id}'.format(client_id=post.client_id)
@@ -159,7 +160,7 @@ def notification_user_follow(follow_id):
             follower = u
 
     notification_type = 'user-follow-self_user'
-    text = "<follower_name> started following you"
+    text = "<b><follower_name></b> started following you"
     text = text.replace('<follower_name>', follower.first_name)
     icon = None
     link = config.WEB_URL + '/p/{client_id}'.format(client_id=post.client_id)

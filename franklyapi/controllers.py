@@ -204,7 +204,7 @@ def register_email_user(email, full_name, device_id, password=None, username=Non
         username = make_username(email, full_name)
 
     device_type = get_device_type(device_id)
-    registered_with = 'auto'+device_type + '_email'
+    registered_with = device_type + '_email'
     mail_password = False
     if not password:
         mail_password = True
@@ -1865,6 +1865,7 @@ def get_notifications(cur_user_id, device_id, version_code, notification_categor
                                     "type" : 1,
                                     "id" : 'update_required_ios',
                                     "text" : "A new version of Frankly.me is available. Click here to update.",
+                                    "styled_text":"A new version of Frankly.me is available. Click here to update.",
                                     "icon" : "https://d30y9cdsu7xlg0.cloudfront.net/png/68793-84.png",
                                     "group_id": 'update_required',
                                     "link" : app_store_link,
@@ -1906,6 +1907,7 @@ def get_notifications(cur_user_id, device_id, version_code, notification_categor
                         "type" : 1,
                         "id" : row[0],
                         "text" : row[1],
+                        "styled_text":row[1].replace('<b>', '').replace('</b>', ''),
                         "icon" : row[2],
                         "group_id": '-'.join([str(row[3]),str(row[4])]),
                         "link" : row[5],
@@ -2173,7 +2175,7 @@ def discover_post_in_cqm(cur_user_id, offset, limit, device_id, version_code, we
     append_top_usernames = []
     if offset ==0: 
         if cur_user_id and not prompt_for_profile_video(cur_user_id) and (device_type!='android' or version_code>46):
-            response.append({'type':'upload_profile_video', 'upload_profile_video':{}}) 
+            response.appen 
             limit -= 1
             
 
