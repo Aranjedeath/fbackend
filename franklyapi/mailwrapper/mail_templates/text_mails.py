@@ -1,3 +1,128 @@
+body = """<table border="0" cellpadding="0" cellspacing="0" style="border-spacing: 0px;
+                 background-color: rgb(255, 255, 255); border-style: solid;
+                 border-color: rgb(221, 221, 221) rgb(221, 221, 221) rgb(187, 187, 187); padding-bottom: 20px;" width="585">
+					<tbody>
+						<tr>
+							<td style="margin: 0px;">
+								<table border="0" cellpadding="0" cellspacing="0" style="line-height: 1.2em;
+								       font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+								       border-spacing: 0px; font-size: 12.727272033691406px; border: 0px;" width="585">
+									<tbody>
+										<tr>
+											<td style="font-family: arial, sans-serif; margin: 0px;" width="50">
+												<img height="1" src="http://qsf.is.quoracdn.net/-9da8ebb0c97aa4ad.gif" style="border-style: none;" width="1" /></td>
+											<td style="font-family: arial, sans-serif; margin: 0px;" width="485">
+												<table border="0" cellpadding="0" cellspacing="0" style="line-height: 1.2em; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; border-spacing: 0px; font-size: 12.727272033691406px; border: 0px;" width="485">
+													<tbody>
+														<tr>
+															<td style="font-family: arial, sans-serif; margin: 0px; padding: 30px 0px 0px;">
+																<div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 1.2em;">
+																	<salutation>,
+																	</div>
+															</td>
+														</tr>
+													</tbody>
+												</table>
+											</td>
+											<td style="font-family: arial, sans-serif; margin: 0px;" width="50"></td>
+										</tr>
+									</tbody>
+								</table>
+								<table border="0" cellpadding="0" cellspacing="0" style="line-height: 1.2em; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; border-spacing: 0px; font-size: 12.727272033691406px; border: 0px;" width="585">
+									<tbody>
+										<tr valign="top">
+											<td style="font-family: arial, sans-serif; margin: 0px;" width="50">
+												&nbsp;</td>
+											<td style="font-family: arial, sans-serif; margin: 0px; padding: 10px 0px;" width="485">
+												<span><br/>
+
+												<email_body>
+
+												<br/><br/><br/>Regards<br/>Frankly.me Team
+                                                </span>
+                                            </td>
+											<td style="font-family: arial, sans-serif; margin: 0px;" width="50">
+												</td>
+										</tr>
+									</tbody>
+								</table>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+				<br />"""
+
+footer = """<table border="0" cellpadding="0" cellspacing="0" style="border-spacing: 0px;
+                   background-color: rgb(255, 255, 255); border-style: solid;
+                   border-color: rgb(221, 221, 221) rgb(221, 221, 221) rgb(187, 187, 187);
+                   padding-bottom: 20px; margin-top: 5px;" width="585">
+					<tbody>
+						<tr>
+							<td style="margin: 0px;">
+								<table border="0" cellpadding="0" cellspacing="0" style="line-height: 1.2em;
+								       font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+								       border-spacing: 0px; font-size: 12.727272033691406px; border: 0px;" width="585">
+									<tbody>
+										<tr>
+											<td style="font-family: arial, sans-serif; margin: 0px;" width="50">
+												</td>
+											<td style="font-family: arial, sans-serif; margin: 0px;" width="485">
+												<div style="font-family: 'Helvetica Neue', Helvetica, Arial,
+												            sans-serif; font-size: 1.2em;">
+													<table border="0" cellpadding="0" cellspacing="0" style="border: 0px;
+													       line-height: 1.2em; font-size: 12.727272033691406px;
+													       border-spacing: 0px;" width="485">
+														<tbody>
+															<tr>
+																<td colspan="2" style="margin: 0px;" valign="middle">
+																	<center>
+																		<p style="padding-top:10px;">
+																           We would love to hear your queries and
+																          suggestions at&nbsp;
+																          <a href="mailto:letstalk@frankly.me"
+																           style="color: rgb(62, 135, 178);"
+																           target="_blank">letstalk@frankly.me</a>.</p>
+																	</center>
+																</td>
+															</tr>
+															<tr>
+																<td colspan="2" style="padding-top:10px; border: 0px; margin: 0px;" valign="middle">
+																	<center>
+																		&nbsp;
+                                                                        <link_one>
+																		&nbsp;|
+																		&nbsp;
+																		<link_two>
+																		&nbsp;|&nbsp;
+																		<link_three>
+																		&nbsp;|&nbsp;
+																		<span style="font-size: 12.727272033691406px;
+																		 line-height: 1.2em;">&nbsp;|&nbsp;</span>
+																		 <link_four>
+																		 </center>
+																</td>
+															</tr>
+														</tbody>
+													</table>
+												</div>
+											</td>
+											<td style="font-family: arial, sans-serif; margin: 0px;" width="50">
+												</td>
+										</tr>
+									</tbody>
+								</table>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</td>
+		</tr>
+
+	</tbody>
+</table>
+<p>
+</body></html>"""
+
 
 non_password_registration_mail = """
 <h2>Welcome {full_name},</h2>
