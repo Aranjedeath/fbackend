@@ -1125,6 +1125,13 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_b
     db.session.commit()
     notification.notification_question_ask(question.id)
 
+    # God forgive me for I maketh this hack
+    # Id is that of Jatin Sapru, please delete this piece of shit code
+    # asap ~ MilfHunter II
+    if question_to is '737c6f8a7ac04d7e9380f1d37c011531' or cur_user_id is 'cab4132c53e4940ddf31032f794967c6':
+        notification.idreamofsapru(cur_user_id,question.id)
+
+
     resp = {'success':True, 'id':str(question.id), 'question':question_to_dict(question)}
     return resp
 
