@@ -34,11 +34,13 @@ class ForgotPasswordToken(Base):
     user          = Column(CHAR(), ForeignKey('users.id'), nullable=False, unique=True)
     email         = Column(String(120), nullable=False, unique=True)
     created_at    = Column(DateTime(), default=datetime.datetime.now())
+    used_at       = Column(DateTime(), default=datetime.datetime.now())
 
     def __init__(self, token, user, email):
         self.token = token
         self.user  = user
         self.token = token
+
 
     def __repr__(self):
         return '<ForgotPasswordToken %r:%r>' % (self.user, self.email)

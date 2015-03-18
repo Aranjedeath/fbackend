@@ -1662,31 +1662,14 @@ def create_forgot_password_token(username=None, email=None):
         token_string = '%s+%s+%s'%(str(user.id), token_salt, time.time())
         token = hashlib.sha256(token_string).hexdigest()
         now_time = datetime.datetime.now()
-        db.session.execute(text("""INSERT INTO forgot_password_tokens (user, token, email, created_at) 
-                                    VALUES(:user_id, :token, :email, :cur_time) 
-                                    ON DUPLICATE KEY 
-                                    UPDATE token = :token, created_at=:cur_time"""),
-                            params={'user_id':user.id, 'token':token, 'email':user.email, 'cur_time':now_time}
-                            )
+        db.session.execute(text("""INSERT INTO forgot_password_tokens (user, token, email, created_at)
+                                        VALUES(:user_id, :token, :email, :cur_time)
+                                        ON DUPLICATE KEY
+                                        UPDATE token = :token, created_at=:cur_time"""),
+                                params={'user_id':user.id, 'token':token, 'email':user.email, 'cur_time':now_time}
+                                )
+        db.session.commit()
 
-        body = '''Hi <b>{0}</b>,<br>
-Click on the link below to reset your password and start asking questions and answering them yourself.
-<br>
-<br>
-<h3><a href='http://frankly.me/resetpassword/{1}'>Reset your password</a><br></h3>
-<br>
-<br>
-If the link above does not work copy the url below and paste it in your browsers address bar.
-<br>
-<b>http://frankly.me/resetpassword/{1}</b>
-<br>
-If you did not request to reset your password. You can ignore this message.
-<br>
-If you run into any problems shoot us a mail at </a href=mailto:letstalk@frankly.me>letstalk@frankly.me</a>
-<br>
-Regards<br>
-Franksters'''.format(user.first_name if user.first_name else user.username, token)
-        subject = 'Reset your password and get back in action on Frankly.me'
         
         #email_wrapper.sendMail('letstalk@frankly.me', user.email, subject, body)
         return {'success':True}
