@@ -6,9 +6,9 @@ class InflatedStat(Base):
     __tablename__  = 'inflated_stats'
     id             = Column(Integer(), primary_key=True)
     object_type    = Column(Enum('user', 'post', 'question'), nullable=False)
-    post           = Column(CHAR(32), ForeignKey('posts.id'))
-    user           = Column(CHAR(32), ForeignKey('users.id'))
-    question       = Column(CHAR(32), ForeignKey('questions.id'))
+    post           = Column(CHAR(32), ForeignKey('posts.id'), unique=True)
+    user           = Column(CHAR(32), ForeignKey('users.id'), unique=True)
+    question       = Column(CHAR(32), ForeignKey('questions.id'), unique=True)
     timestamp      = Column(DateTime(), onupdate=datetime.datetime.now(), nullable=False)
     view_count     = Column(Integer(), nullable=False, default=0)
     like_count     = Column(Integer(), nullable=False, default=0)
