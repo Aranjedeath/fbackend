@@ -171,7 +171,7 @@ def get_device_type(device_id):
     return 'ios'
 
 def send_registration_mail(user_id, mail_password=False):
-    user = User.query.filter(User.id==user_id).one()
+    user = User.query.(User.id==user_id).one()
     if 'twitter' not in user.registered_with:
         if mail_password:
             message_body = text_mails.password_registration_mail.format(full_name=user.first_name,
@@ -1645,6 +1645,7 @@ def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None, visit=0)
 
 
 def create_forgot_password_token(username=None, email=None):
+    from mailwrapper import email_helper
     try:
         import hashlib
         user = None
@@ -1662,6 +1663,7 @@ def create_forgot_password_token(username=None, email=None):
         token_string = '%s+%s+%s'%(str(user.id), token_salt, time.time())
         token = hashlib.sha256(token_string).hexdigest()
         now_time = datetime.datetime.now()
+
         db.session.execute(text("""INSERT INTO forgot_password_tokens (user, token, email, created_at)
                                         VALUES(:user_id, :token, :email, :cur_time)
                                         ON DUPLICATE KEY
@@ -1670,8 +1672,8 @@ def create_forgot_password_token(username=None, email=None):
                                 )
         db.session.commit()
 
-        
-        #email_wrapper.sendMail('letstalk@frankly.me', user.email, subject, body)
+        email_helper.forgot_password(user.email)
+
         return {'success':True}
     except NoResultFound:
         raise CustomExceptions.UserNotFoundException()
@@ -1679,12 +1681,12 @@ def create_forgot_password_token(username=None, email=None):
 
 def check_forgot_password_token(token):
     try:
-        token_object = ForgotPasswordToken.query.filter(ForgotPasswordToken.token==token).one()
+        token_object = ForgotPasswordToken.query.filter(ForgotPasswordToken.token==token
+                                                        and ForgotPasswordToken.used_at == None).one()
         now_time = datetime.datetime.now()
         timediff = now_time - token_object.created_at
         if timediff.total_seconds>3600*48:
-            token_object.delete()
-            raise NoResultFound()
+            raise NoResultFound
         return {'valid':True, 'token':token}
     except NoResultFound:
         return {'valid':False, 'token':token}
@@ -1692,41 +1694,29 @@ def check_forgot_password_token(token):
 
 def reset_password(token, password):
     try:
+
+        if len(password)<6:
+            raise CustomExceptions.PasswordTooShortException()
+
         token_object = ForgotPasswordToken.query.filter(ForgotPasswordToken.token==token).one()
         
         now_time = datetime.now()
         timediff = now_time - token_object.created_at
 
         if timediff.total_seconds>3600*48:
-            token_object.delete()
             raise CustomExceptions.ObjectNotFoundException()
 
-        if len(password)<6:
-            raise CustomExceptions.PasswordTooShortException()
+        user = User.query.filter(User.id == token_object.user).one()
+        user.update(values={User.password:password})
 
-        user_query = User.query.filter(User.id==token_object.user)
-
-        user = user_query.one()
-        user_query.update({'password':password})
-
-        body = '''Hi <b>{0}</b>,<br>
-Your password was successfully reset at {1}.
-<br>
-<br>
-Now you can get back to the Frankly.me and start asking questions and answering them yourself.
-<br>
-<br>
-Regards<br>
-Franksters'''.format(user.first_name, datetime.strftime(datetime.datetime.now(), '%d %b %Y %I:%M:%S %p UTC'))
-        subject = 'Your password has been reset'
-    
-        email_wrapper.sendMail('letstalk@frankly.me', token_object.email, subject, body)
-        
+        token_object.update(values={ForgotPasswordToken.used_at: now_time})
         return {'success':True, 
                 'error':None, 
                 'message':'Your password has been reset'}
     except NoResultFound:
-        raise CustomExceptions.ObjectNotFoundException()
+        return {'success':False,
+                'error':True,
+                'message':'The token seems to be invalid'}
 
 def install_ref(device_id, url):
     #url = "https://play.google.com/store/apps/details?id=me.frankly&referrer=utm_source%3Dsource%26utm_medium%3Dmedium%26utm_term%3Dterm%26utm_content%3Dcontent%26utm_campaign%3Dname"
