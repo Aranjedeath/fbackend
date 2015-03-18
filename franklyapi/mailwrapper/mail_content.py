@@ -32,5 +32,16 @@ dict = {
     "inactive_profile" : {
                          "subject" : "Howdy Rockstar! We are missing you!",
 
+                        },
+    "sapru"            : {
+        "subject" : " Win an Indian Jersey on Frankly.me!",
+
+                         "body" : '''
+                                     You have just asked a question from Jatin Sapru on FranklyMe <br/><br//>
+                                     %s <br/> <br/>
+                                     You've now officially entered the <b>#WinIndiaJersey</b> contest! <br/><br/>
+                                     The users with the top most up-voted questions get a chance to win an authentic Indian jersey signed by <b>Kapil Dev, VVS Laxman, Murali Kartik,</b> etc.
+                                     Just get your question up-voted by your friends and family to win your own Indian jersey and support Team India this Cricket World Cup!
+                                     <br/><br/>For any other information, write to us at hi@frankly.me .'''
                         }
 }

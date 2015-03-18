@@ -171,7 +171,7 @@ def get_device_type(device_id):
     return 'ios'
 
 def send_registration_mail(user_id, mail_password=False):
-    user = User.query.(User.id==user_id).one()
+    user = User.query.filter(User.id==user_id).one()
     if 'twitter' not in user.registered_with:
         if mail_password:
             message_body = text_mails.password_registration_mail.format(full_name=user.first_name,
