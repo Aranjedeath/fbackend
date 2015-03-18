@@ -30,4 +30,4 @@ class SimpleMailer(object):
 
 if __name__ == '__main__':
     me = SimpleMailer('nikhil@frankly.me')
-    me.send_to('hellking4u@gmail.com','Test Mail','<b>Is</b><h1>good</h1>')
+    me.send_mail('hellking4u@gmail.com','Test Mail','<b>Is</b><h1>good</h1>')

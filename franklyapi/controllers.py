@@ -171,7 +171,7 @@ def get_device_type(device_id):
     return 'ios'
 
 def send_registration_mail(user_id, mail_password=False):
-    user = User.query.filter(User.id==user_id).one()
+    user = User.query.(User.id==user_id).one()
     if 'twitter' not in user.registered_with:
         if mail_password:
             message_body = text_mails.password_registration_mail.format(full_name=user.first_name,
@@ -1652,6 +1652,8 @@ def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None, visit=0)
 
 
 def create_forgot_password_token(username=None, email=None):
+    from mailwrapper.mail_templates import text_mails
+    from mailwrapper import SimpleMailer
     try:
         import hashlib
         user = None
@@ -1675,7 +1677,7 @@ def create_forgot_password_token(username=None, email=None):
                                     UPDATE token = :token, created_at=:cur_time"""),
                             params={'user_id':user.id, 'token':token, 'email':user.email, 'cur_time':now_time}
                             )
-
+        mail_agent = SimpleMailer()
         body = '''Hi <b>{0}</b>,<br>
 Click on the link below to reset your password and start asking questions and answering them yourself.
 <br>
