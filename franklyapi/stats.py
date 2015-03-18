@@ -1,4 +1,5 @@
 import datetime
+import json
 
 from sqlalchemy.sql import text
 
@@ -97,6 +98,86 @@ def number_of_questions_asked(user_types, day_count, end_date=datetime.datetime.
                                     )
     question_count = question_query.count()
     return {'question_count':question_count}
+
+
+def send_mail(day_count=1, emails=['shashank@frankly.me']):
+    registered_celebs_today = number_of_users_registered(user_types=[2], day_count=day_count)
+    celeb_register_count = registered_celebs_today['total_count']
+    celebs = registered_celebs_today['user_list']
+    
+    celeb_list = '<br>'.join(['<a href="http://frankly.me/{username}">{first_name}</a>({user_title}), '.format(username=celeb.username,
+                                                    first_name=celeb.first_name,
+                                                    user_title=celeb.user_title) for celeb in celebs])
+
+    celeb_answers_today = number_of_answers_uploaded(user_types=[2], day_count=day_count)
+
+    celeb_answer_count = celeb_answers_today['total_count']
+    celeb_answer_list = celeb_answers_today['answer_list']
+
+    answer_list_text = []
+
+    for answer in celeb_answer_list:
+        question = Question.query.filter(Question.id==answer.question).one()
+        answer_author = User.query.filter(User.id==answer.answer_author).one()
+    
+        answer_list_text.append('<a href="http://frankly.me/{username}">{first_name}</a>({user_title}) : <a href="http://frankly.me/p/{short_id}">{question_text}{contd}</a>, '.format(username=answer_author.username,
+                                                                                    first_name=answer_author.first_name,
+                                                                                    user_title=answer_author.user_title,
+                                                                                    short_id=answer.client_id,
+                                                                                    question_text=question.body[:80],
+                                                                                    contd = '' if question.body<=80 else '...'))
+    celeb_answer_list = '<br>'.join(answer_list_text)
+
+    user_answer_count = number_of_answers_uploaded(user_types=[0], day_count=day_count)['total_count']
+
+    total_answer_count = user_answer_count+celeb_answer_count
+
+    registration_counts = registration_type_wise_user_count(user_types=[0], day_count=day_count)
+    total_registration_count = sum(registration_counts.values())
+    registration_counts = json.dumps(registration_counts, indent=4).replace('\n', '<br>')
+
+    questions_asked_to_celebs = number_of_questions_asked([2], day_count=day_count)['question_count']
+    questions_asked_to_other_users = number_of_questions_asked([0], day_count=day_count)['question_count']
+    total_question_count = questions_asked_to_celebs+questions_asked_to_other_users
+
+    email_text = """
+<br><b>User Registrations_today</b>: {total_registration_count}
+<br>{registration_counts}
+<br><br>
+----------------------------------------------
+<br><b>Questions Asked</b>: {total_question_count}
+<br>Questions to Celebs = {questions_asked_to_celebs}
+<br>Questions to Users = {questions_asked_to_other_users}
+<br><br>
+----------------------------------------------
+<br><b>Answers Uploaded</b>: {total_answer_count}
+<br>Answers by Celebs = {celeb_answer_count}
+<br>Answers by Users = {user_answer_count}
+<br><br>
+----------------------------------------------
+<br><b>Celebs registered</b>: {celeb_register_count}
+<br>{celeb_list}
+<br><br>
+----------------------------------------------
+<br><b>Celeb Answers Uploaded Today</b>: {celeb_answer_count}
+<br>{celeb_answer_list}
+<br><br>
+
+    """.format( total_registration_count=total_registration_count,
+                registration_counts=registration_counts,
+                total_question_count=total_question_count,
+                questions_asked_to_celebs=questions_asked_to_celebs,
+                questions_asked_to_other_users=questions_asked_to_other_users,
+                total_answer_count=total_answer_count,
+                user_answer_count=user_answer_count,
+                celeb_register_count=celeb_register_count,
+                celeb_list=celeb_list,
+                celeb_answer_count=celeb_answer_count,
+                celeb_answer_list=celeb_answer_list)
+
+    from controllers import mailer
+    message_subject = 'Stats for {date}'.format(date=datetime.datetime.strftime(datetime.datetime.now(), '%d-%b-%Y, %a'))
+    mailer.send_mail(reciever_id=emails, message_subject='message_subject', message_body=email_text)
 
 
 
