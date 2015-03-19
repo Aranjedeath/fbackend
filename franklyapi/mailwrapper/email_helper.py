@@ -23,8 +23,9 @@ def welcome_mail(receiver_email,receiver_name,receiver_username,receiver_passwor
 
     render_dict['salutation'] = mail_content.dict['welcome_mail']['salutation'] % receiver_name
     render_dict['email_text'] = mail_content.dict['welcome_mail']['body'] % (receiver_username, receiver_password)
-    render_dict['signature']  = personal_signature
-    print header_template.render(render_dict)
+    render_dict['signature'] = personal_signature
+    mail_sender.send_mail(receiver_email, mail_content.dict['welcome_mail'],
+                          header_template.render(render_dict))
 
 
 def send_mail_for_sapru(receiver_email,receiver_name,link):

@@ -7,7 +7,7 @@ dict = {
 
                         },
     "welcome_mail"  :   {
-                          "subject" : "Hey Rockstar! Welcome to Frankly.me",
+                          "subject" : "Welcome to Frankly.me!",
                           "salutation" : "Hi %s",
                           "body": u'''Welcome to Frankly.me where Arvind Kejriwal,Javed Akhtar, Gurdaas Maan,Yogendra Yadavand \n
                                       many more are waiting for you.Frankly.me is now here to help you reach the\n
