@@ -35,6 +35,9 @@ def send_mail_for_sapru(receiver_email,receiver_name,link):
                           header_template.render(render_dict))
 
 
+def send_weekly_report(receiver_emails,report):
+    for email in receiver_emails:
+        mail_sender.send_mail(email,"Weekly Report",report)
 #     mail_sender.send_mail(receiver_email,mail_dict['welcome_mail']['subject'],None)
 
 

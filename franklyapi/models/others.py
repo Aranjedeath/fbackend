@@ -42,18 +42,18 @@ class Video(Base):
     process_state = Column(Enum('pending', 'running', 'success', 'failed'), default='pending')
     created_at    = Column(DateTime(), default=datetime.datetime.now())
 
-    def __init__(self, url, video_type, object_id, username=None, thumbnail=None, opt=None, medium=None, low=None, ultra_low=None, 
-                        process_state='pending' ,delete=False, 
+    def __init__(self, url, video_type, object_id, username=None, thumbnail=None, opt=None, medium=None, low=None, ultra_low=None,
+                        process_state='pending' ,delete=False,
                         created_at=datetime.datetime.now()):
         self.url           = url
         self.video_type    = video_type
         self.object_id     = object_id
         self.thumbnail     = thumbnail
         self.username      = username
-        self.opt           = opt 
-        self.medium        = medium 
-        self.low           = low 
-        self.ultra_low     = ultra_low 
+        self.opt           = opt
+        self.medium        = medium
+        self.low           = low
+        self.ultra_low     = ultra_low
         self.delete        = delete
         self.process_state = process_state
         self.created_at    = created_at
@@ -198,7 +198,7 @@ class UserData(Base):
 
     def __repr__(self):
         return '<UserData %r>' % (self.user)
-    
+
 
 class Contact(Base):
     __tablename__  = 'user_contacts'
@@ -267,7 +267,7 @@ class ContactUs(Base):
     organisation = Column(String(40), nullable = False)
     phone = Column(String(20), nullable = False)
     b64msg = Column(String(450), nullable = False)
-    
+
     def __init__(self,name, email, organisation, message, phone, b64msg):
         self.name = name
         self.email = email
@@ -275,3 +275,14 @@ class ContactUs(Base):
         self.organisation = organisation
         self.phone = phone
         self.b64msg = b64msg
+
+
+class Stats(Base):
+    __tablename__ = 'stats'
+    id = Column(Integer, primary_key=True)
+    total_video_view_count = Column(Integer, nullable=False)
+    counted_on = Column(DateTime())
+
+    def __init__(self,total_video_view_count,counted_on):
+        self.total_video_view_count = total_video_view_count
+        self.counted_on = counted_on
