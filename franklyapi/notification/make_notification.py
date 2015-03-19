@@ -33,6 +33,7 @@ def push_notification(notification_id, user_id, source='application'):
 
 
     notification = Notification.query.get(notification_id)
+
     group_id = '-'.join([str(notification.type), str(notification.object_id)])
     for device in AccessToken.query.filter(AccessToken.user==user_id,
                                             AccessToken.active==True,
@@ -86,7 +87,10 @@ def notification_question_ask(question_id):
             question_to = u
 
     text = "<b><question_author_name></b> asked you '<question_body>'"
-    text = text.replace('<question_author_name>', question_author.first_name)
+    if question.is_anonymous:
+        text = text.replace('<question_author_name>', question_author.first_name)
+    else:
+        text = text.replace('<question_author_name>', 'Anonymous')
     text = text.replace('<question_body>', question.body)
     text = text.replace('<question_to_name>', question_to.first_name)
     text = text.replace('<question_to_username>', question_to.username)
