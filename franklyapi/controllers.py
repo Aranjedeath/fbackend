@@ -20,6 +20,7 @@ import social_helpers
 import notification
 
 from configs import config
+from configs import flag_words
 from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
                     Question, Upvote, Comment, ForgotPasswordToken, Install, Video,\
                     UserFeed, Event, Reshare, Invitable, Invite, ContactUs, InflatedStat,\
@@ -1098,6 +1099,13 @@ def sanitize_question_body(body):
         body = body.replace('\n', ' ').replace('  ', ' ').strip()
     return body
 
+def question_is_clean(body):
+    bad_words = flag_words.BAD_WORDS
+    word_list = body.split()
+    for word in word_list:
+        if word.lower() in bad_words:
+            return False
+    return True
 
 def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_by=None):
 
@@ -1112,6 +1120,7 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_b
     public = True if user_status['user_type']==2 else False #if user is celeb
 
     question_id = get_item_id()
+<<<<<<< HEAD
     short_id = get_new_short_id(for_object='question')
     slug = make_question_slug(body, short_id)
 
@@ -1119,6 +1128,15 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_b
                 body=body.capitalize(), is_anonymous=is_anonymous, public=public,
                 lat=lat, lon=lon, slug=slug, short_id=short_id,
                 id = question_id, added_by=added_by)
+=======
+    slug = make_question_slug(body, question_id)
+    clean = question_is_clean(body)
+
+    question = Question(question_author=cur_user_id, question_to=question_to, 
+                body=body.capitalize(), is_anonymous=is_anonymous, public=public,
+                lat=lat, lon=lon, slug=slug, short_id=get_new_short_id(for_object='question'),
+                id = question_id, added_by=added_by, flag=int(clean))
+>>>>>>> question ask active moderation added and changed question_list, question_list_public
     
     db.session.add(question)
 
@@ -1142,7 +1160,8 @@ def question_list(user_id, offset, limit, version_code=0):
     questions_query = Question.query.filter(Question.question_to==user_id, 
                                             Question.deleted==False,
                                             Question.is_answered==False,
-                                            Question.is_ignored==False
+                                            Question.is_ignored==False,
+                                            Question.flag.in_([1, 2])
                                             ).outerjoin(Upvote
                                             ).group_by(Question.id
                                             ).order_by(func.count(Upvote.id).desc()
@@ -1179,7 +1198,8 @@ def question_list_public(current_user_id, user_id, username=None, offset=0, limi
                                                     Question.question_author==current_user_id,
                                                     Question.deleted==False,
                                                     Question.is_answered==False,
-                                                    Question.is_ignored==False
+                                                    Question.is_ignored==False,
+                                                    Question.flag.in_([1, 2])
                                                     #Question.public==True
                                                     ).order_by(Question.timestamp.desc()
                                                     ).offset(0).limit(5).all()

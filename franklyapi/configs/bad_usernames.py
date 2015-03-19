@@ -19,3 +19,5 @@ UNAVAILABLE_USERNAMES = [
 'video','videos',
 'windows'
 ]
+
+BAD_WORDS = ['swag', 'lol', 'love', 'happy']
