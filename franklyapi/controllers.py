@@ -1120,23 +1120,15 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_b
     public = True if user_status['user_type']==2 else False #if user is celeb
 
     question_id = get_item_id()
-<<<<<<< HEAD
+
     short_id = get_new_short_id(for_object='question')
     slug = make_question_slug(body, short_id)
+    clean = question_is_clean(body)
 
     question = Question(question_author=cur_user_id, question_to=question_to, 
                 body=body.capitalize(), is_anonymous=is_anonymous, public=public,
                 lat=lat, lon=lon, slug=slug, short_id=short_id,
                 id = question_id, added_by=added_by)
-=======
-    slug = make_question_slug(body, question_id)
-    clean = question_is_clean(body)
-
-    question = Question(question_author=cur_user_id, question_to=question_to, 
-                body=body.capitalize(), is_anonymous=is_anonymous, public=public,
-                lat=lat, lon=lon, slug=slug, short_id=get_new_short_id(for_object='question'),
-                id = question_id, added_by=added_by, flag=int(clean))
->>>>>>> question ask active moderation added and changed question_list, question_list_public
     
     db.session.add(question)
 
