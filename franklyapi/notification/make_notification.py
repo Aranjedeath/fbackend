@@ -88,9 +88,9 @@ def notification_question_ask(question_id):
 
     text = "<b><question_author_name></b> asked you '<question_body>'"
     if question.is_anonymous:
-        text = text.replace('<question_author_name>', question_author.first_name)
-    else:
         text = text.replace('<question_author_name>', 'Anonymous')
+    else:
+        text = text.replace('<question_author_name>', question_author.first_name)
     text = text.replace('<question_body>', question.body)
     text = text.replace('<question_to_name>', question_to.first_name)
     text = text.replace('<question_to_username>', question_to.username)
@@ -188,114 +188,4 @@ def notification_user_follow(follow_id):
 
     return notification
 
-
-
-
-'''
-
-text_config = {
-            "question-ask":{
-                            "text":"<question_author_name> asked you a question",
-                            "promote_text":"<question_author_name> asked <question_to_name> a question"
-            },
-
-            "post-add":{
-                        "text":"<answer_author_name> answered your question",
-                        "promote_text":"<answer_author_name> answered '<question_body>'"
-            },
-
-            "user_follow":{
-                            "text":"<follower_name> is now following you",
-                            "promote_text":"<follower_name> is now following <followed_name>"
-            },
-
-            "post-comment":{
-                            "text":"<comment_author_name> commented on your answer",
-                            "also_commented_text":"<comment_autho_name> also commented on an answer"
-            },
-
-            "question-upvote":{
-                                "text":"<upvoted_name> upvoted your question"
-            }
-}
-
-
-def get_text(notification_type, promote=False):
-    if promote:
-        return text_config['notification_type']['promote_text']
-    return text_config['notification_type']['text']
-
-def notification_question_ask(question_id, promote=False):
-    notification_type = 'question-ask'
-    question = Question.query.get(question_id)
-    users = User.query.with_entities('username', 'first_name').filter(User.id.in_([question.question_to, question.question_author])).all()
-
-    for u in users:
-        if u.id == question.question_author:
-            question_author = u
-        if u.id == question.question_to:
-            question_to = u
-
-    text = get_text(notification_type=notification_type, promote=promote)
-    
-    text = text.replace('<question_author_name>', question_author.first_name)
-    text = text.replace('<question_body>', question.body)
-    text = text.replace('<question_to_name>', question_to.first_name)
-    text = text.replace('<question_to_username>', question_to.username)
-    text = text.replace('<question_author_username>', question_author.username)
-
-    icon = 'default- - -frankly_logo'
-
-    link = config.WEB_URL + '/question/view/{question_id}'.format(question_id=question_id)
-
-    notification = Notification(type=notification_type, text=text,
-                                link=link, object_id=question_id,
-                                icon=icon, created_at=datetime.datetime.now(),
-                                manual=False, id=get_item_id())
-    db.session.add(notification)
-    db.session.commit()
-
-    return notification
-
-
-def notification_post_add(post_id, push_to='all', promote=False):
-    notification_type = 'post-add'
-    post = Post.query.get(post_id)
-    question = Question.query.get(question_id)
-    users = User.query.with_entities('username', 'first_name').filter(User.id.in_([post.answer_author, post.question_author])).all()
-
-    for u in users:
-        if u.id == post.question_author:
-            question_author = u
-        if u.id == post.answer_author:
-            answer_author = u
-
-    text = get_text(notification_type=notification_type, promote=promote)
-    
-    text = text.replace('<question_author_name>', question_author.first_name)
-    text = text.replace('<question_author_username>', question_author.username)
-    text = text.replace('<question_body>', question.body)
-    text = text.replace('<answer_author_name>', answer_author.first_name)
-    text = text.replace('<answer_author_username>', answer_author.username)
-
-    icon = 'default- - -frankly_logo'
-
-    link = config.WEB_URL + '/question/view/{question_id}'.format(question_id=question_id)
-
-    notification = Notification(type=notification_type, text=text,
-                                link=link, object_id=post_id,
-                                icon=icon, created_at=datetime.datetime.now(),
-                                manual=False, id=get_item_id())
-    db.session.add(notification)
-    db.session.commit()
-
-    return notification
-
-def user_follow_add(followed, follower, promote=False):
-    follower = User.query.get(follower)
-    followed = User.query.get(followed)
-
-    
-
-'''
 
