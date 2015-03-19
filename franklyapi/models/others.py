@@ -90,8 +90,8 @@ class ReportAbuse(Base):
     reason        = Column(String(300))
     timestamp     = Column(DateTime(), onupdate=datetime.datetime.now(), default=datetime.datetime.now())
 
-    def __init__(self, user, entity_type, entity_id, reason=None):
-        self.user        = user
+    def __init__(self, user_by, entity_type, entity_id, reason=None):
+        self.user_by        = user_by
         self.entity_type = entity_type
         self.entity_id   = entity_id
         self.reason      = reason
