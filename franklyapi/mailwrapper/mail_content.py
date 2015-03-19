@@ -10,15 +10,20 @@ dict = {
                           "subject" : "Welcome to Frankly.me!",
                           "salutation" : "Hi %s",
                           "body": u'''Welcome to Frankly.me where Arvind Kejriwal,Javed Akhtar, Gurdaas Maan,Yogendra Yadavand \n
-                                      many more are waiting for you.Frankly.me is now here to help you reach the\n
+                                      many more are waiting for you. <br/><br/>Frankly.me is now here to help you reach the\n
                                       most important people of your life.Just log in, ask frank questions and get\n
-                                      answered in form of video selfie.Just in case you forget, your credentials are as follows: <br/>\n
+                                      answered in form of video selfie. <br/><br/>  Just in case you forget, your credentials are as follows: <br/>\n
                                       Username: %s <br/> Password: %s <br/><br/>\n
                                       Have a rocking stay at Frankly.me!'''.encode("ascii","ignore"),
 
                         },
     "first_question" :  {
                           "subject" : "Your Question has been asked",
+                          "salutaion": "Hi %s",
+                          "body": "Your first question has been asked. We will try our best to get it answered.<br/><br/>"
+                                  "Go ahead and ask more questions to your favorite celebrities. We will notify you"
+                                  " once your question"
+                                  " has been answered."
 
                         },
     "question_asked" : {

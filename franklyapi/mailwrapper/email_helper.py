@@ -24,28 +24,29 @@ def welcome_mail(receiver_email,receiver_name,receiver_username,receiver_passwor
     render_dict['salutation'] = mail_content.dict['welcome_mail']['salutation'] % receiver_name
     render_dict['email_text'] = mail_content.dict['welcome_mail']['body'] % (receiver_username, receiver_password)
     render_dict['signature'] = personal_signature
-    mail_sender.send_mail(receiver_email, mail_content.dict['welcome_mail'],
+    mail_sender.send_mail(receiver_email, mail_content.dict['welcome_mail']['subject'],
                           header_template.render(render_dict))
 
 
-def send_mail_for_sapru(receiver_email,receiver_name,link):
-    render_dict['salutation'] = "Hi %s" % receiver_name
-    render_dict['email_text'] = mail_content.dict['sapru']['body'] % link
-    render_dict['signature']  = personal_signature
-    mail_sender.send_mail(receiver_email,mail_content.dict['sapru']['subject'],
+def first_question_asked(receiver_email,receiver_name):
+    render_dict['salutation'] = mail_content.dict['welcome_mail']['salutation'] % receiver_name
+    render_dict['email_text'] = mail_content.dict['first_question']['body']
+    render_dict['signature'] = personal_signature
+    mail_sender.send_mail(receiver_email,mail_content.dict['first_question']['subject'],
                           header_template.render(render_dict))
+
+
+def question_asked(receiver_email,celebrity_name,other_celebs):
+
+
 
 
 def send_weekly_report(receiver_emails,report):
     for email in receiver_emails:
         mail_sender.send_mail(email,"Weekly Report",report)
-#     mail_sender.send_mail(receiver_email,mail_dict['welcome_mail']['subject'],None)
 
 
-# def first_question_asked(receiver_email):
-#     #TODO Setup Body
-#     mail_sender.send_mail(receiver_email,mail_dict['first_question']['subject'],None)
-#
+
 # def question_asked(receiver_email,celebrity_name,other_celebs):
 #     #TODO Setup Body
 #     mail_sender.send_mail(receiver_email,mail_dict['question_asked']['subject'],None)
@@ -65,3 +66,9 @@ def send_weekly_report(receiver_emails,report):
 #
 # def inactive_profile(receiver_email,receiver_name):
 #     #TODO kar lo kuch
+def send_mail_for_sapru(receiver_email,receiver_name,link):
+    render_dict['salutation'] = "Hi %s" % receiver_name
+    render_dict['email_text'] = mail_content.dict['sapru']['body'] % link
+    render_dict['signature']  = personal_signature
+    mail_sender.send_mail(receiver_email,mail_content.dict['sapru']['subject'],
+                          header_template.render(render_dict))
