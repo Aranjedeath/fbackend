@@ -50,3 +50,13 @@ def reassign_pending_video_tasks():
 		db.session.commit()
 		if not v.delete:
 			async_encoder.encode_video_task.delay(v.url, username=v.username)
+
+@celery.task
+def log_video_count():
+    import stats
+    stats.video_view_count_logger()
+
+@celery.task
+def weekly_report():
+    import stats
+    stats.weekly_report()

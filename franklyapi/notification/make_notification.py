@@ -8,6 +8,7 @@ from models import User, Question, Notification, Post, Upvote, \
 from configs import config
 from database import get_item_id
 from app import db
+from mailwrapper import email_helper
 
 
 def add_notification_for_user(notification_id, user_ids, list_type, push_at=datetime.datetime.now()):
@@ -114,6 +115,7 @@ def notification_question_ask(question_id):
 
 
 def notification_post_add(post_id):
+
     post = Post.query.get(post_id)
     users = User.query.filter(User.id.in_([post.answer_author, post.question_author])).all()
 
@@ -122,6 +124,9 @@ def notification_post_add(post_id):
             question_author = u
         if u.id == post.answer_author:
             answer_author = u
+
+    #Notifying question_author by email
+    email_helper.question_answered(question_author.email,question_author.first_name,answer_author.first_name)
 
     notification_type = 'post-add-self_user'
     text = "<b><answer_author_name></b> answered your question"

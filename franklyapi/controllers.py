@@ -1120,6 +1120,16 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_b
     db.session.commit()
     notification.notification_question_ask(question.id)
 
+    is_first = False
+    if db.session.query(Question).filter(Question.question_author == cur_user_id).count() == 1
+        is_first = True
+
+    users = User.query.filter(User.id.in_([cur_user_id,question_to]))
+    if users[0].id == cur_user_id:
+        email_helper.question_asked(user[0].email, user[0].first_name, user[1].first_name, is_first)
+    else:
+        email_helper.question_asked(user[1].email, user[1].first_name, user[0].first_name, is_first)
+
 
     # God forgive me for I maketh this hack
     # Id is that of Jatin Sapru, please delete this piece of shit code
