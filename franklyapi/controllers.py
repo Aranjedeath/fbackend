@@ -2265,7 +2265,7 @@ def search_default(cur_user_id=None):
     if resp:
         resp = json.loads(resp)
     else:
-        categories_order = ["Trending Now", "Actors", "Singers", "Twitter Celebrities", "Radio Jockeys", "Subject Experts", "New on Frankly", "Authors", "Entrepreneurs", "Chefs", "Politicians"]
+        categories_order = ["Trending Now", "Actors", "Singers", "Twitter Celebrities", "Radio Jockeys", "Subject Experts", "New on Frankly", "Authors", "Entrepreneurs", "Chefs", "Politicians", "Comedians", "Band"]
     
         results = db.session.execute(text("""SELECT search_defaults.category, users.id, users.username, users.first_name,
                                                     users.user_type, users.user_title, users.profile_picture,
