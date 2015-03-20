@@ -1128,7 +1128,7 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_b
     question = Question(question_author=cur_user_id, question_to=question_to, 
                 body=body.capitalize(), is_anonymous=is_anonymous, public=public,
                 lat=lat, lon=lon, slug=slug, short_id=short_id,
-                id = question_id, added_by=added_by)
+                id = question_id, added_by=added_by, flag=int(clean))
     
     db.session.add(question)
 
