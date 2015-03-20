@@ -1137,7 +1137,8 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_b
     db.session.add(question)
 
     db.session.commit()
-    notification.notification_question_ask(question.id)
+    if clean:
+        notification.notification_question_ask(question.id)
 
 
     # God forgive me for I maketh this hack
