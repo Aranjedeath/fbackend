@@ -1100,8 +1100,12 @@ def sanitize_question_body(body):
     return body
 
 def question_is_clean(body):
+    special_chars = flag_words.SPECIAL_CHARS_AND_NUMBERS
     bad_words = flag_words.BAD_WORDS
+    for special_char in special_chars:
+        body = body.replace(special_char, '')
     word_list = body.split()
+    print word_list
     for word in word_list:
         if word.lower() in bad_words:
             return False
