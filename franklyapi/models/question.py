@@ -19,6 +19,7 @@ class Question(Base):
     moderated_by    = Column(CHAR(32), ForeignKey('users.id'))
     short_id        = Column(String(15), unique=True)
     slug            = Column(String(250), nullable=False, unique=True)
+    flag            = Column(Integer(), default=1)
 
     lat             = Column(Float())
     lon             = Column(Float())
@@ -30,7 +31,7 @@ class Question(Base):
     def __init__(self, question_author, question_to, body, short_id, slug, timestamp=datetime.datetime.now(),
                         is_answered=False, is_anonymous=False, is_ignored=False, public=False,
                         deleted=False, moderated_by=None, lat=None, lon=None, location_name=None, 
-                        country_name=None, country_code=None,id=None, score=0, added_by=None):
+                        country_name=None, country_code=None,id=None, score=0, added_by=None, flag=1):
         
         self.id              = get_item_id()
         self.question_author = question_author
@@ -53,6 +54,7 @@ class Question(Base):
         self.score           = score
         self.added_by        = added_by
         self.moderated_by    = moderated_by
+        self.flag            = flag
     def __repr__(self):
         return '<Question %r:%r>' % (self.id, self.body)
 
