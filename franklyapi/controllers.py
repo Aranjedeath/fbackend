@@ -1121,7 +1121,7 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_b
     notification.notification_question_ask(question.id)
 
     is_first = False
-    if db.session.query(Question).filter(Question.question_author == cur_user_id).count() == 1
+    if db.session.query(Question).filter(Question.question_author == cur_user_id).count() == 1:
         is_first = True
 
     users = User.query.filter(User.id.in_([cur_user_id,question_to]))
