@@ -107,11 +107,13 @@ def fadeInOriginalVideo():
 		tempimg=makeFaded(n-i,tempimg,bgQ.w,bgQ.h,fadeimage_filename)
 		tempimg.save("tempfade/"+str(k)+".jpeg")
 		i=i+1
+
 def makeFinalPromo(answer_author_username,video_file_path,transpose_command,temp_path,output_file_name,answer_author_name=None,question=None,question_author_username=None,answer_author_image_filepath=None):
 	
 	path = temp_path
 
-	print 'creating last past fisrt :) . . .'
+	print 'promo encoding started'
+	print 'creating end of the video first'
 	end_promo_mpg_name = make_promo(path,video_file_path,answer_author_username,transpose_command)
 	
 	mpg_with_front_and_end = end_promo_mpg_name # in case only end promo is to be converted
@@ -197,11 +199,11 @@ def makeFinalPromo(answer_author_username,video_file_path,transpose_command,temp
 	#----------------frame numbers------------
 		lastFrameNumber = 190
 		stage1=5 # blank
-		stage2=25 #fade in pic name
+		stage2=25 #fade in pic and name
 		stop2 =35 # hold
-		stage3=45 #slide name
+		stage3=45 #slide name left
 		stage4=65 # fade in wasasked
-		stop4 =75 # hold ------------------------------------------------- > > > > done
+		stop4 =75 # hold 
 		stage5=85 # slide up pic name asked
 		stage6=120 # fade in question
 		stop6 =180 # last hold
@@ -209,17 +211,17 @@ def makeFinalPromo(answer_author_username,video_file_path,transpose_command,temp
 	#------------ratio positioning -----------------
 		celebPicYRatio=0.30
 
-		if celebPicQ.path:
+		if celebPicQ.path: #if image available then make big image
 			celebPicWidthRatio=0.40
 			celebPicHeightRatio=0.40
-		else:
+		else: # otherwise small margin in place of image
 			celebPicWidthRatio=0.1
 			celebPicHeightRatio=0.1
 
 		celebNameYGapRatio = 0.04
 
 		wasAskedXGapRatio = 0.02
-		wasAskedYGapRatio = 0.007 
+		wasAskedYGapRatio = 0.007 #ygap from top of celebname
 
 		celebSlideRatio = 0.12
 
