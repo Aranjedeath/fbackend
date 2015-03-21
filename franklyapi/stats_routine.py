@@ -7,6 +7,7 @@ from mailwrapper import email_helper
 mail_sender = email_helper.SimpleMailer('Frankly@frankly.me')
 
 receipent = 'goelrishabh09@gmail.com'
+#receipent = 'swati@frankly.me'
 
 def daily_mail():
 	

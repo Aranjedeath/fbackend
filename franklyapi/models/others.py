@@ -1,6 +1,7 @@
 import datetime
 from sqlalchemy import Column, Integer, String, Boolean, Float, DateTime, Enum, ForeignKey, CHAR, UniqueConstraint
 from database import Base
+from database import get_item_id
 
 
 class Install(Base):
@@ -286,3 +287,16 @@ class Stats(Base):
     def __init__(self,total_video_view_count,counted_on):
         self.total_video_view_count = total_video_view_count
         self.counted_on = counted_on
+
+class Tester(Base):
+    __tablename__ = 'testers'
+    id            = Column(CHAR(32), primary_key=True)
+    username      = Column(String(100), nullable=False)
+    
+
+    def __init__(self,username):
+        self.id           = get_item_id()
+        self.username     = username
+
+    def __repr__(self):
+        return '<Tester %r:%r>' % (self.id, self.username)

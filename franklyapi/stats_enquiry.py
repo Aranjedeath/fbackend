@@ -23,7 +23,9 @@ def count_of_question_asked(since_hours = 12):
 	results = db.session.execute(text("""SELECT u.user_type , count(q.id) as 'No. of questions'
 											from users u 
 											inner join questions q on q.question_to = u.id
+											left join testers t on u.username = t.username
 											where u.monkness = -1
+											and t.id IS NULL
 											and q.deleted = false
 											and q.added_by IS NULL
 											and q.timestamp > now() - interval 12 hour;""")
