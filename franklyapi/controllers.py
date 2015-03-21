@@ -38,7 +38,7 @@ from trends import most_liked_users
 
 from mailwrapper import email_helper
 
-mailer = SimpleMailer(config.SENDER_EMAIL)
+
 
 
 def create_event(user, action, foreign_data, event_date=datetime.date.today()):
