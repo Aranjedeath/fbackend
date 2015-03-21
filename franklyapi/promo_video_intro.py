@@ -8,7 +8,7 @@ import os
 from promo_video import make_promo
 
 
-class Q:
+class GraphicElement:
 		x,y,w,h = 0,0,0,0
 		font = 0
 		text=""
@@ -124,13 +124,13 @@ def makeFinalPromo(answer_author_username,video_file_path,transpose_command,temp
 
 		rdir = call('rm -rf final',shell=True)
 		rdir = call('mkdir final',shell=True)
-	#---------------------------declare Qs----------------
-		celebPicQ = Q()
-		celebNameQ = Q()
-		wasAskedQ = Q()
-		questionQ = Q()
-		userQ = Q()
-		bgQ = Q()
+	#---------------------------declare GraphicElements----------------
+		celebPicQ = GraphicElement()
+		celebNameQ = GraphicElement()
+		wasAskedQ = GraphicElement()
+		questionQ = GraphicElement()
+		userQ = GraphicElement()
+		bgQ = GraphicElement()
 	#-------------------------- variables :) --------------------
 		fontface = "bariol_bold-webfont_0.ttf"
 		fontfaceRegular = "Bariol_Regular.otf"

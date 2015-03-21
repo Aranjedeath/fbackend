@@ -13,29 +13,42 @@ def overlay(bg_file, ov_bg_file, ov_static_file, ov_black_line_file,
             text_y_ratio=None, text_color=None, 
             stext_font="bariol_bold-webfont_0.ttf",text_font="bariol_bold-webfont_0.ttf",
             sfont_size=34, font_size=56):
-
+    
+    # load a frame of video into bg_im
     bg_im = Image.open(bg_file)
     bg_w,bg_h = bg_im.size[0],bg_im.size[1]
     background_ratio = bg_w/float(bg_h)
+
+    # stretch overlay image to fit video(bg_im is last frame of video)
     if(background_ratio > overlay_ratio):
         ov_h = bg_h
         ov_w = bg_h * overlay_ratio
     else:
         ov_w = bg_w
         ov_h = bg_w / overlay_ratio
+    
+    # get coordinates of overlay to center it on bg_im
     ov_x,ov_y = int((bg_w - ov_w)/2) , int((bg_h - ov_h)/2)
+
+    # make canvas for a new frame
     canvas = Image.new("RGBA",(bg_w,bg_h))
-    #bg_im = bg_im.resize((bg_x,bg_y))
     canvas.paste(bg_im,(0,0))
+    
+    # paste 3 overlays over the bg image
     ov1_im = Image.open(ov_bg_file)
     ov1_im = ov1_im.resize((bg_w,bg_h))
     canvas.paste(ov1_im,(0,0),ov1_im)
+    
     ov2_im = Image.open(ov_black_line_file)
     ov2_im = ov2_im.resize((bg_w,int(ov_h*ov2_im.size[1]/float(1280))))
     canvas.paste(ov2_im,(0,int(ov_y+ov_h*ov_black_line_ratio)),ov2_im)
+    
     ov3_im = Image.open(ov_static_file)
     ov3_im = ov3_im.resize((int(ov_w),int(ov_h)))
     canvas.paste(ov3_im,(ov_x,ov_y),ov3_im)
+
+    # kuch kuch
+    # TODO: Write comment.
     if(text and text_font and text_color):
 	diffRatio = float(0)
         if(len(text)>15 and len(text)<=30):
@@ -87,7 +100,7 @@ def promo_video(in_file,text,transpose_command=''):
 #------------------------------ get last frame ----------------------------
     video_duration = float(check_output("ffprobe -v error -show_format "+in_file+" | grep \"duration\" | awk -F= '/duration/{print $NF}'",shell=True))
     lastframe_call_result = call("ffmpeg -loglevel 0 -ss "+str(int(video_duration - 0.5))+" -i "+in_file+" -t 1 "+transpose_command2+" -update 1 -f image2 "+last_frame_filename,shell=True)
-#------------------------------- make extra frames ---------------------------------------   
+#------------------------------- make new frames ---------------------------------------   
     print "making end frames"
     rdir = call('rm -rf '+final_fold,shell=True)
     mdir = call('mkdir '+final_fold,shell=True)
@@ -107,7 +120,7 @@ def promo_video(in_file,text,transpose_command=''):
                 j = "img"+str(i)
             overlay(last_frame_filename,infold1+"/"+str(i)+".png",infold2+"/"+str(i)+".png",infold3+"/"+str(i)+".png",1100/float(1280),final_fold,j,overlay_ratio,white_text,white_text_y_ratio,white_color,text,text_y_ratio,pink_color)
         i = i + 1
-#---------------------------------make video from extra frames --------------------------        
+#---------------------------------make video from new frames --------------------------        
     video_from_frames_call_result = call("ffmpeg -loglevel 0 -i "+final_fold+"/img%03d.jpeg -c:v libx264 "+end_file,shell=True)
     v0_call_result = call("ffmpeg -loglevel 0 -i "+in_file+" "+transpose_command2+" -qscale:v 1 intermediate1.mpg",shell=True)
     v1_call_result = call("ffmpeg -loglevel 0 -i "+end_file+" -qscale:v 1 intermediate2.mpg",shell=True)
