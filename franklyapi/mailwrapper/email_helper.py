@@ -34,7 +34,7 @@ def forgot_password(receiver_email):
     render_dict['salutation'] = "Hi,"
     render_dict['email_text'] = "Forgot password:"
 
-    mail_sender.send_mail(receiver_email, mail_content.dict['welcome_mail']['forgot_password'],
+    mail_sender.send_mail(receiver_email, mail_content.dict['forgot_password']['subject'],
                           header_template.render(render_dict))
 
 
