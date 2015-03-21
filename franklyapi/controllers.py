@@ -20,6 +20,7 @@ import social_helpers
 import notification
 
 from configs import config
+from configs import flag_words
 from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
                     Question, Upvote, Comment, ForgotPasswordToken, Install, Video,\
                     UserFeed, Event, Reshare, Invitable, Invite, ContactUs, InflatedStat,\
@@ -37,8 +38,6 @@ from trends import most_liked_users
 
 from mailwrapper import email_helper
 
-
-mailer = email_helper.SimpleMailer(config.SENDER_EMAIL)
 
 
 def create_event(user, action, foreign_data, event_date=datetime.date.today()):
@@ -425,7 +424,7 @@ def get_users_stats(user_ids, cur_user_id=None):
 
     for post_id, values in data.items():
         if values['view_count'] < values['follower_count']:
-            values['view_count'] += values['follower_count'] + random.randint(50, 200)
+            values['view_count'] += values['follower_count'] + 45
 
     return data
 
@@ -747,7 +746,8 @@ def user_view_profile(current_user_id, user_id, username=None):
         user = None
         if username:
             user = User.query.filter(User.username==username).one()
-        
+            print user
+            print user_to_dict(user)
         elif user_id:
             user = User.query.get(user_id)
 
@@ -1094,6 +1094,17 @@ def sanitize_question_body(body):
         body = body.replace('\n', ' ').replace('  ', ' ').strip()
     return body
 
+def question_is_clean(body):
+    special_chars = flag_words.SPECIAL_CHARS_AND_NUMBERS
+    bad_words = flag_words.BAD_WORDS
+    for special_char in special_chars:
+        body = body.replace(special_char, '')
+    word_list = body.split()
+    print word_list
+    for word in word_list:
+        if word.lower() in bad_words:
+            return False
+    return True
 
 def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_by=None):
 
@@ -1108,18 +1119,21 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_b
     public = True if user_status['user_type']==2 else False #if user is celeb
 
     question_id = get_item_id()
+
     short_id = get_new_short_id(for_object='question')
     slug = make_question_slug(body, short_id)
+    clean = question_is_clean(body)
 
     question = Question(question_author=cur_user_id, question_to=question_to, 
                 body=body.capitalize(), is_anonymous=is_anonymous, public=public,
                 lat=lat, lon=lon, slug=slug, short_id=short_id,
-                id = question_id, added_by=added_by)
+                id = question_id, added_by=added_by, flag=int(clean))
     
     db.session.add(question)
 
     db.session.commit()
-    notification.notification_question_ask(question.id)
+    if clean:
+        notification.notification_question_ask(question.id)
 
     is_first = False
     if db.session.query(Question).filter(Question.question_author == cur_user_id).count() == 1:
@@ -1127,13 +1141,13 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_b
 
     users = User.query.filter(User.id.in_([cur_user_id,question_to]))
     if users[0].id == cur_user_id:
-        email_helper.question_asked(user[0].email, user[0].first_name, user[1].first_name, is_first)
+        email_helper.question_asked(users[0].email, users[0].first_name, users[1].first_name, is_first)
     else:
-        email_helper.question_asked(user[1].email, user[1].first_name, user[0].first_name, is_first)
+        email_helper.question_asked(users[1].email, users[1].first_name, users[0].first_name, is_first)
 
 
     # God forgive me for I maketh this hack
-    # Id is that of Jatin Sapru, please delete this piece of shit code
+    # Id is that of Jatin Sapru, please delete this piece o shit code
     # asap ~ MilfHunter II
     if question_to == '737c6f8a7ac04d7e9380f1d37c011531':
         notification.idreamofsapru(cur_user_id,question.id)
@@ -1148,7 +1162,8 @@ def question_list(user_id, offset, limit, version_code=0):
     questions_query = Question.query.filter(Question.question_to==user_id, 
                                             Question.deleted==False,
                                             Question.is_answered==False,
-                                            Question.is_ignored==False
+                                            Question.is_ignored==False,
+                                            Question.flag.in_([1, 2])
                                             ).outerjoin(Upvote
                                             ).group_by(Question.id
                                             ).order_by(func.count(Upvote.id).desc()
@@ -1185,7 +1200,8 @@ def question_list_public(current_user_id, user_id, username=None, offset=0, limi
                                                     Question.question_author==current_user_id,
                                                     Question.deleted==False,
                                                     Question.is_answered==False,
-                                                    Question.is_ignored==False
+                                                    Question.is_ignored==False,
+                                                    Question.flag.in_([1, 2])
                                                     #Question.public==True
                                                     ).order_by(Question.timestamp.desc()
                                                     ).offset(0).limit(5).all()
@@ -1833,6 +1849,17 @@ def update_required(device_type, version_code):
 def get_notifications(cur_user_id, device_id, version_code, notification_category, offset, limit):
     original_limit = limit
 
+    # Setting the seen on notifications
+    # only if it is the first fetch
+    if offset == 0:
+        db.session.execute(text("Update user_notifications set seen_at = :current_time where user_id = :user_id ; "),
+                           params = {'user_id': cur_user_id,
+                                     'current_time':datetime.datetime.now(),
+                                    })
+        db.session.commit()
+
+
+
     device_type = get_device_type(device_id)
     
     if device_type == 'ios':
@@ -1913,7 +1940,7 @@ def get_notifications(cur_user_id, device_id, version_code, notification_categor
 
 
 def get_notification_count(cur_user_id, device_id, version_code):
-    return 1
+
     count = 0
     device_type = get_device_type(device_id)
     update = check_app_version_code(device_type, version_code)
@@ -1922,8 +1949,8 @@ def get_notification_count(cur_user_id, device_id, version_code):
 
     last_fetch_time = datetime.datetime.now() - datetime.timedelta(days=100)
     last_fetch_time_query = ''
-    results = db.session.execute(text("""SELECT user_notification_info.last_notification_fetch_time 
-                                        FROM user_notification_info 
+    results = db.session.execute(text("""SELECT user_notification_info.last_notification_fetch_time
+                                        FROM user_notification_info
                                         WHERE user_id = :cur_user_id
                                         ORDER BY user_notification_info.last_notification_fetch_time
                                         LIMIT 0,1
@@ -1932,24 +1959,18 @@ def get_notification_count(cur_user_id, device_id, version_code):
     for row in results:
         last_fetch_time = row[0]
 
-
-    results = db.session.execute(text("""SELECT count(1)
+    results = db.session.execute(text("""SELECT count(*)
                                         FROM notifications JOIN user_notifications
                                             ON notifications.id = user_notifications.notification_id
                                         WHERE user_notifications.user_id = :cur_user_id
-                                            AND user_notifications.seen_at = null
+                                            AND user_notifications.seen_at is null
                                             AND user_notifications.added_at > :last_fetch_time
-                                        ORDER BY user_notifications.added_at 
-                                        GROUP BY notifications.type,notifications.object_id
-                                        LIMIT :offset,:limit
                                     """),
-                                params = {'cur_user_id':cur_user_id,
-                                            'limit':limit,
-                                            'offset':offset,
-                                            'last_fetch_time':last_fetch_time
+                                params={'cur_user_id':cur_user_id,
+                                          'last_fetch_time':last_fetch_time
                                         }
                                 )
-    for row in result:
+    for row in results:
         count += row[0]
     return count
 
@@ -2254,7 +2275,7 @@ def search_default(cur_user_id=None):
     if resp:
         resp = json.loads(resp)
     else:
-        categories_order = ["Trending Now", "Actors", "Singers", "Twitter Celebrities", "Radio Jockeys", "Subject Experts", "New on Frankly", "Authors", "Entrepreneurs", "Chefs", "Politicians"]
+        categories_order = ["Trending Now", "Actors", "Singers", "Twitter Celebrities", "Radio Jockeys", "Subject Experts", "New on Frankly", "Authors", "Entrepreneurs", "Chefs", "Politicians", "Comedians", "Bands"]
     
         results = db.session.execute(text("""SELECT search_defaults.category, users.id, users.username, users.first_name,
                                                     users.user_type, users.user_title, users.profile_picture,
