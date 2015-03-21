@@ -1,12 +1,12 @@
 dict = {
 
-    "forgot_password" : {
+    "forgot_password": {
 
-                          "subject" : "Forgot your password?",
+                          "subject": "Forgot your password?",
 
 
                         },
-    "welcome_mail"  :   {
+    "welcome_mail":   {
                           "subject" : "Welcome to Frankly.me!",
                           "body": '''Welcome to Frankly.me where Arvind Kejriwal,Javed Akhtar, Gurdaas Maan,Yogendra Yadav and \n
                                       many more are waiting for you. <br/><br/>Frankly.me is now here to help you reach the\n
@@ -15,7 +15,7 @@ dict = {
                                       Username: %s <br/> Password: %s <br/><br/>\n
                                       Have a rocking stay at Frankly.me!''',
                         },
-    "question_asked" : {
+    "question_asked": {
                           "subject" : "Your question has been asked",
                           "body": '''Congratulations!<br/><br/>Your question has been successfully posted.We will make sure it gets answered and till then, you can ask more questions to
                                     %s. <br/><br/> Also, don't forget to answer the questions that you are asked by your
