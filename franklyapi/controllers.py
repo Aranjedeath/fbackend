@@ -1929,7 +1929,7 @@ def get_notifications(cur_user_id, device_id, version_code, notification_categor
 
 
 def get_notification_count(cur_user_id, device_id, version_code):
-    return 1
+
     count = 0
     device_type = get_device_type(device_id)
     update = check_app_version_code(device_type, version_code)
@@ -1938,8 +1938,8 @@ def get_notification_count(cur_user_id, device_id, version_code):
 
     last_fetch_time = datetime.datetime.now() - datetime.timedelta(days=100)
     last_fetch_time_query = ''
-    results = db.session.execute(text("""SELECT user_notification_info.last_notification_fetch_time 
-                                        FROM user_notification_info 
+    results = db.session.execute(text("""SELECT user_notification_info.last_notification_fetch_time
+                                        FROM user_notification_info
                                         WHERE user_id = :cur_user_id
                                         ORDER BY user_notification_info.last_notification_fetch_time
                                         LIMIT 0,1
@@ -1948,24 +1948,18 @@ def get_notification_count(cur_user_id, device_id, version_code):
     for row in results:
         last_fetch_time = row[0]
 
-
-    results = db.session.execute(text("""SELECT count(1)
+    results = db.session.execute(text("""SELECT count(*)
                                         FROM notifications JOIN user_notifications
                                             ON notifications.id = user_notifications.notification_id
                                         WHERE user_notifications.user_id = :cur_user_id
-                                            AND user_notifications.seen_at = null
+                                            AND user_notifications.seen_at is null
                                             AND user_notifications.added_at > :last_fetch_time
-                                        ORDER BY user_notifications.added_at 
-                                        GROUP BY notifications.type,notifications.object_id
-                                        LIMIT :offset,:limit
                                     """),
-                                params = {'cur_user_id':cur_user_id,
-                                            'limit':limit,
-                                            'offset':offset,
-                                            'last_fetch_time':last_fetch_time
+                                params={'cur_user_id':cur_user_id,
+                                          'last_fetch_time':last_fetch_time
                                         }
                                 )
-    for row in result:
+    for row in results:
         count += row[0]
     return count
 
