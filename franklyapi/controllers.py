@@ -1353,6 +1353,8 @@ def question_view(cur_user_id, question_id, short_id):
 
         if cur_user_id and (has_blocked(cur_user_id, question.question_to) or has_blocked(cur_user_id, question.question_author)):
             raise CustomExceptions.BlockedUserException()
+        if question.flag == 0:
+            raise CustomExceptions.ObjectNotFoundException('You cant view this question due to flag.')
         
         return {'question': question_to_dict(question, cur_user_id)}
     except NoResultFound:
@@ -1830,7 +1832,7 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
         async_encoder.encode_video_task.delay(video_url, username=curuser.username)
 
         db.session.commit()
-        notification.notification_post_add(post.id)
+        notification.notification_post_add(post.id,question.body)
         return {'success': True, 'id': str(post.id), 'post':post_to_dict(post, cur_user_id)}
 
     except NoResultFound:
