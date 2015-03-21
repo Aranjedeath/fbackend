@@ -118,7 +118,7 @@ def notification_question_ask(question_id):
     return notification
 
 
-def notification_post_add(post_id):
+def notification_post_add(post_id, question_body=""):
 
     post = Post.query.get(post_id)
     users = User.query.filter(User.id.in_([post.answer_author, post.question_author])).all()
@@ -130,7 +130,7 @@ def notification_post_add(post_id):
             answer_author = u
 
     #Notifying question_author by email
-    email_helper.question_answered(question_author.email,question_author.first_name,answer_author.first_name)
+    email_helper.question_answered(question_author.email,question_author.first_name,answer_author.first_name, question_body)
 
     notification_type = 'post-add-self_user'
     text = "<b><answer_author_name></b> answered your question"

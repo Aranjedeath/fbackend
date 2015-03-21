@@ -1831,7 +1831,7 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
         async_encoder.encode_video_task.delay(video_url, username=curuser.username)
 
         db.session.commit()
-        notification.notification_post_add(post.id)
+        notification.notification_post_add(post.id,question.body)
         return {'success': True, 'id': str(post.id), 'post':post_to_dict(post, cur_user_id)}
 
     except NoResultFound:
