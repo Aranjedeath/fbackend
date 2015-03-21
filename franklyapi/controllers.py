@@ -1850,6 +1850,17 @@ def update_required(device_type, version_code):
 def get_notifications(cur_user_id, device_id, version_code, notification_category, offset, limit):
     original_limit = limit
 
+    # Setting the seen on notifications
+    # only if it is the first fetch
+    if offset == 0:
+        db.session.execute(text("Update user_notifications set seen_at = :current_time where user_id = :user_id ; "),
+                           params = {'user_id': cur_user_id,
+                                     'current_time':datetime.datetime.now(),
+                                    })
+        db.session.commit()
+
+
+
     device_type = get_device_type(device_id)
     
     if device_type == 'ios':
