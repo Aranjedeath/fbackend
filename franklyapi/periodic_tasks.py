@@ -7,7 +7,10 @@ from celery import Celery
 from app import db
 
 from models import User, Video, Post
-
+import async_encoder
+ 
+import stats
+import stats_routine
 
 celery = Celery('tasks')
 celery.config_from_object('periodic_tasks_config')
@@ -30,7 +33,6 @@ def update_user_view_count():
 
 @celery.task
 def reassign_pending_video_tasks():
-    import async_encoder
     videos = Video.query.filter(Video.process_state.in_(['pending', 'failed'])).all()
     for v in videos:
 	    post = Post.query.with_entities('id', 'answer_author').filter(Post.media_url==v.url).first()
@@ -53,20 +55,16 @@ def reassign_pending_video_tasks():
 
 @celery.task
 def log_video_count():
-    import stats
     stats.video_view_count_logger()
 
 @celery.task
 def weekly_report():
-    import stats
     stats.weekly_report()
 
 @celery.task
 def daily_report():
-    import stats_routine
     stats_routine.daily_mail()
 
 @celery.task
 def twice_a_day_report():
-    import stats_routine
     stats_routine.twice_a_day_mail()

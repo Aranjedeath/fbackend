@@ -40,7 +40,7 @@ CELERYBEAT_SCHEDULE = {
     },
     'task7': {
         'task': 'periodic_tasks.twice_a_day_report',
-        'schedule': cron(minute='*'),
+        'schedule': cron(hour='9,18',minute=0),
         'options':{'queue': 'periodic'},
 
     }
