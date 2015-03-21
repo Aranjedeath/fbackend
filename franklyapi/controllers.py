@@ -1353,6 +1353,8 @@ def question_view(cur_user_id, question_id, short_id):
 
         if cur_user_id and (has_blocked(cur_user_id, question.question_to) or has_blocked(cur_user_id, question.question_author)):
             raise CustomExceptions.BlockedUserException()
+        if question.flag = 0:
+            raise CustomExceptions.ObjectNotFoundException('You cant view this question due to flag.')
         
         return {'question': question_to_dict(question, cur_user_id)}
     except NoResultFound:
