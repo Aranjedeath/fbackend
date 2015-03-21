@@ -16,7 +16,7 @@ def daily_mail():
 	msg2 = make_panel('Usernames of people who have been asked 3 or more questions',
 		users_being_asked_questions_more_than_or_equal_to(3))
 	
-	msg3 = make_panel('Links of top 20 questions with the most (real) upvotes)',
+	msg3 = make_panel('Links of top 20 questions with the most (real) upvotes',
 		questions_with_most_upvotes(20)) 
 	
 	msg4 = make_panel('Usernames of top 20 people with the highest increase in follows (real follows)',

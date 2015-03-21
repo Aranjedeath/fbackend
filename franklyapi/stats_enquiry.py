@@ -7,7 +7,7 @@ from  stats_mail_writer import make_html_table
 #             twice a day enquiry
 #============================================
 
-def new_registrations(show_celeb=True, show_non_celeb=True, since_hours = 12):
+def new_registrations(since_hours = 12):
 	results = db.session.execute(text("""SELECT u.user_type, u.registered_with, count(u.username)
 											from users u  
 											where u.user_since > now() - interval :since_hours hour
@@ -19,12 +19,13 @@ def new_registrations(show_celeb=True, show_non_celeb=True, since_hours = 12):
 	resp = make_html_table(results)
 	return resp
 
-def count_of_question_asked(show_celeb=True, show_non_celeb=True, since_hours = 12):
-	results = db.session.execute(text("""SELECT u.user_type , count(q.id)
+def count_of_question_asked(since_hours = 12):
+	results = db.session.execute(text("""SELECT u.user_type , count(q.id) as 'No. of questions'
 											from users u 
 											inner join questions q on q.question_to = u.id
 											where u.monkness = -1
 											and q.deleted = false
+											and q.added_by IS NULL
 											and q.timestamp > now() - interval 12 hour;""")
 								)
 								
