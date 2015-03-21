@@ -1141,13 +1141,13 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_b
 
     users = User.query.filter(User.id.in_([cur_user_id,question_to]))
     if users[0].id == cur_user_id:
-        email_helper.question_asked(user[0].email, user[0].first_name, user[1].first_name, is_first)
+        email_helper.question_asked(users[0].email, users[0].first_name, users[1].first_name, is_first)
     else:
-        email_helper.question_asked(user[1].email, user[1].first_name, user[0].first_name, is_first)
+        email_helper.question_asked(users[1].email, users[1].first_name, users[0].first_name, is_first)
 
 
     # God forgive me for I maketh this hack
-    # Id is that of Jatin Sapru, please delete this piece of shit code
+    # Id is that of Jatin Sapru, please delete this piece o shit code
     # asap ~ MilfHunter II
     if question_to == '737c6f8a7ac04d7e9380f1d37c011531':
         notification.idreamofsapru(cur_user_id,question.id)
