@@ -18,32 +18,19 @@ class GraphicElement:
 		pass
 def makeCelebPic(canvas,celebPicQ):
 	if celebPicQ.path:
+		try:
+			img = Image.open(celebPicQ.path)
 
-		img = Image.open(celebPicQ.path)
-
-		bigsize = (img.size[0] * 3, img.size[1] * 3)
-		# inbigsize = (int(img.size[0] * 2.8), int(img.size[1] * 2.8))
-		mask = Image.open('d57og.png').convert('L')
-		gola = Image.open('gola.png')
-		
-		# circle = Image.new('L', bigsize, 0)
-		# draw = ImageDraw.Draw(circle) 
-		# draw.ellipse((0, 0) + bigsize, fill=255)
-		# circle = circle.resize(img.size, Image.ANTIALIAS)
-		
-		# incircle = Image.new('L', bigsize, 255)
-		# indraw = ImageDraw.Draw(incircle) 
-		# indraw.ellipse((bigsize-inbigsize)/2 + inbigsize , fill=0)
-		# incircle = incircle.resize(img.size, Image.ANTIALIAS)
-		# circle.putalpha(incircle)
-		
-		img = img.resize((celebPicQ.w,celebPicQ.w))
-		mask = mask.resize((celebPicQ.w,celebPicQ.w))
-		gola = gola.resize((celebPicQ.w,celebPicQ.w))
-		canvas.paste(img,(celebPicQ.x,celebPicQ.y),mask)
-		canvas.paste(gola,(celebPicQ.x,celebPicQ.y),gola)
-
-		# canvas.paste(circle,(celebPicQ.x,celebPicQ.y))
+			mask = Image.open('d57og.png').convert('L')
+			gola = Image.open('gola.png')
+			
+			img = img.resize((celebPicQ.w,celebPicQ.w))
+			mask = mask.resize((celebPicQ.w,celebPicQ.w))
+			gola = gola.resize((celebPicQ.w,celebPicQ.w))
+			canvas.paste(img,(celebPicQ.x,celebPicQ.y),mask)
+			canvas.paste(gola,(celebPicQ.x,celebPicQ.y),gola)
+		except:
+			pass
 	return canvas
 def makeCelebName(canvas,celebNameQ):
 	draw = ImageDraw.Draw(canvas)
@@ -149,10 +136,12 @@ def makeFinalPromo(answer_author_username,video_file_path,transpose_command,temp
 
 		fontScaleRatio = 1
 
-		transpose_command2=''
+		if(transpose_command == ''):
+			transpose_command2 = ''
+		else:
+			transpose_command2 = '-vf '+transpose_command[:-1]
 
 		end_file = "end.mp4"
-
 		
 	#-------------------------------------------------------------
 		snapshot = call("ffmpeg -loglevel 0 -ss 0.0 -i "+in_file+" -t 1 "+transpose_command2+" -update 1 -f image2 snapshot.png",shell=True)
@@ -213,10 +202,8 @@ def makeFinalPromo(answer_author_username,video_file_path,transpose_command,temp
 
 		if celebPicQ.path: #if image available then make big image
 			celebPicWidthRatio=0.40
-			celebPicHeightRatio=0.40
 		else: # otherwise small margin in place of image
 			celebPicWidthRatio=0.1
-			celebPicHeightRatio=0.1
 
 		celebNameYGapRatio = 0.04
 
@@ -236,9 +223,8 @@ def makeFinalPromo(answer_author_username,video_file_path,transpose_command,temp
 		celebPicQ.x = int(bgQ.w*(1-celebPicWidthRatio)/2)
 		celebPicQ.y = int(bgQ.h*celebPicYRatio)
 		celebPicQ.w = int(bgQ.w*celebPicWidthRatio)
-		celebPicQ.h = int(bgQ.h*celebPicHeightRatio)
-
-		celebNameQ.y = int((bgQ.h*(celebNameYGapRatio+celebPicYRatio))+(bgQ.w*celebPicHeightRatio))
+		celebPicQ.h = celebPicQ.w
+		celebNameQ.y = int((bgQ.h*(celebNameYGapRatio+celebPicYRatio))+(celebPicQ.w))
 		
 		questionQ.x = int(bgQ.w*0.1)
 		questionQ.y = int(bgQ.h*0.7)
@@ -283,7 +269,7 @@ def makeFinalPromo(answer_author_username,video_file_path,transpose_command,temp
 				
 				#celebNameQ.x = ((bgQ.w - celebNameQ.w)/2) - slideint
 				wasAskedQ.x = int(((bgQ.w - (celebNameQ.w+wasAskedQ.w))/2) + celebNameQ.w + bgQ.w*wasAskedXGapRatio)
-				wasAskedQ.y = int((bgQ.h*(celebNameYGapRatio+celebPicYRatio+wasAskedYGapRatio))+(bgQ.w*celebPicHeightRatio))
+				wasAskedQ.y = int((bgQ.h*(celebNameYGapRatio+celebPicYRatio+wasAskedYGapRatio))+(celebPicQ.w))
 				canvas = makeWasAsked(canvas,wasAskedQ)
 				canvas = makeFaded(stage4-i-1,canvas,bgQ.w,bgQ.h,fadeimage_filename)
 				canvas = makeCelebPic(canvas,celebPicQ)
@@ -296,8 +282,8 @@ def makeFinalPromo(answer_author_username,video_file_path,transpose_command,temp
 			elif(i < stage5): # ----------------------------------------------------------------------------------slide up
 				slideint = int((i-stop4)*(bgQ.h*(celebPicYRatio - celebSlideRatio))/(stage5-stop4))
 				celebPicQ.y = int(bgQ.h*celebPicYRatio) - slideint
-				celebNameQ.y = int((bgQ.h*(celebNameYGapRatio+celebPicYRatio))+(bgQ.w*celebPicHeightRatio)) - slideint
-				wasAskedQ.y = int((bgQ.h*(celebNameYGapRatio+celebPicYRatio+wasAskedYGapRatio))+(bgQ.w*celebPicHeightRatio)) - slideint
+				celebNameQ.y = int((bgQ.h*(celebNameYGapRatio+celebPicYRatio))+(celebPicQ.w)) - slideint
+				wasAskedQ.y = int((bgQ.h*(celebNameYGapRatio+celebPicYRatio+wasAskedYGapRatio))+(celebPicQ.w)) - slideint
 				questionQ.y = wasAskedQ.y + wasAskedQ.h + bgQ.h* questionYGapRatio
 				canvas = makeCelebPic(canvas,celebPicQ)
 				canvas = makeCelebName(canvas,celebNameQ)
