@@ -425,7 +425,7 @@ def get_users_stats(user_ids, cur_user_id=None):
 
     for post_id, values in data.items():
         if values['view_count'] < values['follower_count']:
-            values['view_count'] += values['follower_count'] + random.randint(50, 200)
+            values['view_count'] += values['follower_count'] + 45
 
     return data
 
@@ -747,7 +747,8 @@ def user_view_profile(current_user_id, user_id, username=None):
         user = None
         if username:
             user = User.query.filter(User.username==username).one()
-        
+            print user
+            print user_to_dict(user)
         elif user_id:
             user = User.query.get(user_id)
 
