@@ -8,7 +8,7 @@ import os
 from promo_video import make_promo
 
 
-class GraphicElement:
+class Q:
 		x,y,w,h = 0,0,0,0
 		font = 0
 		text=""
@@ -18,19 +18,32 @@ class GraphicElement:
 		pass
 def makeCelebPic(canvas,celebPicQ):
 	if celebPicQ.path:
-		try:
-			img = Image.open(celebPicQ.path)
 
-			mask = Image.open('d57og.png').convert('L')
-			gola = Image.open('gola.png')
-			
-			img = img.resize((celebPicQ.w,celebPicQ.w))
-			mask = mask.resize((celebPicQ.w,celebPicQ.w))
-			gola = gola.resize((celebPicQ.w,celebPicQ.w))
-			canvas.paste(img,(celebPicQ.x,celebPicQ.y),mask)
-			canvas.paste(gola,(celebPicQ.x,celebPicQ.y),gola)
-		except:
-			pass
+		img = Image.open(celebPicQ.path)
+
+		bigsize = (img.size[0] * 3, img.size[1] * 3)
+		# inbigsize = (int(img.size[0] * 2.8), int(img.size[1] * 2.8))
+		mask = Image.open('d57og.png').convert('L')
+		gola = Image.open('gola.png')
+		
+		# circle = Image.new('L', bigsize, 0)
+		# draw = ImageDraw.Draw(circle) 
+		# draw.ellipse((0, 0) + bigsize, fill=255)
+		# circle = circle.resize(img.size, Image.ANTIALIAS)
+		
+		# incircle = Image.new('L', bigsize, 255)
+		# indraw = ImageDraw.Draw(incircle) 
+		# indraw.ellipse((bigsize-inbigsize)/2 + inbigsize , fill=0)
+		# incircle = incircle.resize(img.size, Image.ANTIALIAS)
+		# circle.putalpha(incircle)
+		
+		img = img.resize((celebPicQ.w,celebPicQ.w))
+		mask = mask.resize((celebPicQ.w,celebPicQ.w))
+		gola = gola.resize((celebPicQ.w,celebPicQ.w))
+		canvas.paste(img,(celebPicQ.x,celebPicQ.y),mask)
+		canvas.paste(gola,(celebPicQ.x,celebPicQ.y),gola)
+
+		# canvas.paste(circle,(celebPicQ.x,celebPicQ.y))
 	return canvas
 def makeCelebName(canvas,celebNameQ):
 	draw = ImageDraw.Draw(canvas)
@@ -94,13 +107,17 @@ def fadeInOriginalVideo():
 		tempimg=makeFaded(n-i,tempimg,bgQ.w,bgQ.h,fadeimage_filename)
 		tempimg.save("tempfade/"+str(k)+".jpeg")
 		i=i+1
-
 def makeFinalPromo(answer_author_username,video_file_path,transpose_command,temp_path,output_file_name,answer_author_name=None,question=None,question_author_username=None,answer_author_image_filepath=None):
+	
+	# HACK : to go to main directory at server
+	# TODO : do something with config
+	if os.environ['LOGNAME']=='ubuntu':
+		os.chdir('/home/ubuntu/franklysql/franklyapi')
+	
 	
 	path = temp_path
 
-	print 'promo encoding started'
-	print 'creating end of the video first'
+	print 'creating last past fisrt :) . . .'
 	end_promo_mpg_name = make_promo(path,video_file_path,answer_author_username,transpose_command)
 	
 	mpg_with_front_and_end = end_promo_mpg_name # in case only end promo is to be converted
@@ -113,13 +130,13 @@ def makeFinalPromo(answer_author_username,video_file_path,transpose_command,temp
 
 		rdir = call('rm -rf final',shell=True)
 		rdir = call('mkdir final',shell=True)
-	#---------------------------declare GraphicElements----------------
-		celebPicQ = GraphicElement()
-		celebNameQ = GraphicElement()
-		wasAskedQ = GraphicElement()
-		questionQ = GraphicElement()
-		userQ = GraphicElement()
-		bgQ = GraphicElement()
+	#---------------------------declare Qs----------------
+		celebPicQ = Q()
+		celebNameQ = Q()
+		wasAskedQ = Q()
+		questionQ = Q()
+		userQ = Q()
+		bgQ = Q()
 	#-------------------------- variables :) --------------------
 		fontface = "bariol_bold-webfont_0.ttf"
 		fontfaceRegular = "Bariol_Regular.otf"
@@ -136,12 +153,10 @@ def makeFinalPromo(answer_author_username,video_file_path,transpose_command,temp
 
 		fontScaleRatio = 1
 
-		if(transpose_command == ''):
-			transpose_command2 = ''
-		else:
-			transpose_command2 = '-vf '+transpose_command[:-1]
+		transpose_command2=''
 
 		end_file = "end.mp4"
+
 		
 	#-------------------------------------------------------------
 		snapshot = call("ffmpeg -loglevel 0 -ss 0.0 -i "+in_file+" -t 1 "+transpose_command2+" -update 1 -f image2 snapshot.png",shell=True)
@@ -188,11 +203,11 @@ def makeFinalPromo(answer_author_username,video_file_path,transpose_command,temp
 	#----------------frame numbers------------
 		lastFrameNumber = 190
 		stage1=5 # blank
-		stage2=25 #fade in pic and name
+		stage2=25 #fade in pic name
 		stop2 =35 # hold
-		stage3=45 #slide name left
+		stage3=45 #slide name
 		stage4=65 # fade in wasasked
-		stop4 =75 # hold 
+		stop4 =75 # hold ------------------------------------------------- > > > > done
 		stage5=85 # slide up pic name asked
 		stage6=120 # fade in question
 		stop6 =180 # last hold
@@ -200,15 +215,17 @@ def makeFinalPromo(answer_author_username,video_file_path,transpose_command,temp
 	#------------ratio positioning -----------------
 		celebPicYRatio=0.30
 
-		if celebPicQ.path: #if image available then make big image
+		if celebPicQ.path:
 			celebPicWidthRatio=0.40
-		else: # otherwise small margin in place of image
+			celebPicHeightRatio=0.40
+		else:
 			celebPicWidthRatio=0.1
+			celebPicHeightRatio=0.1
 
 		celebNameYGapRatio = 0.04
 
 		wasAskedXGapRatio = 0.02
-		wasAskedYGapRatio = 0.007 #ygap from top of celebname
+		wasAskedYGapRatio = 0.007 
 
 		celebSlideRatio = 0.12
 
@@ -223,8 +240,9 @@ def makeFinalPromo(answer_author_username,video_file_path,transpose_command,temp
 		celebPicQ.x = int(bgQ.w*(1-celebPicWidthRatio)/2)
 		celebPicQ.y = int(bgQ.h*celebPicYRatio)
 		celebPicQ.w = int(bgQ.w*celebPicWidthRatio)
-		celebPicQ.h = celebPicQ.w
-		celebNameQ.y = int((bgQ.h*(celebNameYGapRatio+celebPicYRatio))+(celebPicQ.w))
+		celebPicQ.h = int(bgQ.h*celebPicHeightRatio)
+
+		celebNameQ.y = int((bgQ.h*(celebNameYGapRatio+celebPicYRatio))+(bgQ.w*celebPicHeightRatio))
 		
 		questionQ.x = int(bgQ.w*0.1)
 		questionQ.y = int(bgQ.h*0.7)
@@ -269,7 +287,7 @@ def makeFinalPromo(answer_author_username,video_file_path,transpose_command,temp
 				
 				#celebNameQ.x = ((bgQ.w - celebNameQ.w)/2) - slideint
 				wasAskedQ.x = int(((bgQ.w - (celebNameQ.w+wasAskedQ.w))/2) + celebNameQ.w + bgQ.w*wasAskedXGapRatio)
-				wasAskedQ.y = int((bgQ.h*(celebNameYGapRatio+celebPicYRatio+wasAskedYGapRatio))+(celebPicQ.w))
+				wasAskedQ.y = int((bgQ.h*(celebNameYGapRatio+celebPicYRatio+wasAskedYGapRatio))+(bgQ.w*celebPicHeightRatio))
 				canvas = makeWasAsked(canvas,wasAskedQ)
 				canvas = makeFaded(stage4-i-1,canvas,bgQ.w,bgQ.h,fadeimage_filename)
 				canvas = makeCelebPic(canvas,celebPicQ)
@@ -282,8 +300,8 @@ def makeFinalPromo(answer_author_username,video_file_path,transpose_command,temp
 			elif(i < stage5): # ----------------------------------------------------------------------------------slide up
 				slideint = int((i-stop4)*(bgQ.h*(celebPicYRatio - celebSlideRatio))/(stage5-stop4))
 				celebPicQ.y = int(bgQ.h*celebPicYRatio) - slideint
-				celebNameQ.y = int((bgQ.h*(celebNameYGapRatio+celebPicYRatio))+(celebPicQ.w)) - slideint
-				wasAskedQ.y = int((bgQ.h*(celebNameYGapRatio+celebPicYRatio+wasAskedYGapRatio))+(celebPicQ.w)) - slideint
+				celebNameQ.y = int((bgQ.h*(celebNameYGapRatio+celebPicYRatio))+(bgQ.w*celebPicHeightRatio)) - slideint
+				wasAskedQ.y = int((bgQ.h*(celebNameYGapRatio+celebPicYRatio+wasAskedYGapRatio))+(bgQ.w*celebPicHeightRatio)) - slideint
 				questionQ.y = wasAskedQ.y + wasAskedQ.h + bgQ.h* questionYGapRatio
 				canvas = makeCelebPic(canvas,celebPicQ)
 				canvas = makeCelebName(canvas,celebNameQ)
