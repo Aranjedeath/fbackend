@@ -31,5 +31,17 @@ CELERYBEAT_SCHEDULE = {
         'schedule': cron(hour=8,minute=0,day_of_week='monday'),
         'options':{'queue': 'periodic'},
 
+    },
+    'task6': {
+        'task': 'periodic_tasks.daily_report',
+        'schedule': cron(hour=9,minute=0),
+        'options':{'queue': 'periodic'},
+
+    },
+    'task7': {
+        'task': 'periodic_tasks.twice_a_day_report',
+        'schedule': cron(hour='9,18',minute=0),
+        'options':{'queue': 'periodic'},
+
     }
 }
