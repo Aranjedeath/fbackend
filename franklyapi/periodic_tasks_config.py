@@ -1,6 +1,6 @@
 from datetime import timedelta
 from configs import config
-import crontab as cron
+from celery.schedules import crontab as cron
 
 BROKER_URL = config.ASYNC_ENCODER_BROKER_URL
 CELERY_RESULT_BACKEND = config.ASYNC_ENCODER_BACKEND_URL
