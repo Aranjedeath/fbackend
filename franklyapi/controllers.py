@@ -40,7 +40,6 @@ from mailwrapper import email_helper
 
 
 
-
 def create_event(user, action, foreign_data, event_date=datetime.date.today()):
     if not Event.query.filter(Event.user==user, Event.action==action, Event.foreign_data==foreign_data, Event.event_date==event_date).count():
         return Event(user=user, action=action, foreign_data=foreign_data, event_date=event_date)
@@ -1850,6 +1849,17 @@ def update_required(device_type, version_code):
 def get_notifications(cur_user_id, device_id, version_code, notification_category, offset, limit):
     original_limit = limit
 
+    # Setting the seen on notifications
+    # only if it is the first fetch
+    if offset == 0:
+        db.session.execute(text("Update user_notifications set seen_at = :current_time where user_id = :user_id ; "),
+                           params = {'user_id': cur_user_id,
+                                     'current_time':datetime.datetime.now(),
+                                    })
+        db.session.commit()
+
+
+
     device_type = get_device_type(device_id)
     
     if device_type == 'ios':
@@ -1930,7 +1940,7 @@ def get_notifications(cur_user_id, device_id, version_code, notification_categor
 
 
 def get_notification_count(cur_user_id, device_id, version_code):
-    return 1
+
     count = 0
     device_type = get_device_type(device_id)
     update = check_app_version_code(device_type, version_code)
@@ -1939,8 +1949,8 @@ def get_notification_count(cur_user_id, device_id, version_code):
 
     last_fetch_time = datetime.datetime.now() - datetime.timedelta(days=100)
     last_fetch_time_query = ''
-    results = db.session.execute(text("""SELECT user_notification_info.last_notification_fetch_time 
-                                        FROM user_notification_info 
+    results = db.session.execute(text("""SELECT user_notification_info.last_notification_fetch_time
+                                        FROM user_notification_info
                                         WHERE user_id = :cur_user_id
                                         ORDER BY user_notification_info.last_notification_fetch_time
                                         LIMIT 0,1
@@ -1949,24 +1959,18 @@ def get_notification_count(cur_user_id, device_id, version_code):
     for row in results:
         last_fetch_time = row[0]
 
-
-    results = db.session.execute(text("""SELECT count(1)
+    results = db.session.execute(text("""SELECT count(*)
                                         FROM notifications JOIN user_notifications
                                             ON notifications.id = user_notifications.notification_id
                                         WHERE user_notifications.user_id = :cur_user_id
-                                            AND user_notifications.seen_at = null
+                                            AND user_notifications.seen_at is null
                                             AND user_notifications.added_at > :last_fetch_time
-                                        ORDER BY user_notifications.added_at 
-                                        GROUP BY notifications.type,notifications.object_id
-                                        LIMIT :offset,:limit
                                     """),
-                                params = {'cur_user_id':cur_user_id,
-                                            'limit':limit,
-                                            'offset':offset,
-                                            'last_fetch_time':last_fetch_time
+                                params={'cur_user_id':cur_user_id,
+                                          'last_fetch_time':last_fetch_time
                                         }
                                 )
-    for row in result:
+    for row in results:
         count += row[0]
     return count
 
@@ -2271,7 +2275,7 @@ def search_default(cur_user_id=None):
     if resp:
         resp = json.loads(resp)
     else:
-        categories_order = ["Trending Now", "Actors", "Singers", "Twitter Celebrities", "Radio Jockeys", "Subject Experts", "New on Frankly", "Authors", "Entrepreneurs", "Chefs", "Politicians", "Comedians", "Band"]
+        categories_order = ["Trending Now", "Actors", "Singers", "Twitter Celebrities", "Radio Jockeys", "Subject Experts", "New on Frankly", "Authors", "Entrepreneurs", "Chefs", "Politicians", "Comedians", "Bands"]
     
         results = db.session.execute(text("""SELECT search_defaults.category, users.id, users.username, users.first_name,
                                                     users.user_type, users.user_title, users.profile_picture,

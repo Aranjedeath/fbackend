@@ -60,3 +60,13 @@ def log_video_count():
 def weekly_report():
     import stats
     stats.weekly_report()
+
+@celery.task
+def daily_report():
+    import stats_routine
+    stats_routine.daily_mail()
+
+@celery.task
+def twice_a_day_report():
+    import stats_routine
+    stats_routine.twice_a_day_mail()
