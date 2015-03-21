@@ -2,6 +2,7 @@ from datetime import timedelta
 from configs import config
 from celery.schedules import crontab as cron
 
+CELERY_TIMEZONE = 'Asia/Kolkata'
 BROKER_URL = config.ASYNC_ENCODER_BROKER_URL
 CELERY_RESULT_BACKEND = config.ASYNC_ENCODER_BACKEND_URL
 
