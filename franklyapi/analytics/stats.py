@@ -55,7 +55,9 @@ def daily_content_report():
 
     msg6 = make_panel('Links of top 20 questions with the highest comments (real)', questions_with_highest_comments(20))
 
-    body = add_style() + msg1 + msg2 + msg3 + msg4 + msg5 + msg6
+    msg7 = make_panel("Question askers for Jatin Sapru: ", question_askers_for_sapru())
+
+    body = add_style() + msg1 + msg2 + msg3 + msg4 + msg5 + msg6 + msg7
 
     email_helper.content_report(daily_content_mail_recipients, 'Daily Report', body)
 
