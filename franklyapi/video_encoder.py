@@ -1,5 +1,6 @@
 import subprocess
 import uuid
+import time
 import traceback
 import os
 import shutil
@@ -134,8 +135,7 @@ def encode_video_to_profile(file_path, video_url, profile_name, username=None):
     transpose_command = get_transpose_command(file_path)
     
     profile = VIDEO_ENCODING_PROFILES[profile_name]
-    temp_path = os.path.join(TEMP_DIR, uuid.uuid1().hex)
-    check_make_dir(temp_path)
+    
 
     result = {}
     try:
@@ -143,6 +143,8 @@ def encode_video_to_profile(file_path, video_url, profile_name, username=None):
             output_file_path = make_thumbnail(file_path)
 
         elif profile_name=='promo':
+            temp_path = os.path.join(TEMP_DIR, uuid.uuid1().hex)
+            check_make_dir(temp_path)
             video_data = video_db.get_video_data(video_url)
             
             answer_author_image_filepath = None if not video_data['answer_author_profile_picture'] else media_uploader.download_file(video_data['answer_author_profile_picture'])
@@ -160,11 +162,12 @@ def encode_video_to_profile(file_path, video_url, profile_name, username=None):
         
         else:
             check_make_dir(temp_path)
-            output_file_path = os.path.join(temp_path, uuid.uuid1().hex+'.'+profile['file_extension'])
-            os.chdir(temp_path)
+            output_file_path = os.path.join(TEMP_DIR, uuid.uuid1().hex+'.'+profile['file_extension'])
+            #os.chdir(temp_path)
             command = profile['command'].format(input_file=file_path, output_file=output_file_path, transpose_command = transpose_command)
             print_output('COMMAND: '+command)
             process = subprocess.Popen(command, shell=True)
+            time.sleep(2)
             process.kill()
             print_output('MAKING STREAMABLE')
             make_psuedo_streamable(output_file_path)
