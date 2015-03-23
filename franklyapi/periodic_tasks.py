@@ -9,8 +9,9 @@ from app import db
 from models import User, Video, Post
 import async_encoder
  
-import stats
-import stats_routine
+from analytics import stats
+from mailwrapper import email_helper
+
 
 celery = Celery('tasks')
 celery.config_from_object('periodic_tasks_config')
@@ -55,16 +56,34 @@ def reassign_pending_video_tasks():
 
 @celery.task
 def log_video_count():
-    stats.video_view_count_logger()
+    try:
+        stats.video_view_count_logger()
+    except:
+        email_helper.cron_job_failed("log_video_count")
+
+
 
 @celery.task
 def weekly_report():
-    stats.weekly_report()
+    try:
+        stats.weekly_macro_metrics()
+    except:
+        email_helper.cron_job_failed("weekly_report")
+
 
 @celery.task
 def daily_report():
-    stats_routine.daily_mail()
+    try:
+        stats.daily_content_report()
+    except:
+        email_helper.cron_job_failed("daily_report")
+
+
 
 @celery.task
 def twice_a_day_report():
-    stats_routine.twice_a_day_mail()
+    try:
+        stats.intra_day_content_report()
+    except:
+        email_helper.cron_job_failed("twice_a_day_report")
+
