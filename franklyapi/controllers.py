@@ -174,7 +174,7 @@ def get_device_type(device_id):
 def send_registration_mail(user_id, mail_password=False):
     user = User.query.filter(User.id==user_id).one()
     if 'twitter' not in user.registered_with:
-        email_helper.welcome_mail(user.email, user.full_name, user.username, user.password)
+        email_helper.welcome_mail(user.email, user.first_name, user.username, user.password)
 
 
 def new_registration_task(user_id, mail_password=True):
