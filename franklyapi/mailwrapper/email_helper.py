@@ -48,9 +48,11 @@ def question_asked(receiver_email, receiver_name, celebrity_name, is_first):
     mail_sender.send_mail(receiver_email,mail_content.dict['question_asked']['subject'],
                           header_template.render(render_dict))
 
-def question_answered(receiver_email, receiver_name, celebrity_name, question):
+
+def question_answered(receiver_email, receiver_name, celebrity_name, question, web_link):
+
     render_dict['salutation'] = "Hi %s" % receiver_name
-    render_dict['email_text'] = mail_content.dict['question_answered']['body'] % (celebrity_name, question)
+    render_dict['email_text'] = mail_content.dict['question_answered']['body'] % (celebrity_name, question, web_link)
 
     mail_sender.send_mail(receiver_email, mail_content.dict['question_answered']['subject'],
                           header_template.render(render_dict))
