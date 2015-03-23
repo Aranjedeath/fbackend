@@ -28,7 +28,7 @@ dict = {
                         },
     "question_answered": {
                           "subject" : "Your question has been answered!",
-                          "body": '''%s has answered your question "%s" on frankly.me. Check it out now!'''
+                          "body": '''%s has answered your question "%s" %s. Check it out now!'''
 
                         },
     "inactive_profile" : {

@@ -118,10 +118,11 @@ def notification_question_ask(question_id):
     return notification
 
 
-def notification_post_add(post_id, question_body=""):
+def notification_post_add(post_id, question_body="", short_id=""):
 
     post = Post.query.get(post_id)
     users = User.query.filter(User.id.in_([post.answer_author, post.question_author])).all()
+
 
     for u in users:
         if u.id == post.question_author:
@@ -130,7 +131,9 @@ def notification_post_add(post_id, question_body=""):
             answer_author = u
 
     #Notifying question_author by email
-    email_helper.question_answered(question_author.email,question_author.first_name,answer_author.first_name, question_body)
+    web_link = "<a href='http://frankly.me/q/%s'>here</a>" % short_id
+    email_helper.question_answered(question_author.email, question_author.first_name, answer_author.first_name,
+                                   question_body, web_link)
 
     notification_type = 'post-add-self_user'
     text = "<b><answer_author_name></b> answered your question"

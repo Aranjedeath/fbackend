@@ -168,3 +168,16 @@ def questions_with_highest_comments(count=20):
 
     resp = make_html_table(results)
     return resp
+
+
+def question_askers_for_sapru():
+    results = db.session.execute(text("""Select u.first_name, u.email, u.phone_num,
+                                         DATE_FORMAT(q.timestamp,"%D %M") as date,
+                                         count(*) as q_count
+                                         from questions q
+                                         left join users u on q.question_author = u.id
+                                         where q.question_to = '737c6f8a7ac04d7e9380f1d37c011531'
+                                         and u.monkness = -1
+                                         group by q.question_author order by q_count DESC;"""),params = {})
+    return make_html_table(results)
+
