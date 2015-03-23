@@ -89,12 +89,14 @@ def make_psuedo_streamable(path):
     command = 'qtfaststart {path}'.format(path=path)
     process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
     print process.stdout.read()
+    process.kill()
     return path
 
 def get_rotation(file_path):
     command = "mediainfo '--Inform=Video;%Rotation%' {path}".format(path=file_path)
     process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
     rotation = process.stdout.read().strip()
+    process.kill()
     if rotation:
         return int(float(rotation))
     return 0
@@ -120,7 +122,8 @@ def make_thumbnail(file_path):
                                         transpose_command2=transpose_command2,
                                         output_file=temp_file_path)
     print_output('COMMAND: '+command)
-    subprocess.call(command,shell=True)
+    process = subprocess.Popen(command,shell=True)
+    process.kill()
     return temp_file_path
 
 def encode_video_to_profile(file_path, video_url, profile_name, username=None):
@@ -161,8 +164,8 @@ def encode_video_to_profile(file_path, video_url, profile_name, username=None):
             os.chdir(temp_path)
             command = profile['command'].format(input_file=file_path, output_file=output_file_path, transpose_command = transpose_command)
             print_output('COMMAND: '+command)
-            subprocess.call(command, shell=True)
-            
+            process = subprocess.Popen(command, shell=True)
+            process.kill()
             print_output('MAKING STREAMABLE')
             make_psuedo_streamable(output_file_path)
         
