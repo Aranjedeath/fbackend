@@ -1781,11 +1781,9 @@ def get_new_short_id(for_object):
 
 
 def add_video_post(cur_user_id, question_id, video, answer_type,
-                        lat=None, lon=None, client_id=get_new_short_id(for_object='post'),
+                        lat=None, lon=None, client_id=None,
                         show_after = None):
     try:
-        if not client_id:
-            client_id = get_new_short_id(for_object='post')
         if cur_user_id in config.ADMIN_USERS:
             question = Question.query.filter(Question.id==question_id,
                                             Question.is_answered==False,
@@ -1806,6 +1804,9 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
         video_url, thumbnail_url = media_uploader.upload_user_video(user_id=cur_user_id, video_file=video, video_type='answer')
         
         curuser = User.query.filter(User.id == cur_user_id).one()
+
+        if not client_id:
+            client_id = question.short_id
             
         post = Post(question=question_id,
                     question_author=question.question_author, 
@@ -1813,7 +1814,7 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
                     answer_type=answer_type,
                     media_url=video_url,
                     thumbnail_url=thumbnail_url,
-                    client_id=question.short_id,
+                    client_id=client_id,
                     lat=lat,
                     lon=lon,
                     id = get_item_id())
