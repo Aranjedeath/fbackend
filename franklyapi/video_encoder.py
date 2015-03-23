@@ -170,6 +170,8 @@ def encode_video_to_profile(file_path, video_url, profile_name, username=None):
             time.sleep(2)
             process.kill()
             print_output('MAKING STREAMABLE')
+            print output_file_path
+            raw_input()
             make_psuedo_streamable(output_file_path)
         
         new_s3_key = get_key_name_for_profile(video_url, profile)
