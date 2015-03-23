@@ -73,7 +73,7 @@ def content_report(recipients, subject, report):
 
 
 def cron_job_failed(cron_type):
-    mail_sender.send_mail(['varun@frankly.me','shashank@frankly.me','nikhil@frankly,me'], cron_type +
+    mail_sender.send_mail(['varun@frankly.me','shashank@frankly.me','nikhil@frankly.me'], cron_type +
                            " Job failed", "Please check")
 
 
