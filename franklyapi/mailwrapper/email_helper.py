@@ -52,7 +52,7 @@ def question_answered(receiver_email, receiver_name, celebrity_name, question):
     render_dict['salutation'] = "Hi %s" % receiver_name
     render_dict['email_text'] = mail_content.dict['question_answered']['body'] % (celebrity_name, question)
 
-    mail_sender.send_mail(receiver_email,mail_content.dict['question_answered']['subject'],
+    mail_sender.send_mail(receiver_email, mail_content.dict['question_answered']['subject'],
                           header_template.render(render_dict))
 
 #Weekly Email
@@ -60,14 +60,21 @@ def inactive_profile(receiver_email,receiver_name):
     render_dict['salutation'] = "Hi %s" % receiver_name
     render_dict['email_text'] = mail_content.dict['inactive_profile']['body']
 
-    mail_sender.send_mail(receiver_email,mail_content.dict['inactive_profile']['subject'],
+    mail_sender.send_mail(receiver_email ,mail_content.dict['inactive_profile']['subject'],
                           header_template.render(render_dict))
 
 
-def send_weekly_report(receiver_emails,report):
-    for email in receiver_emails:
-        mail_sender.send_mail(email,"Weekly Report",report)
+def send_weekly_report(recipients,report):
+    mail_sender.send_mail(recipients, "Weekly Report", report)
 
+
+def content_report(recipients, subject, report):
+    mail_sender.send_mail(recipients, subject, report)
+
+
+def cron_job_failed(cron_type):
+    mail_content.send_mail(['varun@frankly.me','shashank@frankly.me','nikhil@frankly,me'], cron_type +
+                           " Job failed", "Please check")
 
 
 def send_mail_for_sapru(receiver_email,receiver_name,link):

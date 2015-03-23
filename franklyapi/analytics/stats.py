@@ -2,19 +2,21 @@ import datetime
 import json
 
 from sqlalchemy.sql import text, func
-
 from app import db
 from models import *
 from mailwrapper import email_helper
+from models import User
+from stats_html_helper import *
+from stats_config import *
+from stats_queries import *
 
-#To be run weekly
-def weekly_report():
+
+def weekly_macro_metrics():
 
     questions_asked = day_distribution_questions_asked()
     questions_answered = day_distribution_questions_answered()
     video_views = day_distribution_video_views()
-    days = ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday',
-            'Sunday')
+
     report =  "Frankly weekly report dating back 7 days from %s " % str(datetime.datetime.now().date())
     report +="<table border='1'><tbody><tr>" \
              "<th>Day</th>" \
@@ -30,7 +32,46 @@ def weekly_report():
         report += "</tr>"
 
     report += "</tbody></table>"
-    email_helper.send_weekly_report(['varun@frankly.me','abhishek@frankly.me','nikunj@frankly.me'],report)
+    email_helper.send_weekly_report(weekly_mail_recipients,report)
+
+
+def daily_content_report():
+
+
+
+    msg1 = make_panel('Usernames of people asking 3 or more questions',
+                       users_asking_questions_more_than_or_equal_to(3))
+
+    msg2 = make_panel('Usernames of people who have been asked 3 or more questions',
+                       users_being_asked_questions_more_than_or_equal_to(3))
+
+    msg3 = make_panel('Links of top 20 questions with the most (real) upvotes',
+                      questions_with_most_upvotes(20))
+
+    msg4 = make_panel('Usernames of top 20 people with the highest increase'
+                      ' in follows (real follows)', users_with_highest_increase_in_follows(20))
+
+    msg5 = make_panel('Links of top 20 questions with the highest likes (real)', questions_with_highest_likes(20))
+
+    msg6 = make_panel('Links of top 20 questions with the highest comments (real)', questions_with_highest_comments(20))
+
+    body = add_style() + msg1 + msg2 + msg3 + msg4 + msg5 + msg6
+
+    email_helper.content_report(daily_content_mail_recipients, 'Daily Report', body)
+
+
+def intra_day_content_report():
+
+    msg1 = make_panel('New registrations (celeb and non-celeb) in last 12 hours  Source '
+                      '& number of registrations', new_registrations())
+
+    msg2 = make_panel('No. of questions asked (excluding those from the dashboard)', count_of_question_asked())
+
+    msg3 = make_panel('Videos uploaded   (celeb and non-celeb) with link', videos_uploaded())
+
+    body = add_style() + msg1 + msg2 + msg3
+
+    email_helper.content_report(daily_content_mail_recipients, 'Twice a day Report', body)
 
 
 def day_distribution_questions_asked():
@@ -182,7 +223,7 @@ def time_delta(day_count, end_date, range_type):
 
 
 
-def send_mail(day_count=1, emails=['shashank@frankly.me']):
+def send_daily_mail_old(day_count=1, emails=['shashank@frankly.me']):
     registered_celebs_today = number_of_users_registered(user_types=[2], day_count=day_count)
     celeb_register_count = registered_celebs_today['total_count']
     celebs = registered_celebs_today['user_list']
@@ -261,7 +302,4 @@ def send_mail(day_count=1, emails=['shashank@frankly.me']):
     message_subject = 'Stats for {date}'.format(date=datetime.datetime.strftime(datetime.datetime.now(), '%d-%b-%Y, %a'))
     for email in emails:
         mailer.send_mail(reciever_id=email, message_subject=message_subject, message_body=email_text)
-
-
-
 

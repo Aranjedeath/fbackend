@@ -7,6 +7,10 @@ from celery import Celery
 from app import db
 
 from models import User, Video, Post
+import async_encoder
+ 
+from analytics import stats
+from mailwrapper import email_helper
 
 
 celery = Celery('tasks')
@@ -30,43 +34,56 @@ def update_user_view_count():
 
 @celery.task
 def reassign_pending_video_tasks():
-    import async_encoder
     videos = Video.query.filter(Video.process_state.in_(['pending', 'failed'])).all()
     for v in videos:
-	    post = Post.query.with_entities('id', 'answer_author').filter(Post.media_url==v.url).first()
-	    if post:
-	        v.video_type='answer_video'
-	        v.object_id=post.id
-	        v.username=User.query.with_entities('username').filter(User.id==post.answer_author).one().username
-	    else:
-	        user = User.query.with_entities('id', 'username').filter(User.profile_video==v.url).first()
-	        if user:
-	            v.username=user.username
-	            v.video_type='profile_video'
-	            v.object_id=user.id
-	        else:
-	            v.delete = True
-		db.session.add(v)
-		db.session.commit()
-		if not v.delete:
-			async_encoder.encode_video_task.delay(v.url, username=v.username)
+        post = Post.query.with_entities('id', 'answer_author').filter(Post.media_url==v.url).first()
+        if post:
+            v.video_type='answer_video'
+            v.object_id=post.id
+            v.username=User.query.with_entities('username').filter(User.id==post.answer_author).one().username
+        else:
+            user = User.query.with_entities('id', 'username').filter(User.profile_video==v.url).first()
+            if user:
+                v.username=user.username
+                v.video_type='profile_video'
+                v.object_id=user.id
+            else:
+                v.delete = True
+        db.session.add(v)
+        db.session.commit()
+        if not v.delete:
+            async_encoder.encode_video_task.delay(v.url, username=v.username)
 
 @celery.task
 def log_video_count():
-    import stats
-    stats.video_view_count_logger()
+    try:
+        stats.video_view_count_logger()
+    except:
+        email_helper.cron_job_failed("log_video_count")
+
+
 
 @celery.task
 def weekly_report():
-    import stats
-    stats.weekly_report()
+    try:
+        stats.weekly_macro_metrics()
+    except:
+        email_helper.cron_job_failed("weekly_report")
+
 
 @celery.task
 def daily_report():
-    import stats_routine
-    stats_routine.daily_mail()
+    try:
+        stats.daily_content_report()
+    except:
+        email_helper.cron_job_failed("daily_report")
+
+
 
 @celery.task
 def twice_a_day_report():
-    import stats_routine
-    stats_routine.twice_a_day_mail()
+    try:
+        stats.intra_day_content_report()
+    except:
+        email_helper.cron_job_failed("twice_a_day_report")
+
