@@ -35,23 +35,23 @@ def update_user_view_count():
 def reassign_pending_video_tasks():
     videos = Video.query.filter(Video.process_state.in_(['pending', 'failed'])).all()
     for v in videos:
-	    post = Post.query.with_entities('id', 'answer_author').filter(Post.media_url==v.url).first()
-	    if post:
-	        v.video_type='answer_video'
-	        v.object_id=post.id
-	        v.username=User.query.with_entities('username').filter(User.id==post.answer_author).one().username
-	    else:
-	        user = User.query.with_entities('id', 'username').filter(User.profile_video==v.url).first()
-	        if user:
-	            v.username=user.username
-	            v.video_type='profile_video'
-	            v.object_id=user.id
-	        else:
-	            v.delete = True
-		db.session.add(v)
-		db.session.commit()
-		if not v.delete:
-			async_encoder.encode_video_task.delay(v.url, username=v.username)
+        post = Post.query.with_entities('id', 'answer_author').filter(Post.media_url==v.url).first()
+        if post:
+            v.video_type='answer_video'
+            v.object_id=post.id
+            v.username=User.query.with_entities('username').filter(User.id==post.answer_author).one().username
+        else:
+            user = User.query.with_entities('id', 'username').filter(User.profile_video==v.url).first()
+            if user:
+                v.username=user.username
+                v.video_type='profile_video'
+                v.object_id=user.id
+            else:
+                v.delete = True
+        db.session.add(v)
+        db.session.commit()
+        if not v.delete:
+            async_encoder.encode_video_task.delay(v.url, username=v.username)
 
 @celery.task
 def log_video_count():
