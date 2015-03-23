@@ -87,3 +87,9 @@ def twice_a_day_report():
     except:
         email_helper.cron_job_failed("twice_a_day_report")
 
+@celery.task
+def heartbeat():
+    try:
+        email_helper.cron_job_failed("I am running!")
+    except:
+        pass
