@@ -259,7 +259,8 @@ def send_mail(day_count=1, emails=['shashank@frankly.me']):
 
     from controllers import mailer
     message_subject = 'Stats for {date}'.format(date=datetime.datetime.strftime(datetime.datetime.now(), '%d-%b-%Y, %a'))
-    mailer.send_mail(reciever_id=emails, message_subject='message_subject', message_body=email_text)
+    for email in emails:
+        mailer.send_mail(reciever_id=email, message_subject=message_subject, message_body=email_text)
 
 
 
