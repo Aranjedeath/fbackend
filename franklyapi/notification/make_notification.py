@@ -131,7 +131,7 @@ def notification_post_add(post_id, question_body="", short_id=""):
             answer_author = u
 
     #Notifying question_author by email
-    web_link = "http://frankly.me/q/" + short_id
+    web_link = "<a href='http://frankly.me/q/%s'>here</a>" % short_id
     email_helper.question_answered(question_author.email, question_author.first_name, answer_author.first_name,
                                    question_body, web_link)
 
