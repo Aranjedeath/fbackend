@@ -34,6 +34,11 @@ def update_user_view_count():
 
 @celery.task
 def reassign_pending_video_tasks():
+    from models import *
+    from app import db
+    import async_encoder
+    import datetime
+    count = 1
     videos = Video.query.filter(Video.process_state.in_(['pending', 'failed'])).all()
     for v in videos:
         post = Post.query.with_entities('id', 'answer_author').filter(Post.media_url==v.url).first()
@@ -51,8 +56,10 @@ def reassign_pending_video_tasks():
                 v.delete = True
         db.session.add(v)
         db.session.commit()
-        if not v.delete:
+        if not v.delete and (datetime.datetime.now() - v.created_at).seconds > 1800:
             async_encoder.encode_video_task.delay(v.url, username=v.username)
+        print count
+        count += 1
 
 @celery.task
 def log_video_count():
