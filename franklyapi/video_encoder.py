@@ -135,6 +135,8 @@ def encode_video_to_profile(file_path, video_url, profile_name, username=None):
     transpose_command = get_transpose_command(file_path)
     
     profile = VIDEO_ENCODING_PROFILES[profile_name]
+    temp_path = os.path.join(TEMP_DIR, uuid.uuid1().hex)
+    check_make_dir(temp_path)
     
 
     result = {}
@@ -143,8 +145,6 @@ def encode_video_to_profile(file_path, video_url, profile_name, username=None):
             output_file_path = make_thumbnail(file_path)
 
         elif profile_name=='promo':
-            temp_path = os.path.join(TEMP_DIR, uuid.uuid1().hex)
-            check_make_dir(temp_path)
             video_data = video_db.get_video_data(video_url)
             
             answer_author_image_filepath = None if not video_data['answer_author_profile_picture'] else media_uploader.download_file(video_data['answer_author_profile_picture'])
