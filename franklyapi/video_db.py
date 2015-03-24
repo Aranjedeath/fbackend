@@ -10,7 +10,7 @@ def add_video_to_db(video_url, thumbnail_url, video_type, object_id, username=No
             v.username=username
         db.session.add(v)
         db.session.commit()
-    db.session.remove()
+        db.session.remove()
 
 def video_already_encoded(video_url, video_quality, recent_records_only=False):
     if recent_records_only:
@@ -21,8 +21,7 @@ def video_already_encoded(video_url, video_quality, recent_records_only=False):
         video = Video.query.filter(Video.url==video_url).one()
         response = bool(getattr(video, video_quality, None))
     return response
-    db.session.remove()
-
+    
 
 
 def add_video_encode_log_start(video_url, video_quality):
@@ -69,7 +68,6 @@ def get_encode_statictics(count=100):
         average = sum(times) / success
         median = get_median(times)
     return {'average':average, 'median':median, 'success':success , 'fails':fails}
-    db.session.remove()
 
 def get_median(l):
     half = len(l) / 2
@@ -86,13 +84,18 @@ def update_video_state(video_url, result={}):
             result.update({'process_state':'success'})
             Video.query.filter(Video.url==video_url).update(result)
             db.session.commit()
+            db.session.remove()
+
         else:
             Video.query.filter(Video.url==video_url).update({'process_state':'failed'})
             db.session.commit()
+            db.session.remove()
+
     except Exception as e:
         print e
         db.session.rollback()
-    db.session.remove()
+        db.session.remove()
+
 
 
 def update_view_count_to_db(url):
@@ -120,10 +123,12 @@ def update_view_count_to_db(url):
                                 params = {"url":url, "count":int(count)}
                             )
             db.session.commit()
+            db.session.remove()
+
         redis_views.delete(original_url)
     except:
         db.session.rollback()
-    db.session.remove()
+        db.session.remove()
 
 def update_total_view_count(user_ids): 
     try:   
@@ -146,9 +151,11 @@ def update_total_view_count(user_ids):
                                 ), params={'user_id':user_id, 'post_view_count':int(post_view_count)})
 
         db.session.commit()
+        db.session.remove()
+
     except:
         db.session.rollback()
-    db.session.remove()
+        db.session.remove()
 
 def get_video_data(video_url):
     video = Video.query.filter(Video.url== video_url).one()
@@ -171,7 +178,6 @@ def get_video_data(video_url):
         question_author_name = question_author.first_name
         profile_picture = answer_author.profile_picture
         question_body = question.body
-    db.session.remove()
     return {
     'video_type':video.video_type,
     'answer_author_username': username,
