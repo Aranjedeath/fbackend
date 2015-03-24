@@ -972,7 +972,7 @@ def user_change_username(user_id, new_username):
     elif username_available(new_username):
         User.query.filter(User.id==user_id).update({'username':new_username})
         db.session.commit()
-        async_encoder.encode_video_task.delay(user.profile_video, username=new_username, profiles=['promo'])
+        async_encoder.encode_video_task.delay(user.profile_video, username=new_username, profiles=['promo'], redo=True)
         return {'username':new_username, 'status':'success', 'id':str(user_id)}
     else:
         raise CustomExceptions.UnameUnavailableException('Username invalid or not available')
