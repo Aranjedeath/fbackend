@@ -74,12 +74,12 @@ def reassign_pending_video_tasks():
 
     for v in virgin_videos:
         if (datetime.datetime.now() - v.created_at).seconds > 1800:
-            # async_encoder.encode_video_task.delay(video_url=v.url, username=v.username, redo=True)
+            async_encoder.encode_video_task.delay(video_url=v.url, username=v.username, redo=True)
             print v.url
 
     for v in other_videos:
         if (datetime.datetime.now() - v.created_at).seconds > 1800:
-            # async_encoder.encode_video_task.delay(video_url=v.url, username=v.username, redo=True, queues=dict(low=retry_queue, ultralow=retry_queue, medium=retry_queue, opt=retry_queue))
+            async_encoder.encode_video_task.delay(video_url=v.url, username=v.username, redo=True, queues=dict(low=retry_queue, ultralow=retry_queue, medium=retry_queue, opt=retry_queue))
             print v.url
 
 @celery.task
