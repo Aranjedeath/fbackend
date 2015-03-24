@@ -32,22 +32,22 @@ VIDEO_ENCODING_PROFILES = {
                                         'file_extension' : 'jpeg'
                                 },
                                 'opt':{
-                                        'command' : 'avconv -y -i "{input_file}" -r 25 -vf {transpose_command}scale="480:trunc(ow/a/2)*2" -strict experimental -preset slow -b:v 636k -pass 1 -c:v libx264  -ar 22050 -ac 1 -ab 24k -f mp4 /dev/null && avconv -y -i "{input_file}" -r 25 -vf {transpose_command}scale="480:trunc(ow/a/2)*2" -strict experimental -preset slow -b:v 636k -pass 2 -c:v libx264  -ar 22050 -ac 1 -ab 24k {output_file}',
+                                        'command' : 'avconv -y -i "{input_file}" -r 25 -vf {transpose_command}scale="480:trunc(ow/a/2)*2" -strict experimental -preset slow -b:v 636k -pass 1 -passlogfile "{logfile_name}" -c:v libx264  -ar 22050 -ac 1 -ab 24k -f mp4 /dev/null && avconv -y -i "{input_file}" -r 25 -vf {transpose_command}scale="480:trunc(ow/a/2)*2" -strict experimental -preset slow -b:v 636k -pass 2 -passlogfile "{logfile_name}" -c:v libx264  -ar 22050 -ac 1 -ab 24k {output_file}',
                                         'file_prefix': '_opt',
                                         'file_extension': 'mp4'
                                     },
                                 'medium':{
-                                        'command' : 'avconv -y -i "{input_file}" -r 25 -vf {transpose_command}scale="320:trunc(ow/a/2)*2" -strict experimental -preset slow -b:v 256k -pass 1 -c:v libx264  -ar 22050 -ac 1 -ab 24k -f mp4 /dev/null && avconv -y -i "{input_file}" -r 25 -vf {transpose_command}scale="320:trunc(ow/a/2)*2" -strict experimental -preset slow -b:v 256k -pass 2 -c:v libx264  -ar 22050 -ac 1 -ab 24k {output_file}',
+                                        'command' : 'avconv -y -i "{input_file}" -r 25 -vf {transpose_command}scale="320:trunc(ow/a/2)*2" -strict experimental -preset slow -b:v 256k -pass 1 -passlogfile "{logfile_name}" -c:v libx264  -ar 22050 -ac 1 -ab 24k -f mp4 /dev/null && avconv -y -i "{input_file}" -r 25 -vf {transpose_command}scale="320:trunc(ow/a/2)*2" -strict experimental -preset slow -b:v 256k -pass 2 -passlogfile "{logfile_name}" -c:v libx264  -ar 22050 -ac 1 -ab 24k {output_file}',
                                         'file_prefix': '_medium',
                                         'file_extension': 'mp4'
                                 },
                                 'low':{
-                                        'command' : 'avconv -y -i "{input_file}" -r 16 -vf {transpose_command}scale="320:trunc(ow/a/2)*2" -strict experimental -preset slow -b:v 125k -pass 1 -c:v libx264  -ar 22050 -ac 1 -ab 24k -f mp4 /dev/null && avconv -y -i "{input_file}" -r 16 -vf {transpose_command}scale="320:trunc(ow/a/2)*2" -strict experimental -preset slow -b:v 125k -pass 2 -c:v libx264  -ar 22050 -ac 1 -ab 24k {output_file}',
+                                        'command' : 'avconv -y -i "{input_file}" -r 16 -vf {transpose_command}scale="320:trunc(ow/a/2)*2" -strict experimental -preset slow -b:v 125k -pass 1 -passlogfile "{logfile_name}" -c:v libx264  -ar 22050 -ac 1 -ab 24k -f mp4 /dev/null && avconv -y -i "{input_file}" -r 16 -vf {transpose_command}scale="320:trunc(ow/a/2)*2" -strict experimental -preset slow -b:v 125k -pass 2 -passlogfile "{logfile_name}" -c:v libx264  -ar 22050 -ac 1 -ab 24k {output_file}',
                                         'file_prefix': '_low',
                                         'file_extension': 'mp4'
                                 },
                                 'ultralow':{
-                                        'command' : 'avconv -y -i "{input_file}" -r 10 -vf {transpose_command}scale="240:trunc(ow/a/2)*2" -strict experimental -preset slow -b:v 25k -pass 1 -c:v libx264  -ar 22050 -ac 1 -ab 24k -f mp4 /dev/null && avconv -y -i "{input_file}" -r 10 -vf {transpose_command}scale="240:trunc(ow/a/2)*2" -strict experimental -preset slow -b:v 25k -pass 2 -c:v libx264  -ar 22050 -ac 1 -ab 24k {output_file}',
+                                        'command' : 'avconv -y -i "{input_file}" -r 10 -vf {transpose_command}scale="240:trunc(ow/a/2)*2" -strict experimental -preset slow -b:v 25k -pass 1 -passlogfile "{logfile_name}" -c:v libx264  -ar 22050 -ac 1 -ab 24k -f mp4 /dev/null && avconv -y -i "{input_file}" -r 10 -vf {transpose_command}scale="240:trunc(ow/a/2)*2" -strict experimental -preset slow -b:v 25k -pass 2 -passlogfile "{logfile_name}" -c:v libx264  -ar 22050 -ac 1 -ab 24k {output_file}',
                                         'file_prefix': '_ultralow',
                                         'file_extension': 'mp4'
                                 }
@@ -87,17 +87,21 @@ def get_key_name_for_profile(url, profile):
 
 
 def make_psuedo_streamable(path):
-    command = 'qtfaststart {path}'.format(path=path)
-    process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
-    print process.stdout.read()
-    process.kill()
-    return path
+    try:
+        command = 'qtfaststart {path}'.format(path=path)
+        process = subprocess.call(command, shell=True)
+        print process
+        #process.kill()
+        return path
+    except Exception as e:
+        print e
+        print 'couldnt make pseudo streamable'
+        return path
 
 def get_rotation(file_path):
     command = "mediainfo '--Inform=Video;%Rotation%' {path}".format(path=file_path)
     process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
     rotation = process.stdout.read().strip()
-    process.kill()
     if rotation:
         return int(float(rotation))
     return 0
@@ -123,8 +127,7 @@ def make_thumbnail(file_path):
                                         transpose_command2=transpose_command2,
                                         output_file=temp_file_path)
     print_output('COMMAND: '+command)
-    process = subprocess.Popen(command,shell=True)
-    process.kill()
+    process = subprocess.call(command,shell=True)
     return temp_file_path
 
 def encode_video_to_profile(file_path, video_url, profile_name, username=None):
@@ -137,7 +140,8 @@ def encode_video_to_profile(file_path, video_url, profile_name, username=None):
     profile = VIDEO_ENCODING_PROFILES[profile_name]
     temp_path = os.path.join(TEMP_DIR, uuid.uuid1().hex)
     check_make_dir(temp_path)
-    
+    logfile_name = None
+
 
     result = {}
     try:
@@ -162,18 +166,17 @@ def encode_video_to_profile(file_path, video_url, profile_name, username=None):
         
         else:
             check_make_dir(temp_path)
-            output_file_path = os.path.join(TEMP_DIR, uuid.uuid1().hex+'.'+profile['file_extension'])
+            output_file_path = os.path.join(temp_path, uuid.uuid1().hex+'.'+profile['file_extension'])
             #os.chdir(temp_path)
-            command = profile['command'].format(input_file=file_path, output_file=output_file_path, transpose_command = transpose_command)
+            logfile_name = os.path.join(temp_path, uuid.uuid1().hex)
+            command = profile['command'].format(input_file=file_path, output_file=output_file_path, transpose_command=transpose_command, logfile_name=logfile_name)
             print_output('COMMAND: '+command)
-            process = subprocess.Popen(command, shell=True)
-            time.sleep(2)
-            process.kill()
+            process = subprocess.call(command, shell=True)
             print_output('MAKING STREAMABLE')
-            print output_file_path
-            raw_input()
+            #raw_input(output_file_path+'YOLO:')
             make_psuedo_streamable(output_file_path)
-        
+            #raw_input(output_file_path+'LOYO:')
+  
         new_s3_key = get_key_name_for_profile(video_url, profile)
         print_output('NEW_KEY: '+new_s3_key)
             
@@ -187,6 +190,7 @@ def encode_video_to_profile(file_path, video_url, profile_name, username=None):
         
         print_output('RESULT: '+ str(result))
         os.chdir(current_dir)
+    
     except Exception as e:
         if os.path.exists(temp_path):
             shutil.rmtree(temp_path)
@@ -197,8 +201,6 @@ def encode_video_to_profile(file_path, video_url, profile_name, username=None):
 def make_promo_video(answer_author_username, video_file_path, transpose_command='',
                     answer_author_name=None, question=None, question_author_username=None,
                     answer_author_image_filepath=None):
-    
-    
     
     profile = VIDEO_ENCODING_PROFILES['promo']
     temp_path = os.path.join(TEMP_DIR, uuid.uuid1().hex) + 'promo'
