@@ -1,5 +1,6 @@
 import subprocess
 import uuid
+import time
 import traceback
 import os
 import shutil
@@ -136,6 +137,7 @@ def encode_video_to_profile(file_path, video_url, profile_name, username=None):
     profile = VIDEO_ENCODING_PROFILES[profile_name]
     temp_path = os.path.join(TEMP_DIR, uuid.uuid1().hex)
     check_make_dir(temp_path)
+    
 
     result = {}
     try:
@@ -160,13 +162,16 @@ def encode_video_to_profile(file_path, video_url, profile_name, username=None):
         
         else:
             check_make_dir(temp_path)
-            output_file_path = os.path.join(temp_path, uuid.uuid1().hex+'.'+profile['file_extension'])
-            os.chdir(temp_path)
+            output_file_path = os.path.join(TEMP_DIR, uuid.uuid1().hex+'.'+profile['file_extension'])
+            #os.chdir(temp_path)
             command = profile['command'].format(input_file=file_path, output_file=output_file_path, transpose_command = transpose_command)
             print_output('COMMAND: '+command)
             process = subprocess.Popen(command, shell=True)
+            time.sleep(2)
             process.kill()
             print_output('MAKING STREAMABLE')
+            print output_file_path
+            raw_input()
             make_psuedo_streamable(output_file_path)
         
         new_s3_key = get_key_name_for_profile(video_url, profile)
