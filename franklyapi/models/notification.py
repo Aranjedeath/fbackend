@@ -20,21 +20,14 @@ class Notification(Base):
             return False
         return True
 
-    def _icon_is_valid(self, icon):
-        if icon:
-            icon_components = icon.split('-')
-            if len(icon_components) != 4:
-                return False
-            if icon_components[0] == 'url' and not icon_components[3].startswith('http'):
-                return False
-        return True
+
+
 
 
     def __init__(self, type, text, link, object_id, icon, created_at=datetime.datetime.now(), manual=False, id=get_item_id()):
         if not self._type_is_valid(type):
             raise Exception('type should be of format <object>-<action>')
-        if icon and not self._icon_is_valid(type):
-            raise Exception('icon should be of format <icon_type>-<object>-<property>-<object_id>')
+
 
         self.id         = id
         self.type       = type
