@@ -97,7 +97,7 @@ def notification_question_ask(question_id):
     text = text.replace('<question_to_username>', question_to.username)
     text = text.replace('<question_author_username>', question_author.username)
 
-    icon = None
+    icon = question_author.profile_picture
 
     link = config.WEB_URL + '/q/{question_id}'.format(question_id=question_id)
 
@@ -138,7 +138,9 @@ def notification_post_add(post_id, question_body="", short_id=""):
     notification_type = 'post-add-self_user'
     text = "<b><answer_author_name></b> answered your question"
     text = text.replace('<answer_author_name>', answer_author.first_name)
-    icon = None
+
+    icon = answer_author.profile_picture
+
     link = config.WEB_URL + '/p/{client_id}'.format(client_id=post.client_id)
     
     notification = Notification(type=notification_type, text=text,
