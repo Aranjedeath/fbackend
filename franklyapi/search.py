@@ -136,7 +136,7 @@ def search(cur_user_id, q, offset, limit):
                                     (SELECT count(1) FROM questions WHERE questions.question_to=users.id) AS question_count,
                                     (SELECT count(1) FROM user_follows WHERE user_follows.followed=users.id AND user_follows.unfollowed=false) AS followed_count,
                                     (SELECT count(1) FROM user_follows WHERE user_follows.followed=users.id AND user_follows.user=:cur_user_id AND user_follows.unfollowed=false) AS is_following,
-                                    (SELECT count(1) FROM search_defaults WHERE search_defaults.user=users.id AND search_defaults.category LIKE :query_start) AS search_default,
+                                    (SELECT 4*CAST(search_defaults.show_always AS UNSIGNED)+CAST(search_defaults.score AS UNSIGNED) FROM search_defaults WHERE search_defaults.user=users.id AND search_defaults.category LIKE :query_start) AS search_default,
                                     {select_query}
                                     username IN :top_users AS top_user_score
 
@@ -177,6 +177,7 @@ def search(cur_user_id, q, offset, limit):
     results = []
     for item in sql_results:
         print item
+        print ''
         results.append(item)
 
 
@@ -195,7 +196,7 @@ def search(cur_user_id, q, offset, limit):
                         'channel_id':'user_{user_id}'.format(user_id=row[0])
                         }
                 } for row in results]
-    results.sort(key=lambda x: top_users.index(x['user']['username'].lower()) if  x['user']['username'].lower() in top_users else 999)
+    #results.sort(key=lambda x: top_users.index(x['user']['username'].lower()) if  x['user']['username'].lower() in top_users else 999)
 
     count = len(results)
     next_index = -1
