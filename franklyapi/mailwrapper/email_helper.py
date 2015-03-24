@@ -74,9 +74,8 @@ def content_report(recipients, subject, report):
     mail_sender.send_mail(recipients, subject, report)
 
 
-def cron_job_failed(cron_type):
-    mail_sender.send_mail(['varun@frankly.me','shashank@frankly.me','nikhil@frankly.me'], cron_type +
-                           " Job failed", "Please check")
+def cron_job_update(cron_type):
+    mail_sender.send_mail(['varun@frankly.me','shashank@frankly.me','nikhil@frankly.me'], cron_type, "Please check")
 
 
 def send_mail_for_sapru(receiver_email,receiver_name,link):
