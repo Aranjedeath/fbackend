@@ -28,7 +28,7 @@ def encode_video_task(video_url, username='', profiles=video_encoder.VIDEO_ENCOD
 
             _encode_video_to_profile.apply_async(kwargs={'file_path':file_path, 
                                                         'video_url':video_url, 
-                                                        'profile_name':profile_name,
+                                                        'profile':profile_name,
                                                         'log_id':log_id,
                                                         'username':username
                                                         },
