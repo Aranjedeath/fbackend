@@ -11,6 +11,7 @@ import async_encoder
  
 from analytics import stats
 from mailwrapper import email_helper
+import traceback
 
 
 celery = Celery('tasks')
@@ -56,57 +57,57 @@ def reassign_pending_video_tasks():
 
 @celery.task
 def log_video_count():
-    try:
-        stats.video_view_count_logger()
-    except:
-        email_helper.cron_job_update("log_video_count")
+    stats.video_view_count_logger()
+
 
 
 
 @celery.task
 def weekly_report():
-    try:
-        stats.weekly_macro_metrics()
-    except:
-        email_helper.cron_job_update("weekly_report")
+    stats.weekly_macro_metrics()
+
 
 
 @celery.task
 def daily_report():
-    try:
-        stats.daily_content_report()
-    except:
-        email_helper.cron_job_update("daily_report")
+    stats.daily_content_report()
+
 
 
 @celery.task
 def twice_a_day_report():
-    try:
-        stats.intra_day_content_report()
-    except:
-        email_helper.cron_job_update("twice_a_day_report")
+    stats.intra_day_content_report()
+
 
 @celery.task
 def heartbeat():
-    try:
-        email_helper.cron_job_update("I am running!")
-    except:
-        pass
+    email_helper.cron_job_update()
+
 
 
 if __name__ == '__main__':
     import sys
     args = sys.argv[1:]
 
-    if args[0] == 'log_video_count':
-        log_video_count()
-    elif args[0] == 'daily_report':
-        daily_report()
-    elif args[0] == 'daily_report_two':
-        twice_a_day_report()
-    elif args[0] == 'weekly_report':
-        weekly_report()
-    elif args[0] == 'heartbeat':
-        heartbeat()
+    try:
+        if args[0] == 'update_view_count':
+            update_view_count()
+        elif args[0] == 'update_user_view_count':
+            update_user_view_count()
+        elif args[0] == 'reassign_pending_video_tasks':
+            reassign_pending_video_tasks()
+        elif args[0] == 'log_video_count':
+            log_video_count()
+        elif args[0] == 'daily_report':
+            daily_report()
+        elif args[0] == 'daily_report_two':
+            twice_a_day_report()
+        elif args[0] == 'weekly_report':
+            weekly_report()
+        elif args[0] == 'heartbeat':
+            heartbeat()
+    except Exception as e:
+         email_helper.cron_job_update(args[0], traceback.format_exc(e))
+
 
 
