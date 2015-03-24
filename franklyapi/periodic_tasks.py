@@ -59,7 +59,7 @@ def log_video_count():
     try:
         stats.video_view_count_logger()
     except:
-        email_helper.cron_job_failed("log_video_count")
+        email_helper.cron_job_update("log_video_count")
 
 
 
@@ -68,7 +68,7 @@ def weekly_report():
     try:
         stats.weekly_macro_metrics()
     except:
-        email_helper.cron_job_failed("weekly_report")
+        email_helper.cron_job_update("weekly_report")
 
 
 @celery.task
@@ -76,8 +76,7 @@ def daily_report():
     try:
         stats.daily_content_report()
     except:
-        email_helper.cron_job_failed("daily_report")
-
+        email_helper.cron_job_update("daily_report")
 
 
 @celery.task
@@ -85,11 +84,29 @@ def twice_a_day_report():
     try:
         stats.intra_day_content_report()
     except:
-        email_helper.cron_job_failed("twice_a_day_report")
+        email_helper.cron_job_update("twice_a_day_report")
 
 @celery.task
 def heartbeat():
     try:
-        email_helper.cron_job_failed("I am running!")
+        email_helper.cron_job_update("I am running!")
     except:
         pass
+
+
+if __name__ == '__main__':
+    import sys
+    args = sys.argv[1:]
+
+    if args[0] == 'log_video_count':
+        log_video_count()
+    elif args[0] == 'daily_report':
+        daily_report()
+    elif args[0] == 'daily_report_two':
+        twice_a_day_report()
+    elif args[0] == 'weekly_report':
+        weekly_report()
+    elif args[0] == 'heartbeat':
+        heartbeat()
+
+

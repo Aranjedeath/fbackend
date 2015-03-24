@@ -17,9 +17,11 @@ dict = {
                         },
     "question_asked": {
                           "subject" : "Your question has been asked",
+
                           "body": '''Congratulations!<br/><br/>Your question has been successfully posted.We will make sure it gets answered and till then, you can ask more questions to
                                     %s. <br/><br/> Also, don't forget to answer the questions that you are asked by your
                                     fans and friends. They might be waiting for you to respond.''',
+
                           "body_first_question": "Your first question has been asked. We will try our best to get it answered.<br/><br/>"
                                   "Go ahead and ask more questions to your favorite celebrities. We will notify you"
                                   " once your question"
