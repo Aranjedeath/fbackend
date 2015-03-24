@@ -23,33 +23,39 @@ raygun = raygunprovider.RaygunSender(config.RAYGUN_KEY)
 VIDEO_ENCODING_PROFILES = {     
                                 'promo':{
                                          'file_prefix' : '_promo',
-                                         'file_extension' : 'mp4'
+                                         'file_extension' : 'mp4',
+                                         'default_queue': 'encoding_low_priority'
                                 },
 
                                 'thumbnail':{
                                         'command' : 'ffmpeg -ss 0 -i "{input_file}" -vframes 1 {transpose_command2} -t 1 -f image2 {output_file}',
                                         'file_prefix' : '_thumb',
-                                        'file_extension' : 'jpeg'
+                                        'file_extension' : 'jpeg',
+                                        'default_queue': 'encoding_low_priority'
                                 },
                                 'opt':{
                                         'command' : 'avconv -y -i "{input_file}" -r 25 -vf {transpose_command}scale="480:trunc(ow/a/2)*2" -strict experimental -preset slow -b:v 636k -pass 1 -passlogfile "{logfile_name}" -c:v libx264  -ar 22050 -ac 1 -ab 24k -f mp4 /dev/null && avconv -y -i "{input_file}" -r 25 -vf {transpose_command}scale="480:trunc(ow/a/2)*2" -strict experimental -preset slow -b:v 636k -pass 2 -passlogfile "{logfile_name}" -c:v libx264  -ar 22050 -ac 1 -ab 24k {output_file}',
                                         'file_prefix': '_opt',
-                                        'file_extension': 'mp4'
+                                        'file_extension': 'mp4',
+                                        'default_queue': 'encoding_low_priority'
                                     },
                                 'medium':{
                                         'command' : 'avconv -y -i "{input_file}" -r 25 -vf {transpose_command}scale="320:trunc(ow/a/2)*2" -strict experimental -preset slow -b:v 256k -pass 1 -passlogfile "{logfile_name}" -c:v libx264  -ar 22050 -ac 1 -ab 24k -f mp4 /dev/null && avconv -y -i "{input_file}" -r 25 -vf {transpose_command}scale="320:trunc(ow/a/2)*2" -strict experimental -preset slow -b:v 256k -pass 2 -passlogfile "{logfile_name}" -c:v libx264  -ar 22050 -ac 1 -ab 24k {output_file}',
                                         'file_prefix': '_medium',
-                                        'file_extension': 'mp4'
+                                        'file_extension': 'mp4',
+                                        'default_queue': 'encoding_low_priority'
                                 },
                                 'low':{
                                         'command' : 'avconv -y -i "{input_file}" -r 16 -vf {transpose_command}scale="320:trunc(ow/a/2)*2" -strict experimental -preset slow -b:v 125k -pass 1 -passlogfile "{logfile_name}" -c:v libx264  -ar 22050 -ac 1 -ab 24k -f mp4 /dev/null && avconv -y -i "{input_file}" -r 16 -vf {transpose_command}scale="320:trunc(ow/a/2)*2" -strict experimental -preset slow -b:v 125k -pass 2 -passlogfile "{logfile_name}" -c:v libx264  -ar 22050 -ac 1 -ab 24k {output_file}',
                                         'file_prefix': '_low',
-                                        'file_extension': 'mp4'
+                                        'file_extension': 'mp4',
+                                        'default_queue': 'encoding_high_priority'
                                 },
                                 'ultralow':{
                                         'command' : 'avconv -y -i "{input_file}" -r 10 -vf {transpose_command}scale="240:trunc(ow/a/2)*2" -strict experimental -preset slow -b:v 25k -pass 1 -passlogfile "{logfile_name}" -c:v libx264  -ar 22050 -ac 1 -ab 24k -f mp4 /dev/null && avconv -y -i "{input_file}" -r 10 -vf {transpose_command}scale="240:trunc(ow/a/2)*2" -strict experimental -preset slow -b:v 25k -pass 2 -passlogfile "{logfile_name}" -c:v libx264  -ar 22050 -ac 1 -ab 24k {output_file}',
                                         'file_prefix': '_ultralow',
-                                        'file_extension': 'mp4'
+                                        'file_extension': 'mp4',
+                                        'default_queue': 'encoding_low_priority'
                                 }
                         }
 
