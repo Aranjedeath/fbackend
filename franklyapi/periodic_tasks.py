@@ -58,7 +58,7 @@ def reassign_pending_video_tasks():
         db.session.add(v)
         db.session.commit()
         if not v.delete and (datetime.datetime.now() - v.created_at).seconds > 1800:
-            async_encoder.encode_video_task.delay(v.url, username=v.username)
+            async_encoder.encode_video_task.delay(v.url, username=v.username, redo=True)
         print count
         count += 1
 
