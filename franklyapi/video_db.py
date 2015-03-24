@@ -11,6 +11,18 @@ def add_video_to_db(video_url, thumbnail_url, video_type, object_id, username=No
         db.session.add(v)
         db.session.commit()
 
+def video_already_encoded(video_url, video_quality, recent_records_only=False):
+    if recent_records_only:
+        response = bool(EncodeLog.query.filter(EncodeLog.video_url==video_url, EncodeLog.video_quality==video_quality,
+                EncodeLog.success==True, EncodeLog.start_time<datetime.datetime.now()-datetime.timedelta(seconds=1800)
+                ).count())
+    else:
+        video = Video.query.filter(Video.url==video_url).one()
+        response = bool(getattr(video, video_quality, None))
+    return response
+
+
+
 def add_video_encode_log_start(video_url, video_quality):
     log = EncodeLog(video_url=video_url, video_quality=video_quality, start_time=datetime.datetime.now())
     db.session.add(log)
