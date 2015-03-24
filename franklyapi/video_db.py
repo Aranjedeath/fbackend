@@ -28,8 +28,9 @@ def add_video_encode_log_start(video_url, video_quality):
     log = EncodeLog(video_url=video_url, video_quality=video_quality, start_time=datetime.datetime.now())
     db.session.add(log)
     db.session.commit()
+    log_id = log.id
     db.session.remove()
-    return log.id
+    return log_id
 
 def update_video_encode_log_finish(encode_log_id,result):
     try:
