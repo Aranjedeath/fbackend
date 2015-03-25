@@ -118,7 +118,7 @@ def notification_question_ask(question_id):
     return notification
 
 
-def notification_post_add(post_id, question_body="", short_id=""):
+def notification_post_add(post_id, question_body, slug):
 
     post = Post.query.get(post_id)
     users = User.query.filter(User.id.in_([post.answer_author, post.question_author])).all()
@@ -131,7 +131,7 @@ def notification_post_add(post_id, question_body="", short_id=""):
             answer_author = u
 
     #Notifying question_author by email
-    web_link = "<a href='http://frankly.me/q/%s'>here</a>" % short_id
+    web_link = "<a href='http://frankly.me/{answer_author_username}/{slug}'>here</a>".format(answer_author_username=answer_author.username, slug=slug)
     email_helper.question_answered(question_author.email, question_author.first_name, answer_author.first_name,
                                    question_body, web_link)
 
