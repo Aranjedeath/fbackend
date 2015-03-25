@@ -12,10 +12,10 @@ def add_video_to_db(video_url, thumbnail_url, video_type, object_id, username=No
         db.session.commit()
         db.session.remove()
 
-def video_already_encoded(video_url, video_quality, recent_records_only=False):
-    if recent_records_only:
+def video_already_encoded(video_url, video_quality, recent_assigned=False):
+    if recent_assigned:
         response = bool(EncodeLog.query.filter(EncodeLog.video_url==video_url, EncodeLog.video_quality==video_quality,
-                EncodeLog.success==True, EncodeLog.start_time<datetime.datetime.now()-datetime.timedelta(seconds=1800)
+                        EncodeLog.success==None, EncodeLog.start_time>datetime.datetime.now()-datetime.timedelta(seconds=1800)
                 ).count())
     else:
         video = Video.query.filter(Video.url==video_url).one()

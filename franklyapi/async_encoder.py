@@ -18,9 +18,11 @@ def encode_video_task(video_url, username='', profiles=video_encoder.VIDEO_ENCOD
     for profile, queue  in queues.items():
         default_queue['item'] = queue
 
-    file_path = media_uploader.download_file(video_url)
+    file_path = None
     for profile_name in profiles:
-        if redo or not video_db.video_already_encoded(video_url=video_url, video_quality=profile_name):
+        if redo or not video_db.video_already_encoded(video_url=video_url, video_quality=profile_name, recent_assigned=True):
+            if not file_path:
+                file_path = media_uploader.download_file(video_url)
             log_id = video_db.add_video_encode_log_start(video_url=video_url, video_quality=profile_name)
             if redo:
                 _try_video_again(video_url, username, profiles)
