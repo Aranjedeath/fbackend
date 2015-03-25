@@ -1024,6 +1024,8 @@ class PostAdd(restful.Resource):
                                                 client_id=args['client_id']
                                                 )
             return resp
+        except CustomExceptions.BadRequestException as e:
+            abort(400, message=str(e))
         except CustomExceptions.BlockedUserException as e:
             abort(404, message=str(e))
         except CustomExceptions.ObjectNotFoundException as e:
