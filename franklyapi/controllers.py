@@ -1139,11 +1139,17 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_b
     if db.session.query(Question).filter(Question.question_author == cur_user_id).count() == 1:
         is_first = True
 
-    users = User.query.filter(User.id.in_([cur_user_id,question_to]))
-    if users[0].id == cur_user_id:
-        email_helper.question_asked(users[0].email, users[0].first_name, users[1].first_name, is_first)
-    else:
-        email_helper.question_asked(users[1].email, users[1].first_name, users[0].first_name, is_first)
+    if question_to != cur_user_id:
+        users = User.query.filter(User.id.in_([cur_user_id,question_to]))
+        for user in users:
+            if user.id == cur_user_id:
+                mail_reciever = user
+            if user.id == question_to:
+                question_to = user
+        email_helper.question_asked(receiver_email=mail_reciever.email,
+                                    receiver_name=mail_reciever.first_name,
+                                    question_to_name=question_to.first_name,
+                                    is_first=is_first)
 
 
     # God forgive me for I maketh this hack
