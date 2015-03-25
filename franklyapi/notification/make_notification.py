@@ -12,6 +12,7 @@ from mailwrapper import email_helper
 
 
 def add_notification_for_user(notification_id, user_ids, list_type, push_at=datetime.datetime.now()):
+
     for user_id in user_ids:
         user_notification = UserNotification(notification_id=notification_id, user_id=user_id,
                                              list_type=list_type, push_at=push_at,
@@ -22,6 +23,8 @@ def add_notification_for_user(notification_id, user_ids, list_type, push_at=date
                                             )
         db.session.add(user_notification)
         db.session.commit()
+
+
 
         if push_at:
             push_notification(notification_id, user_id)
@@ -87,6 +90,8 @@ def notification_question_ask(question_id):
         if u.id == question.question_to:
             question_to = u
 
+
+
     text = "<b><question_author_name></b> asked you '<question_body>'"
     if question.is_anonymous:
         text = text.replace('<question_author_name>', 'Anonymous')
@@ -108,6 +113,7 @@ def notification_question_ask(question_id):
     db.session.add(notification)
     db.session.commit()
 
+
     add_notification_for_user(notification_id=notification.id,
                                 user_ids=[question_to.id],
                                 list_type='me',
@@ -117,6 +123,32 @@ def notification_question_ask(question_id):
 
     return notification
 
+def new_celebrity_user(users=[], notification_id=None, celebrity_id=None):
+    '''Either create a new notification or fetch a pre-existing one.
+    Users would be a list that can be empty as well'''
+    if notification_id is None and celebrity_id is not None:
+        celebrity = User.query.filter(User.id == celebrity_id).first()
+
+        notification_type = "new-celeb-user"
+        text = "%s just joined frankly. Be the first one to ask a question." % celebrity.first_name
+        icon = celebrity.profile_picture
+        link = "http://frankly.me/%s" % celebrity.username
+
+        notification = Notification(type=notification_type, text=text,
+                                    link=link, object_id=celebrity.id,
+                                    icon=icon, created_at=datetime.datetime.now(),
+                                    manual=False, id=get_item_id())
+        db.session.add(notification)
+        db.session.commit()
+    else:
+        notification = Notification.query.filter(Notification.id == notification_id).first()
+
+    for user in users:
+        add_notification_for_user(notification_id=notification.id,
+                                user_ids=[user],
+                                list_type='me',
+                                push_at=datetime.datetime.now()
+                            )
 
 def notification_post_add(post_id, question_body="", short_id=""):
 
