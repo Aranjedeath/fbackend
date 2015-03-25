@@ -778,7 +778,7 @@ def delete_date_sorted_item(_type, obj_id):
 
 
 def broadcast_to_all(notification_id=None, object_id=None, type="new-celeb-user"):
-    users = User.query.filter(User.monkness == -1 and User.username=='chimpspanner')
+    users = User.query.filter(User.monkness == -1)
     for user in users:
         notification.new_celebrity_user(users=[user.id], notification_id=notification_id, celebrity_id=object_id)
 
