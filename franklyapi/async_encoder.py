@@ -42,6 +42,9 @@ def encode_video_task(video_url, username='', profiles=video_encoder.VIDEO_ENCOD
 
 @cel.task(queue='encoding_low_priority')
 def _encode_video_to_profile(file_path, video_url, profile,log_id, username=''):
+    if video_db.video_already_encoded(video_url=video_url, video_quality=profile):
+        print 'Not Retrying now.'
+        return
     result = video_encoder.encode_video_to_profile(file_path, video_url, profile, username)
     video_db.update_video_encode_log_finish(log_id,result)
     video_db.update_video_state(video_url, result)
