@@ -840,7 +840,7 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
 
     db.session.add(user_archive)
     User.query.filter(User.id==user_id).update(update_dict)
-    db.session.commit()
+    
     
 
     if profile_video:
@@ -851,7 +851,7 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
                         username=user.username)
         
         async_encoder.encode_video_task.delay(profile_video_url, username=user.username)
-
+    db.session.commit()
     return user_to_dict(user)
 
 
@@ -1810,6 +1810,7 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
         video_url, thumbnail_url = media_uploader.upload_user_video(user_id=cur_user_id, video_file=video, video_type='answer')
         
         curuser = User.query.filter(User.id == cur_user_id).one()
+        cur_user_username = curuser.username
 
         if not client_id:
             client_id = question.short_id
@@ -1835,8 +1836,8 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
                         thumbnail_url=thumbnail_url,
                         video_type='answer_video',
                         object_id=post.id,
-                        username=curuser.username)
-        async_encoder.encode_video_task.delay(video_url, username=curuser.username)
+                        username=cur_user_username)
+        async_encoder.encode_video_task.delay(video_url, username=cur_user_username)
 
         db.session.commit()
         notification.notification_post_add(post.id,question.body, question.short_id)
