@@ -44,11 +44,11 @@ def reassign_pending_video_tasks():
     retry_queue='encoding_retry'
     virgin_videos = db.session.execute(text(
         """SELECT v.url, v.object_id, v.video_type, v.username,
-            v.created_at, u.user_type 
+            v.created_at, u.user_type, v.opt, v.medium, v.low, v.ultralow, v.promo
             FROM videos v LEFT JOIN users u ON v.username = u.username 
-            WHERE v.opt IS NULL 
-                AND v.low IS NULL 
-                AND v.medium IS NULL 
+            WHERE v.opt IS NULL
+                AND v.low IS NULL
+                AND v.medium IS NULL
                 AND v.promo IS NULL
                 AND v.ultralow IS NULL
                 AND v.delete = 0
@@ -59,7 +59,7 @@ def reassign_pending_video_tasks():
 
     other_videos = db.session.execute(text(
         """SELECT v.url, v.object_id, v.video_type, v.username,
-                v.created_at, u.user_type,
+                v.created_at, u.user_type, v.opt, v.medium, v.low, v.ultralow, v.promo,
                 (v.medium IS NOT NULL) OR (v.low IS NOT NULL) OR (v.ultralow IS NOT NULL) AS no_video_made
             FROM videos v LEFT JOIN users u ON v.username = u.username
             WHERE (v.opt IS NULL
@@ -75,12 +75,18 @@ def reassign_pending_video_tasks():
 
     for v in virgin_videos:
         if (datetime.datetime.now() - v.created_at).seconds > 1800:
-            async_encoder.encode_video_task.delay(video_url=v.url, username=v.username, redo=True)
+            async_encoder.encode_video_task.delay(video_url=v.url, username=v.username)
             print v.url
 
+    profiles = ['opt', 'medium', 'low', 'ultralow', 'promo']
     for v in other_videos:
         if (datetime.datetime.now() - v.created_at).seconds > 1800:
-            async_encoder.encode_video_task.delay(video_url=v.url, username=v.username, redo=True, queues=dict(low=retry_queue, ultralow=retry_queue, medium=retry_queue, opt=retry_queue))
+            profiles_to_encode = []
+            for profile in profiles:
+                if not getattr(v, profile):
+                    profiles_to_encode.append(profile)
+
+            async_encoder.encode_video_task.delay(video_url=v.url, username=v.username, profiles=profiles_to_encode, queues=dict(low=retry_queue, ultralow=retry_queue, medium=retry_queue, opt=retry_queue))
             print v.url
 
 @celery.task
