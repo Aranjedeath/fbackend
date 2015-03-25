@@ -38,6 +38,7 @@ def reassign_pending_video_tasks():
     from app import db
     import async_encoder
     import datetime
+    from sqlalchemy import text
     count = 1
     # videos = Video.query.filter(Video.process_state.in_(['pending', 'failed'])).all()
     retry_queue='encoding_retry'
