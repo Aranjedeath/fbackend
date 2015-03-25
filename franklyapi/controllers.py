@@ -1795,7 +1795,6 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
     try:
         if cur_user_id in config.ADMIN_USERS:
             question = Question.query.filter(Question.id==question_id,
-                                            Question.is_answered==False,
                                             Question.is_ignored==False,
                                             Question.deleted==False).one()
             answer_author = question.question_to
@@ -1803,48 +1802,50 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
             answer_author = cur_user_id
             question = Question.query.filter(Question.question_to==cur_user_id,
                                             Question.id==question_id,
-                                            Question.is_answered==False,
                                             Question.is_ignored==False,
                                             Question.deleted==False).one()
-        
-        if has_blocked(answer_author, question.question_author):
-            raise CustomExceptions.BlockedUserException("Question not available for action")
-        try:
-            video_url, thumbnail_url = media_uploader.upload_user_video(user_id=cur_user_id, video_file=video, video_type='answer')
-        except IOError:
-            raise CustomExceptions.BadRequestException('Couldnt read video file.')
-        curuser = User.query.filter(User.id == cur_user_id).one()
-        cur_user_username = curuser.username
 
-        if not client_id:
-            client_id = question.short_id
-            
-        post = Post(question=question_id,
-                    question_author=question.question_author, 
-                    answer_author=answer_author,                    
-                    answer_type=answer_type,
-                    media_url=video_url,
-                    thumbnail_url=thumbnail_url,
-                    client_id=client_id,
-                    lat=lat,
-                    lon=lon,
-                    id = get_item_id())
-        if show_after and type(show_after) == int:
-            post.show_after = show_after
-        
-        db.session.add(post)
+        if question.is_answered:
+            post = Post.query.filter(Post.question==question.id, Post.answer_author==answer_author).one()
+        else:
+            if has_blocked(answer_author, question.question_author):
+                raise CustomExceptions.BlockedUserException("Question not available for action")
+            try:
+                video_url, thumbnail_url = media_uploader.upload_user_video(user_id=cur_user_id, video_file=video, video_type='answer')
+            except IOError:
+                raise CustomExceptions.BadRequestException('Couldnt read video file.')
+            curuser = User.query.filter(User.id == cur_user_id).one()
+            cur_user_username = curuser.username
 
-        Question.query.filter(Question.id==question_id).update({'is_answered':True})
-
-        add_video_to_db(video_url=video_url,
+            if not client_id:
+                client_id = question.short_id
+                
+            post = Post(question=question_id,
+                        question_author=question.question_author, 
+                        answer_author=answer_author,                    
+                        answer_type=answer_type,
+                        media_url=video_url,
                         thumbnail_url=thumbnail_url,
-                        video_type='answer_video',
-                        object_id=post.id,
-                        username=cur_user_username)
-        async_encoder.encode_video_task.delay(video_url, username=cur_user_username)
+                        client_id=client_id,
+                        lat=lat,
+                        lon=lon,
+                        id = get_item_id())
+            if show_after and type(show_after) == int:
+                post.show_after = show_after
+            
+            db.session.add(post)
 
-        db.session.commit()
-        notification.notification_post_add(post.id, question.body, question.slug)
+            Question.query.filter(Question.id==question_id).update({'is_answered':True})
+
+            add_video_to_db(video_url=video_url,
+                            thumbnail_url=thumbnail_url,
+                            video_type='answer_video',
+                            object_id=post.id,
+                            username=cur_user_username)
+            async_encoder.encode_video_task.delay(video_url, username=cur_user_username)
+
+            db.session.commit()
+            notification.notification_post_add(post.id, question.body, question.slug)
         return {'success': True, 'id': str(post.id), 'post':post_to_dict(post, cur_user_id)}
 
     except NoResultFound:
