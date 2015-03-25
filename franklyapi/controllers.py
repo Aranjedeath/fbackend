@@ -799,8 +799,11 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
         update_dict.update({'bio':bio})
 
     if profile_video:
-        profile_video_url, cover_picture_url = media_uploader.upload_user_video(user_id=user_id, video_file=profile_video, video_type='profile_video')
-        update_dict.update({'profile_video':profile_video_url, 'cover_picture':cover_picture_url})
+        try:
+            profile_video_url, cover_picture_url = media_uploader.upload_user_video(user_id=user_id, video_file=profile_video, video_type='profile_video')
+            update_dict.update({'profile_video':profile_video_url, 'cover_picture':cover_picture_url})
+        except IOError:
+            raise CustomExceptions.BadRequestException('Couldnt read video file.')
 
     if profile_picture:
         tmp_path = '/tmp/request/{random_string}.jpeg'.format(random_string=uuid.uuid1().hex)
@@ -1806,9 +1809,10 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
         
         if has_blocked(answer_author, question.question_author):
             raise CustomExceptions.BlockedUserException("Question not available for action")
-
-        video_url, thumbnail_url = media_uploader.upload_user_video(user_id=cur_user_id, video_file=video, video_type='answer')
-        
+        try:
+            video_url, thumbnail_url = media_uploader.upload_user_video(user_id=cur_user_id, video_file=video, video_type='answer')
+        except IOError:
+            raise CustomExceptions.BadRequestException('Couldnt read video file.')
         curuser = User.query.filter(User.id == cur_user_id).one()
         cur_user_username = curuser.username
 

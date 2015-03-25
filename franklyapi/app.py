@@ -28,7 +28,7 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 
 
-db = SQLAlchemy(app)
+db = SQLAlchemy(app, session_options={'expire_on_commit': False})
 api = restful.Api(app)
 
 
