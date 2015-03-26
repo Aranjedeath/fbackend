@@ -26,7 +26,7 @@ from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
                     UserFeed, Event, Reshare, Invitable, Invite, ContactUs, InflatedStat,\
                     SearchDefault, IntervalCountMap, ReportAbuse
 
-from app import redis_client, raygun, db, redis_views
+from app import redis_client, raygun, db, redis_views, redis_pending_post
 
 from object_dict import user_to_dict, guest_user_to_dict,\
                         thumb_user_to_dict, question_to_dict,questions_to_dict, post_to_dict, comment_to_dict,\
@@ -1716,6 +1716,13 @@ def create_forgot_password_token(username=None, email=None):
         else:
             raise CustomExceptions.BadRequestException('Either Username or Email must be provided')
 
+        forgot_password_query = ForgotPasswordToken.query.filter(ForgotPasswordToken.user==user.id,
+                                            ForgotPasswordToken.used_at == None,
+                                            ForgotPasswordToken.valid==True,
+                                            ForgotPasswordToken.created_at>datetime.datetime.now()-datetime.timedelta(days=1))
+        if forgot_password_query.count()>3:
+            return {'success':False}
+        
         token_salt = 'ANDjdnbsjKDND=skjkhd94bwi20284HFJ22u84'
         token_string = '%s+%s+%s'%(str(user.id), token_salt, time.time())
         token = hashlib.sha256(token_string).hexdigest()
@@ -1723,9 +1730,8 @@ def create_forgot_password_token(username=None, email=None):
 
         forgot_token = ForgotPasswordToken(user=user.id, token=token, email=user.email)
         db.session.add(forgot_token)
+        email_helper.forgot_password(user.email, token=token, reciever_name=user.first_name)
         db.session.commit()
-
-        email_helper.forgot_password(user.email, token)
 
         return {'success':True}
     except NoResultFound:
@@ -1733,18 +1739,18 @@ def create_forgot_password_token(username=None, email=None):
 
 
 def forgot_password_token_is_valid(token, return_object=False):
-    token = ForgotPasswordToken.query.filter(ForgotPasswordToken.token==token,
+    token_object = ForgotPasswordToken.query.filter(ForgotPasswordToken.token==token,
                                             ForgotPasswordToken.used_at == None,
                                             ForgotPasswordToken.valid==True).first()
-    if token:
+    if token_object:
         timediff = datetime.datetime.now() - token_object.created_at
-        if timediff.total_seconds>3600*48:
+        if timediff.total_seconds()>3600*48:
             ForgotPasswordToken.query.filter(ForgotPasswordToken.token==token).update({'valid':False})
             db.session.commit()
             token = None
     if return_object:
-        return token
-    return bool(token)
+        return token_object
+    return bool(token_object)
 
 
 def check_forgot_password_token(token):
@@ -1752,12 +1758,13 @@ def check_forgot_password_token(token):
     if token_object:
         user = User.query.get(token_object.user)
         return {'valid':True, 'token':token, 'user':thumb_user_to_dict(user)}
-    return {'valid':False, 'token':token, 'user':None}
+    raise CustomExceptions.BadRequestException('Token Not valid')
+    #return {'valid':False, 'token':token, 'user':None}
 
 
 
 def reset_password(token, password):
-    if password_is_valid(password):
+    if not password_is_valid(password):
         raise CustomExceptions.PasswordTooShortException('Password is not valid')
     
     token_object = forgot_password_token_is_valid(token, return_object=True)
@@ -1765,7 +1772,7 @@ def reset_password(token, password):
         raise CustomExceptions.ObjectNotFoundException('Invalid token')
 
     user = User.query.filter(User.id == token_object.user).one()
-    User.query.filter(User.id==user.id).update({'password':password})
+    user_change_password(user_id=user.id, new_password=password)
     
     #mark token as used and invalid
     ForgotPasswordToken.query.filter(ForgotPasswordToken.token==token_object.token).update({'used_at':datetime.datetime.now(),

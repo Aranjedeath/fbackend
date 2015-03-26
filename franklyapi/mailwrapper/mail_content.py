@@ -3,6 +3,12 @@ dict = {
     "forgot_password": {
 
                           "subject": "Forgot your password?",
+                          "body": '''Let's get you asking again. You can reset your password by clicking on the link below.
+                                      <br><br>
+                                    <a href={reset_password_link}>{reset_password_link}</a>
+                                    <br><br>
+                                    This link will expire in 48 hrs. If you did not request a password reset, Please ignore this mail.
+                                  '''
 
 
                         },
