@@ -1747,8 +1747,8 @@ def check_forgot_password_token(token):
 def reset_password(token, password):
     try:
 
-        if len(password)<6:
-            raise CustomExceptions.PasswordTooShortException()
+        if password_is_valid(password):
+            raise CustomExceptions.PasswordTooShortException('Password is not valid')
 
         token_object = ForgotPasswordToken.query.filter(ForgotPasswordToken.token==token).one()
         

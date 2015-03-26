@@ -41,13 +41,16 @@ def encode_video_task(video_url, username='', profiles=video_encoder.VIDEO_ENCOD
     db.engine.dispose()
 
 @cel.task(queue='encoding_low_priority')
-def _encode_video_to_profile(file_path, video_url, profile,log_id, username=''):
+def _encode_video_to_profile(file_path, video_url, profile, log_id, username=''):
     if video_db.video_already_encoded(video_url=video_url, video_quality=profile):
         print 'Not Retrying now.'
         return
     result = video_encoder.encode_video_to_profile(file_path, video_url, profile, username)
     video_db.update_video_encode_log_finish(log_id,result)
     video_db.update_video_state(video_url, result)
+    if profile=='low' and not result:
+        log_id = video_db.add_video_encode_log_start(video_url=video_url, video_quality='medium')
+        _encode_video_to_profile(file_path, video_url, 'medium', log_id, username=username)
     db.engine.dispose()
 
 @cel.task(queue='encoding_retry')

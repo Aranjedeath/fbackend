@@ -40,6 +40,7 @@ class ForgotPasswordToken(Base):
         self.token = token
         self.user  = user
         self.token = token
+        self.created_at = datetime.datetime.now()
 
 
     def __repr__(self):
