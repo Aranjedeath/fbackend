@@ -1734,8 +1734,8 @@ def forgot_password_token_is_valid(token, return_object=False):
             db.session.commit()
             token = None
     if return_object:
-        return token
-    return bool(token)
+        return token_object
+    return bool(token_object)
 
 
 def check_forgot_password_token(token):
