@@ -799,8 +799,11 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
         update_dict.update({'bio':bio})
 
     if profile_video:
-        profile_video_url, cover_picture_url = media_uploader.upload_user_video(user_id=user_id, video_file=profile_video, video_type='profile_video')
-        update_dict.update({'profile_video':profile_video_url, 'cover_picture':cover_picture_url})
+        try:
+            profile_video_url, cover_picture_url = media_uploader.upload_user_video(user_id=user_id, video_file=profile_video, video_type='profile_video')
+            update_dict.update({'profile_video':profile_video_url, 'cover_picture':cover_picture_url})
+        except IOError:
+            raise CustomExceptions.BadRequestException('Couldnt read video file.')
 
     if profile_picture:
         tmp_path = '/tmp/request/{random_string}.jpeg'.format(random_string=uuid.uuid1().hex)
@@ -840,7 +843,7 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
 
     db.session.add(user_archive)
     User.query.filter(User.id==user_id).update(update_dict)
-    db.session.commit()
+    
     
 
     if profile_video:
@@ -851,7 +854,7 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
                         username=user.username)
         
         async_encoder.encode_video_task.delay(profile_video_url, username=user.username)
-
+    db.session.commit()
     return user_to_dict(user)
 
 
@@ -1338,14 +1341,25 @@ def post_delete(cur_user_id, post_id):
 
 def post_view(cur_user_id, post_id, client_id=None):
     try:
+        post_pending = False
         if client_id:
-            post = Post.query.filter(Post.client_id==client_id, Post.deleted==False).one()
+            pending_post_data = get_pending_post(client_id)
+            if pending_post_data:
+                post_pending = True
+                question = Question.query.get(pending_post_data['question_id'])
+            else:
+                post = Post.query.filter(Post.client_id==client_id, Post.deleted==False).one()
+        
         else:
             post = Post.query.filter(Post.id==post_id, Post.deleted==False).one()
 
         if cur_user_id and (has_blocked(cur_user_id, post.answer_author) or has_blocked(cur_user_id, post.question_author)):
             raise CustomExceptions.BlockedUserException()
-        return {'post': post_to_dict(post, cur_user_id)}
+        
+        if post_pending:
+            return {'question':question_to_dict(question, cur_user_id), 'pending':post_pending}
+
+        return {'post': post_to_dict(post, cur_user_id), 'pending':post_pending}
     except NoResultFound:
         raise CustomExceptions.PostNotFoundException("No post with that id found")
 
@@ -1686,75 +1700,73 @@ def create_forgot_password_token(username=None, email=None):
     from mailwrapper import email_helper
     try:
         import hashlib
-        user = None
         if username:
             user = User.query.filter(User.username==username).one()
         elif email:
             user = User.query.filter(User.email==email).one()
         else:
-            raise CustomExceptions.BadRequestException()
-        if not user:
-            CustomExceptions.UserNotFoundException()
-
+            raise CustomExceptions.BadRequestException('Either Username or Email must be provided')
 
         token_salt = 'ANDjdnbsjKDND=skjkhd94bwi20284HFJ22u84'
         token_string = '%s+%s+%s'%(str(user.id), token_salt, time.time())
         token = hashlib.sha256(token_string).hexdigest()
         now_time = datetime.datetime.now()
 
-        db.session.execute(text("""INSERT INTO forgot_password_tokens (user, token, email, created_at)
-                                        VALUES(:user_id, :token, :email, :cur_time)
-                                        ON DUPLICATE KEY
-                                        UPDATE token = :token, created_at=:cur_time"""),
-                                params={'user_id':user.id, 'token':token, 'email':user.email, 'cur_time':now_time}
-                                )
+        forgot_token = ForgotPasswordToken(user=user.id, token=token, email=user.email)
+        db.session.add(forgot_token)
         db.session.commit()
 
-        email_helper.forgot_password(user.email)
+        email_helper.forgot_password(user.email, token)
 
         return {'success':True}
     except NoResultFound:
-        raise CustomExceptions.UserNotFoundException()
+        raise CustomExceptions.UserNotFoundException('Username or email does not exist.')
+
+
+def forgot_password_token_is_valid(token, return_object=False):
+    token = ForgotPasswordToken.query.filter(ForgotPasswordToken.token==token,
+                                            ForgotPasswordToken.used_at == None,
+                                            ForgotPasswordToken.valid==True).first()
+    if token:
+        timediff = datetime.datetime.now() - token_object.created_at
+        if timediff.total_seconds>3600*48:
+            ForgotPasswordToken.query.filter(ForgotPasswordToken.token==token).update({'valid':False})
+            db.session.commit()
+            token = None
+    if return_object:
+        return token
+    return bool(token)
 
 
 def check_forgot_password_token(token):
-    try:
-        token_object = ForgotPasswordToken.query.filter(ForgotPasswordToken.token==token
-                                                        and ForgotPasswordToken.used_at == None).one()
-        now_time = datetime.datetime.now()
-        timediff = now_time - token_object.created_at
-        if timediff.total_seconds>3600*48:
-            raise NoResultFound
-        return {'valid':True, 'token':token}
-    except NoResultFound:
-        return {'valid':False, 'token':token}
+    token_object = forgot_password_token_is_valid(token, return_object=True)
+    if token_object:
+        user = User.query.get(token_object.user)
+        return {'valid':True, 'token':token, 'user':thumb_user_to_dict(user)}
+    return {'valid':False, 'token':token, 'user':None}
+
 
 
 def reset_password(token, password):
-    try:
+    if password_is_valid(password):
+        raise CustomExceptions.PasswordTooShortException('Password is not valid')
+    
+    token_object = forgot_password_token_is_valid(token, return_object=True)
+    if not token_object:
+        raise CustomExceptions.ObjectNotFoundException('Invalid token')
 
-        if len(password)<6:
-            raise CustomExceptions.PasswordTooShortException()
+    user = User.query.filter(User.id == token_object.user).one()
+    User.query.filter(User.id==user.id).update({'password':password})
+    
+    #mark token as used and invalid
+    ForgotPasswordToken.query.filter(ForgotPasswordToken.token==token_object.token).update({'used_at':datetime.datetime.now(),
+                                                                                            'valid':False})
+    db.session.commit()
 
-        token_object = ForgotPasswordToken.query.filter(ForgotPasswordToken.token==token).one()
-        
-        now_time = datetime.now()
-        timediff = now_time - token_object.created_at
+    return {'success':True,
+            'error':None, 
+            'message':'Your password has been reset'}
 
-        if timediff.total_seconds>3600*48:
-            raise CustomExceptions.ObjectNotFoundException()
-
-        user = User.query.filter(User.id == token_object.user).one()
-        user.update(values={User.password:password})
-
-        token_object.update(values={ForgotPasswordToken.used_at: now_time})
-        return {'success':True, 
-                'error':None, 
-                'message':'Your password has been reset'}
-    except NoResultFound:
-        return {'success':False,
-                'error':True,
-                'message':'The token seems to be invalid'}
 
 def install_ref(device_id, url):
     #url = "https://play.google.com/store/apps/details?id=me.frankly&referrer=utm_source%3Dsource%26utm_medium%3Dmedium%26utm_term%3Dterm%26utm_content%3Dcontent%26utm_campaign%3Dname"
@@ -1786,13 +1798,26 @@ def get_new_short_id(for_object):
     return get_new_short_id(for_object)
 
 
+def set_pending_post(cur_user_id, question_id, client_id):
+    redis_pending_post.setex(client_id, cur_user_id+'_'+question_id, 3600*24)
+    return {'success':True, 'client_id':client_id}
+
+def get_pending_post(client_id):
+    pending_post = redis_pending_post.get(client_id)
+    if pending_post:
+        try:
+            answer_author_id, question_id = pending_post.split('_')
+            return {'answer_author_id':answer_author_id, 'question_id':question_id}
+        except:
+            pass
+    return None
+
 def add_video_post(cur_user_id, question_id, video, answer_type,
                         lat=None, lon=None, client_id=None,
                         show_after = None):
     try:
         if cur_user_id in config.ADMIN_USERS:
             question = Question.query.filter(Question.id==question_id,
-                                            Question.is_answered==False,
                                             Question.is_ignored==False,
                                             Question.deleted==False).one()
             answer_author = question.question_to
@@ -1800,47 +1825,54 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
             answer_author = cur_user_id
             question = Question.query.filter(Question.question_to==cur_user_id,
                                             Question.id==question_id,
-                                            Question.is_answered==False,
                                             Question.is_ignored==False,
                                             Question.deleted==False).one()
+
+        if question.is_answered:
+            post = Post.query.filter(Post.question==question.id, Post.answer_author==answer_author).one()
         
-        if has_blocked(answer_author, question.question_author):
-            raise CustomExceptions.BlockedUserException("Question not available for action")
+        else:
+            if has_blocked(answer_author, question.question_author):
+                raise CustomExceptions.BlockedUserException("Question not available for action")
+            try:
+                video_url, thumbnail_url = media_uploader.upload_user_video(user_id=cur_user_id, video_file=video, video_type='answer')
+            except IOError:
+                raise CustomExceptions.BadRequestException('Couldnt read video file.')
+            curuser = User.query.filter(User.id == cur_user_id).one()
+            cur_user_username = curuser.username
 
-        video_url, thumbnail_url = media_uploader.upload_user_video(user_id=cur_user_id, video_file=video, video_type='answer')
-        
-        curuser = User.query.filter(User.id == cur_user_id).one()
-
-        if not client_id:
-            client_id = question.short_id
-            
-        post = Post(question=question_id,
-                    question_author=question.question_author, 
-                    answer_author=answer_author,                    
-                    answer_type=answer_type,
-                    media_url=video_url,
-                    thumbnail_url=thumbnail_url,
-                    client_id=client_id,
-                    lat=lat,
-                    lon=lon,
-                    id = get_item_id())
-        if show_after and type(show_after) == int:
-            post.show_after = show_after
-        
-        db.session.add(post)
-
-        Question.query.filter(Question.id==question_id).update({'is_answered':True})
-
-        add_video_to_db(video_url=video_url,
+            if not client_id:
+                client_id = question.short_id
+                
+            post = Post(question=question_id,
+                        question_author=question.question_author, 
+                        answer_author=answer_author,                    
+                        answer_type=answer_type,
+                        media_url=video_url,
                         thumbnail_url=thumbnail_url,
-                        video_type='answer_video',
-                        object_id=post.id,
-                        username=curuser.username)
-        async_encoder.encode_video_task.delay(video_url, username=curuser.username)
+                        client_id=client_id,
+                        lat=lat,
+                        lon=lon,
+                        id = get_item_id())
+            if show_after and type(show_after) == int:
+                post.show_after = show_after
+            
+            db.session.add(post)
 
-        db.session.commit()
-        notification.new_post(post_id=post.id, question_body=question.body,
-                                           short_id=question.short_id, )
+            Question.query.filter(Question.id==question_id).update({'is_answered':True})
+
+            add_video_to_db(video_url=video_url,
+                            thumbnail_url=thumbnail_url,
+                            video_type='answer_video',
+                            object_id=post.id,
+                            username=cur_user_username)
+            async_encoder.encode_video_task.delay(video_url, username=cur_user_username)
+
+
+            db.session.commit()
+            redis_pending_post.delete(client_id)
+            notification.new_post(post.id, question.body, question.slug)
+
         return {'success': True, 'id': str(post.id), 'post':post_to_dict(post, cur_user_id)}
 
     except NoResultFound:

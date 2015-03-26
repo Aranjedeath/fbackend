@@ -52,6 +52,7 @@ def ask_question(question_id, notification_type = 'question-ask-self_user', dela
 def new_post(post_id, question_body="", short_id="",notification_type = 'post-add-self_user',
              delay_push=True):
 
+
     key = key[notification_type]
     post = Post.query.get(post_id)
     users = User.query.filter(User.id.in_([post.answer_author, post.question_author])).all()

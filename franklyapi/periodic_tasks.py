@@ -35,53 +35,65 @@ def update_user_view_count():
 
 @celery.task
 def reassign_pending_video_tasks():
-    from app import db
-    import async_encoder
     import datetime
     from sqlalchemy import text
-    count = 1
     # videos = Video.query.filter(Video.process_state.in_(['pending', 'failed'])).all()
     retry_queue='encoding_retry'
+    low_priority_queue='encoding_low_priority'
     virgin_videos = db.session.execute(text(
-        """SELECT v.url, v.object_id, v.video_type, v.username,
-            v.created_at, u.user_type 
-            FROM videos v LEFT JOIN users u ON v.username = u.username 
-            WHERE v.opt IS NULL 
-                AND v.low IS NULL 
-                AND v.medium IS NULL 
-                AND v.promo IS NULL
-                AND v.ultralow IS NULL
-                AND v.delete = 0
-            ORDER BY u.user_type DESC
-        """
-        )
-    )
+                                            """SELECT v.url, v.object_id, v.video_type, v.username,
+                                                v.created_at, u.user_type, v.opt, v.medium, v.low, v.ultralow, v.promo
+                                                FROM videos v LEFT JOIN users u ON v.username = u.username 
+                                                WHERE v.opt IS NULL
+                                                    AND v.low IS NULL
+                                                    AND v.medium IS NULL
+                                                    AND v.promo IS NULL
+                                                    AND v.ultralow IS NULL
+                                                    AND v.delete = 0
+                                                ORDER BY u.user_type DESC
+                                            """
+                                            )
+                                        )
 
-    other_videos = db.session.execute(text(
-        """SELECT v.url, v.object_id, v.video_type, v.username,
-                v.created_at, u.user_type,
-                (v.medium IS NOT NULL) OR (v.low IS NOT NULL) OR (v.ultralow IS NOT NULL) AS no_video_made
-            FROM videos v LEFT JOIN users u ON v.username = u.username
-            WHERE (v.opt IS NULL
-                OR v.low IS NULL
-                OR v.medium IS NULL
-                OR v.promo IS NULL
-                OR v.ultralow IS NULL)
-                AND v.delete = 0
-            ORDER BY u.user_type DESC, no_video_made
-        """
-        )
-    )
-
+    assigned_urls = []
     for v in virgin_videos:
         if (datetime.datetime.now() - v.created_at).seconds > 1800:
-            async_encoder.encode_video_task.delay(video_url=v.url, username=v.username, redo=True)
-            print v.url
+            async_encoder.encode_video_task.delay(video_url=v.url, username=v.username)
+            assigned_urls.append(v.url)
+    virgin_video_count = len(assigned_urls)
 
+    other_videos = db.session.execute(text(
+                                            """SELECT v.url, v.object_id, v.video_type, v.username,
+                                                    v.created_at, u.user_type, v.opt, v.medium, v.low, v.ultralow, v.promo,
+                                                    (v.medium IS NOT NULL) OR (v.low IS NOT NULL) OR (v.ultralow IS NOT NULL) AS no_video_made
+                                                FROM videos v LEFT JOIN users u ON v.username = u.username
+                                                WHERE (v.opt IS NULL
+                                                    OR v.low IS NULL
+                                                    OR v.medium IS NULL
+                                                    OR v.promo IS NULL
+                                                    OR v.ultralow IS NULL)
+                                                    AND v.delete = 0
+                                                    AND v.url NOT IN :assigned_urls 
+                                                ORDER BY u.user_type DESC, no_video_made
+                                            """
+                                            ),
+                                        params=dict(assigned_urls=assigned_urls)
+                                    )
+
+    profiles = ['opt', 'medium', 'low', 'ultralow', 'promo']
+    other_video_count = 0
     for v in other_videos:
         if (datetime.datetime.now() - v.created_at).seconds > 1800:
-            async_encoder.encode_video_task.delay(video_url=v.url, username=v.username, redo=True, queues=dict(low=retry_queue, ultralow=retry_queue, medium=retry_queue, opt=retry_queue))
-            print v.url
+            profiles_to_encode = []
+            for profile in profiles:
+                if not getattr(v, profile):
+                    profiles_to_encode.append(profile)
+            async_encoder.encode_video_task.delay(video_url=v.url, username=v.username, profiles=profiles_to_encode, queues=dict(low=low_priority_queue, ultralow=retry_queue, medium=retry_queue, opt=retry_queue))
+            print profiles_to_encode, v.url
+            other_video_count +=1
+    print 'Virgin Videos Assigned:', virgin_video_count
+    print 'Other Videos Assigned:', other_video_count
+
 
 @celery.task
 def log_video_count():

@@ -1024,6 +1024,8 @@ class PostAdd(restful.Resource):
                                                 client_id=args['client_id']
                                                 )
             return resp
+        except CustomExceptions.BadRequestException as e:
+            abort(400, message=str(e))
         except CustomExceptions.BlockedUserException as e:
             abort(404, message=str(e))
         except CustomExceptions.ObjectNotFoundException as e:
@@ -1231,7 +1233,7 @@ class PostView(restful.Resource):
             else:
                 current_user_id = None
             
-            resp = controllers.post_view(cur_user_id=current_user_id, post_id=post_id, client_id=client_id)
+            resp = controllers.post_view(cur_user_id=current_user_id, post_id=post_id, client_id=client_id)                
             return resp
         
         except CustomExceptions.BlockedUserException as e:
@@ -1511,6 +1513,8 @@ class ForgotPassword(restful.Resource):
         
         except CustomExceptions.UserNotFoundException as e:
             abort(404, message=str(e))
+        except CustomExceptions.BadRequestException as e:
+            abort(400, message=str(e))
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])
@@ -1560,9 +1564,9 @@ class ResetPassword(restful.Resource):
             resp = controllers.reset_password(token, args['password'])
             return resp
         except CustomExceptions.ObjectNotFoundException as e:
-            abort(403, message = '{"success":false, "error":"invalidToken", "message":"The token you provided is not valid anymore"}')
+            abort(403, message=str(e))
         except CustomExceptions.PasswordTooShortException as e:
-            abort(400, message = '{"success":false, "error":"shortPassword", "message":"The password should be minimum 6 characters"}')
+            abort(400, message=str(e))
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])
