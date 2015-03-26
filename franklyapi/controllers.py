@@ -1149,7 +1149,7 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_b
         is_first = True
 
 
-    if question_to != cur_user_id:
+    if question_to != cur_user_id and question_to != '737c6f8a7ac04d7e9380f1d37c011531':
         users = User.query.filter(User.id.in_([cur_user_id,question_to]))
         for user in users:
             if user.id == cur_user_id:
@@ -1821,6 +1821,7 @@ def get_pending_post(client_id):
             pass
     return None
 
+
 def add_video_post(cur_user_id, question_id, video, answer_type,
                         lat=None, lon=None, client_id=None,
                         show_after = None):
@@ -1880,7 +1881,7 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
 
             db.session.commit()
             redis_pending_post.delete(client_id)
-            notification.new_post(post.id, question.body, question.slug)
+            notification.new_post(post_id=post.id, question_body=question.body, short_id=question.slug)
 
         return {'success': True, 'id': str(post.id), 'post':post_to_dict(post, cur_user_id)}
 

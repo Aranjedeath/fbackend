@@ -89,7 +89,7 @@ def push_notification(notification_id, user_id, source='application'):
 
 def ask_question(question_id, notification_type = 'question-ask-self_user', delay_push=True):
 
-    key = key[notification_type]
+    k = key[notification_type]
     question = Question.query.get(question_id)
     users = User.query.filter(User.id.in_([question.question_to, question.question_author])).all()
 
@@ -99,12 +99,12 @@ def ask_question(question_id, notification_type = 'question-ask-self_user', dela
         if u.id == question.question_to:
             question_to = u
 
-    text = helper.question_asked_text(question=question)
+    text = helper.question_asked_text(question=question, question_author=question_author, question_to=question_to)
 
 
     icon = question_author.profile_picture
 
-    link = key['url'] % question.short_id
+    link = k['url'] % question.short_id
 
     notification = Notification(type=notification_type, text=text,
                                 link=link, object_id=question_id,
@@ -154,7 +154,7 @@ def new_post(post_id, question_body="", short_id="",notification_type = 'post-ad
              delay_push=True):
 
 
-    key = key[notification_type]
+    k = key[notification_type]
     post = Post.query.get(post_id)
     users = User.query.filter(User.id.in_([post.answer_author, post.question_author])).all()
 
@@ -170,7 +170,7 @@ def new_post(post_id, question_body="", short_id="",notification_type = 'post-ad
 
     icon = answer_author.profile_picture
 
-    link = key['url'] % post.client_id
+    link = k['url'] % post.client_id
     
     notification = Notification(type=notification_type, text=text,
                                 link=link, object_id=post_id,

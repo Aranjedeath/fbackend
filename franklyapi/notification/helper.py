@@ -18,7 +18,7 @@ key = {
 }
 
 
-def question_asked_text(question):
+def question_asked_text(question,question_author,question_to):
     text = key['question-ask-self_user']['text']
     if question.is_anonymous:
         text = text.replace('<question_author_name>', 'Anonymous')
