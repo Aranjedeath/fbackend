@@ -31,7 +31,7 @@ def welcome_mail(receiver_email,receiver_name,receiver_username,receiver_passwor
 
 def forgot_password(receiver_email):
 
-    render_dict['salutation'] = "Hi,"
+    render_dict['salutation'] = "Hi"
     render_dict['email_text'] = "Forgot password:"
 
     mail_sender.send_mail(receiver_email, mail_content.dict['forgot_password']['subject'],
@@ -52,7 +52,7 @@ def question_asked(receiver_email, receiver_name, question_to_name, is_first):
 def question_answered(receiver_email, receiver_name, celebrity_name, question, web_link):
 
     render_dict['salutation'] = "Hi %s" % receiver_name
-    render_dict['email_text'] = mail_content.dict['question_answered']['body'] % (celebrity_name, question, web_link)
+    render_dict['email_text'] = mail_content.dict['question_answered']['body'] % (celebrity_name, web_link, question)
 
     mail_sender.send_mail(receiver_email, mail_content.dict['question_answered']['subject'],
                           header_template.render(render_dict))

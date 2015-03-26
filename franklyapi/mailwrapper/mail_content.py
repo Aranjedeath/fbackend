@@ -30,7 +30,7 @@ dict = {
                         },
     "question_answered": {
                           "subject" : "Your question has been answered!",
-                          "body": '''%s has answered your question "%s" %s. Check it out now!'''
+                          "body": '''%s has answered your question <a href='%s'>"%s"</a>. Check it out now!'''
 
                         },
     "inactive_profile" : {
