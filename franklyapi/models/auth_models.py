@@ -34,7 +34,7 @@ class ForgotPasswordToken(Base):
     user           = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
     email          = Column(String(120), nullable=False)
     created_at     = Column(DateTime(), default=datetime.datetime.now())
-    used_at        = Column(DateTime(), default=datetime.datetime.now())
+    used_at        = Column(DateTime())
     valid          = Column(Boolean(), default=True)
 
     def __init__(self, token, user, email):
