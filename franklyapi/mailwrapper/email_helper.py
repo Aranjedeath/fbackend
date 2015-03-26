@@ -31,10 +31,10 @@ def welcome_mail(receiver_email,receiver_name,receiver_username,receiver_passwor
                           header_template.render(render_dict))
 
 
-def forgot_password(receiver_email, token):
+def forgot_password(receiver_email, token, reciever_name):
     url = os.path.join(config.WEB_URL, 'reset-password?token={token}'.format(token=token))
 
-    render_dict['salutation'] = "Hi,"
+    render_dict['salutation'] = "Hi {reciever_name}".format(reciever_name=str(reciever_name))
     render_dict['email_text'] = mail_content.dict['forgot_password']['body'].format(reset_password_link=url)
 
     mail_sender.send_mail(receiver_email, mail_content.dict['forgot_password']['subject'],

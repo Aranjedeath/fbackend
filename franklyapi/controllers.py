@@ -1721,9 +1721,8 @@ def create_forgot_password_token(username=None, email=None):
 
         forgot_token = ForgotPasswordToken(user=user.id, token=token, email=user.email)
         db.session.add(forgot_token)
+        email_helper.forgot_password(user.email, token=token, reciever_name=user.first_name)
         db.session.commit()
-
-        email_helper.forgot_password(user.email, token)
 
         return {'success':True}
     except NoResultFound:
