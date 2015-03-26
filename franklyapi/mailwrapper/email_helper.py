@@ -1,6 +1,8 @@
 from jinja2 import Environment, PackageLoader
 from kabootar import SimpleMailer
 import mail_content
+from configs import config
+import os
 
 
 env = Environment(loader = PackageLoader('mailwrapper','mail_templates'))
@@ -29,10 +31,11 @@ def welcome_mail(receiver_email,receiver_name,receiver_username,receiver_passwor
                           header_template.render(render_dict))
 
 
-def forgot_password(receiver_email):
+def forgot_password(receiver_email, token):
+    url = os.path.join(config.WEB_URL, 'reset-password?token={token}'.format(token=token))
 
     render_dict['salutation'] = "Hi,"
-    render_dict['email_text'] = "Forgot password:"
+    render_dict['email_text'] = mail_content.dict['forgot_password']['body'].format(reset_password_link=url)
 
     mail_sender.send_mail(receiver_email, mail_content.dict['forgot_password']['subject'],
                           header_template.render(render_dict))
