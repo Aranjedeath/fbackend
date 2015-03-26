@@ -1707,6 +1707,13 @@ def create_forgot_password_token(username=None, email=None):
         else:
             raise CustomExceptions.BadRequestException('Either Username or Email must be provided')
 
+        forgot_password_query = ForgotPasswordToken.query.filter(ForgotPasswordToken.token==token,
+                                            ForgotPasswordToken.used_at == None,
+                                            ForgotPasswordToken.valid==True,
+                                            ForgotPasswordToken.created_at>datetime.datetime.now()-datetime.timedelta(days=1))
+        if forgot_password_query.count()>3:
+            return {'success':False}
+        
         token_salt = 'ANDjdnbsjKDND=skjkhd94bwi20284HFJ22u84'
         token_string = '%s+%s+%s'%(str(user.id), token_salt, time.time())
         token = hashlib.sha256(token_string).hexdigest()
