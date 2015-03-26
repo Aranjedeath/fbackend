@@ -1743,7 +1743,8 @@ def check_forgot_password_token(token):
     if token_object:
         user = User.query.get(token_object.user)
         return {'valid':True, 'token':token, 'user':thumb_user_to_dict(user)}
-    return {'valid':False, 'token':token, 'user':None}
+    raise CustomExceptions.BadRequestException('Token Not valid')
+    #return {'valid':False, 'token':token, 'user':None}
 
 
 

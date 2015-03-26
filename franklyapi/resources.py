@@ -1538,6 +1538,8 @@ class CheckForgotPasswordToken(restful.Resource):
         args = self.post_parser.parse_args()
         try:
             return controllers.check_forgot_password_token(args['token'])
+        except CustomExceptions.BadRequestException as e:
+            abort(404, message=str(e))
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])
