@@ -104,7 +104,7 @@ def ask_question(question_id, notification_type = 'question-ask-self_user', dela
 
     icon = question_author.profile_picture
 
-    link = key['url'] % question_id
+    link = key['url'] % question.short_id
 
     notification = Notification(type=notification_type, text=text,
                                 link=link, object_id=question_id,
@@ -170,7 +170,7 @@ def new_post(post_id, question_body="", short_id="",notification_type = 'post-ad
 
     icon = answer_author.profile_picture
 
-    link = key[notification_type] % post.client_id
+    link = key['url'] % post.client_id
     
     notification = Notification(type=notification_type, text=text,
                                 link=link, object_id=post_id,

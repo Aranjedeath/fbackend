@@ -1,6 +1,7 @@
 from jinja2 import Environment, PackageLoader
 from kabootar import SimpleMailer
 import mail_content
+import mailconfig
 
 
 env = Environment(loader = PackageLoader('mailwrapper','mail_templates'))
@@ -74,8 +75,8 @@ def content_report(recipients, subject, report):
     mail_sender.send_mail(recipients, subject, report)
 
 
-def cron_job_update(cron_type="Phache Phace Bhage Dil mera deewana", message='Bole Ole Ole Ole!'):
-    mail_sender.send_mail(['varun@frankly.me','shashank@frankly.me','nikhil@frankly.me'], cron_type, message)
+def cron_job_update(cron_type="Dhak Dhak", message='Keep running!'):
+    mail_sender.send_mail(mailconfig.devs, cron_type, message)
 
 
 def send_mail_for_sapru(receiver_email,receiver_name,link):
