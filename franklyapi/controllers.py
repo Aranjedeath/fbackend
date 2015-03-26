@@ -1707,7 +1707,7 @@ def create_forgot_password_token(username=None, email=None):
         else:
             raise CustomExceptions.BadRequestException('Either Username or Email must be provided')
 
-        forgot_password_query = ForgotPasswordToken.query.filter(ForgotPasswordToken.token==token,
+        forgot_password_query = ForgotPasswordToken.query.filter(ForgotPasswordToken.user==user.id,
                                             ForgotPasswordToken.used_at == None,
                                             ForgotPasswordToken.valid==True,
                                             ForgotPasswordToken.created_at>datetime.datetime.now()-datetime.timedelta(days=1))
