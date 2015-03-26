@@ -1700,75 +1700,69 @@ def create_forgot_password_token(username=None, email=None):
     from mailwrapper import email_helper
     try:
         import hashlib
-        user = None
         if username:
             user = User.query.filter(User.username==username).one()
         elif email:
             user = User.query.filter(User.email==email).one()
         else:
-            raise CustomExceptions.BadRequestException()
-        if not user:
-            CustomExceptions.UserNotFoundException()
-
+            raise CustomExceptions.BadRequestException('Either Username or Email must be provided')
 
         token_salt = 'ANDjdnbsjKDND=skjkhd94bwi20284HFJ22u84'
         token_string = '%s+%s+%s'%(str(user.id), token_salt, time.time())
         token = hashlib.sha256(token_string).hexdigest()
         now_time = datetime.datetime.now()
 
-        db.session.execute(text("""INSERT INTO forgot_password_tokens (user, token, email, created_at)
-                                        VALUES(:user_id, :token, :email, :cur_time)
-                                        ON DUPLICATE KEY
-                                        UPDATE token = :token, created_at=:cur_time"""),
-                                params={'user_id':user.id, 'token':token, 'email':user.email, 'cur_time':now_time}
-                                )
+        forgot_token = ForgotPasswordToken(user=user.id, token=token, email=user.email)
+        db.session.add(forgot_token)
         db.session.commit()
 
-        email_helper.forgot_password(user.email)
+        email_helper.forgot_password(user.email, token)
 
         return {'success':True}
     except NoResultFound:
-        raise CustomExceptions.UserNotFoundException()
+        raise CustomExceptions.UserNotFoundException('Username or email does not exist.')
+
+
+def forgot_password_token_is_valid(token, return_object=False):
+    token = ForgotPasswordToken.query.filter(ForgotPasswordToken.token==token,
+                                            ForgotPasswordToken.used_at == None,
+                                            ForgotPasswordToken.valid==True).first()
+    if token:
+        timediff = datetime.datetime.now() - token_object.created_at
+        if timediff.total_seconds>3600*48:
+            ForgotPasswordToken.query.filter(ForgotPasswordToken.token==token).update({'valid':False})
+            db.session.commit()
+            token = None
+    if return_object:
+        return token
+    return bool(token)
 
 
 def check_forgot_password_token(token):
-    try:
-        token_object = ForgotPasswordToken.query.filter(ForgotPasswordToken.token==token
-                                                        and ForgotPasswordToken.used_at == None).one()
-        now_time = datetime.datetime.now()
-        timediff = now_time - token_object.created_at
-        if timediff.total_seconds>3600*48:
-            raise NoResultFound
-        return {'valid':True, 'token':token}
-    except NoResultFound:
-        return {'valid':False, 'token':token}
+    return {'valid':forgot_password_token_is_valid(token), 'token':token}
+
 
 
 def reset_password(token, password):
-    try:
+    if password_is_valid(password):
+        raise CustomExceptions.PasswordTooShortException('Password is not valid')
+    
+    token_object = forgot_password_token_is_valid(token, return_object=True)
+    if not token_object:
+        raise CustomExceptions.ObjectNotFoundException('Invalid token')
 
-        if password_is_valid(password):
-            raise CustomExceptions.PasswordTooShortException('Password is not valid')
+    user = User.query.filter(User.id == token_object.user).one()
+    User.query.filter(User.id==user.id).update({'password':password})
+    
+    #mark token as used and invalid
+    ForgotPasswordToken.query.filter(ForgotPasswordToken.token==token_object.token).update({'used_at':datetime.datetime.now(),
+                                                                                            'valid':False})
+    db.session.commit()
 
-        token_object = ForgotPasswordToken.query.filter(ForgotPasswordToken.token==token).one()
-        
-        now_time = datetime.now()
-        timediff = now_time - token_object.created_at
+    return {'success':True,
+            'error':None, 
+            'message':'Your password has been reset'}
 
-        if timediff.total_seconds>3600*48:
-            raise CustomExceptions.ObjectNotFoundException()
-
-        user = User.query.filter(User.id == token_object.user).one()
-        user.update(values={User.password:password})
-
-        token_object.update(values={ForgotPasswordToken.used_at: now_time})
-        return {'success':True, 
-                'error':None, 
-                'message':'Your password has been reset'}
-    except NoResultFound:
-        return {'success':False,
-                'error':True,
-                'message':'The token seems to be invalid'}
 
 def install_ref(device_id, url):
     #url = "https://play.google.com/store/apps/details?id=me.frankly&referrer=utm_source%3Dsource%26utm_medium%3Dmedium%26utm_term%3Dterm%26utm_content%3Dcontent%26utm_campaign%3Dname"

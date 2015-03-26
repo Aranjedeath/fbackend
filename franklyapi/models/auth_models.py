@@ -29,18 +29,20 @@ class AccessToken(Base):
 
 
 class ForgotPasswordToken(Base):
-    __tablename__ = 'forgot_password_tokens'
-    token         = Column(String(100), nullable=False, primary_key=True)
-    user          = Column(CHAR(), ForeignKey('users.id'), nullable=False, unique=True)
-    email         = Column(String(120), nullable=False, unique=True)
-    created_at    = Column(DateTime(), default=datetime.datetime.now())
-    used_at       = Column(DateTime(), default=datetime.datetime.now())
+    __tablename__  = 'forgot_password_tokens'
+    token          = Column(String(100), nullable=False, primary_key=True)
+    user           = Column(CHAR(), ForeignKey('users.id'), nullable=False)
+    email          = Column(String(120), nullable=False)
+    created_at     = Column(DateTime(), default=datetime.datetime.now())
+    used_at        = Column(DateTime(), default=datetime.datetime.now())
+    valid          = Column(Boolean(), default=True)
 
     def __init__(self, token, user, email):
-        self.token = token
-        self.user  = user
-        self.token = token
+        self.token      = token
+        self.user       = user
+        self.token      = token
         self.created_at = datetime.datetime.now()
+        self.valid      = True
 
 
     def __repr__(self):

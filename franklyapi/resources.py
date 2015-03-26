@@ -1513,6 +1513,8 @@ class ForgotPassword(restful.Resource):
         
         except CustomExceptions.UserNotFoundException as e:
             abort(404, message=str(e))
+        except CustomExceptions.BadRequestException as e:
+            abort(400, message=str(e))
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])
@@ -1562,9 +1564,9 @@ class ResetPassword(restful.Resource):
             resp = controllers.reset_password(token, args['password'])
             return resp
         except CustomExceptions.ObjectNotFoundException as e:
-            abort(403, message = '{"success":false, "error":"invalidToken", "message":"The token you provided is not valid anymore"}')
+            abort(403, message=str(e))
         except CustomExceptions.PasswordTooShortException as e:
-            abort(400, message = '{"success":false, "error":"shortPassword", "message":"The password should be minimum 6 characters"}')
+            abort(400, message=str(e))
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])
