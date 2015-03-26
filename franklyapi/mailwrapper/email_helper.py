@@ -1,8 +1,10 @@
 from jinja2 import Environment, PackageLoader
 from kabootar import SimpleMailer
 import mail_content
+
 from configs import config
 import os
+
 
 
 env = Environment(loader = PackageLoader('mailwrapper','mail_templates'))
@@ -34,8 +36,10 @@ def welcome_mail(receiver_email,receiver_name,receiver_username,receiver_passwor
 def forgot_password(receiver_email, token, reciever_name):
     url = os.path.join(config.WEB_URL, 'reset-password?token={token}'.format(token=token))
 
+
     render_dict['salutation'] = "Hi {reciever_name}".format(reciever_name=str(reciever_name))
     render_dict['email_text'] = mail_content.dict['forgot_password']['body'].format(reset_password_link=url)
+
 
     mail_sender.send_mail(receiver_email, mail_content.dict['forgot_password']['subject'],
                           header_template.render(render_dict))
@@ -55,7 +59,7 @@ def question_asked(receiver_email, receiver_name, question_to_name, is_first):
 def question_answered(receiver_email, receiver_name, celebrity_name, question, web_link):
 
     render_dict['salutation'] = "Hi %s" % receiver_name
-    render_dict['email_text'] = mail_content.dict['question_answered']['body'] % (celebrity_name, question, web_link)
+    render_dict['email_text'] = mail_content.dict['question_answered']['body'] % (celebrity_name, web_link, question)
 
     mail_sender.send_mail(receiver_email, mail_content.dict['question_answered']['subject'],
                           header_template.render(render_dict))
@@ -77,8 +81,8 @@ def content_report(recipients, subject, report):
     mail_sender.send_mail(recipients, subject, report)
 
 
-def cron_job_update(cron_type="Phache Phace Bhage Dil mera deewana", message='Bole Ole Ole Ole!'):
-    mail_sender.send_mail(['varun@frankly.me','shashank@frankly.me','nikhil@frankly.me'], cron_type, message)
+def cron_job_update(cron_type="Dhak Dhak", message='Keep running!'):
+    mail_sender.send_mail(config.DEV_EMAILS, cron_type, message)
 
 
 def send_mail_for_sapru(receiver_email,receiver_name,link):

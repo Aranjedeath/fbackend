@@ -1109,12 +1109,15 @@ def question_is_clean(body):
             return False
     return True
 
+
 def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_by=None):
 
     if has_blocked(cur_user_id, question_to):
         raise CustomExceptions.BlockedUserException()
 
     user_status = get_user_status(question_to)
+
+
 
     if not cur_user_id == question_to and is_anonymous and not user_status['allow_anonymous_question']:
         raise CustomExceptions.NoPermissionException('Anonymous question not allowed for the user')
@@ -1127,22 +1130,26 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_b
     slug = make_question_slug(body, short_id)
     clean = question_is_clean(body)
 
-    question = Question(question_author=cur_user_id, question_to=question_to, 
+
+    question = Question(question_author=cur_user_id, question_to=question_to,
                 body=body.capitalize(), is_anonymous=is_anonymous, public=public,
                 lat=lat, lon=lon, slug=slug, short_id=short_id,
                 id = question_id, added_by=added_by, flag=int(clean))
-    
+
     db.session.add(question)
 
     db.session.commit()
+
     if clean:
-        notification.notification_question_ask(question.id)
+        notification.ask_question(question_id=question.id)
+
 
     is_first = False
     if db.session.query(Question).filter(Question.question_author == cur_user_id).count() == 1:
         is_first = True
 
-    if question_to != cur_user_id:
+
+    if question_to != cur_user_id and question_to != '737c6f8a7ac04d7e9380f1d37c011531':
         users = User.query.filter(User.id.in_([cur_user_id,question_to]))
         for user in users:
             if user.id == cur_user_id:
@@ -1153,6 +1160,8 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_b
                                     receiver_name=mail_reciever.first_name,
                                     question_to_name=question_to.first_name,
                                     is_first=is_first)
+
+
 
 
     # God forgive me for I maketh this hack
@@ -1819,6 +1828,7 @@ def get_pending_post(client_id):
             pass
     return None
 
+
 def add_video_post(cur_user_id, question_id, video, answer_type,
                         lat=None, lon=None, client_id=None,
                         show_after = None):
@@ -1875,9 +1885,11 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
                             username=cur_user_username)
             async_encoder.encode_video_task.delay(video_url, username=cur_user_username)
 
+
             db.session.commit()
             redis_pending_post.delete(client_id)
-            notification.notification_post_add(post.id, question.body, question.slug)
+            notification.new_post(post_id=post.id, question_body=question.body, short_id=question.slug)
+
         return {'success': True, 'id': str(post.id), 'post':post_to_dict(post, cur_user_id)}
 
     except NoResultFound:
@@ -1974,7 +1986,7 @@ def get_notifications(cur_user_id, device_id, version_code, notification_categor
                         "link" : row[5],
                         "deeplink" : row[5],
                         "timestamp" : int(time.mktime(row[6].timetuple())),
-                        'updated_at':int(time.mktime(row[6].timetuple())),
+                        "updated_at":int(time.mktime(row[6].timetuple())),
                         "seen" : bool(row[7])
                         }
         notifications.append(notification)
@@ -2570,4 +2582,5 @@ def get_rss():
     with open('/tmp/franklymeanswers.xml','r') as f:
         s = f.read()
     return s
+
 

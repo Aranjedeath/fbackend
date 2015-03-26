@@ -79,3 +79,8 @@ BLOCKED_EMAIL_DOMAINS = ['mailinator.com', 'spambooger.com', 'zippymail.info',
 						'mailinator.net', 'streetwisemail.com', 'thisisnotmyrealemail.com',
 						'mailinator2.com', 'tradermail.info', 'reconmail.com']
 
+DEV_EMAILS = ['varun@frankly.me', 'shashank@frankly.me', 'nikhil@frankly.me', 'abhishek@frankly.me',
+              'amritanshu@frankly.me']
+WEEKLY_MAIL_RECIPIENTS = ['varun@frankly.me','nikunj@frankly.me', 'abhishek@frankly.me', 'shashank@frankly.me',
+                          'gourav@frankly.me']
+DAILY_CONTENT_MAIL_RECIPIENTS = ['varun@frankly.me', 'swati@frankly.me', 'ferheen@frankly.me']

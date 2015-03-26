@@ -3,6 +3,8 @@ from sqlalchemy import Column, Integer, String, Boolean, Float, DateTime, Enum, 
 from database import Base, get_item_id
 
 
+"""
+This table stores the details about the notifications"""
 class Notification(Base):
     __tablename__ = 'notifications'
     id            = Column(CHAR(32), primary_key=True, default=get_item_id())
@@ -42,6 +44,8 @@ class Notification(Base):
     def __repr__(self):
         return '<Notification %r:%r>' % (self.type, self.id)
 
+""" Relationship between a notification and users who might
+be sent the notification """
 
 class UserNotification(Base):
     __tablename__   = 'user_notifications'
@@ -84,7 +88,7 @@ class UserPushNotification(Base):
     added_at        = Column(DateTime(), default=datetime.datetime.now())
     pushed_at       = Column(DateTime())
     clicked_at      = Column(String(10))
-    source          = Column(String(10), default='application')
+    source          = Column(String(20), default='application')
     cancelled       = Column(Boolean(), default=False)
     result          = Column(String(100))
 

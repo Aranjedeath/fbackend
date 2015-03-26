@@ -188,6 +188,7 @@ api.add_resource(admin.AdminGetUserActivityTimeline, '/admin/user/activity_timel
 api.add_resource(admin.AdminQuestionChangeUpvote, '/admin/question/change_upvote')
 api.add_resource(admin.AdminPostChangeLike, '/admin/post/change_like')
 api.add_resource(admin.AdminUserChangeFollowers, '/admin/user/change_followers')
+api.add_resource(admin.AdminBroadcastToAll, '/admin/user/broadcast')
 
 
 

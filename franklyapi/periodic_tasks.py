@@ -149,7 +149,7 @@ if __name__ == '__main__':
         elif args[0] == 'reassign_pending_video_tasks':
             reassign_pending_video_tasks()
     except Exception as e:
-         email_helper.cron_job_update(args[0], traceback.format_exc(e))
+        email_helper.cron_job_update(args[0], traceback.format_exc(e))
 
 
 
