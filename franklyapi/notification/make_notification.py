@@ -11,9 +11,9 @@ from app import db
 from mailwrapper import email_helper
 from notification import helper
 
-<<<<<<< HEAD
+
 key = helper.key
-=======
+
 
 def add_notification_for_user(notification_id, user_ids, list_type, push_at=datetime.datetime.now()):
 
@@ -36,8 +36,7 @@ def add_notification_for_user(notification_id, user_ids, list_type, push_at=date
 
 def push_notification(notification_id, user_id, source='application'):
     from controllers import get_device_type
-    from GCM_notification import GCM
-    gcm_sender = GCM()
+
 
 
     notification = Notification.query.get(notification_id)
@@ -77,11 +76,15 @@ def push_notification(notification_id, user_id, source='application'):
                     "heading":"Frankly.me"
                 }
         if get_device_type(device.device_id)=='android':
+            from GCM_notification import GCM
+            gcm_sender = GCM()
             gcm_sender.send_message([device.push_id], payload)
         
         if get_device_type(device.device_id)=='ios':
-            pass
->>>>>>> dev-admin-broadcast
+            from APN_notification import  APN
+            apns = APN()
+            apns.send_message([device.push_id],payload)
+
 
 
 def ask_question(question_id, notification_type = 'question-ask-self_user', delay_push=True):
@@ -229,66 +232,3 @@ def notification_user_follow(follow_id):
     return notification
 
 
-def add_notification_for_user(notification_id, user_ids, list_type, push_at=datetime.datetime.now()):
-    for user_id in user_ids:
-        user_notification = UserNotification(notification_id=notification_id, user_id=user_id,
-                                             list_type=list_type, push_at=push_at,
-                                             seen_at=None, seen_type=None,
-                                             added_at=datetime.datetime.now(),
-                                             show_on='all',
-                                             id=get_item_id()
-                                            )
-        db.session.add(user_notification)
-        db.session.commit()
-
-        if push_at:
-            push_notification(notification_id, user_id)
-
-
-def push_notification(notification_id, user_id, source='application'):
-    from controllers import get_device_type
-    from GCM_notification import GCM
-    gcm_sender = GCM()
-
-
-    notification = Notification.query.get(notification_id)
-
-    group_id = '-'.join([str(notification.type), str(notification.object_id)])
-    for device in AccessToken.query.filter(AccessToken.user==user_id,
-                                            AccessToken.active==True,
-                                            AccessToken.push_id!=None).all():
-
-        user_push_notification = UserPushNotification(
-                                                      notification_id=notification_id,
-                                                      user_id=user_id,
-                                                      device_id=device.device_id,
-                                                      push_id=device.push_id,
-                                                      added_at=datetime.datetime.now(),
-                                                      pushed_at=datetime.datetime.now(),
-                                                      clicked_at=None,
-                                                      source=source,
-                                                      cancelled=False,
-                                                      result=None,
-                                                      id=get_item_id()
-                                                     )
-        db.session.add(user_push_notification)
-        db.session.commit()
-        payload = {
-                    "user_to" : user_id,
-                    "type" : 1,
-                    "id" : user_push_notification.id,
-                    "text" : notification.text.replace('<b>', '').replace('</b>', ''),
-                    "styled_text":notification.text,
-                    "icon" : None,
-                    "group_id": group_id,
-                    "link" : notification.link,
-                    "deeplink" : notification.link,
-                    "timestamp" : int(time.mktime(user_push_notification.added_at.timetuple())),
-                    "seen" : False,
-                    "heading":"Frankly.me"
-                }
-        if get_device_type(device.device_id)=='android':
-            gcm_sender.send_message([device.push_id], payload)
-
-        if get_device_type(device.device_id)=='ios':
-            pass
