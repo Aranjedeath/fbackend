@@ -11,7 +11,77 @@ from app import db
 from mailwrapper import email_helper
 from notification import helper
 
+<<<<<<< HEAD
 key = helper.key
+=======
+
+def add_notification_for_user(notification_id, user_ids, list_type, push_at=datetime.datetime.now()):
+
+    for user_id in user_ids:
+        user_notification = UserNotification(notification_id=notification_id, user_id=user_id,
+                                             list_type=list_type, push_at=push_at,
+                                             seen_at=None, seen_type=None,
+                                             added_at=datetime.datetime.now(),
+                                             show_on='all',
+                                             id=get_item_id()
+                                            )
+        db.session.add(user_notification)
+        db.session.commit()
+
+
+
+        if push_at:
+            push_notification(notification_id, user_id)
+
+
+def push_notification(notification_id, user_id, source='application'):
+    from controllers import get_device_type
+    from GCM_notification import GCM
+    gcm_sender = GCM()
+
+
+    notification = Notification.query.get(notification_id)
+
+    group_id = '-'.join([str(notification.type), str(notification.object_id)])
+    for device in AccessToken.query.filter(AccessToken.user==user_id,
+                                            AccessToken.active==True,
+                                            AccessToken.push_id!=None).all():
+        
+        user_push_notification = UserPushNotification(
+                                                      notification_id=notification_id,
+                                                      user_id=user_id,
+                                                      device_id=device.device_id,
+                                                      push_id=device.push_id,
+                                                      added_at=datetime.datetime.now(),
+                                                      pushed_at=datetime.datetime.now(),
+                                                      clicked_at=None,
+                                                      source=source,
+                                                      cancelled=False,
+                                                      result=None,
+                                                      id=get_item_id()
+                                                     )
+        db.session.add(user_push_notification)
+        db.session.commit()
+        payload = {
+                    "user_to" : user_id,
+                    "type" : 1,
+                    "id" : user_push_notification.id,
+                    "text" : notification.text.replace('<b>', '').replace('</b>', ''),
+                    "styled_text":notification.text,
+                    "icon" : None,
+                    "group_id": group_id,
+                    "link" : notification.link,
+                    "deeplink" : notification.link,
+                    "timestamp" : int(time.mktime(user_push_notification.added_at.timetuple())),
+                    "seen" : False,
+                    "heading":"Frankly.me"
+                }
+        if get_device_type(device.device_id)=='android':
+            gcm_sender.send_message([device.push_id], payload)
+        
+        if get_device_type(device.device_id)=='ios':
+            pass
+>>>>>>> dev-admin-broadcast
 
 
 def ask_question(question_id, notification_type = 'question-ask-self_user', delay_push=True):
@@ -28,6 +98,7 @@ def ask_question(question_id, notification_type = 'question-ask-self_user', dela
 
     text = helper.question_asked_text(question=question)
 
+
     icon = question_author.profile_picture
 
     link = key['url'] % question_id
@@ -39,6 +110,7 @@ def ask_question(question_id, notification_type = 'question-ask-self_user', dela
     db.session.add(notification)
     db.session.commit()
 
+
     add_notification_for_user(notification_id=notification.id,
                                 user_ids=[question_to.id],
                                 list_type='me',
@@ -48,6 +120,32 @@ def ask_question(question_id, notification_type = 'question-ask-self_user', dela
 
     return notification
 
+def new_celebrity_user(users=[], notification_id=None, celebrity_id=None):
+    '''Either create a new notification or fetch a pre-existing one.
+    Users would be a list that can be empty as well'''
+    if notification_id is None and celebrity_id is not None:
+        celebrity = User.query.filter(User.id == celebrity_id).first()
+
+        notification_type = "new-celeb-user"
+        text = "%s just joined frankly. Be the first one to ask a question." % celebrity.first_name
+        icon = celebrity.profile_picture
+        link = "http://frankly.me/%s" % celebrity.username
+
+        notification = Notification(type=notification_type, text=text,
+                                    link=link, object_id=celebrity.id,
+                                    icon=icon, created_at=datetime.datetime.now(),
+                                    manual=False, id=get_item_id())
+        db.session.add(notification)
+        db.session.commit()
+    else:
+        notification = Notification.query.filter(Notification.id == notification_id).first()
+
+    for user in users:
+        add_notification_for_user(notification_id=notification.id,
+                                user_ids=[user],
+                                list_type='me',
+                                push_at=datetime.datetime.now()
+                            )
 
 def new_post(post_id, question_body="", short_id="",notification_type = 'post-add-self_user',
              delay_push=True):

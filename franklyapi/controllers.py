@@ -1109,12 +1109,15 @@ def question_is_clean(body):
             return False
     return True
 
+
 def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_by=None):
 
     if has_blocked(cur_user_id, question_to):
         raise CustomExceptions.BlockedUserException()
 
     user_status = get_user_status(question_to)
+
+
 
     if not cur_user_id == question_to and is_anonymous and not user_status['allow_anonymous_question']:
         raise CustomExceptions.NoPermissionException('Anonymous question not allowed for the user')
@@ -1127,20 +1130,24 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_b
     slug = make_question_slug(body, short_id)
     clean = question_is_clean(body)
 
-    question = Question(question_author=cur_user_id, question_to=question_to, 
+
+    question = Question(question_author=cur_user_id, question_to=question_to,
                 body=body.capitalize(), is_anonymous=is_anonymous, public=public,
                 lat=lat, lon=lon, slug=slug, short_id=short_id,
                 id = question_id, added_by=added_by, flag=int(clean))
-    
+
     db.session.add(question)
 
     db.session.commit()
+
     if clean:
         notification.ask_question(question_id=question.id)
+
 
     is_first = False
     if db.session.query(Question).filter(Question.question_author == cur_user_id).count() == 1:
         is_first = True
+
 
     if question_to != cur_user_id:
         users = User.query.filter(User.id.in_([cur_user_id,question_to]))
@@ -1153,6 +1160,8 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_b
                                     receiver_name=mail_reciever.first_name,
                                     question_to_name=question_to.first_name,
                                     is_first=is_first)
+
+
 
 
     # God forgive me for I maketh this hack
@@ -2565,4 +2574,5 @@ def get_rss():
     with open('/tmp/franklymeanswers.xml','r') as f:
         s = f.read()
     return s
+
 

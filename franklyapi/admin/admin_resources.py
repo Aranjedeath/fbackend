@@ -610,3 +610,15 @@ class AdminUpdateDateFeedOrder(AdminProtectedResource):
         except Exception as e:
             print traceback.format_exc(e)
             abort(500, message='Error')
+
+class AdminBroadcastToAll(AdminProtectedResource):
+    @login_required
+    def post(self):
+        from flask import request
+
+        try:
+            return admin_controllers.broadcast_to_all(notification_id=request.json['notification_id'],
+                                                      object_id=request.json['object_id'],type=request.json['type'])
+        except Exception as e:
+            print traceback.format_exc(e)
+            abort(500, message='Error')
