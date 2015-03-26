@@ -1739,7 +1739,11 @@ def forgot_password_token_is_valid(token, return_object=False):
 
 
 def check_forgot_password_token(token):
-    return {'valid':forgot_password_token_is_valid(token), 'token':token}
+    token_object = forgot_password_token_is_valid(token, return_object=True)
+    if token_object:
+        user = User.query.get(token_object.user)
+        return {'valid':True, 'token':token, 'user':thumb_user_to_dict(user)}
+    return {'valid':False, 'token':token, 'user':None}
 
 
 
