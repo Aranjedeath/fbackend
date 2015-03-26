@@ -40,7 +40,7 @@ class ForgotPasswordToken(Base):
     def __init__(self, token, user, email):
         self.token      = token
         self.user       = user
-        self.token      = token
+        self.email      = email
         self.created_at = datetime.datetime.now()
         self.valid      = True
 
