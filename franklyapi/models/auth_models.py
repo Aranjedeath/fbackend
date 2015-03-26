@@ -31,7 +31,7 @@ class AccessToken(Base):
 class ForgotPasswordToken(Base):
     __tablename__  = 'forgot_password_tokens'
     token          = Column(String(100), nullable=False, primary_key=True)
-    user           = Column(CHAR(), ForeignKey('users.id'), nullable=False)
+    user           = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
     email          = Column(String(120), nullable=False)
     created_at     = Column(DateTime(), default=datetime.datetime.now())
     used_at        = Column(DateTime(), default=datetime.datetime.now())
