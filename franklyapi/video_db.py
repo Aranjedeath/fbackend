@@ -10,24 +10,27 @@ def add_video_to_db(video_url, thumbnail_url, video_type, object_id, username=No
             v.username=username
         db.session.add(v)
         db.session.commit()
+        db.session.remove()
 
-def video_already_encoded(video_url, video_quality, recent_records_only=False):
-    if recent_records_only:
+def video_already_encoded(video_url, video_quality, recent_assigned=False):
+    if recent_assigned:
         response = bool(EncodeLog.query.filter(EncodeLog.video_url==video_url, EncodeLog.video_quality==video_quality,
-                EncodeLog.success==True, EncodeLog.start_time<datetime.datetime.now()-datetime.timedelta(seconds=1800)
+                        EncodeLog.success==None, EncodeLog.start_time>datetime.datetime.now()-datetime.timedelta(seconds=1800)
                 ).count())
     else:
         video = Video.query.filter(Video.url==video_url).one()
         response = bool(getattr(video, video_quality, None))
     return response
-
+    
 
 
 def add_video_encode_log_start(video_url, video_quality):
     log = EncodeLog(video_url=video_url, video_quality=video_quality, start_time=datetime.datetime.now())
     db.session.add(log)
     db.session.commit()
-    return log.id
+    log_id = log.id
+    db.session.remove()
+    return log_id
 
 def update_video_encode_log_finish(encode_log_id,result):
     try:
@@ -38,10 +41,12 @@ def update_video_encode_log_finish(encode_log_id,result):
             result = False
         EncodeLog.query.filter(EncodeLog.id==encode_log_id).update({'finish_time':datetime.datetime.now(),'success':success})
         db.session.commit()
+        db.session.remove()
         
     except Exception as e:
         print e
         db.session.rollback()
+        db.session.remove()
 
 def get_encode_statictics(count=100):
     logs = EncodeLog.query.filter().order_by(EncodeLog.start_time.desc()).limit(count).all()
@@ -80,12 +85,18 @@ def update_video_state(video_url, result={}):
             result.update({'process_state':'success'})
             Video.query.filter(Video.url==video_url).update(result)
             db.session.commit()
+            db.session.remove()
+
         else:
             Video.query.filter(Video.url==video_url).update({'process_state':'failed'})
             db.session.commit()
+            db.session.remove()
+
     except Exception as e:
         print e
         db.session.rollback()
+        db.session.remove()
+
 
 
 def update_view_count_to_db(url):
@@ -113,9 +124,12 @@ def update_view_count_to_db(url):
                                 params = {"url":url, "count":int(count)}
                             )
             db.session.commit()
+            db.session.remove()
+
         redis_views.delete(original_url)
     except:
         db.session.rollback()
+        db.session.remove()
 
 def update_total_view_count(user_ids): 
     try:   
@@ -138,8 +152,11 @@ def update_total_view_count(user_ids):
                                 ), params={'user_id':user_id, 'post_view_count':int(post_view_count)})
 
         db.session.commit()
+        db.session.remove()
+
     except:
         db.session.rollback()
+        db.session.remove()
 
 def get_video_data(video_url):
     video = Video.query.filter(Video.url== video_url).one()
@@ -162,7 +179,6 @@ def get_video_data(video_url):
         question_author_name = question_author.first_name
         profile_picture = answer_author.profile_picture
         question_body = question.body
-
     return {
     'video_type':video.video_type,
     'answer_author_username': username,

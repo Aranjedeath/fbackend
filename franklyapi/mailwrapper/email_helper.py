@@ -39,9 +39,9 @@ def forgot_password(receiver_email):
 
 
 
-def question_asked(receiver_email, receiver_name, celebrity_name, is_first):
+def question_asked(receiver_email, receiver_name, question_to_name, is_first):
     render_dict['salutation'] = "Hi %s" % receiver_name
-    render_dict['email_text'] = mail_content.dict['question_asked']['body'] % celebrity_name
+    render_dict['email_text'] = mail_content.dict['question_asked']['body'] % question_to_name
     if is_first:
         render_dict['email_text'] = mail_content.dict['question_asked']['body_first_question']
 
