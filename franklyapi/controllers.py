@@ -1724,10 +1724,10 @@ def create_forgot_password_token(username=None, email=None):
 
 
 def forgot_password_token_is_valid(token, return_object=False):
-    token = ForgotPasswordToken.query.filter(ForgotPasswordToken.token==token,
+    token_object = ForgotPasswordToken.query.filter(ForgotPasswordToken.token==token,
                                             ForgotPasswordToken.used_at == None,
                                             ForgotPasswordToken.valid==True).first()
-    if token:
+    if token_object:
         timediff = datetime.datetime.now() - token_object.created_at
         if timediff.total_seconds>3600*48:
             ForgotPasswordToken.query.filter(ForgotPasswordToken.token==token).update({'valid':False})
