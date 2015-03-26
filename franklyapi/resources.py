@@ -1233,7 +1233,7 @@ class PostView(restful.Resource):
             else:
                 current_user_id = None
             
-            resp = controllers.post_view(cur_user_id=current_user_id, post_id=post_id, client_id=client_id)
+            resp = controllers.post_view(cur_user_id=current_user_id, post_id=post_id, client_id=client_id)                
             return resp
         
         except CustomExceptions.BlockedUserException as e:

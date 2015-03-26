@@ -36,6 +36,7 @@ raygun = raygunprovider.RaygunSender(config.RAYGUN_KEY)
 redis_client = redis.Redis(config.REDIS_HOST)
 redis_views = redis.Redis(config.REDIS_HOST, db=7)
 redis_search = redis.Redis(config.REDIS_HOST, db=4)
+redis_pending_post = redis.Redis(config.REDIS_HOST, db=2)
 
 login_manager.login_view = '/login/email'
 

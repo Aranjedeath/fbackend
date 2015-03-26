@@ -1341,14 +1341,25 @@ def post_delete(cur_user_id, post_id):
 
 def post_view(cur_user_id, post_id, client_id=None):
     try:
+        post_pending = False
         if client_id:
-            post = Post.query.filter(Post.client_id==client_id, Post.deleted==False).one()
+            pending_post_data = get_pending_post(client_id)
+            if pending_post_data:
+                post_pending = True
+                question = Question.query.get(pending_post_data['question_id'])
+            else:
+                post = Post.query.filter(Post.client_id==client_id, Post.deleted==False).one()
+        
         else:
             post = Post.query.filter(Post.id==post_id, Post.deleted==False).one()
 
         if cur_user_id and (has_blocked(cur_user_id, post.answer_author) or has_blocked(cur_user_id, post.question_author)):
             raise CustomExceptions.BlockedUserException()
-        return {'post': post_to_dict(post, cur_user_id)}
+        
+        if post_pending:
+            return {'question':question_to_dict(question, cur_user_id), 'pending':post_pending}
+
+        return {'post': post_to_dict(post, cur_user_id), 'pending':post_pending}
     except NoResultFound:
         raise CustomExceptions.PostNotFoundException("No post with that id found")
 
@@ -1789,6 +1800,20 @@ def get_new_short_id(for_object):
     return get_new_short_id(for_object)
 
 
+def set_pending_post(cur_user_id, question_id, client_id):
+    redis_pending_post.setex(client_id, cur_user_id+'_'+question_id, 3600*24)
+    return {'success':True, 'client_id':client_id}
+
+def get_pending_post(client_id):
+    pending_post = redis_pending_post.get(client_id)
+    if pending_post:
+        try:
+            answer_author_id, question_id = pending_post.split('_')
+            return {'answer_author_id':answer_author_id, 'question_id':question_id}
+        except:
+            pass
+    return None
+
 def add_video_post(cur_user_id, question_id, video, answer_type,
                         lat=None, lon=None, client_id=None,
                         show_after = None):
@@ -1807,6 +1832,7 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
 
         if question.is_answered:
             post = Post.query.filter(Post.question==question.id, Post.answer_author==answer_author).one()
+        
         else:
             if has_blocked(answer_author, question.question_author):
                 raise CustomExceptions.BlockedUserException("Question not available for action")
@@ -1845,6 +1871,7 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
             async_encoder.encode_video_task.delay(video_url, username=cur_user_username)
 
             db.session.commit()
+            redis_pending_post.delete(client_id)
             notification.notification_post_add(post.id, question.body, question.slug)
         return {'success': True, 'id': str(post.id), 'post':post_to_dict(post, cur_user_id)}
 
