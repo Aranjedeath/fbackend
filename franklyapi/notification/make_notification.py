@@ -9,97 +9,28 @@ from configs import config
 from database import get_item_id
 from app import db
 from mailwrapper import email_helper
+from notification import helper
+
+key = helper.key
 
 
-def add_notification_for_user(notification_id, user_ids, list_type, push_at=datetime.datetime.now()):
-    for user_id in user_ids:
-        user_notification = UserNotification(notification_id=notification_id, user_id=user_id,
-                                             list_type=list_type, push_at=push_at,
-                                             seen_at=None, seen_type=None,
-                                             added_at=datetime.datetime.now(),
-                                             show_on='all',
-                                             id=get_item_id()
-                                            )
-        db.session.add(user_notification)
-        db.session.commit()
+def ask_question(question_id, notification_type = 'question-ask-self_user', delay_push=True):
 
-        if push_at:
-            push_notification(notification_id, user_id)
-
-
-def push_notification(notification_id, user_id, source='application'):
-    from controllers import get_device_type
-    from GCM_notification import GCM
-    gcm_sender = GCM()
-
-
-    notification = Notification.query.get(notification_id)
-
-    group_id = '-'.join([str(notification.type), str(notification.object_id)])
-    for device in AccessToken.query.filter(AccessToken.user==user_id,
-                                            AccessToken.active==True,
-                                            AccessToken.push_id!=None).all():
-        
-        user_push_notification = UserPushNotification(
-                                                      notification_id=notification_id,
-                                                      user_id=user_id,
-                                                      device_id=device.device_id,
-                                                      push_id=device.push_id,
-                                                      added_at=datetime.datetime.now(),
-                                                      pushed_at=datetime.datetime.now(),
-                                                      clicked_at=None,
-                                                      source=source,
-                                                      cancelled=False,
-                                                      result=None,
-                                                      id=get_item_id()
-                                                     )
-        db.session.add(user_push_notification)
-        db.session.commit()
-        payload = {
-                    "user_to" : user_id,
-                    "type" : 1,
-                    "id" : user_push_notification.id,
-                    "text" : notification.text.replace('<b>', '').replace('</b>', ''),
-                    "styled_text":notification.text,
-                    "icon" : None,
-                    "group_id": group_id,
-                    "link" : notification.link,
-                    "deeplink" : notification.link,
-                    "timestamp" : int(time.mktime(user_push_notification.added_at.timetuple())),
-                    "seen" : False,
-                    "heading":"Frankly.me"
-                }
-        if get_device_type(device.device_id)=='android':
-            gcm_sender.send_message([device.push_id], payload)
-        
-        if get_device_type(device.device_id)=='ios':
-            pass
-
-
-
-def notification_question_ask(question_id):
-    notification_type = 'question-ask-self_user'
+    key = key[notification_type]
     question = Question.query.get(question_id)
     users = User.query.filter(User.id.in_([question.question_to, question.question_author])).all()
+
     for u in users:
         if u.id == question.question_author:
             question_author = u
         if u.id == question.question_to:
             question_to = u
 
-    text = "<b><question_author_name></b> asked you '<question_body>'"
-    if question.is_anonymous:
-        text = text.replace('<question_author_name>', 'Anonymous')
-    else:
-        text = text.replace('<question_author_name>', question_author.first_name)
-    text = text.replace('<question_body>', question.body)
-    text = text.replace('<question_to_name>', question_to.first_name)
-    text = text.replace('<question_to_username>', question_to.username)
-    text = text.replace('<question_author_username>', question_author.username)
+    text = helper.question_asked_text(question=question)
 
     icon = question_author.profile_picture
 
-    link = config.WEB_URL + '/q/{question_id}'.format(question_id=question_id)
+    link = key['url'] % question_id
 
     notification = Notification(type=notification_type, text=text,
                                 link=link, object_id=question_id,
@@ -111,15 +42,17 @@ def notification_question_ask(question_id):
     add_notification_for_user(notification_id=notification.id,
                                 user_ids=[question_to.id],
                                 list_type='me',
-                                push_at=datetime.datetime.now()
+                                push_at= None if delay_push else datetime.datetime.now()
                             )
     
 
     return notification
 
 
-def notification_post_add(post_id, question_body="", short_id=""):
+def new_post(post_id, question_body="", short_id="",notification_type = 'post-add-self_user',
+             delay_push=True):
 
+    key = key[notification_type]
     post = Post.query.get(post_id)
     users = User.query.filter(User.id.in_([post.answer_author, post.question_author])).all()
 
@@ -130,18 +63,12 @@ def notification_post_add(post_id, question_body="", short_id=""):
         if u.id == post.answer_author:
             answer_author = u
 
-    #Notifying question_author by email
-    web_link = "<a href='http://frankly.me/q/%s'>here</a>" % short_id
-    email_helper.question_answered(question_author.email, question_author.first_name, answer_author.first_name,
-                                   question_body, web_link)
 
-    notification_type = 'post-add-self_user'
-    text = "<b><answer_author_name></b> answered your question"
-    text = text.replace('<answer_author_name>', answer_author.first_name)
+    text = helper.post_add_text(answer_author=answer_author)
 
     icon = answer_author.profile_picture
 
-    link = config.WEB_URL + '/p/{client_id}'.format(client_id=post.client_id)
+    link = key[notification_type] % post.client_id
     
     notification = Notification(type=notification_type, text=text,
                                 link=link, object_id=post_id,
@@ -152,16 +79,20 @@ def notification_post_add(post_id, question_body="", short_id=""):
 
 
     upvoters = [upvote.user for upvote in Upvote.query.filter(Upvote.question==post.question, Upvote.downvoted==False).all()]
+    upvoters = set([question_author.id]+upvoters)
+
 
     add_notification_for_user(notification_id=notification.id,
-                                user_ids=list(set([question_author.id]+upvoters)),
+                                user_ids=list(upvoters),
                                 list_type='me',
-                                push_at=datetime.datetime.now()
+                                push_at=None if delay_push else datetime.datetime.now()
                             )
     
 
     return notification
 
+def new_comment(post_id):
+    pass
 
 def notification_user_follow(follow_id):
     follow = Follow.query.filter(Follow.id==follow_id, Follow.deleted==False)
@@ -199,3 +130,66 @@ def notification_user_follow(follow_id):
     return notification
 
 
+def add_notification_for_user(notification_id, user_ids, list_type, push_at=datetime.datetime.now()):
+    for user_id in user_ids:
+        user_notification = UserNotification(notification_id=notification_id, user_id=user_id,
+                                             list_type=list_type, push_at=push_at,
+                                             seen_at=None, seen_type=None,
+                                             added_at=datetime.datetime.now(),
+                                             show_on='all',
+                                             id=get_item_id()
+                                            )
+        db.session.add(user_notification)
+        db.session.commit()
+
+        if push_at:
+            push_notification(notification_id, user_id)
+
+
+def push_notification(notification_id, user_id, source='application'):
+    from controllers import get_device_type
+    from GCM_notification import GCM
+    gcm_sender = GCM()
+
+
+    notification = Notification.query.get(notification_id)
+
+    group_id = '-'.join([str(notification.type), str(notification.object_id)])
+    for device in AccessToken.query.filter(AccessToken.user==user_id,
+                                            AccessToken.active==True,
+                                            AccessToken.push_id!=None).all():
+
+        user_push_notification = UserPushNotification(
+                                                      notification_id=notification_id,
+                                                      user_id=user_id,
+                                                      device_id=device.device_id,
+                                                      push_id=device.push_id,
+                                                      added_at=datetime.datetime.now(),
+                                                      pushed_at=datetime.datetime.now(),
+                                                      clicked_at=None,
+                                                      source=source,
+                                                      cancelled=False,
+                                                      result=None,
+                                                      id=get_item_id()
+                                                     )
+        db.session.add(user_push_notification)
+        db.session.commit()
+        payload = {
+                    "user_to" : user_id,
+                    "type" : 1,
+                    "id" : user_push_notification.id,
+                    "text" : notification.text.replace('<b>', '').replace('</b>', ''),
+                    "styled_text":notification.text,
+                    "icon" : None,
+                    "group_id": group_id,
+                    "link" : notification.link,
+                    "deeplink" : notification.link,
+                    "timestamp" : int(time.mktime(user_push_notification.added_at.timetuple())),
+                    "seen" : False,
+                    "heading":"Frankly.me"
+                }
+        if get_device_type(device.device_id)=='android':
+            gcm_sender.send_message([device.push_id], payload)
+
+        if get_device_type(device.device_id)=='ios':
+            pass
