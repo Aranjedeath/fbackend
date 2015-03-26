@@ -26,7 +26,7 @@ from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
                     UserFeed, Event, Reshare, Invitable, Invite, ContactUs, InflatedStat,\
                     SearchDefault, IntervalCountMap, ReportAbuse
 
-from app import redis_client, raygun, db, redis_views
+from app import redis_client, raygun, db, redis_views, redis_pending_post
 
 from object_dict import user_to_dict, guest_user_to_dict,\
                         thumb_user_to_dict, question_to_dict,questions_to_dict, post_to_dict, comment_to_dict,\
@@ -1729,7 +1729,7 @@ def forgot_password_token_is_valid(token, return_object=False):
                                             ForgotPasswordToken.valid==True).first()
     if token_object:
         timediff = datetime.datetime.now() - token_object.created_at
-        if timediff.total_seconds>3600*48:
+        if timediff.total_seconds()>3600*48:
             ForgotPasswordToken.query.filter(ForgotPasswordToken.token==token).update({'valid':False})
             db.session.commit()
             token = None
