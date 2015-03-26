@@ -1133,7 +1133,7 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_b
 
     db.session.commit()
     if clean:
-        notification.notification_question_ask(question.id)
+        notification.ask_question(question_id=question.id)
 
     is_first = False
     if db.session.query(Question).filter(Question.question_author == cur_user_id).count() == 1:
@@ -1839,7 +1839,8 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
         async_encoder.encode_video_task.delay(video_url, username=curuser.username)
 
         db.session.commit()
-        notification.notification_post_add(post.id,question.body, question.short_id)
+        notification.new_post(post_id=post.id, question_body=question.body,
+                                           short_id=question.short_id, )
         return {'success': True, 'id': str(post.id), 'post':post_to_dict(post, cur_user_id)}
 
     except NoResultFound:
@@ -1936,7 +1937,7 @@ def get_notifications(cur_user_id, device_id, version_code, notification_categor
                         "link" : row[5],
                         "deeplink" : row[5],
                         "timestamp" : int(time.mktime(row[6].timetuple())),
-                        'updated_at':int(time.mktime(row[6].timetuple())),
+                        "updated_at":int(time.mktime(row[6].timetuple())),
                         "seen" : bool(row[7])
                         }
         notifications.append(notification)
