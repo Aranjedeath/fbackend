@@ -1748,7 +1748,7 @@ def check_forgot_password_token(token):
 
 
 def reset_password(token, password):
-    if password_is_valid(password):
+    if not password_is_valid(password):
         raise CustomExceptions.PasswordTooShortException('Password is not valid')
     
     token_object = forgot_password_token_is_valid(token, return_object=True)
@@ -1756,7 +1756,7 @@ def reset_password(token, password):
         raise CustomExceptions.ObjectNotFoundException('Invalid token')
 
     user = User.query.filter(User.id == token_object.user).one()
-    User.query.filter(User.id==user.id).update({'password':password})
+    user_change_password(user_id=user.id, new_password=password)
     
     #mark token as used and invalid
     ForgotPasswordToken.query.filter(ForgotPasswordToken.token==token_object.token).update({'used_at':datetime.datetime.now(),
