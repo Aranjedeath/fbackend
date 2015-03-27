@@ -98,6 +98,11 @@ def update_video_state(video_url, result={}):
         db.session.remove()
 
 
+def get_post_id_from_video(video_url):
+    post = Post.query.filter(Post.media_url==video_url).first()
+    if post:
+        return post.id
+    return post
 
 def update_view_count_to_db(url):
     try:
