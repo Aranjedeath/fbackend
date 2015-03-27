@@ -848,7 +848,7 @@ class QuestionList(restful.Resource):
     get_parser = reqparse.RequestParser()
     get_parser.add_argument('since', dest='offset', type=int, default=0, location='args')
     get_parser.add_argument('limit', type=int, default=10, location='args')
-    get_parser.add_argument('X-Version-Code', type=int, location='headers', default=0)
+    get_parser.add_argument('X-Version-Code', type=float, location='headers', default=0)
 
 
 
@@ -881,7 +881,7 @@ class QuestionListPublic(restful.Resource):
     get_parser = reqparse.RequestParser()
     get_parser.add_argument('since', dest='offset', type=int, default=0, location='args')
     get_parser.add_argument('limit', type=int, default=10, location='args')
-    get_parser.add_argument('X-Version-Code', type=int, location='headers', default=None)
+    get_parser.add_argument('X-Version-Code', type=float, location='headers', default=None)
 
     
     def get(self, user_id):
@@ -1445,7 +1445,7 @@ class DiscoverPost(restful.Resource):
     get_parser.add_argument('visit'         , type=int, default=0, location='args', help="visit should be the time difference of the current time and user's first visit in seconds for unauthorised requests")
     get_parser.add_argument('append_top'    , type=str, default='', location='args', help="append_top should be username or comma separayed username. These users will be appended on top of the feed. Only valid when offset=0")
     get_parser.add_argument('X-Deviceid'    , type=str, dest='device_id', required=True, location='headers', help=device_id_argument_help)
-    get_parser.add_argument('X-Version-Code', type=int, dest='version_code', default=0, location='headers', help="version_code of the app.")
+    get_parser.add_argument('X-Version-Code', type=float, dest='version_code', default=0, location='headers', help="version_code of the app.")
 
     def get(self):
         """
@@ -1583,7 +1583,7 @@ class Notifications(restful.Resource):
     get_parser.add_argument('limit' , type=int, default=10, location='args')
     get_parser.add_argument('type'  , type=str, default='me', location='args', choices=['me', 'news'])
     get_parser.add_argument('X-deviceid', type=str, required=True, location='headers')
-    get_parser.add_argument('X-Version-Code', type=int, default=0, location='headers')
+    get_parser.add_argument('X-Version-Code', type=float, default=0, location='headers')
 
     
     @login_required
@@ -1615,7 +1615,7 @@ class Notifications(restful.Resource):
 class NotificationCount(restful.Resource):
     get_parser = reqparse.RequestParser()
     get_parser.add_argument('X-deviceid', type=str, required=True, location='headers')
-    get_parser.add_argument('X-Version-Code', type=int, default=0, location='headers')
+    get_parser.add_argument('X-Version-Code', type=float, default=0, location='headers')
 
     
     @login_required
@@ -1666,7 +1666,7 @@ class Search(restful.Resource):
     get_parser.add_argument('q'             , type=str, location='args', required = True, help="q should be the query string")
     get_parser.add_argument('offset'        , type=int, location='args', default = 0)
     get_parser.add_argument('limit'         , type=int, location='args', default = 10)
-    get_parser.add_argument('X-Version-Code', type=int, location='headers', default=None)
+    get_parser.add_argument('X-Version-Code', type=float, location='headers', default=None)
     
     def get(self):
         """
@@ -1991,7 +1991,7 @@ class FeedBackResponse(restful.Resource):
     post_parser = reqparse.RequestParser()
     post_parser.add_argument('medium', type=str, location='json', required=True)
     post_parser.add_argument('message', type=str, location='json', required=True)
-    post_parser.add_argument('X-Version-Code', dest='version_code', type=int, location='headers', default=0)
+    post_parser.add_argument('X-Version-Code', dest='version_code', type=float, location='headers', default=0)
 
     @login_required
     def post(self):
@@ -2020,7 +2020,7 @@ class ChannelFeed(restful.Resource):
     get_parser.add_argument('offset', type=int, location='args', default=0)
     get_parser.add_argument('limit', type=int, location='args', default=10)
     get_parser.add_argument('X-deviceid', type=str, location='headers')
-    get_parser.add_argument('X-Version-Code', type=int, location='headers', default=0)
+    get_parser.add_argument('X-Version-Code', type=float, location='headers', default=0)
     get_parser.add_argument('append_top', type=str, location='args', default='')
 
     def get(self, channel_id):
@@ -2059,7 +2059,7 @@ class ChannelList(restful.Resource):
 
     get_parser = reqparse.RequestParser()
     get_parser.add_argument('X-deviceid', type=str, location='headers')
-    get_parser.add_argument('X-Version-Code', type=int, location='headers', default=0)
+    get_parser.add_argument('X-Version-Code', type=float, location='headers', default=0)
 
     @login_required
     def get(self):
