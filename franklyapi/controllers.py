@@ -1143,7 +1143,8 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_b
     if clean:
         notification.ask_question(question_id=question.id)
 
-
+    ''' Send email to user who asked the question
+    confirming that the question has been asked'''
     is_first = False
     if db.session.query(Question).filter(Question.question_author == cur_user_id).count() == 1:
         is_first = True

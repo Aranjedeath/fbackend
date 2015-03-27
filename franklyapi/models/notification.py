@@ -120,6 +120,7 @@ class UserNotificationInfo(Base):
     device_type                  = Column(Enum('ios', 'android', 'web'), nullable=False)
     last_notification_fetch_time = Column(DateTime(), default=datetime.datetime.now())
     last_notification_push_time  = Column(DateTime())
+    is_popular                   = Column(Integer(), default=0)
 
 
     def __init__(self, user_id, device_type, last_notification_fetch_time=datetime.datetime.now(),

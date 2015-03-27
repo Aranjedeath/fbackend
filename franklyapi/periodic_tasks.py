@@ -16,7 +16,11 @@ import traceback
 
 celery = Celery('tasks')
 celery.config_from_object('periodic_tasks_config')
- 
+
+
+def decide_popular_users_based_on_questions_asked():
+    from notification import notification_decision
+    notification_decision.decide_popular_users()
 
 @celery.task
 def update_view_count():

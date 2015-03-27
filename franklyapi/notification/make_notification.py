@@ -166,7 +166,7 @@ def new_post(post_id, question_body="", short_id="",notification_type = 'post-ad
             answer_author = u
 
 
-    text = helper.post_add_text(answer_author=answer_author)
+    text = helper.post_add(answer_author=answer_author)
 
     icon = answer_author.profile_picture
 

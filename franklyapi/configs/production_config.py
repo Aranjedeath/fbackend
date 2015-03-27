@@ -83,4 +83,4 @@ DEV_EMAILS = ['varun@frankly.me', 'shashank@frankly.me', 'nikhil@frankly.me', 'a
               'amritanshu@frankly.me']
 WEEKLY_MAIL_RECIPIENTS = ['varun@frankly.me','nikunj@frankly.me', 'abhishek@frankly.me', 'shashank@frankly.me',
                           'gourav@frankly.me']
-DAILY_CONTENT_MAIL_RECIPIENTS = ['varun@frankly.me', 'swati@frankly.me', 'ferheen@frankly.me']
+DAILY_CONTENT_MAIL_RECIPIENTS = ['varun@frankly.me', 'swati@frankly.me', 'ferheen@frankly.me','pranav@frankly.me']
