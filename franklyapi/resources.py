@@ -2217,3 +2217,28 @@ class RSS(restful.Resource):
             raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
+
+
+
+
+
+class UserContactsUpload(restful.Resource):
+    @login_required
+    def post(self):
+        post_parser = reqparse.RequestParser()
+        post_parser.add_argument('uploaded_file', type=file, required=True, location='files')
+        post_parser.add_argument('X-Deviceid', type=str, required=True, location='headers', dest='device_id')
+
+        args = post_parser.parse_args()
+        try:
+            controllers.contact_file_upload(current_user.id, args['uploaded_file'], args['device_id'])
+            return {'success': True}
+        
+        except CustomExceptions.BadFileFormatException as e:
+            print traceback.format_exc(e)
+            abort(400, message='File format not allowed')
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message='upload failure')

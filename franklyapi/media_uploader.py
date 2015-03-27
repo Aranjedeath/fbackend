@@ -32,7 +32,7 @@ def download_file(url):
             with open(path, 'wb') as f:
                 f.write(res.content)
             return path
-    except ConnectionError, SSLError:
+    except requests.ConnectionError, requests.SSLError:
         return download_file(url)
 
 def save_file_from_request(file_to_save):

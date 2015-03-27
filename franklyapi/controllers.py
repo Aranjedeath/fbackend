@@ -2585,4 +2585,32 @@ def get_rss():
         s = f.read()
     return s
 
+def contact_file_upload(current_user_id, uploaded_file, device_id):
+    contacts = uploaded_file.read()
+    user_upload_contacts(current_user_id, device_id, contacts)
+
+
+def user_upload_contacts(user_id, device_id, contacts):
+    from AES_Encryption import decryption
+    contacts = json.loads(decryption(contacts))
+    empty_contacts_filter = lambda contact: contact['email'] or contact['number']
+    contacts = filter(empty_contacts_filter, contacts['contacts'])
+    return contacts
+
+    user_contacts = []
+    query_contacts = set()
+    query_emails = set()
+
+    for c in contacts:
+        c['number'] = [i.replace(' ', '') for i in c['number']]
+        c['email'] = [i.replace(' ', '') for i in c['email']]
+        user_contacts.append(UserContact(name=c['name'] , phones=c['number'] , emails=c['email']))
+        
+        if c['number']:
+            query_contacts.update([i[-9:] for i in c['number']])
+        if c['email']:
+            query_emails.update(c['email'])
+
+    query_contacts = list(query_contacts)
+    query_emails = list(query_emails)
 
