@@ -1641,8 +1641,6 @@ class NotificationCount(restful.Resource):
 
 class PushNotificationSeen(restful.Resource):
     post_parser = reqparse.RequestParser()
-    post_parser.add_argument('X-deviceid', type=str, required=True, location='headers')
-    post_parser.add_argument('X-Version-Code', type=float, default=0, location='headers')
     post_parser.add_argument('push_notification_id', type=str, default='',location = 'json')
 
 
