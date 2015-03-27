@@ -19,34 +19,37 @@ def post_notifications(post_id):
                                          left join notifications n on n.object_id = :post_id and n.type = 'post-add-self_user'
                                          where p.id = :post_id limit 1 ;
                                          '''), params={'post_id': post_id})
-    for row in result:
-        question_id = row[0]
-        question_author_id = row[1]
-        answer_author_id = row[2]
-        question_body = row[3]
-        answer_author_email = row[4]
-        answer_author_name = row[5]
-        notification_id = row[6]
-        link = row[7]
+    try:
+        for row in result:
+            question_id = row[0]
+            question_author_id = row[1]
+            answer_author_id = row[2]
+            question_body = row[3]
+            answer_author_email = row[4]
+            answer_author_name = row[5]
+            notification_id = row[6]
+            link = row[7]
 
-    #Get a set of users who haven't been sent this gcm notification yet
-    #This includes the question author
-    results = db.session.execute(text('''Select
-                                         un.user_id, u.first_name, u.email
-                                         from user_notifications un
-                                         left join user_push_notifications upn
-                                         on upn.notification_id  = :notification_id and upn.user_id = un.user_id
-                                         left join users u on u.id = un.user_id
-                                         where un.notification_id = :notification_id
-                                         and upn.user_id is null'''),
-                                         params={'notification_id': notification_id})
-    for row in results:
-        print row[0]
-        if row[0] == question_author_id or count_of_push_notifications_sent(user_id=row[0]) < 5:
-            notification.push_notification(notification_id=notification_id, user_id = row[0])
-            email_helper.question_answered(receiver_email = row[2], receiver_name = row[1],
-                                       celebrity_name = answer_author_name,
-                                       question = question_body, web_link=link)
+        #Get a set of users who haven't been sent this gcm notification yet
+        #This includes the question author
+        results = db.session.execute(text('''Select
+                                             un.user_id, u.first_name, u.email
+                                             from user_notifications un
+                                             left join user_push_notifications upn
+                                             on upn.notification_id  = :notification_id and upn.user_id = un.user_id
+                                             left join users u on u.id = un.user_id
+                                             where un.notification_id = :notification_id
+                                             and upn.user_id is null'''),
+                                             params={'notification_id': notification_id})
+        for row in results:
+            print row[0]
+            if row[0] == question_author_id or count_of_push_notifications_sent(user_id=row[0]) < 5:
+                notification.push_notification(notification_id=notification_id, user_id = row[0])
+                email_helper.question_answered(receiver_email = row[2], receiver_name = row[1],
+                                           celebrity_name = answer_author_name,
+                                           question = question_body, web_link=link)
+    except Exception:
+        pass
 
 
 def question_asked_notifications():
@@ -100,11 +103,11 @@ def decide_popular_users():
 
 def average_upvote_count(user_id):
     results = db.session.execute(text("""SELECT COUNT(1) as upvote_count
-                                                FROM question_upvotes JOIN questions ON questions.id=question_upvotes.question
-                                                WHERE questions.question_author=:user_id
-                                                    AND questions.deleted=false
-                                                    AND question_upvotes.downvoted=false
-                                                    AND question_upvotes.timestamp>=:last_two_months
+                                         FROM question_upvotes JOIN questions ON questions.id=question_upvotes.question
+                                         WHERE questions.question_author=:user_id
+                                         AND questions.deleted=false
+                                         AND question_upvotes.downvoted=false
+                                         AND question_upvotes.timestamp>=:last_two_months
                                         """),
                                     params={'user_id':user_id,
                                             'last_two_months':datetime.datetime.now() - datetime.timedelta(days=60)

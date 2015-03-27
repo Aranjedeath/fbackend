@@ -1059,11 +1059,11 @@ def user_update_location(user_id, lat, lon, country=None, country_code=None, loc
                                 })
     '''
 
-def update_push_id(cur_user_id, device_id, push_id):
-    AccessToken.query.filter(   AccessToken.user==cur_user_id,
-                                AccessToken.device_id==device_id
-                            ).update({'push_id':push_id})
 
+def update_push_id(cur_user_id, device_id, push_id):
+    AccessToken.query.filter(AccessToken.user==cur_user_id,
+                             AccessToken.device_id==device_id
+                             ).update({'push_id':push_id})
 
 
 def user_update_access_token(user_id, acc_type, token):
@@ -1117,8 +1117,6 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_b
 
     user_status = get_user_status(question_to)
 
-
-
     if not cur_user_id == question_to and is_anonymous and not user_status['allow_anonymous_question']:
         raise CustomExceptions.NoPermissionException('Anonymous question not allowed for the user')
 
@@ -1140,6 +1138,9 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_b
 
     db.session.commit()
 
+    ''' Push Notification for the person who was
+        asked the question
+    '''
     if clean:
         notification.ask_question(question_id=question.id)
 
@@ -1165,9 +1166,9 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_b
 
 
 
-    # God forgive me for I maketh this hack
-    # Id is that of Jatin Sapru, please delete this piece o shit code
-    # asap ~ MilfHunter II
+    ''' God forgive me for I maketh this hack
+        Id is that of Jatin Sapru, please delete this piece o shit code
+        asap ~ MilfHunter II '''
     if question_to == '737c6f8a7ac04d7e9380f1d37c011531':
         notification.idreamofsapru(cur_user_id,question.id)
 
@@ -1889,7 +1890,7 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
 
             db.session.commit()
             redis_pending_post.delete(client_id)
-            notification.new_post(post_id=post.id, question_body=question.body, short_id=question.slug)
+            notification.new_post(post_id=post.id, question_body=question.body)
 
         return {'success': True, 'id': str(post.id), 'post':post_to_dict(post, cur_user_id)}
 
