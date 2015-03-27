@@ -1,24 +1,18 @@
-from datetime import timedelta
-from celery.decorators import periodic_task
 from video_db import update_view_count_to_db, redis_views, update_total_view_count
-
-from configs import config
-from celery import Celery
 from app import db
-
-from models import User, Video, Post
-import async_encoder
- 
+from models import User
 from analytics import stats
 from mailwrapper import email_helper
+from notification import notification_decision
+
+import async_encoder
 import traceback
 
 
-celery = Celery('tasks')
-celery.config_from_object('periodic_tasks_config')
- 
+def decide_popular_users_based_on_questions_asked():
+    notification_decision.decide_popular_users()
 
-@celery.task
+
 def update_view_count():
     print 'started'
     for url in redis_views.keys():
@@ -26,14 +20,11 @@ def update_view_count():
     print 'ended'
 
 
-
-@celery.task
 def update_user_view_count():
     users = User.query.with_entities(User.id).filter(User.user_type==2)
     update_total_view_count([user.id for user in users])
 
 
-@celery.task
 def reassign_pending_video_tasks():
     import datetime
     from sqlalchemy import text
@@ -95,31 +86,22 @@ def reassign_pending_video_tasks():
     print 'Other Videos Assigned:', other_video_count
 
 
-@celery.task
 def log_video_count():
     stats.video_view_count_logger()
 
 
-
-
-@celery.task
 def weekly_report():
     stats.weekly_macro_metrics()
 
 
-
-@celery.task
 def daily_report():
     stats.daily_content_report()
 
 
-
-@celery.task
 def twice_a_day_report():
     stats.intra_day_content_report()
 
 
-@celery.task
 def heartbeat():
     email_helper.cron_job_update()
 
@@ -129,25 +111,27 @@ if __name__ == '__main__':
     import sys
     args = sys.argv[1:]
 
+    method_dict = {
+    'update_view_count': update_view_count,
+
+    'update_user_view_count': update_user_view_count,
+
+    'reassign_pending_video_tasks':reassign_pending_video_tasks,
+
+    'log_video_count': log_video_count,
+
+    'daily_report': daily_report,
+
+    'daily_report_two': twice_a_day_report,
+
+    'weekly_report': weekly_report,
+
+    'heartbeat': heartbeat,
+
+    'decide_popular': decide_popular_users_based_on_questions_asked
+        }
     try:
-        if args[0] == 'update_view_count':
-            update_view_count()
-        elif args[0] == 'update_user_view_count':
-            update_user_view_count()
-        elif args[0] == 'reassign_pending_video_tasks':
-            reassign_pending_video_tasks()
-        elif args[0] == 'log_video_count':
-            log_video_count()
-        elif args[0] == 'daily_report':
-            daily_report()
-        elif args[0] == 'daily_report_two':
-            twice_a_day_report()
-        elif args[0] == 'weekly_report':
-            weekly_report()
-        elif args[0] == 'heartbeat':
-            heartbeat()
-        elif args[0] == 'reassign_pending_video_tasks':
-            reassign_pending_video_tasks()
+        method_dict[args[0]]()
     except Exception as e:
         email_helper.cron_job_update(args[0], traceback.format_exc(e))
 

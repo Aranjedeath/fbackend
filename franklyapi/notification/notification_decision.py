@@ -19,50 +19,95 @@ def post_notifications(post_id):
                                          left join notifications n on n.object_id = :post_id and n.type = 'post-add-self_user'
                                          where p.id = :post_id limit 1 ;
                                          '''), params={'post_id': post_id})
-    for row in result:
-        question_id = row[0]
-        question_author_id = row[1]
-        answer_author_id = row[2]
-        question_body = row[3]
-        answer_author_email = row[4]
-        answer_author_name = row[5]
-        notification_id = row[6]
-        link = row[7]
+    try:
+        for row in result:
+            question_id = row[0]
+            question_author_id = row[1]
+            answer_author_id = row[2]
+            question_body = row[3]
+            answer_author_email = row[4]
+            answer_author_name = row[5]
+            notification_id = row[6]
+            link = row[7]
 
-    #Get a set of users who haven't been sent this gcm notification yet
-    #This includes the question author
-    results = db.session.execute(text('''Select
-                                         un.user_id, u.first_name, u.email
-                                         from user_notifications un
-                                         left join user_push_notifications upn
-                                         on upn.notification_id  = :notification_id and upn.user_id = un.user_id
-                                         left join users u on u.id = un.user_id
-                                         where un.notification_id = :notification_id
-                                         and upn.user_id is null'''),
-                                         params={'notification_id': notification_id})
-    for row in results:
-        if row[0] == question_author_id or count_of_push_notifications_sent(user_id=row[0]) < 5:
-            notification.push_notification(notification_id=notification_id, user_id = row[0])
-            email_helper.question_answered(receiver_email = row[2], receiver_name = row[1],
-                                       celebrity_name = answer_author_name,
-                                       question = question_body, web_link=link)
+        #Get a set of users who haven't been sent this gcm notification yet
+        #This includes the question author
+        results = db.session.execute(text('''Select
+                                             un.user_id, u.first_name, u.email
+                                             from user_notifications un
+                                             left join user_push_notifications upn
+                                             on upn.notification_id  = :notification_id and upn.user_id = un.user_id
+                                             left join users u on u.id = un.user_id
+                                             where un.notification_id = :notification_id
+                                             and upn.user_id is null'''),
+                                             params={'notification_id': notification_id})
+        for row in results:
+            print row[0]
+            if row[0] == question_author_id or count_of_push_notifications_sent(user_id=row[0]) < 5:
+                notification.push_notification(notification_id=notification_id, user_id = row[0])
+                email_helper.question_answered(receiver_email = row[2], receiver_name = row[1],
+                                           celebrity_name = answer_author_name,
+                                           question = question_body, web_link=link)
+    except Exception:
+        pass
 
 
-
-
-''' To be run at 9, 6 and 9,
-check for questions that have been asked
-to a user '''
 def question_asked_notifications():
-    pass
+
+    users = db.session.execute(text(''' Select u.id, u.email, u.first_name, uni.is_popular, q.id,
+                                        q.body
+                                        from users u
+                                        left join questions q on q.question_to = u.id
+                                        and q.timestamp >= date_sub(now(), interval 1 day)
+                                        left join user_notification_info uni on uni.user_id = u.id
+                                        where q.body is not null
+                                        and uni.is_popular = 1
+                                        group by q.question_to
+                                    '''))
+
+    for user in users:
+        if count_of_notifications_sent_by_type(user_id=user[0], notification_type='question-ask-self_user') == 0:
+            results = db.session.execute(text('''Select q.id, n.id from questions q
+                                                          left join question_upvotes qu on qu.question = q.id
+                                                          left join notifications n on n.object_id = q.id
+                                                          where q.question_to = :user_id and q.is_answered = 0
+                                                          group by qu.question
+                                                          order by count(qu.question) limit 1 ;'''),
+                                                  params={'user_id': user[0]})
+            for row in results:
+                notification.push_notification(notification_id=row[1], user_id = row[0])
+
+
+
+
+
+
+def decide_popular_users():
+
+    results = db.session.execute(text('''Select u.id from users u
+                                         left join questions q on q.question_to = u.id
+                                         and q.deleted = false
+                                         and q.timestamp >= date_sub(now(), interval 30 day)
+                                         where u.monkness = -1 and q.body is not null
+                                         group by u.id ; '''))
+
+    for user in results:
+        average_upvotes, question_count = average_upvote_count(user_id=user[0])
+        if average_upvotes > 5 and question_count > 20:
+            db.session.execute(text('''Insert into user_notification_info (user_id, is_popular) values
+                                       (:user_id, 1) on Duplicate key update set is_popular =1 ;  ''',params={'user_id': user[0]}))
+            db.session.commit()
+
+
+
 
 def average_upvote_count(user_id):
     results = db.session.execute(text("""SELECT COUNT(1) as upvote_count
-                                                FROM question_upvotes JOIN questions ON questions.id=question_upvotes.question
-                                                WHERE questions.question_author=:user_id
-                                                    AND questions.deleted=false
-                                                    AND question_upvotes.downvoted=false
-                                                    AND question_upvotes.timestamp>=:last_two_months
+                                         FROM question_upvotes JOIN questions ON questions.id=question_upvotes.question
+                                         WHERE questions.question_author=:user_id
+                                         AND questions.deleted=false
+                                         AND question_upvotes.downvoted=false
+                                         AND question_upvotes.timestamp>=:last_two_months
                                         """),
                                     params={'user_id':user_id,
                                             'last_two_months':datetime.datetime.now() - datetime.timedelta(days=60)
@@ -88,7 +133,15 @@ def average_upvote_count(user_id):
     upvote_count += question_count
 
     average_upvote_count = upvote_count/question_count
-    return average_upvote_count
+    return average_upvote_count, question_count
+
+
+def decide_question_ask_notification(question_id, user_id):
+    if average_upvote_count(user_id)<3 and count_of_notifications_sent_by_type(user_id=user_id, notification_type='question-ask-self_user')< 1:
+        return True
+    else:
+        return False
+
 
 def list_objects_with_notifications_pushed(user_id, notification_type, day_count=1):
     object_id = []
@@ -110,11 +163,7 @@ def list_objects_with_notifications_pushed(user_id, notification_type, day_count
     return notification_count
 
 
-def decide_question_ask_notification(question_id, user_id):
-    if average_upvote_count(user_id)<3 and count_of_notifications_pushed(user_id, 'question-ask-self_user')<1:
-        return True
-    else:
-        return False
+
 
 def get_most_upvoted_questions(user_id):
     questions_with_count = []
@@ -143,13 +192,25 @@ def get_most_upvoted_questions(user_id):
 def count_of_push_notifications_sent(user_id):
 
     result = db.session.execute(text("Select count(*) from user_push_notifications "
-                                     "where user_id = :user_id and pushed_at >= date_sub(NOW(), interval 1 day);"))
+                                     "where user_id = :user_id and pushed_at >= date_sub(NOW(), interval 1 day);"),
+                                params={'user_id': user_id})
 
-    return result[0]
+    for row in result:
+        return row[0]
 
 
+def count_of_notifications_sent_by_type(user_id, notification_type):
 
-
+    result = db.session.execute(text('''Select count(upn.*) from user_push_notifications upn
+                                        left join notifications n on n.id = upn.notification_id
+                                        where
+                                        user_id = :user_id
+                                        and n.type = :type_of_notification
+                                        and pushed_at >= date_sub(NOW(), interval 1 day);'''),
+                                params={"user_id": user_id,
+                                         "type_of_notification": notification_type})
+    for row in result:
+        return row[0]
 
 
 
