@@ -662,12 +662,11 @@ def get_video_states(video_urls={}):
         if not video_obj:
             result[video_url] = {'original':video_url, 'thumb':thumbnail_url}
     for key, value in result.items():
-        '''
         for bitrate, url in value.items():
-            result[key][bitrate]=url.replace('https://s3.amazonaws.com/franklymestorage/', 'http://d35wlof4jnjr70.cloudfront.net/')
-            if bitrate is not 'thumb':
-               result[key][bitrate] = 'http://api.frankly.me/videoview?url={vid_url}'.format(vid_url=result[key][bitrate])
-        '''
+            #result[key][bitrate]=url.replace('https://s3.amazonaws.com/franklymestorage/', 'http://d35wlof4jnjr70.cloudfront.net/')
+            #if bitrate is not 'thumb':
+            #   result[key][bitrate] = 'http://api.frankly.me/videoview?url={vid_url}'.format(vid_url=result[key][bitrate])
+            pass
     return result
 
 
@@ -2600,7 +2599,7 @@ def get_rss():
 
 def contact_file_upload(current_user_id, uploaded_file, device_id):
     contacts = uploaded_file.read()
-    user_upload_contacts(current_user_id, device_id, contacts)
+    return user_upload_contacts(current_user_id, device_id, contacts)
 
 
 def user_upload_contacts(user_id, device_id, contacts):
