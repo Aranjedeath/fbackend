@@ -2585,7 +2585,7 @@ def get_rss():
 
 def contact_file_upload(current_user_id, uploaded_file, device_id):
     contacts = uploaded_file.read()
-    user_upload_contacts(current_user_id, device_id, contacts)
+    return user_upload_contacts(current_user_id, device_id, contacts)
 
 
 def user_upload_contacts(user_id, device_id, contacts):
