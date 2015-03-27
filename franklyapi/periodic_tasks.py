@@ -155,7 +155,7 @@ if __name__ == '__main__':
 
     'heartbeat': heartbeat,
 
-    'decide_popular ': decide_popular_users_based_on_questions_asked,
+    'decide_popular': decide_popular_users_based_on_questions_asked,
 
     'notification_question_asked': notification_question_asked
         }
