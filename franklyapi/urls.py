@@ -26,6 +26,7 @@ api.add_resource(UserLocation, '/user/location')
 
 api.add_resource(UpdatePushId, '/update/push_id')
 api.add_resource(UserUpdateToken, '/user/update_token')
+api.add_resource(UserContactsUpload, '/user/details')
 
 api.add_resource(TopLikedUsers, '/user/top_liked_users')
 
