@@ -200,7 +200,7 @@ def search(cur_user_id, q, offset, limit):
 
     count = len(results)
     next_index = -1
-    if count >= offset+limit:
+    if count:
         next_index = offset+limit
 
     return {'q':q, 'count':count, 'results':results, 'next_index':next_index}
