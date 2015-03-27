@@ -64,9 +64,12 @@ def push_notification(notification_id, user_id, source='application'):
                         "user_to" : user_id,
                         "type" : 1,
                         "id" : user_push_notification.id,
+                        "notification_id": notification.id,
                         "text" : notification.text.replace('<b>', '').replace('</b>', ''),
                         "styled_text":notification.text,
-                        "icon" : None,
+                        "icon" : notification.icon,
+                        "cover_image":None,
+                        "is_actionable":False,
                         "group_id": group_id,
                         "link" : notification.link,
                         "deeplink" : notification.link,
@@ -132,9 +135,14 @@ def ask_question(question_id, notification_type = 'question-ask-self_user'):
 
     return notification
 
+
 def new_celebrity_user(users=[], notification_id=None, celebrity_id=None):
     '''Either create a new notification or fetch a pre-existing one.
     Users would be a list that can be empty as well'''
+
+
+    for user in users:
+        notification.new_celebrity_user(users=[user.id], notification_id=notification_id, celebrity_id=object_id)
     if notification_id is None and celebrity_id is not None:
         celebrity = User.query.filter(User.id == celebrity_id).first()
 
