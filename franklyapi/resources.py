@@ -2231,7 +2231,7 @@ class UserContactsUpload(restful.Resource):
 
         args = post_parser.parse_args()
         try:
-            controllers.contact_file_upload(current_user.id, args['uploaded_file'], args['device_id'])
+            return controllers.contact_file_upload(current_user.id, args['uploaded_file'], args['device_id'])
             return {'success': True}
         
         except CustomExceptions.BadFileFormatException as e:
