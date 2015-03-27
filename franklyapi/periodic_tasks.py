@@ -8,23 +8,38 @@ from notification import notification_decision
 import async_encoder
 import traceback
 
-
+'''
+@ 00:30 every day
+'''
 def decide_popular_users_based_on_questions_asked():
     notification_decision.decide_popular_users()
 
+'''
+@ 7 PM Every day
+'''
+def notification_question_asked():
+    notification_decision.question_asked_notifications()
 
+'''
+@ Every 5 minutes
+'''
 def update_view_count():
     print 'started'
     for url in redis_views.keys():
         update_view_count_to_db(url)
     print 'ended'
 
-
+'''
+@ Every 10 minutes
+'''
 def update_user_view_count():
     users = User.query.with_entities(User.id).filter(User.user_type==2)
     update_total_view_count([user.id for user in users])
 
 
+'''
+@ Every hour
+'''
 def reassign_pending_video_tasks():
     import datetime
     from sqlalchemy import text
@@ -86,22 +101,34 @@ def reassign_pending_video_tasks():
     print 'Other Videos Assigned:', other_video_count
 
 
+'''
+@ 00:00 every day
+'''
 def log_video_count():
     stats.video_view_count_logger()
 
-
+'''
+@ 11:00 AM Monday
+'''
 def weekly_report():
     stats.weekly_macro_metrics()
 
-
+'''
+@ 11:00 AM Every day
+'''
 def daily_report():
     stats.daily_content_report()
 
-
+'''
+@ 11:00 AM and 5:00 PM Every day
+'''
 def twice_a_day_report():
     stats.intra_day_content_report()
 
 
+'''
+@ Every 6 hours
+'''
 def heartbeat():
     email_helper.cron_job_update()
 
@@ -128,7 +155,9 @@ if __name__ == '__main__':
 
     'heartbeat': heartbeat,
 
-    'decide_popular': decide_popular_users_based_on_questions_asked
+    'decide_popular': decide_popular_users_based_on_questions_asked,
+
+    'notification_question_asked': notification_question_asked
         }
     try:
         method_dict[args[0]]()

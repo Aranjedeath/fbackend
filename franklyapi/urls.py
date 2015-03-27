@@ -69,6 +69,7 @@ api.add_resource(ResetPassword, '/forgotpassword/reset/<token>')
 
 api.add_resource(Notifications, '/getnotifications')
 api.add_resource(NotificationCount, '/notifications/count')
+api.add_resource(PushNotificationSeen, '/notification/seen')
 
 api.add_resource(InstallRef, '/utils/install_ref')
 api.add_resource(BadUsernames, '/utils/badusernames')
@@ -189,7 +190,7 @@ api.add_resource(admin.AdminGetUserActivityTimeline, '/admin/user/activity_timel
 api.add_resource(admin.AdminQuestionChangeUpvote, '/admin/question/change_upvote')
 api.add_resource(admin.AdminPostChangeLike, '/admin/post/change_like')
 api.add_resource(admin.AdminUserChangeFollowers, '/admin/user/change_followers')
-api.add_resource(admin.AdminBroadcastToAll, '/admin/user/broadcast')
+
 
 
 

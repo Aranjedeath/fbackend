@@ -4,8 +4,13 @@ from app import db
 from sqlalchemy.sql import text
 import make_notification as notification
 from mailwrapper import email_helper
+from CustomExceptions import ObjectNotFoundException
 
-
+'''
+Sends out both Push and email.
+Called after the low quality of
+video is ready. Since this is a super high priority notification
+it is sent to all those users who upvoted or asked the question'''
 def post_notifications(post_id):
 
     result = db.session.execute(text('''Select
@@ -48,7 +53,7 @@ def post_notifications(post_id):
                 email_helper.question_answered(receiver_email = row[2], receiver_name = row[1],
                                            celebrity_name = answer_author_name,
                                            question = question_body, web_link=link)
-    except Exception:
+    except ObjectNotFoundException:
         pass
 
 

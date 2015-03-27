@@ -1639,6 +1639,30 @@ class NotificationCount(restful.Resource):
             abort(500, message=internal_server_error_message)
 
 
+class PushNotificationSeen(restful.Resource):
+    post_parser = reqparse.RequestParser()
+    post_parser.add_argument('push_notification_id', type=str, default='',location = 'json')
+
+
+    @login_required
+    def post(self):
+        """
+        Used to mark a push notification as 'seen' by the
+        user on their device
+
+        """
+        args = self.post_parser.parse_args()
+
+        try:
+            controllers.push_notification_seen(push_notification_id=args['push_notification_id'])
+
+            return {'success': True}
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
+
 class QuestionCount(restful.Resource):
     
     @login_required

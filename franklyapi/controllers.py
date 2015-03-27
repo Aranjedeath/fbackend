@@ -2034,6 +2034,19 @@ def get_notification_count(cur_user_id, device_id, version_code):
         count += row[0]
     return count
 
+
+def push_notification_seen(push_notification_id):
+    from models import UserPushNotification
+
+    UserPushNotification.query.filter(UserPushNotification.id == push_notification_id).update(
+        {'clicked_at':datetime.datetime.now()})
+
+
+    db.session.commit()
+
+
+
+
 def logout(access_token, device_id):
     from app import redis_client
     device_type = get_device_type(device_id)
