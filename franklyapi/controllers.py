@@ -663,7 +663,7 @@ def get_video_states(video_urls={}):
             result[video_url] = {'original':video_url, 'thumb':thumbnail_url}
     for key, value in result.items():
         for bitrate, url in value.items():
-            result[key][bitrate]=url.replace('https://s3.amazonaws.com/franklymestorage/', 'http://d35wlof4jnjr70.cloudfront.net/')
+            #result[key][bitrate]=url.replace('https://s3.amazonaws.com/franklymestorage/', 'http://d35wlof4jnjr70.cloudfront.net/')
             if bitrate is not 'thumb':
                result[key][bitrate] = 'http://api.frankly.me/videoview?url={vid_url}'.format(vid_url=result[key][bitrate])
     return result
