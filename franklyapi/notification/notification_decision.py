@@ -137,7 +137,7 @@ def average_upvote_count(user_id):
         question_count = row[0]
     upvote_count += question_count
 
-    average_upvote_count = upvote_count/question_count
+    average_upvote_count = (upvote_count/question_count) if question_count else 0
     return average_upvote_count, question_count
 
 
