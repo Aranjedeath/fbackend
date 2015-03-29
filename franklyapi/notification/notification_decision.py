@@ -100,7 +100,7 @@ def decide_popular_users():
         average_upvotes, question_count = average_upvote_count(user_id=user[0])
         if average_upvotes > 5 and question_count > 20:
             db.session.execute(text('''Insert into user_notification_info (user_id, is_popular) values
-                                       (:user_id, 1) on Duplicate key update set is_popular =1 ; '''),
+                                       (:user_id, 1) on Duplicate key update is_popular =1 ; '''),
                                params={'user_id': user[0]})
             db.session.commit()
 
