@@ -2215,7 +2215,11 @@ def get_new_discover(current_user_id, offset, limit, device_id, version_code, vi
     users = User.query.filter(User.username.in_(append_top_usernames)).all()
     
     resp = [{'type':'user', 'user':guest_user_to_dict(current_user_id, u)} for u in users]
-
+    
+    if offset ==0 and current_user_id and prompt_for_profile_video(current_user_id):
+        resp = [{'type':'upload_profile_video', 'upload_profile_video':{}}] + resp
+        limit -= 1
+    
     day_count = 0
     if get_device_type(device_id)=='web':
         day_count = visit/3600*24
@@ -2223,6 +2227,7 @@ def get_new_discover(current_user_id, offset, limit, device_id, version_code, vi
     resp.extend(get_discover_list(current_user_id, offset, limit, 
                                     day_count=day_count, add_super=True, 
                                     exclude_users=[u.id for u in users]))
+
     
     next_index = offset+limit if len(resp) else -1
     
@@ -2255,7 +2260,7 @@ def discover_post_in_cqm(cur_user_id, offset, limit, device_id, version_code, we
     response = []
     append_top_usernames = []
     if offset ==0: 
-        if cur_user_id and not prompt_for_profile_video(cur_user_id) and (device_type!='android' or version_code>46):
+        if cur_user_id and prompt_for_profile_video(cur_user_id) and (device_type!='android' or version_code>46):
             response.append({'type':'upload_profile_video', 'upload_profile_video':{}})
             limit -= 1
             
@@ -2487,8 +2492,7 @@ def get_channel_feed(cur_user_id, channel_id, offset, limit, device_id=None, ver
         return home_feed(cur_user_id, offset, limit, web)
 
     if channel_type == 'discover':
-        return discover_post_in_cqm(cur_user_id, offset, limit, device_id, version_code, web, append_top=append_top)
-
+        return get_new_discover(current_user_id, offset, limit, device_id, version_code, append_top=append_top)
 
 def get_channel_list(cur_user_id, device_id, version_code):
     feed_banner = {'type':'banner',
