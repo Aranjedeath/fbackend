@@ -24,7 +24,7 @@ from configs import flag_words
 from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
                     Question, Upvote, Comment, ForgotPasswordToken, Install, Video,\
                     UserFeed, Event, Reshare, Invitable, Invite, ContactUs, InflatedStat,\
-                    SearchDefault, IntervalCountMap, ReportAbuse
+                    SearchDefault, IntervalCountMap, ReportAbuse, SearchCategory
 
 from app import redis_client, raygun, db, redis_views, redis_pending_post
 
@@ -2349,6 +2349,7 @@ def get_is_following(cur_user_id, user_ids):
 def search_default(cur_user_id=None):
     from collections import defaultdict
     resp = redis_client.get('search_default')
+    resp = 0
     if resp:
         resp = json.loads(resp)
     else:
@@ -2365,7 +2366,7 @@ def search_default(cur_user_id=None):
                         users u JOIN search_defaults sd ON u.id=sd.user
                         JOIN search_categories sc ON sd.category=sc.id
                     ORDER BY 
-                        search_defaults.score
+                        sd.score
                 """
             )
         )
