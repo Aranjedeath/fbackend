@@ -7,8 +7,7 @@ from configs import config
 from database import get_item_id
 from app import db
 from notification import helper, notification_decision
-from CustomExceptions import ObjectNotFoundException
-
+from sqlalchemy.orm.exc import NoResultFound
 
 key = helper.key
 
@@ -119,8 +118,8 @@ def ask_question(question_id, notification_type = 'question-ask-self_user'):
     of user's popularity'''
     try:
         delay_push = UserNotificationInfo.query.filter(UserNotificationInfo.user_id ==
-                                                       question_to.id).first().is_popular
-    except ObjectNotFoundException:
+                                                       question_to.id).one().is_popular
+    except NoResultFound:
         ''' In case of celeb user delay_push would always be true
         '''
         delay_push = 1 if question_to.user_type == 2 else 0
