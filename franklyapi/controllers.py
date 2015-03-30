@@ -2364,15 +2364,10 @@ def search_default(cur_user_id=None):
                     FROM 
                         users u JOIN search_defaults sd ON u.id=sd.user
                         JOIN search_categories sc ON sd.category=sc.id
-                    WHERE 
-                        search_defaults.category IN :categories
                     ORDER BY 
                         search_defaults.score
                 """
-            ),
-            params = {
-                'categories': categories_order
-            }
+            )
         )
         category_results = defaultdict(list)
         for row in results:
