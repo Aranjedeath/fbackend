@@ -9,6 +9,6 @@ from feed import UserFeed, CentralQueueMobile, IntervalCountMap, DateSortedItems
 from event import Event
 from invitables import Invitable, Invite
 from inflated_stat import InflatedStat
-from search_default import SearchDefault
+from search_default import SearchDefault, SearchCategory
 from notification import *
 #from moderation import AdminUser

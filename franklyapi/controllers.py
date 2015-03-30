@@ -2352,34 +2352,45 @@ def search_default(cur_user_id=None):
     if resp:
         resp = json.loads(resp)
     else:
-        categories_order = ["Trending Now", "Actors", "Singers", "Twitter Celebrities", "Radio Jockeys", "Subject Experts", "New on Frankly", "Authors", "Entrepreneurs", "Chefs", "Politicians", "Comedians", "Bands"]
-    
-        results = db.session.execute(text("""SELECT search_defaults.category, users.id, users.username, users.first_name,
-                                                    users.user_type, users.user_title, users.profile_picture,
-                                                    users.bio, users.gender,
-                                                    search_defaults.show_always
-                                            FROM users JOIN search_defaults ON users.id=search_defaults.user
-                                            WHERE search_defaults.category IN :categories
-                                            ORDER BY search_defaults.score"""),
-                                        params = {'categories':categories_order}
-                                )
+        # categories_order = ["Trending Now", "Actors", "Singers", "Twitter Celebrities", "Radio Jockeys", "Subject Experts", "New on Frankly", "Authors", "Entrepreneurs", "Chefs", "Politicians", "Comedians", "Bands"]
+        categories = SearchCategory.query.filter().order_by(SearchCategory.score.desc()).all()
+        categories_order = [cat.name for cat in categories]
+        results = db.session.execute(
+            text(
+                """ SELECT 
+                        sc.name, u.id, u.username, u.first_name,
+                        u.user_type, u.user_title, u.profile_picture,
+                        u.bio, u.gender, sd.show_always
+                    FROM 
+                        users u JOIN search_defaults sd ON u.id=sd.user
+                        JOIN search_categories sc ON sd.category=sc.id
+                    WHERE 
+                        search_defaults.category IN :categories
+                    ORDER BY 
+                        search_defaults.score
+                """
+            ),
+            params = {
+                'categories': categories_order
+            }
+        )
         category_results = defaultdict(list)
         for row in results:
-            user_dict = {'id':row[1],
-                        'username':row[2],
-                        'first_name':row[3],
-                        'last_name':None,
-                        'user_type':row[4],
-                        'user_title':row[5],
-                        'profile_picture':row[6],
-                        'bio':row[7],
-                        'gender':row[8],
-                        'is_following':False,
-                        'channel_id':'user_{user_id}'.format(user_id=row[1]),
-                        'show_always': bool(row[9])
-                        }
+            user_dict = {
+                'id':row[1],
+                'username':row[2],
+                'first_name':row[3],
+                'last_name':None,
+                'user_type':row[4],
+                'user_title':row[5],
+                'profile_picture':row[6],
+                'bio':row[7],
+                'gender':row[8],
+                'is_following':False,
+                'channel_id':'user_{user_id}'.format(user_id=row[1]),
+                'show_always': bool(row[9])
+            }
             category_results[row[0]].append(user_dict)
-
 
         for category, users in category_results.items():
             if len(category_results[category]) > 3:
