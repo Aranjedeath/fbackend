@@ -30,13 +30,18 @@ def add_notification_for_user(notification_id, user_ids, list_type, push_at=date
         if push_at:
             push_notification(notification_id, user_id)
 
+def get_device_type(device_id):
+    if len(device_id)<17:
+        if 'web' in device_id:
+            return 'web'
+        return 'android'
+    return 'ios'
+
 
 def push_notification(notification_id, user_id, source='application'):
 
     if notification_decision.\
             count_of_push_notifications_sent(user_id = user_id) <= config.GLOBAL_PUSH_NOTIFICATION_DAY_LIMIT:
-
-        from controllers import get_device_type
 
         notification = Notification.query.get(notification_id)
 
