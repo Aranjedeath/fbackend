@@ -1377,9 +1377,9 @@ def post_view(cur_user_id, post_id, client_id=None):
 def question_view(cur_user_id, question_id, short_id):
     try:
         if short_id:
-            question = Question.query.filter(Question.short_id==short_id, Question.deleted==False, Question.is_answered==False, Question.is_ignored==False).one()
+            question = Question.query.filter(Question.short_id==short_id, Question.deleted==False).one()
         else:
-            question = Question.query.filter(Question.id==question_id, Question.deleted==False, Question.is_answered==False, Question.is_ignored==False).one()
+            question = Question.query.filter(Question.id==question_id, Question.deleted==False).one()
 
         if cur_user_id and (has_blocked(cur_user_id, question.question_to) or has_blocked(cur_user_id, question.question_author)):
             raise CustomExceptions.BlockedUserException()
