@@ -37,6 +37,8 @@ def push_notification(notification_id, user_id, source='application'):
     if notification_decision.\
             count_of_push_notifications_sent(user_id = user_id) <= config.GLOBAL_PUSH_NOTIFICATION_DAY_LIMIT:
 
+        print 'Still under limits for number of daily notifications'
+
         from controllers import get_device_type
 
         notification = Notification.query.get(notification_id)
@@ -45,6 +47,8 @@ def push_notification(notification_id, user_id, source='application'):
         for device in AccessToken.query.filter(AccessToken.user==user_id,
                                                 AccessToken.active==True,
                                                 AccessToken.push_id!=None).all():
+
+            print 'Found valid devices for push notifications'
 
             user_push_notification = UserPushNotification(
                                                           notification_id=notification_id,
@@ -79,11 +83,13 @@ def push_notification(notification_id, user_id, source='application'):
                         "heading":"Frankly.me"
                     }
             if get_device_type(device.device_id)=='android':
+                print 'pushing gcm for android'
                 from GCM_notification import GCM
                 gcm_sender = GCM()
                 gcm_sender.send_message([device.push_id], payload)
 
             if get_device_type(device.device_id)=='ios':
+                print 'pushing for iOS'
                 from APN_notification import  APN
                 apns = APN()
                 apns.send_message([device.push_id],payload)
@@ -229,7 +235,7 @@ def share_popular_question(user_id, question_id, upvote_count, question_body):
     db.session.commit()
 
     add_notification_for_user(notification_id=notification.id,
-                                user_ids=user_id,
+                                user_ids=[user_id],
                                 list_type='me',
                                 push_at= datetime.datetime.now()
                             )

@@ -73,7 +73,9 @@ def question_asked_notifications():
                                     '''))
 
     for user in users:
+        print user[2]
         if count_of_notifications_sent_by_type(user_id=user[0], notification_type='question-ask-self_user') == 0:
+            print 'No such notification sent during the day'
             results = db.session.execute(text('''Select q.id, n.id from questions q
                                                           left join question_upvotes qu on qu.question = q.id
                                                           left join notifications n on n.object_id = q.id
@@ -82,6 +84,7 @@ def question_asked_notifications():
                                                           order by count(qu.question) limit 1 ;'''),
                                                   params={'user_id': user[0]})
             for row in results:
+                print 'Sending the notification now'
                 notification.push_notification(notification_id=row[1], user_id = row[0])
 
 
@@ -174,9 +177,11 @@ def list_objects_with_notifications_pushed(user_id, notification_type, day_count
 
 def get_popular_questions_in_last_day():
 
+    import controllers
+
     results = db.session.execute(text('''  Select count(*) as real_upvote_count, i.upvote_count,
-                                           q.question_author, q.body
-                                           qu.question,
+                                           q.question_author, q.body,
+                                           qu.question
                                            from question_upvotes as qu
                                            left join inflated_stats as i on i.question = qu.question
                                            left join questions q on q.id = qu.question
@@ -186,10 +191,11 @@ def get_popular_questions_in_last_day():
                                            group by qu.question
                                            order by real_upvote_count DESC;'''))
     for row in results:
-        upvote_count =row[0] + row[1]
+        upvote_count =row[0] + (row[1] if row[1] is not None else 0)
         if upvote_count > 10:
-            notification.share_popular_question(user_id=row[2], question_id=row[4],
-                                                question_body = row[3], upvote_count=upvote_count)
+           upvote_count = controllers.get_question_upvote_count(row[4])
+           notification.share_popular_question(user_id=row[2], question_id=row[4],
+                                    question_body=row[3], upvote_count=upvote_count)
 
 
 
@@ -230,7 +236,7 @@ def count_of_push_notifications_sent(user_id):
 
 def count_of_notifications_sent_by_type(user_id, notification_type):
 
-    result = db.session.execute(text('''Select count(upn.*) from user_push_notifications upn
+    result = db.session.execute(text('''Select count(*) from user_push_notifications upn
                                         left join notifications n on n.id = upn.notification_id
                                         where
                                         user_id = :user_id
