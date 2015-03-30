@@ -110,7 +110,7 @@ def decide_popular_users():
 def average_upvote_count(user_id):
     results = db.session.execute(text("""SELECT COUNT(1) as upvote_count
                                          FROM question_upvotes JOIN questions ON questions.id=question_upvotes.question
-                                         WHERE questions.question_author=:user_id
+                                         WHERE questions.question_to=:user_id
                                          AND questions.deleted=false
                                          AND question_upvotes.downvoted=false
                                          AND question_upvotes.timestamp>=:last_two_months
@@ -125,9 +125,9 @@ def average_upvote_count(user_id):
 
     results = db.session.execute(text("""SELECT COUNT(1)
                                             FROM questions
-                                            WHERE questions.question_author=:user_id
-                                                AND questions.deleted=false
-                                                AND questions.timestamp>=:last_two_months
+                                            WHERE questions.question_to=:user_id
+                                            AND questions.deleted=false
+                                            AND questions.timestamp>=:last_two_months
                                         """),
                                     params={'user_id':user_id,
                                             'last_two_months':datetime.datetime.now() - datetime.timedelta(days=60)
