@@ -2492,7 +2492,7 @@ def get_channel_feed(cur_user_id, channel_id, offset, limit, device_id=None, ver
         return home_feed(cur_user_id, offset, limit, web)
 
     if channel_type == 'discover':
-        return get_new_discover(current_user_id, offset, limit, device_id, version_code, append_top=append_top)
+        return get_new_discover(cur_user_id, offset, limit, device_id, version_code, append_top=append_top)
 
 def get_channel_list(cur_user_id, device_id, version_code):
     feed_banner = {'type':'banner',
