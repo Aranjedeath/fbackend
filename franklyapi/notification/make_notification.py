@@ -250,3 +250,17 @@ def notification_user_follow(follow_id):
     return notification
 
 
+def send_milestone_notification(notification_type,user):
+    '''
+    read notification by notification_type 
+        and send it to user
+    '''
+    notification = Notification.query.filter(Notification.type == notification_type).first()
+    if(notification):
+        add_notification_for_user(notification_id=notification.id,
+                                user_ids=[user],
+                                list_type='me',
+                                push_at=datetime.datetime.now()
+                            )
+    else:
+        print 'notification not made for this milestone (notification_type)'
