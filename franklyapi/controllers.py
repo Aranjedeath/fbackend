@@ -155,11 +155,11 @@ def get_data_from_external_access_token(social_type, external_access_token, exte
 
 def get_user_from_social_id(social_type, social_id):
     user = None
-    if social_id == 'facebook':
+    if social_type == 'facebook':
         user = User.query.filter(User.facebook_id==social_id).first()
-    elif social_id == 'google':
+    elif social_type == 'google':
         user = User.query.filter(User.google_id==social_id).first()
-    elif social_id == 'twitter':
+    elif social_type == 'twitter':
         user = User.query.filter(User.twitter_id==social_id).first()
     return user
 
