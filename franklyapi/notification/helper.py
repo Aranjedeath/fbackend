@@ -15,6 +15,12 @@ key = {
     },
     'new-celeb-user': {
 
+    },
+    'popular-question-self_use': {
+        'text': '''Your question <question_body> has received <upvote_count>+ upvotes. Share it
+                to get more upvotes.''',
+        'url': config.WEB_URL + '/q/%s' ,
+        'day-limit': 1
     }
 
 }
@@ -38,3 +44,8 @@ def post_add(answer_author, question_body):
     text = text.replace('<answer_author_name>', answer_author.first_name)
     text = text.replace('<question_body>', question_body)
     return text
+
+def popular_question_text(question_body, upvote_count):
+    text = key['popular-question-self_user']['text']
+    return text.replace('<question_body>', question_body).replace('<upvote_count>', ((upvote_count/10)*10))
+

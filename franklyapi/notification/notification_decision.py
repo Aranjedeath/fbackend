@@ -56,7 +56,9 @@ def post_notifications(post_id):
     except ObjectNotFoundException:
         pass
 
-
+'''
+Sends notifications to popular users
+'''
 def question_asked_notifications():
 
     users = db.session.execute(text(''' Select u.id, u.email, u.first_name, uni.is_popular, q.id,
@@ -84,9 +86,10 @@ def question_asked_notifications():
 
 
 
-
-
-
+'''Decides popular users on the basis
+of number of avg. upvotes on questions that have been
+asked to them or on the basis of total questions that have been asked
+'''
 def decide_popular_users():
 
     results = db.session.execute(text('''Select u.id from users u
@@ -167,6 +170,26 @@ def list_objects_with_notifications_pushed(user_id, notification_type, day_count
     for row in result:
         notification_count = row[0]
     return notification_count
+
+
+def get_popular_questions_in_last_day():
+
+    results = db.session.execute(text('''  Select count(*) as real_upvote_count, i.upvote_count,
+                                           q.question_author, q.body
+                                           qu.question,
+                                           from question_upvotes as qu
+                                           left join inflated_stats as i on i.question = qu.question
+                                           left join questions q on q.id = qu.question
+                                           where
+                                           qu.timestamp > date_sub(now(), interval 1 day)
+                                           and qu.downvoted = 0
+                                           group by qu.question
+                                           order by real_upvote_count DESC;'''))
+    for row in results:
+        upvote_count =row[0] + row[1]
+        if upvote_count > 10:
+            notification.share_popular_question(user_id=row[2], question_id=row[4],
+                                                question_body = row[3], upvote_count=upvote_count)
 
 
 
