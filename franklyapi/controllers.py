@@ -2208,7 +2208,7 @@ def prompt_for_profile_video(user_id):
 
 
 
-def get_new_discover(current_user_id, offset, limit, device_id, version_code, visit=None, append_top=''):
+def get_new_discover(current_user_id, offset, limit, device_id, version_code, visit=0, append_top=''):
     from manage_discover import get_discover_list
     append_top_usernames = [username.strip().lower() for username in append_top.split(',')]
     users = User.query.filter(User.username.in_(append_top_usernames)).all()
@@ -2475,7 +2475,7 @@ def parse_channel_id(channel_id):
     return channel_type, channel_id
 
 
-def get_channel_feed(cur_user_id, channel_id, offset, limit, device_id=None, version_code=None, append_top=''):
+def get_channel_feed(cur_user_id, channel_id, offset, limit, device_id=None, version_code=None, append_top='', visit=0):
     channel_type, channel_id = parse_channel_id(channel_id)
     
     device_type = get_device_type(device_id) if device_id else None
@@ -2491,7 +2491,7 @@ def get_channel_feed(cur_user_id, channel_id, offset, limit, device_id=None, ver
         return home_feed(cur_user_id, offset, limit, web)
 
     if channel_type == 'discover':
-        return get_new_discover(cur_user_id, offset, limit, device_id, version_code, append_top=append_top)
+        return get_new_discover(cur_user_id, offset, limit, device_id, version_code, append_top=append_top, visit=visit)
 
 def get_channel_list(cur_user_id, device_id, version_code):
     feed_banner = {'type':'banner',

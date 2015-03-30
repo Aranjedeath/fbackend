@@ -2044,6 +2044,7 @@ class ChannelFeed(restful.Resource):
     get_parser.add_argument('offset', type=int, location='args', default=0)
     get_parser.add_argument('limit', type=int, location='args', default=10)
     get_parser.add_argument('X-deviceid', type=str, location='headers')
+    get_parser.add_argument('visit'  , type=int, default=0, location='args', help="visit should be the time difference of the current time and user's first visit in seconds for unauthorised requests")
     get_parser.add_argument('X-Version-Code', type=float, location='headers', default=0)
     get_parser.add_argument('append_top', type=str, location='args', default='')
 
@@ -2064,7 +2065,7 @@ class ChannelFeed(restful.Resource):
             if current_user.is_authenticated():
                 current_user_id = current_user.id                
 
-            return controllers.get_channel_feed(current_user_id, channel_id, args['offset'], args['limit'], args['X-deviceid'], args['X-Version-Code'], args['append_top'])
+            return controllers.get_channel_feed(current_user_id, channel_id, args['offset'], args['limit'], args['X-deviceid'], args['X-Version-Code'], args['append_top'], args['visit'])
         
         except CustomExceptions.BadRequestException as e:
             abort(404, message=str(e))
