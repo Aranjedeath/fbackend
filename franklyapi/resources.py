@@ -2294,3 +2294,57 @@ class UserContactsUpload(restful.Resource):
             raygun.send(err[0],err[1],err[2])
             print traceback.format_exc(e)
             abort(500, message='upload failure')
+
+class RegisterBadEmail(restful.Resource):
+
+    post_parser = reqparse.RequestParser()
+    
+    post_parser.add_argument('email'         , type=str, required=True, location='json')
+    post_parser.add_argument('reason_type'   , type=str, required=True, location='json')
+    post_parser.add_argument('reason_subtype', type=str, required=True, location='json')
+
+    def post(self):
+        """
+        Registers an email in bad_emails table.
+
+        Controller Functions Used:
+            -register_bad_email
+
+        Authentication: None
+        """
+        args = self.post_parser.parse_args()
+        try:
+            return controllers.register_bad_email(email         = args['email'],
+                                            reason_type = args['reason_type'],
+                                            reason_subtype = args['reason_subtype']
+                                            )
+        except Exception as e:
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)            
+
+class ReceiveSNSNotifications(restful.Resource):
+
+    
+    def post(self):
+        """
+        Receives notifications from aws SNS.
+
+        Controller Functions Used:
+            -register_bad_email
+
+        Authentication: None
+        """
+        try:
+            notification = json.loads(request.data)
+            email = notification['mail']['destination'][0]
+            notificationType = notification['notificationType']
+
+            if notificationType == 'Bounce':
+                if notification['bounce']['bounceType'] == 'Permanent':
+                    return controllers.register_bad_email( email=email, reason_type=notificationType, reason_subtype='')
+
+            return {'success':'false','email':email,'reason':'Not a bad email'}
+            
+        except Exception as e:
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)            

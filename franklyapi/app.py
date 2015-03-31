@@ -9,7 +9,6 @@ from raygun4py import raygunprovider
 from flask.ext.sqlalchemy import SQLAlchemy
 from datetime import datetime
 from configs import config
-from mailwrapper import SimpleMailer
 
 class FlaskConfig():
     DEBUG = config.DEBUG

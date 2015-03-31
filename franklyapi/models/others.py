@@ -102,22 +102,6 @@ class ReportAbuse(Base):
         return '<ReportAbuse %r:%r>' % (self.entity_type, self.entity_id)
 
 
-class Email(Base):
-    __tablename__ = 'emails'
-    id            = Column(Integer, primary_key=True)
-    email         = Column(String(120), nullable=False, unique=True)
-    email_status  = Column(Enum("invalid","bounce","complaint","unsubscribe"), nullable=False)
-    message       = Column(String(200))
-    timestamp     = Column(DateTime(), onupdate=datetime.datetime.now(), default=datetime.datetime.now())
-
-    def __init__(self, email, email_status, message=None):
-        self.email        = email
-        self.email_status = email_status
-        self.message      = message
-
-    def __repr__(self):
-        return '<Email %r:%r>' % (self.email, self.email_status)
-
 class Feedback(Base):
     __tablename__ = 'feedbacks'
     id            = Column(Integer, primary_key=True)

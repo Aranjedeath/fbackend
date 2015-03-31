@@ -24,7 +24,8 @@ from configs import flag_words
 from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
                     Question, Upvote, Comment, ForgotPasswordToken, Install, Video,\
                     UserFeed, Event, Reshare, Invitable, Invite, ContactUs, InflatedStat,\
-                    SearchDefault, IntervalCountMap, ReportAbuse, SearchCategory
+                    SearchDefault, IntervalCountMap, ReportAbuse, SearchCategory,\
+                    Email, BadEmail, EmailSent
 
 from app import redis_client, raygun, db, redis_views, redis_pending_post
 
@@ -2660,3 +2661,12 @@ def get_resized_image(image_url, height=262, width=262):
         os.remove(image_path)
     return resized_image
 
+def register_bad_email(email,reason_type,reason_subtype):
+    new_bad_email = BadEmail(email,reason_type,reason_subtype)
+    db.session.add(new_bad_email)
+    try:
+        db.session.commit() # TODO : handle duplicate insert in unique column
+    except Exception as e: 
+        db.session.rollback()
+        print e.message
+    return {'success':'true', 'email':email , 'reason':reason_type}     
