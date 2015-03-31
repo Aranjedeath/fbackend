@@ -4,7 +4,7 @@ import sys
 
 from configs import config
 from raygun4py import raygunprovider
-from models import Email,BadEmail,Email
+from models import Email,BadEmail,EmailSent
 from app import db
 import datetime
 
