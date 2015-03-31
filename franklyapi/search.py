@@ -164,8 +164,7 @@ def search(cur_user_id, q, offset, limit):
                                             {order_by_processed_username}
                                             exact_title_match DESC,
                                             {order_by_title}
-                                            followed_count DESC,
-                                            bio_match DESC
+                                            followed_count DESC
                                             
 
                                     LIMIT :result_offset, :result_limit""".format( select_query=select_query,
