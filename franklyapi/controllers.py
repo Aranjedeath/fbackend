@@ -1371,7 +1371,7 @@ def post_view(cur_user_id, post_id, client_id=None):
 
         return {'post': post_to_dict(post, cur_user_id), 'pending':post_pending}
     except NoResultFound:
-        raise CustomExceptions.PostNotFoundException("No post with that id found")
+        raise CustomExceptions.PostNotFoundException("The post does not exist or has been deleted")
 
 
 def question_view(current_user_id, question_id, short_id):
