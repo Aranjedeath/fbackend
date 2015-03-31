@@ -47,3 +47,8 @@ def decryption(encryptedString):
     if decoded[-num_padding:] == padding*num_padding:
         decoded = decoded.rstrip(padding)
     return decoded
+
+if __name__=='__main__':
+    import sys
+    print ''
+    print decryption(sys.argv[1])

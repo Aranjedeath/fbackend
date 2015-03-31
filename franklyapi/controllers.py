@@ -1374,21 +1374,36 @@ def post_view(cur_user_id, post_id, client_id=None):
         raise CustomExceptions.PostNotFoundException("No post with that id found")
 
 
-def question_view(cur_user_id, question_id, short_id):
+def question_view(current_user_id, question_id, short_id):
     try:
         if short_id:
-            question = Question.query.filter(Question.short_id==short_id, Question.deleted==False).one()
+            question = Question.query.filter(Question.short_id==short_id, 
+                                            Question.deleted==False,
+                                            Question.is_ignored==False,
+                    #this condition is to   #or_(Question.is_answered==True,
+                    #have private questions #    Question.public==True,
+                                            #    Question.question_to==current_user_id)
+                                            ).one()
         else:
-            question = Question.query.filter(Question.id==question_id, Question.deleted==False).one()
+            question = Question.query.filter(Question.id==question_id, 
+                                            Question.deleted==False,
+                                            Question.is_ignored==False,
+                    #this condition is to   #or_(Question.is_answered==True,
+                    #have private questions #    Question.public==True,
+                                            #    Question.question_to==current_user_id)
+                                            ).one()
 
-        if cur_user_id and (has_blocked(cur_user_id, question.question_to) or has_blocked(cur_user_id, question.question_author)):
-            raise CustomExceptions.BlockedUserException()
-        if question.flag == 0:
-            raise CustomExceptions.ObjectNotFoundException('You cant view this question due to flag.')
-        return {'question': question_to_dict(question, cur_user_id)}
+        question_to = User.query.filter(User.id==question.question_to).one()
+
+        if question.flag == 0 and question.question_author!=current_user_id:
+            raise CustomExceptions.ObjectNotFoundException('The question does not exist or has been deleted.')
+        if question.is_answered:
+            post = Post.query.filter(Post.question==question.id, Post.deleted==False).one()
+            return {'is_answered':question.is_answered, 'post':post_to_dict(post, current_user_id), 'question':question_to_dict(question, current_user_id)}
+        
+        return {'is_answered':question.is_answered, 'question':question_to_dict(question, current_user_id)}
     except NoResultFound:
-        raise CustomExceptions.ObjectNotFoundException('No question with that id found')
-
+        raise CustomExceptions.ObjectNotFoundException('The question does not exist or has been deleted.')
 
 
 def comment_add(cur_user_id, post_id, body, lat, lon):

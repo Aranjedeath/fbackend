@@ -639,7 +639,7 @@ class UserSettings(restful.Resource):
     post_parser.add_argument('notify_mention'          , type=bool, location='json', required=True)
     post_parser.add_argument('notify_answer'           , type=bool, location='json', required=True)
     post_parser.add_argument('timezone'                , type=int, location='json', default=0, help="timezone should be the offset of user's timezone from UTC in seconds")
-    
+
     @login_required
     def post(self):
         """
@@ -2256,8 +2256,8 @@ class UserContactsUpload(restful.Resource):
 
         args = post_parser.parse_args()
         try:
-            controllers.contact_file_upload(current_user.id, args['uploaded_file'], args['device_id'])
-            return {'success': True}
+            resp = controllers.contact_file_upload(current_user.id, args['uploaded_file'], args['device_id'])
+            return {'success': True, 'resp':resp}
         
         except CustomExceptions.BadFileFormatException as e:
             print traceback.format_exc(e)
