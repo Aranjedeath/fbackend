@@ -20,7 +20,11 @@ class SimpleMailer(object):
         Initializes the SES connection and sets up the sender mail ID
         """
         self.sender_id = sender
-        self.conn = boto.ses.connect_to_region(region,aws_access_key_id=key, aws_secret_access_key=secret_key)
+        try:
+            self.conn = boto.ses.connect_to_region(region,aws_access_key_id=key, aws_secret_access_key=secret_key)
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])    
 
     def send_mail(self, recipients, message_subject, message_body, user='code'):
         """
@@ -39,7 +43,7 @@ class SimpleMailer(object):
                     return
                 self.conn.send_email(self.sender_id, message_subject, message_body, recipient, format='html')
                 
-                new_email_sent = EmailSent(self.sender_id, recipient, email_id, datetime.datetime.now())
+                new_email_sent = EmailSent(self.sender_id, recipient, email.id, datetime.datetime.now())
                 db.session.add(new_email_sent)
                 db.session.commit()
             except Exception as e:
