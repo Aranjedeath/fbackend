@@ -2348,4 +2348,6 @@ class ReceiveSNSNotifications(restful.Resource):
             
         except Exception as e:
             print traceback.format_exc(e)
+            with open('data.txt', 'w') as outfile:
+                json.dump(request.data, outfile)
             abort(500, message=internal_server_error_message)            
