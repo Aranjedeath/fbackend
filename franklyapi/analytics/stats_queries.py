@@ -10,7 +10,7 @@ from stats_html_helper import make_html_table
 def new_registrations(since_hours = 12):
     results = db.session.execute(text("""SELECT u.user_type, u.registered_with, count(u.username)
                                             from users u
-                                            where u.user_since > now() - interval :since_hours hour
+                                            where u.user_since > date_sub(now(), interval :since_hours hour)
                                             and u.monkness = -1
                                             group by u.user_type, u.registered_with;"""),
                                         params = {'since_hours':since_hours}
@@ -29,14 +29,15 @@ def count_of_question_asked(since_hours = 12):
                                             and t.id IS NULL
                                             and q.deleted = false
                                             and q.added_by IS NULL
-                                            and q.timestamp > now() - interval 12 hour;""")
+                                            and q.timestamp > date_sub(now(), interval :since_hours hour);"""),
+                                        params = {'since_hours':since_hours}
                                 )
 
     resp = make_html_table(results)
     return resp
 
 
-def videos_uploaded():
+def videos_uploaded(since_hours):
     results = db.session.execute(text("""SELECT v.username, v.url ,u.user_type
                                             from videos v
                                             inner join users u on v.username = u.username
@@ -44,7 +45,8 @@ def videos_uploaded():
                                             where u.monkness = -1
                                             and t.id IS NULL
                                             and v.delete = false
-                                            and v.created_at > now() - interval 12 hour;""")
+                                            and v.created_at > date_sub(now(), interval :since_hours hour);"""),
+                                        params = {'since_hours':since_hours}
                                 )
 
     resp = make_html_table(results)
