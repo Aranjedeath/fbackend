@@ -828,7 +828,7 @@ class QuestionView(restful.Resource):
             else:
                 current_user_id = None
             
-            resp = controllers.question_view(cur_user_id=current_user_id, question_id=question_id, short_id=short_id)
+            resp = controllers.question_view(current_user_id=current_user_id, question_id=question_id, short_id=short_id)
             return resp
         
         except CustomExceptions.BlockedUserException as e:
