@@ -2243,8 +2243,35 @@ class RSS(restful.Resource):
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
+class ImageResizer(restful.Resource):
 
+    get_parser = reqparse.RequestParser()
+    get_parser.add_argument('h', type=int, location='args', default=262)
+    get_parser.add_argument('w', type=int, location='args', default=262)
+    get_parser.add_argument('image_url', type=str, required=True, location='args')
 
+    def get(self):
+        """
+        Returns resized image.
+
+        Controller Functions Used:
+            - get_resized_image
+
+        Authentication: None
+        """
+        args = self.get_parser.parse_args()
+        
+        try:
+            from flask import send_file
+            resized_image = controllers.get_resized_image(args['image_url'], args['h'], args['w'])
+
+            return send_file(resized_image, as_attachment=True, attachment_filename='image.jpeg')
+
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
 
 
 class UserContactsUpload(restful.Resource):

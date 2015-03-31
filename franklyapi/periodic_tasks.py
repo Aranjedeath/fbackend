@@ -81,7 +81,7 @@ def reassign_pending_video_tasks():
                                                     OR v.promo IS NULL
                                                     OR v.ultralow IS NULL)
                                                     AND v.delete = 0
-                                                    AND AND v.created_at > :begin_time
+                                                    AND v.created_at > :begin_time
                                                     AND v.url NOT IN :assigned_urls 
                                                 ORDER BY u.user_type DESC, no_video_made
                                             """
