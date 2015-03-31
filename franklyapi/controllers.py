@@ -2651,11 +2651,11 @@ def user_upload_contacts(user_id, device_id, contacts):
     query_contacts = list(query_contacts)
     query_emails = list(query_emails)
 
-def get_resized_image(image_url):
+def get_resized_image(image_url, height=262, width=262):
     from image_processors import resize_video_thumb
     import os
     image_path = media_uploader.download_file(image_url)
-    resized_image = resize_video_thumb(image_url)
+    resized_image = resize_video_thumb(image_url, height, width)
     if os.path.exists(image_path):
         os.remove(image_path)
     return resized_image
