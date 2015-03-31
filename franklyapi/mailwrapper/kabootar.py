@@ -48,4 +48,5 @@ class SimpleMailer(object):
                 db.session.commit()
             except Exception as e:
                 err = sys.exc_info()
+                print e.message
                 raygun.send(err[0],err[1],err[2])
