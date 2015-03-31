@@ -1237,9 +1237,9 @@ class PostView(restful.Resource):
             return resp
         
         except CustomExceptions.BlockedUserException as e:
-            abort(404, message=str(e))
+            abort(404, message=e)
         except CustomExceptions.PostNotFoundException as e:
-            abort(404, message=str(e))
+            abort(404, message=e)
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])
