@@ -146,7 +146,7 @@ def search(cur_user_id, q, offset, limit):
                                     FROM users WHERE 
                                         (   users.username LIKE :query_start OR users.first_name LIKE :query_start OR users.first_name LIKE :query_word_start
                                             OR users.user_title LIKE :query_contained OR users.bio LIKE :query_contained
-                                            OR users.id IN (SELECT search_defaults.user FROM search_defaults WHERE search_defaults.category LIKE :query_start)
+                                            OR users.id IN (SELECT search_defaults.user FROM search_defaults WHERE search_defaults.category in (SELECT search_categories.id FROM search_categories WHERE search_categories.name LIKE :query_start))
                                             {where_clause}
                                         )
                                         and monkness=-1
