@@ -2346,17 +2346,16 @@ class ReceiveSNSNotifications(restful.Resource):
             if notification_type == 'Bounce':
                 if message['bounce']['bounceType'] == 'Permanent':
                     bounce_sub_type = message['bounce']['bounceSubType']
-                    return controllers.register_bad_email( email=email, reason_type=notification_type, reason_subtype=bounce_sub_type)
+                    return controllers.register_bad_email(email=email, reason_type=notification_type, reason_subtype=bounce_sub_type)
             if notification_type == 'Complaint':
                 complaint_feedback_type = message['complaint']['complaintFeedbackType']
-                return controllers.register_bad_email( email=email, reason_type=notification_type, reason_subtype=complaint_feedback_type)
-            
-            return {'success':'false','email':email,'reason':'Not a bad email'}
-            
+                return controllers.register_bad_email(email=email, reason_type=notification_type, reason_subtype=complaint_feedback_type)
+            return {'success':'false', 'email':email, 'reason':'Not a bad email'}
+
         except Exception as e:
             print traceback.format_exc(e)
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             with open('data.txt', 'w') as outfile:
                 json.dump(request.data, outfile)
-            abort(500, message=internal_server_error_message)            
+            abort(500, message=internal_server_error_message)
