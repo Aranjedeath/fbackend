@@ -5,7 +5,7 @@ from sqlalchemy.sql import text
 import make_notification as notification
 from mailwrapper import email_helper
 from CustomExceptions import ObjectNotFoundException
-
+import controllers
 '''
 Sends out both Push and email.
 Called after the low quality of
@@ -247,6 +247,193 @@ def count_of_notifications_sent_by_type(user_id, notification_type):
     for row in result:
         return row[0]
 
+# TODO : change method name
+def count_of_notifications_sent_by_type_rg(user_id, notification_type):
+    '''
+    returns count of notifications sent to user with specified notification type.
+    '''
+
+    result = db.session.execute(text('''Select count(*) from user_push_notifications upn
+                                        left join notifications n on n.id = upn.notification_id
+                                        where
+                                        user_id = :user_id
+                                        and n.type = :type_of_notification;'''),
+                                params={"user_id": user_id,
+                                         "type_of_notification": notification_type})
+    for row in result:
+        return row[0]
+
+# TODO : clean commented code.
+def user_followers_milestone_notifications():
+    # # old query : gets count from database but cannot pump the count. SEE CONTROLLERS.GET_FOLLOWER_COUNT
+
+    # result = db.session.execute(text('''SELECT distinct uf.followed as user,sum(if(isnull(ufc.id),0,1)) + if(isnull(stc.follower_count),0,stc.follower_count) as follow_count,monkness,username,first_name
+    #                                                         from user_follows uf
+    #                                                         inner join users u on u.id = uf.followed
+    #                                                         left join inflated_stats stc on stc.user = uf.followed
+    #                                                         left join user_follows ufc on ufc.followed = uf.followed
+    #                                                         where u.monkness = -1
+    #                                                         and uf.timestamp >= date_sub(now(), interval 1 day)
+    #                                                         and ufc.unfollowed = false
+    #                                                         group by uf.id,uf.followed;
+    #                                                     '''))
+    result = db.session.execute(text('''SELECT distinct uf.followed as user
+                                                            from user_follows uf
+                                                            inner join users u on u.id = uf.followed
+                                                            where u.monkness = -1
+                                                            and uf.timestamp >= date_sub(now(), interval 1 day)
+                                                            group by uf.followed
+                                        union SELECT distinct uf.user as user
+                                                            from inflated_stats uf
+                                                            inner join users u on u.id = uf.user
+                                                            where u.monkness = -1
+                                                            and uf.timestamp >= date_sub(now(), interval 1 day)
+                                                            group by uf.user;
+                                                        '''))
+
+    for row in result:
+        check_and_make_milestone('user_followers', row[0], row[0], controllers.get_follower_count(row[0]))
+
+# TODO : clean commented code.
+def post_likes_milestone_notifications():
+    # result = db.session.execute(text('''SELECT distinct pl.post as post, posts.question_author, sum(if(isnull(plc.id),0,1)) + if(isnull(stc.like_count),0,stc.like_count) as like_count
+    #                                                         from post_likes pl
+    #                                                         inner join posts on posts.id = pl.post
+    #                                                         left join inflated_stats stc on stc.post = pl.post
+    #                                                         left join post_likes plc on plc.post = pl.post
+    #                                                         where pl.timestamp >= date_sub(now(), interval 1 day)
+    #                                                         and plc.unliked = false
+    #                                                         group by pl.id,pl.post;
+    #                                                     '''))
+    result = db.session.execute(text('''SELECT distinct pl.post as post, posts.question_author
+                                                            from post_likes pl
+                                                            inner join posts on posts.id = pl.post
+                                                            where pl.timestamp >= date_sub(now(), interval 1 day)
+                                                            group by pl.post
+                                        union SELECT distinct pl.post as post, posts.question_author
+                                                            from inflated_stats pl
+                                                            inner join posts on posts.id = pl.post
+                                                            where pl.timestamp >= date_sub(now(), interval 1 day)
+                                                            group by pl.post;
+                                                        '''))
+    for row in result:
+        check_and_make_milestone('post_likes', row[1], row[0], controllers.get_post_like_count(row[0]))
+
+def question_upvotes_milestone_notifications():
+    result = db.session.execute(text('''SELECT distinct pl.question as question, questions.question_author
+                                                            from question_upvotes pl
+                                                            inner join questions on questions.id = pl.question
+                                                            where pl.timestamp >= date_sub(now(), interval 1 day)
+                                                            group by pl.question
+                                        union SELECT distinct pl.question as question, questions.question_author
+                                                            from inflated_stats pl
+                                                            inner join questions on questions.id = pl.question
+                                                            where pl.timestamp >= date_sub(now(), interval 1 day)
+                                                            group by pl.question;
+                                        
+                                                        '''))
+    
+    for row in result:
+        check_and_make_milestone('post_likes', row[1], row[0], controllers.get_post_like_count(row[0]))
+
+def check_and_make_milestone(milestone_name,user_id,associated_item_id,count):
+    '''
+    check the latest crossed milestone and sends a notification about the same.
+    
+    associated_item_id is the id of post of question in case of likes of upvotes of questions / posts
+
+    '''
+    # largest milestone count, smaller than count.
+    milestone_crossed = get_milestone_crossed(count,milestones[milestone_name])
+
+    # if count is not null.
+    if(milestone_crossed):
+
+        # make notification type by appending name and count.
+        notification_type = milestone_name + milestone_crossed
+
+        #check if a notification has been sent to user about this milestone or not
+        if count_of_notifications_sent_by_type_rg(user_id=user_id, notification_type=notification_type) == 0:
+
+            #send milestone notification
+            notification.send_milestone_notification(notification_type,user_id)
+
+def get_milestone_crossed(count, milestone_count_list):
+    '''
+    returns largest milestone count crossed smaller than count.
+        otherwise null
+    '''
+    try: return str(max(int(t) for t in milestone_count_list if t != '' and int(t) < int(count)))
+    except ValueError: return None
 
 
 
+# dictionary that saves counts as milestones
+#
+# notification type = milestone+count 
+# ex - 'user_follwers100'
+#
+# TODO: move to config or other suitable place.
+milestones = {
+    'user_followers':{
+        '100'       :100,
+        '200'       :200,
+        '500'       :500,
+        '1000'      :1000,
+        '5000'      :5000,
+        '10000'     :10000,
+        '20000'     :20000,
+        '50000'     :50000,
+        '1000000'   :1000000,
+        '10000000'  :10000000,
+    },
+    'post_likes':{
+        '100'       :100,
+        '200'       :200,
+        '500'       :500,
+        '1000'      :1000,
+        '5000'      :5000,
+        '10000'     :10000,
+        '20000'     :20000,
+        '50000'     :50000,
+        '1000000'   :1000000,
+        '10000000'  :10000000,
+    },
+    'upvotes':{
+        '100'       :100,
+        '200'       :200,
+        '500'       :500,
+        '1000'      :1000,
+        '5000'      :5000,
+        '10000'     :10000,
+        '20000'     :20000,
+        '50000'     :50000,
+        '1000000'   :1000000,
+        '10000000'  :10000000,
+    },
+    'profile_views':{
+        '100'       :100,
+        '200'       :200,
+        '500'       :500,
+        '1000'      :1000,
+        '5000'      :5000,
+        '10000'     :10000,
+        '20000'     :20000,
+        '50000'     :50000,
+        '1000000'   :1000000,
+        '10000000'  :10000000,
+    },
+    'post_views':{
+        '100'       :100,
+        '200'       :200,
+        '500'       :500,
+        '1000'      :1000,
+        '5000'      :5000,
+        '10000'     :10000,
+        '20000'     :20000,
+        '50000'     :50000,
+        '1000000'   :1000000,
+        '10000000'  :10000000,
+    }
+
+}
