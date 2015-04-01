@@ -17,12 +17,12 @@ def weekly_macro_metrics():
     questions_answered = day_distribution_questions_answered()
     video_views = day_distribution_video_views()
 
-    report =  "Frankly weekly report dating back 7 days from %s " % str(datetime.datetime.now().date())
-    report +="<table border='1'><tbody><tr>" \
-             "<th>Day</th>" \
-             "<th>Questions Asked</th>" \
-             "<th>Questions Answered</th>" \
-             "<th>Video Views</th></tr>"
+    report = "Frankly weekly report dating back 7 days from %s " % str(datetime.datetime.now().date())
+    report += "<table border='1'><tbody><tr>" \
+                "<th>Day</th>" \
+                "<th>Questions Asked</th>" \
+                "<th>Questions Answered</th>" \
+                "<th>Video Views</th></tr>"
     for i in range(7):
         day = (datetime.datetime.now() - datetime.timedelta(days=i + 1))
         report += day.strftime('<tr><td> %A %d  %B </td>')
@@ -32,7 +32,7 @@ def weekly_macro_metrics():
         report += "</tr>"
 
     report += "</tbody></table>"
-    email_helper.send_weekly_report(config.WEEKLY_MAIL_RECIPIENTS,report)
+    email_helper.send_weekly_report(config.WEEKLY_MAIL_RECIPIENTS, report)
 
 
 def daily_content_report():
@@ -49,7 +49,8 @@ def daily_content_report():
                       questions_with_most_upvotes(20))
 
     msg4 = make_panel('Usernames of top 20 people with the highest increase'
-                      ' in follows (real follows)', users_with_highest_increase_in_follows(20))
+                      ' in follows (real follows)',
+                      users_with_highest_increase_in_follows(20))
 
     msg5 = make_panel('Links of top 20 questions with the highest likes (real)', questions_with_highest_likes(20))
 
@@ -78,7 +79,7 @@ def intra_day_content_report(interval):
 
 def day_distribution_questions_asked():
     result = []
-    for i in range(1,8):
+    for i in range(1, 8):
         day = (datetime.datetime.now() - datetime.timedelta(days=i)).date()
         result.append(number_of_questions_asked([0], 1, day))
     return result
@@ -86,7 +87,7 @@ def day_distribution_questions_asked():
 
 def day_distribution_questions_answered():
     result = []
-    for i in range(1,8):
+    for i in range(1, 8):
         day = (datetime.datetime.now() - datetime.timedelta(days=i)).date()
         result.append(number_of_answers_uploaded([0], 1, day))
     return result
@@ -94,13 +95,13 @@ def day_distribution_questions_answered():
 
 def day_distribution_video_views():
     result = []
-    for i in range(1,14):
+    for i in range(1, 14):
         day = (datetime.datetime.now() - datetime.timedelta(days=i)).date()
         result.append(number_of_videos_viewed(1, day))
     return result
 
 
-def number_of_videos_viewed(day_count,end_date=datetime.datetime.now(),range_type="single_day"):
+def number_of_videos_viewed(day_count, end_date=datetime.datetime.now(), range_type="single_day"):
 
     start_of_time_period, end_of_time_period = time_delta(day_count, end_date, range_type)
 
@@ -115,13 +116,13 @@ def number_of_videos_viewed(day_count,end_date=datetime.datetime.now(),range_typ
         return None
 
 
-def number_of_answers_uploaded(user_types, day_count, end_date=datetime.datetime.now(),range_type="single_day"):
+def number_of_answers_uploaded(user_types, day_count, end_date=datetime.datetime.now(), range_type="single_day"):
     start_of_time_period, end_of_time_period = time_delta(day_count, end_date, range_type)
     answer_query = Post.query.join(User, User.id == Post.answer_author
-                            ).filter( User.user_type.in_(user_types),
-                                      Post.deleted == False,
-                                      Post.timestamp < end_of_time_period,
-                                      Post.timestamp >= start_of_time_period
+                            ).filter(User.user_type.in_(user_types),
+                                     Post.deleted == False,
+                                     Post.timestamp < end_of_time_period,
+                                     Post.timestamp >= start_of_time_period
                             )
     total_answer_count = answer_query.count()
 
@@ -129,7 +130,7 @@ def number_of_answers_uploaded(user_types, day_count, end_date=datetime.datetime
 
     return total_answer_count # {'total_count':total_answer_count, 'answer_list':answer_list}
 
-def number_of_questions_asked(user_types, day_count, end_date=datetime.datetime.now(),range_type="single_day"):
+def number_of_questions_asked(user_types, day_count, end_date=datetime.datetime.now(), range_type="single_day"):
     start_of_time_period, end_of_time_period = time_delta(day_count, end_date, range_type)
     question_query = Question.query.join(User, Question.question_to == User.id
                                     ).filter(
@@ -148,7 +149,7 @@ def video_view_count_logger():
     total_view_count = Post.query.with_entities(func.sum(Post.view_count).label('sum'))[0][0]
     date = datetime.datetime.now()
     db.session.execute(text("Insert into stats (total_video_view_count,counted_on) values (:view_count,:date)"),
-                       params={'view_count':total_view_count,'date':date})
+                       params={'view_count':total_view_count, 'date':date})
     db.session.commit()
 
 
@@ -160,8 +161,8 @@ def number_of_users_registered(user_types, day_count, end_date=datetime.datetime
 
     user_query = User.query.filter(
                                     User.user_type.in_(user_types),
-                                    User.user_since<end_of_time_period,
-                                    User.user_since>=start_of_time_period
+                                    User.user_since < end_of_time_period,
+                                    User.user_since >= start_of_time_period
                                  )
 
     total_user_count = user_query.count()
@@ -199,9 +200,9 @@ def users_who_added_profile_videos(user_types, day_count, end_date=datetime.date
     start_of_time_period = end_of_time_period - datetime.timedelta(days=day_count)
 
     user_query = User.query.filter(  
-                                    User.profile_video!=None,
-                                    User.user_since<end_of_time_period,
-                                    User.user_since>=start_of_time_period
+                                    User.profile_video != None,
+                                    User.user_since < end_of_time_period,
+                                    User.user_since >= start_of_time_period
                                 )
 
     total_count = user_query.count()
@@ -210,18 +211,17 @@ def users_who_added_profile_videos(user_types, day_count, end_date=datetime.date
 
     return {'total_count':total_count, 'user_list':user_list}
 
-
 def time_delta(day_count, end_date, range_type):
     today_timetuple = end_date.timetuple()
     hour, minute = 23, 59
     if range_type != 'single_day':
-        hour,minute = 0,0
+        hour, minute = 0, 0
 
     end_of_time_period = datetime.datetime(year=today_timetuple.tm_year, month=today_timetuple.tm_mon,
                                            day=today_timetuple.tm_mday, hour=hour, minute=minute, second=0)
     start_of_time_period = end_of_time_period - datetime.timedelta(days=day_count)
 
-    return start_of_time_period,end_of_time_period
+    return start_of_time_period, end_of_time_period
 
 
 
@@ -242,15 +242,15 @@ def send_daily_mail_old(day_count=1, emails=['shashank@frankly.me']):
     answer_list_text = []
 
     for answer in celeb_answer_list:
-        question = Question.query.filter(Question.id==answer.question).one()
-        answer_author = User.query.filter(User.id==answer.answer_author).one()
+        question = Question.query.filter(Question.id == answer.question).one()
+        answer_author = User.query.filter(User.id == answer.answer_author).one()
     
         answer_list_text.append('<a href="http://frankly.me/{username}">{first_name}</a>({user_title}) : <a href="http://frankly.me/p/{short_id}">{question_text}{contd}</a>, '.format(username=answer_author.username,
                                                                                     first_name=answer_author.first_name,
                                                                                     user_title=answer_author.user_title,
                                                                                     short_id=answer.client_id,
                                                                                     question_text=question.body[:80],
-                                                                                    contd = '' if question.body<=80 else '...'))
+                                                                                    contd='' if question.body<=80 else '...'))
     celeb_answer_list = '<br>'.join(answer_list_text)
 
     user_answer_count = number_of_answers_uploaded(user_types=[0], day_count=day_count)['total_count']
@@ -288,17 +288,17 @@ def send_daily_mail_old(day_count=1, emails=['shashank@frankly.me']):
 <br>{celeb_answer_list}
 <br><br>
 
-    """.format( total_registration_count=total_registration_count,
-                registration_counts=registration_counts,
-                total_question_count=total_question_count,
-                questions_asked_to_celebs=questions_asked_to_celebs,
-                questions_asked_to_other_users=questions_asked_to_other_users,
-                total_answer_count=total_answer_count,
-                user_answer_count=user_answer_count,
-                celeb_register_count=celeb_register_count,
-                celeb_list=celeb_list,
-                celeb_answer_count=celeb_answer_count,
-                celeb_answer_list=celeb_answer_list)
+    """.format(total_registration_count=total_registration_count,
+               registration_counts=registration_counts,
+               total_question_count=total_question_count,
+               questions_asked_to_celebs=questions_asked_to_celebs,
+               questions_asked_to_other_users=questions_asked_to_other_users,
+               total_answer_count=total_answer_count,
+               user_answer_count=user_answer_count,
+               celeb_register_count=celeb_register_count,
+               celeb_list=celeb_list,
+               celeb_answer_count=celeb_answer_count,
+               celeb_answer_list=celeb_answer_list)
 
     from controllers import mailer
     message_subject = 'Stats for {date}'.format(date=datetime.datetime.strftime(datetime.datetime.now(), '%d-%b-%Y, %a'))
