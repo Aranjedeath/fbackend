@@ -112,22 +112,28 @@ def question_asked_notifications():
 
 
 
-''' Gets most popular question that I asked
+''' Gets most popular question that have been asked
 and sends out a notification prompting to share the question
 '''
 def prompt_sharing_popular_question():
 
 
 
+    ''' Select questions that have been upvoted the most
+'''
     results = db.session.execute(text('''  Select count(*) as real_upvote_count, i.upvote_count,
                                            q.question_author, q.body,
                                            qu.question
                                            from question_upvotes as qu
                                            left join inflated_stats as i on i.question = qu.question
                                            left join questions q on q.id = qu.question
+                                           left join notifications n on n.object_id = q.id
                                            where
-                                           qu.timestamp > date_sub(now(), interval 1 day)
+                                           qu.timestamp > date_sub(now(), interval 20 day)
                                            and qu.downvoted = 0
+                                           and n.type = 'popular-question-self_user'
+                                           and n.id is null
+                                           and q.is_answered = 0
                                            group by qu.question
                                            order by real_upvote_count DESC;'''))
     for row in results:
@@ -138,27 +144,33 @@ def prompt_sharing_popular_question():
                                     question_body=row[3], upvote_count=upvote_count)
 
 
+''' Creates milestone notifications
+for a user's followers
+'''
 def user_followers_milestone_notifications():
 
     result = db.session.execute(text('''SELECT distinct uf.followed as user
-                                                            from user_follows uf
-                                                            inner join users u on u.id = uf.followed
-                                                            where u.monkness = -1
-                                                            and uf.timestamp >= date_sub(now(), interval 1 day)
-                                                            group by uf.followed
+                                        from user_follows uf
+                                        inner join users u on u.id = uf.followed
+                                        where u.monkness = -1
+                                        and uf.timestamp >= date_sub(now(), interval 1 day)
+                                        group by uf.followed
                                         union SELECT distinct uf.user as user
-                                                            from inflated_stats uf
-                                                            inner join users u on u.id = uf.user
-                                                            where u.monkness = -1
-                                                            and uf.timestamp >= date_sub(now(), interval 1 day)
-                                                            group by uf.user;
+                                        from inflated_stats uf
+                                        inner join users u on u.id = uf.user
+                                        where u.monkness = -1
+                                        and uf.timestamp >= date_sub(now(), interval 1 day)
+                                        and uf.follower_count > 0
+                                        group by uf.user;
                                                         '''))
 
     for row in result:
-        check_and_make_milestone('user_followers', row[0], row[0], controllers.get_follower_count(row[0]))
+        check_and_make_milestone('user_followers_milestone', row[0], row[0], controllers.get_follower_count(row[0]))
 
 
-
+''' Creates milestone notifications for a
+user's likes
+'''
 def post_likes_milestone_notifications():
 
 
@@ -174,7 +186,7 @@ def post_likes_milestone_notifications():
                                                             group by pl.post;
                                                         '''))
     for row in result:
-        check_and_make_milestone('post_likes', row[1], row[0], controllers.get_post_like_count(row[0]))
+        check_and_make_milestone('post_likes_milestone', row[1], row[0], controllers.get_post_like_count(row[0]))
 
 
 def question_upvotes_milestone_notifications():
@@ -216,7 +228,7 @@ def check_and_make_milestone(milestone_name, user_id, associated_item_id, count)
                                                interval = datetime.datetime.now() - datetime.timedelta(days = 100000)) == 0:
 
             #send milestone notification
-            notification.send_milestone_notification(notification_type,user_id)
+            notification.send_milestone_notification(milestone_name, milestone_crossed, associated_item_id ,user_id)
 
 def get_milestone_crossed(count, milestone_count_list):
     '''

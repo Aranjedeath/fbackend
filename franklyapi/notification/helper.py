@@ -22,6 +22,24 @@ key = {
         'day-limit': 1
     }
 
+    'following-new-post': {
+        'text': '''<question_author> answered the question <question_body>''',
+        'url': config.WEB_URL + '/p/%s',
+        'day-limit': 1
+
+    },
+    'user_followers_milestone':{
+        'text': 'You just got your <milestone_count>th follower. Get more by sharing your profile.',
+        'url': config.WEB_URL + '%s',
+        'day-limit': 1
+    },
+    'post_likes_milestone':{
+        'text': 'Your answer has crossed over <milestone_count> likes. Share it to become popular.',
+        'url': config.WEB_URL + '/p/%s',
+        'day-limit': 1
+
+    }
+
 }
 
 
@@ -47,6 +65,14 @@ def post_add(answer_author, question_body):
 def popular_question_text(question_body, upvote_count):
     text = key['popular-question-self_user']['text']
     return text.replace('<question_body>', question_body).replace('<upvote_count>', str(((upvote_count/10)*10)))
+
+def following_answered_question(author_name, question_body):
+    text = key['following-new-post']['text']
+    return text.replace('<question_author', author_name).replace('<question_body>', question_body)
+
+def milestone_text(milestone_name, milestone_count):
+    text = key[milestone_name]['text']
+    return text.replace('<milestone_count>',milestone_count)
 
 
 milestones = {
