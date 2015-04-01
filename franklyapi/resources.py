@@ -2339,7 +2339,7 @@ class ReceiveSNSNotifications(restful.Resource):
         """
         try:
             notification = json.loads(request.data)
-            message = json.loads(notification)['Message']
+            message = json.loads(notification['Message'])
             email = message['mail']['destination'][0]
             notificationType = message['notificationType']
 
