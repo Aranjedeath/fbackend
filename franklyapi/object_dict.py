@@ -328,14 +328,17 @@ def question_to_dict(question, cur_user_id=None):
         ques_dict['post_id'] = get_post_id_from_question_id(question.id)
     return ques_dict
 
-def post_to_dict(post, cur_user_id=None, distance=None):
+def post_to_dict(post, cur_user_id=None, distance=None, include_comments=3):
     from configs import config
-    from controllers import get_video_states, get_questions, get_thumb_users, get_posts_stats, get_users_stats
+    from controllers import get_video_states, get_questions, get_thumb_users, get_posts_stats, get_users_stats, get_comments_for_posts
     users = get_thumb_users([post.question_author, post.answer_author], cur_user_id=cur_user_id)
     questions = get_questions([post.question], cur_user_id=cur_user_id)
     
     post_stats = get_posts_stats([post.id], cur_user_id=cur_user_id)
     user_stats = get_users_stats([post.answer_author], cur_user_id=cur_user_id)
+    if include_comments:
+        all_comments = get_comments_for_posts(cur_user_id, post.id, offset=0, limit=include_comments)
+
     
     post_dict = {
         'id': post.id,
@@ -397,19 +400,20 @@ def post_to_dict(post, cur_user_id=None, distance=None):
         'view_count':post_stats[post.id]['view_count'],
         'web_link':'http://frankly.me/p/{client_id}'.format(client_id=post.client_id),
         'whatsapp_share_count':post_stats[post.id]['whatsapp_share_count'],
-        'other_share_count':post_stats[post.id]['other_share_count']
+        'other_share_count':post_stats[post.id]['other_share_count'],
+        'comments':all_comments[post.id] if include_comments else {}
     }
     post_dict['answer']['media']['thumbnail_url'] = post_dict['answer']['media_urls']['thumb']
     return post_dict
 
 
 
-def posts_to_dict(posts, cur_user_id=None, distance=None):
+def posts_to_dict(posts, cur_user_id=None, distance=None, include_comments=3):
     if not posts:
         return []
 
     from configs import config
-    from controllers import get_video_states, get_questions, get_thumb_users, get_posts_stats, get_users_stats
+    from controllers import get_video_states, get_questions, get_thumb_users, get_posts_stats, get_users_stats, get_comments_for_posts
     
     user_list = set()
     answer_media_urls = {}
@@ -428,7 +432,9 @@ def posts_to_dict(posts, cur_user_id=None, distance=None):
     questions = get_questions(question_ids, cur_user_id=cur_user_id)
     post_stats = get_posts_stats(post_ids, cur_user_id)
     user_stats = get_users_stats(user_list, cur_user_id)
-
+    
+    if include_comments:
+        all_comments = get_comments_for_posts(cur_user_id, post_ids, offset=0, limit=include_comments)
 
     posts_dict = []
     for post in posts:
@@ -493,10 +499,13 @@ def posts_to_dict(posts, cur_user_id=None, distance=None):
             'view_count':post_stats[post.id]['view_count'],
             'web_link':'http://frankly.me/p/{client_id}'.format(client_id=post.client_id),
             'whatsapp_share_count':post_stats[post.id]['whatsapp_share_count'],
-            'other_share_count':post_stats[post.id]['other_share_count']
+            'other_share_count':post_stats[post.id]['other_share_count'],
+            'comments':all_comments[post.id] if include_comments else {}
         }
         p_dict['answer']['media']['thumbnail_url'] = p_dict['answer']['media_urls']['thumb']
         posts_dict.append(p_dict)
+
+
     return posts_dict
 
 
@@ -519,6 +528,7 @@ def comment_to_dict(comment):
                             'channel_id':'user_{user_id}'.format(user_id=users[comment.comment_author]['id'])
                         },
                         'timestamp': int(time.mktime(comment.timestamp.timetuple())),
+                        'on_post':comment.on_post
                     }
     return comment_dict
 
@@ -541,6 +551,7 @@ def comments_to_dict(comments):
                             'channel_id':'user_{user_id}'.format(user_id=users[comment.comment_author]['id'])
                         },
                         'timestamp': int(time.mktime(comment.timestamp.timetuple())),
+                        'on_post':comment.on_post
                     }
         comments_dict.append(com_dict)
 

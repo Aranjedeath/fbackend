@@ -1452,6 +1452,41 @@ def comment_delete(cur_user_id, comment_id):
     except NoResultFound:
         raise CustomExceptions.ObjectNotFoundException('Comment Not available for action')
 
+def get_comments_for_posts(cur_user_id, post_ids, offset=0, limit=3):
+    single_query = """SELECT * FROM (SELECT comments.id, comments.body, comments.on_post, comments.comment_author, comments.timestamp 
+                                        FROM comments
+                                        WHERE comments.on_post=:post_id_{idx}
+                                            AND comments.comment_author NOT IN (SELECT user_blocks.blocked_user FROM user_blocks WHERE user_blocks.user=:cur_user_id AND user_blocks.unblocked=false)
+                                            AND comments.deleted=false
+                                        ORDER BY comments.timestamp DESC
+                                        LIMIT :offset,:limit
+                                    ) alias_{idx}
+
+                    """
+    params = {'cur_user_id':cur_user_id, 'offset':offset, 'limit':limit}
+    idx = 0
+    queries = []
+    response = {}
+    for post_id in post_ids:
+        queries.append(single_query.format(idx=idx))
+        params.update({'post_id_{idx}'.format(idx=idx):post_id})
+        idx +=1
+        response[post_id] = {'comments':[], 'post': post_id, 'next_index':offset+limit}
+
+    all_comments = []
+    if queries:
+        query = ' UNION ALL '.join(queries)
+        result = db.session.execute(text(query), params=params)
+        all_comments = [row for row in result]
+
+    all_comments_dict = comments_to_dict(all_comments)
+    
+    for comment in all_comments_dict:
+        response[comment['on_post']]['comments'].append(comment)
+
+    return response
+
+
 
 def comment_list(cur_user_id, post_id, offset, limit):
         result = db.session.execute(text("""SELECT answer_author, question_author
