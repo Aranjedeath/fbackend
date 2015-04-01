@@ -2345,11 +2345,12 @@ class ReceiveSNSNotifications(restful.Resource):
 
             if notification_type == 'Bounce':
                 if message['bounce']['bounceType'] == 'Permanent':
-                    return controllers.register_bad_email( email=email, reason_type=notification_type, reason_subtype='')
+                    bounce_sub_type = message['bounce']['bounceSubType']
+                    return controllers.register_bad_email( email=email, reason_type=notification_type, reason_subtype=bounce_sub_type)
             if notification_type == 'Complaint':
                 complaint_feedback_type = message['complaint']['complaintFeedbackType']
                 return controllers.register_bad_email( email=email, reason_type=notification_type, reason_subtype=complaint_feedback_type)
-
+            
             return {'success':'false','email':email,'reason':'Not a bad email'}
             
         except Exception as e:
