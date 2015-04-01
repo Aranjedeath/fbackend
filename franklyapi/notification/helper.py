@@ -20,8 +20,7 @@ key = {
         'text': '''Your question "<question_body>" has received <upvote_count>+ upvotes. Share it to get more upvotes.''',
         'url': config.WEB_URL + '/q/%s' ,
         'day-limit': 1
-    }
-
+    },
     'following-new-post': {
         'text': '''<question_author> answered the question <question_body>''',
         'url': config.WEB_URL + '/p/%s',
