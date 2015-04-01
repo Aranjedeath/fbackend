@@ -43,12 +43,20 @@ def push_notification(notification_id, user_id, source='application'):
     if notification_decision.\
             count_of_push_notifications_sent(user_id = user_id) <= config.GLOBAL_PUSH_NOTIFICATION_DAY_LIMIT:
 
+
+        print 'Still under limits for number of daily notifications'
+
+        from controllers import get_device_type
+
+
         notification = Notification.query.get(notification_id)
 
         group_id = '-'.join([str(notification.type), str(notification.object_id)])
         for device in AccessToken.query.filter(AccessToken.user==user_id,
                                                 AccessToken.active==True,
                                                 AccessToken.push_id!=None).all():
+
+            print 'Found valid devices for push notifications'
 
             user_push_notification = UserPushNotification(
                                                           notification_id=notification_id,
@@ -83,11 +91,13 @@ def push_notification(notification_id, user_id, source='application'):
                         "heading":"Frankly.me"
                     }
             if get_device_type(device.device_id)=='android':
+                print 'pushing gcm for android'
                 from GCM_notification import GCM
                 gcm_sender = GCM()
                 gcm_sender.send_message([device.push_id], payload)
 
             if get_device_type(device.device_id)=='ios':
+                print 'pushing for iOS'
                 from APN_notification import  APN
                 apns = APN()
                 apns.send_message([device.push_id],payload)
@@ -215,8 +225,99 @@ def new_post(post_id, question_body="", notification_type = 'post-add-self_user'
 
     return notification
 
-def new_comment(post_id):
-    pass
+''' Sent if the user's question is becoming popular
+on count of number of upvotes received
+'''
+def share_popular_question(user_id, question_id, upvote_count, question_body):
+
+    notification_type = 'popular-question-self_user'
+    text = helper.popular_question_text(question_body=question_body, upvote_count=upvote_count)
+    k = key[notification_type]
+    link = k['url'] % question_id
+
+    notification = Notification(type=notification_type, text=text,
+                                link=link, object_id=question_id,
+                                icon=None, created_at=datetime.datetime.now(),
+                                manual=False, id=get_item_id())
+    db.session.add(notification)
+    db.session.commit()
+
+    add_notification_for_user(notification_id=notification.id,
+                                user_ids=[user_id],
+                                list_type='me',
+                                push_at= datetime.datetime.now()
+                            )
+
+
+    return notification
+
+''' Create notifications for
+users who are following another user who has recently
+answered a question
+'''
+def following_answered_question():
+
+    notification_type = 'following-new-post'
+    k = key[notification_type]
+    #Get post id and post author for the last one day
+    #Whose following post notification has not been created yet
+    results = db.session.execute(text('''
+                                      SELECT p.answer_author, p.id,
+                                      q.body,
+                                      u.first_name, u.profile_picture
+                                      FROM posts p
+                                      LEFT JOIN notifications n on n.object_id = p.id
+                                      LEFT JOIN questions q on q.id = p.question
+                                      LEFT JOIN users u on u.id = p.question_author
+                                      WHERE
+                                      p.timestamp >= date_sub(NOW(), INTERVAL 1 DAY)
+                                      AND n.type = :notification_type
+                                      AND n.id IS NULL ;
+                                      '''), params={'notification_type': notification_type})
+
+    for row in results:
+        text = helper.following_answered_question(question_body=row[2], author_name=row[3])
+
+        link = k['url'] % row[1]
+
+        icon = row[4]
+
+        notification = Notification(type=notification_type, text=text,
+                                link=link, object_id=row[1],
+                                icon=icon, created_at=datetime.datetime.now(),
+                                manual=False, id=get_item_id())
+        db.session.add(notification)
+        db.session.commit()
+
+        followers = Follow.query.with_entities(Follow.followed).filter(Follow.followed == row[0]).all()
+        user_ids = [f[0] for f in followers]
+
+        add_notification_for_user(notification_id=notification.id,
+                                  user_ids= user_ids,
+                                  list_type='me',
+                                  push_at= datetime.datetime.now())
+
+def send_milestone_notification(milestone_name, milestone_crossed, object_id, user_id):
+    '''
+    read notification by notification_type
+        and send it to user
+    '''
+    text = helper.milestone_text(milestone_name, milestone_crossed)
+
+    link = key[milestone_name]['url'] % object_id
+
+    notification = Notification(type=(milestone_name+'_'+milestone_crossed), text=text,
+                                link=None, object_id=user_id,
+                                icon=None, created_at=datetime.datetime.now(),
+                                manual=False, id=get_item_id())
+    db.session.add(notification)
+    db.session.commit()
+
+    add_notification_for_user(notification_id=notification.id,
+                                user_ids=[user],
+                                list_type='me',
+                                push_at=datetime.datetime.now())
+
 
 def notification_user_follow(follow_id):
     follow = Follow.query.filter(Follow.id==follow_id, Follow.deleted==False)
@@ -252,5 +353,6 @@ def notification_user_follow(follow_id):
     
 
     return notification
+
 
 

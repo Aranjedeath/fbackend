@@ -3,11 +3,17 @@ from app import db
 from models import User
 from analytics import stats
 from mailwrapper import email_helper
-from notification import notification_decision
+from notification import notification_decision, make_notification
 
 import datetime
 import async_encoder
 import traceback
+
+'''
+@ 00:00 every day
+'''
+def log_video_count():
+    stats.video_view_count_logger()
 
 '''
 @ 00:30 every day
@@ -16,10 +22,38 @@ def decide_popular_users_based_on_questions_asked():
     notification_decision.decide_popular_users()
 
 '''
+@ 9 AM Every day
+'''
+def following_answered_question():
+    make_notification.following_answered_question()
+
+'''
+@ 4 PM Every day
+'''
+def share_my_popular_question_notification():
+    notification_decision.prompt_sharing_popular_question()
+
+'''
+@ 10 AM Every day
+'''
+def user_followers_milestone_notifications():
+    notification_decision.user_followers_milestone_notifications()
+
+'''
+@ 12 Noon every day
+'''
+def post_likes_milestone_notifications():
+    notification_decision.post_likes_milestone_notifications()
+
+'''
 @ 7 PM Every day
 '''
 def notification_question_asked():
     notification_decision.question_asked_notifications()
+
+
+
+
 
 '''
 @ Every 5 minutes
@@ -105,11 +139,7 @@ def reassign_pending_video_tasks():
     print 'Other Videos Assigned:', other_video_count
 
 
-'''
-@ 00:00 every day
-'''
-def log_video_count():
-    stats.video_view_count_logger()
+
 
 '''
 @ 11:00 AM Monday
