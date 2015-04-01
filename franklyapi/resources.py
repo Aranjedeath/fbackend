@@ -1,6 +1,7 @@
 import sys
 import traceback
 import flask
+from flask import request
 from flask.ext import restful
 from flask.ext.restful import abort
 from flask.ext.restful import reqparse
@@ -9,7 +10,7 @@ from raygun4py import raygunprovider
 
 import controllers
 import CustomExceptions
-
+import json
 from configs import config
 
 raygun = raygunprovider.RaygunSender(config.RAYGUN_KEY)
@@ -639,7 +640,7 @@ class UserSettings(restful.Resource):
     post_parser.add_argument('notify_mention'          , type=bool, location='json', required=True)
     post_parser.add_argument('notify_answer'           , type=bool, location='json', required=True)
     post_parser.add_argument('timezone'                , type=int, location='json', default=0, help="timezone should be the offset of user's timezone from UTC in seconds")
-    
+
     @login_required
     def post(self):
         """
@@ -828,7 +829,7 @@ class QuestionView(restful.Resource):
             else:
                 current_user_id = None
             
-            resp = controllers.question_view(cur_user_id=current_user_id, question_id=question_id, short_id=short_id)
+            resp = controllers.question_view(current_user_id=current_user_id, question_id=question_id, short_id=short_id)
             return resp
         
         except CustomExceptions.BlockedUserException as e:
@@ -1237,9 +1238,9 @@ class PostView(restful.Resource):
             return resp
         
         except CustomExceptions.BlockedUserException as e:
-            abort(404, message=str(e))
+            abort(404, message=e)
         except CustomExceptions.PostNotFoundException as e:
-            abort(404, message=str(e))
+            abort(404, message=e)
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])
@@ -2044,6 +2045,7 @@ class ChannelFeed(restful.Resource):
     get_parser.add_argument('offset', type=int, location='args', default=0)
     get_parser.add_argument('limit', type=int, location='args', default=10)
     get_parser.add_argument('X-deviceid', type=str, location='headers')
+    get_parser.add_argument('visit'  , type=int, default=0, location='args', help="visit should be the time difference of the current time and user's first visit in seconds for unauthorised requests")
     get_parser.add_argument('X-Version-Code', type=float, location='headers', default=0)
     get_parser.add_argument('append_top', type=str, location='args', default='')
 
@@ -2064,7 +2066,7 @@ class ChannelFeed(restful.Resource):
             if current_user.is_authenticated():
                 current_user_id = current_user.id                
 
-            return controllers.get_channel_feed(current_user_id, channel_id, args['offset'], args['limit'], args['X-deviceid'], args['X-Version-Code'], args['append_top'])
+            return controllers.get_channel_feed(current_user_id, channel_id, args['offset'], args['limit'], args['X-deviceid'], args['X-Version-Code'], args['append_top'], args['visit'])
         
         except CustomExceptions.BadRequestException as e:
             abort(404, message=str(e))
@@ -2242,8 +2244,35 @@ class RSS(restful.Resource):
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
+class ImageResizer(restful.Resource):
 
+    get_parser = reqparse.RequestParser()
+    get_parser.add_argument('h', type=int, location='args', default=262)
+    get_parser.add_argument('w', type=int, location='args', default=262)
+    get_parser.add_argument('image_url', type=str, required=True, location='args')
 
+    def get(self):
+        """
+        Returns resized image.
+
+        Controller Functions Used:
+            - get_resized_image
+
+        Authentication: None
+        """
+        args = self.get_parser.parse_args()
+        
+        try:
+            from flask import send_file
+            resized_image = controllers.get_resized_image(args['image_url'], args['h'], args['w'])
+
+            return send_file(resized_image, as_attachment=True, attachment_filename='image.jpeg')
+
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
 
 
 class UserContactsUpload(restful.Resource):
@@ -2255,8 +2284,8 @@ class UserContactsUpload(restful.Resource):
 
         args = post_parser.parse_args()
         try:
-            controllers.contact_file_upload(current_user.id, args['uploaded_file'], args['device_id'])
-            return {'success': True}
+            resp = controllers.contact_file_upload(current_user.id, args['uploaded_file'], args['device_id'])
+            return {'success': True, 'resp':resp}
         
         except CustomExceptions.BadFileFormatException as e:
             print traceback.format_exc(e)
@@ -2266,3 +2295,59 @@ class UserContactsUpload(restful.Resource):
             raygun.send(err[0],err[1],err[2])
             print traceback.format_exc(e)
             abort(500, message='upload failure')
+
+class RegisterBadEmail(restful.Resource):
+
+    post_parser = reqparse.RequestParser()
+    
+    post_parser.add_argument('email'         , type=str, required=True, location='json')
+    post_parser.add_argument('reason_type'   , type=str, required=True, location='json')
+    post_parser.add_argument('reason_subtype', type=str, required=True, location='json')
+
+    def post(self):
+        """
+        Registers an email in bad_emails table.
+
+        Controller Functions Used:
+            -register_bad_email
+
+        Authentication: None
+        """
+        args = self.post_parser.parse_args()
+        try:
+            return controllers.register_bad_email(email         = args['email'],
+                                            reason_type = args['reason_type'],
+                                            reason_subtype = args['reason_subtype']
+                                            )
+        except Exception as e:
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)            
+
+class ReceiveSNSNotifications(restful.Resource):
+
+    
+    def post(self):
+        """
+        Receives notifications from aws SNS.
+
+        Controller Functions Used:
+            -register_bad_email
+
+        Authentication: None
+        """
+        try:
+            notification = json.loads(request.data)
+            email = notification['mail']['destination'][0]
+            notificationType = notification['notificationType']
+
+            if notificationType == 'Bounce':
+                if notification['bounce']['bounceType'] == 'Permanent':
+                    return controllers.register_bad_email( email=email, reason_type=notificationType, reason_subtype='')
+
+            return {'success':'false','email':email,'reason':'Not a bad email'}
+            
+        except Exception as e:
+            print traceback.format_exc(e)
+            with open('data.txt', 'w') as outfile:
+                json.dump(request.data, outfile)
+            abort(500, message=internal_server_error_message)            

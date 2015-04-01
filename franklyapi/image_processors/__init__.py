@@ -1,2 +1,2 @@
 from collage import make_collage
-from dimension import sanitize_profile_pic, get_profile_pic_thumb, sanitize_cover_pic
+from dimension import sanitize_profile_pic, get_profile_pic_thumb, sanitize_cover_pic, resize_video_thumb

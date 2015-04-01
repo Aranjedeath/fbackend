@@ -24,7 +24,8 @@ from configs import flag_words
 from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
                     Question, Upvote, Comment, ForgotPasswordToken, Install, Video,\
                     UserFeed, Event, Reshare, Invitable, Invite, ContactUs, InflatedStat,\
-                    SearchDefault, IntervalCountMap, ReportAbuse
+                    SearchDefault, IntervalCountMap, ReportAbuse, SearchCategory,\
+                    Email, BadEmail, EmailSent
 
 from app import redis_client, raygun, db, redis_views, redis_pending_post
 
@@ -1371,24 +1372,39 @@ def post_view(cur_user_id, post_id, client_id=None):
 
         return {'post': post_to_dict(post, cur_user_id), 'pending':post_pending}
     except NoResultFound:
-        raise CustomExceptions.PostNotFoundException("No post with that id found")
+        raise CustomExceptions.PostNotFoundException("The post does not exist or has been deleted")
 
 
-def question_view(cur_user_id, question_id, short_id):
+def question_view(current_user_id, question_id, short_id):
     try:
         if short_id:
-            question = Question.query.filter(Question.short_id==short_id, Question.deleted==False, Question.is_answered==False, Question.is_ignored==False).one()
+            question = Question.query.filter(Question.short_id==short_id, 
+                                            Question.deleted==False,
+                                            Question.is_ignored==False,
+                    #this condition is to   #or_(Question.is_answered==True,
+                    #have private questions #    Question.public==True,
+                                            #    Question.question_to==current_user_id)
+                                            ).one()
         else:
-            question = Question.query.filter(Question.id==question_id, Question.deleted==False, Question.is_answered==False, Question.is_ignored==False).one()
+            question = Question.query.filter(Question.id==question_id, 
+                                            Question.deleted==False,
+                                            Question.is_ignored==False,
+                    #this condition is to   #or_(Question.is_answered==True,
+                    #have private questions #    Question.public==True,
+                                            #    Question.question_to==current_user_id)
+                                            ).one()
 
-        if cur_user_id and (has_blocked(cur_user_id, question.question_to) or has_blocked(cur_user_id, question.question_author)):
-            raise CustomExceptions.BlockedUserException()
-        if question.flag == 0:
-            raise CustomExceptions.ObjectNotFoundException('You cant view this question due to flag.')
-        return {'question': question_to_dict(question, cur_user_id)}
+        question_to = User.query.filter(User.id==question.question_to).one()
+
+        if question.flag == 0 and question.question_author!=current_user_id:
+            raise CustomExceptions.ObjectNotFoundException('The question does not exist or has been deleted.')
+        if question.is_answered:
+            post = Post.query.filter(Post.question==question.id, Post.deleted==False).one()
+            return {'is_answered':question.is_answered, 'post':post_to_dict(post, current_user_id), 'question':question_to_dict(question, current_user_id)}
+        
+        return {'is_answered':question.is_answered, 'question':question_to_dict(question, current_user_id)}
     except NoResultFound:
-        raise CustomExceptions.ObjectNotFoundException('No question with that id found')
-
+        raise CustomExceptions.ObjectNotFoundException('The question does not exist or has been deleted.')
 
 
 def comment_add(cur_user_id, post_id, body, lat, lon):
@@ -2208,7 +2224,7 @@ def prompt_for_profile_video(user_id):
 
 
 
-def get_new_discover(current_user_id, offset, limit, device_id, version_code, visit=None, append_top=''):
+def get_new_discover(current_user_id, offset, limit, device_id, version_code, visit=0, append_top=''):
     from manage_discover import get_discover_list
     append_top_usernames = [username.strip().lower() for username in append_top.split(',')]
     users = User.query.filter(User.username.in_(append_top_usernames)).all()
@@ -2349,37 +2365,44 @@ def get_is_following(cur_user_id, user_ids):
 def search_default(cur_user_id=None):
     from collections import defaultdict
     resp = redis_client.get('search_default')
+    resp = 0
     if resp:
         resp = json.loads(resp)
     else:
-        categories_order = ["Trending Now", "Actors", "Singers", "Twitter Celebrities", "Radio Jockeys", "Subject Experts", "New on Frankly", "Authors", "Entrepreneurs", "Chefs", "Politicians", "Comedians", "Bands"]
-    
-        results = db.session.execute(text("""SELECT search_defaults.category, users.id, users.username, users.first_name,
-                                                    users.user_type, users.user_title, users.profile_picture,
-                                                    users.bio, users.gender,
-                                                    search_defaults.show_always
-                                            FROM users JOIN search_defaults ON users.id=search_defaults.user
-                                            WHERE search_defaults.category IN :categories
-                                            ORDER BY search_defaults.score"""),
-                                        params = {'categories':categories_order}
-                                )
+        # categories_order = ["Trending Now", "Actors", "Singers", "Twitter Celebrities", "Radio Jockeys", "Subject Experts", "New on Frankly", "Authors", "Entrepreneurs", "Chefs", "Politicians", "Comedians", "Bands"]
+        categories = SearchCategory.query.filter().order_by(SearchCategory.score.desc()).all()
+        categories_order = [cat.name for cat in categories]
+        results = db.session.execute(
+            text(
+                """ SELECT 
+                        sc.name, u.id, u.username, u.first_name,
+                        u.user_type, u.user_title, u.profile_picture,
+                        u.bio, u.gender, sd.show_always
+                    FROM 
+                        users u JOIN search_defaults sd ON u.id=sd.user
+                        JOIN search_categories sc ON sd.category=sc.id
+                    ORDER BY 
+                        sd.score
+                """
+            )
+        )
         category_results = defaultdict(list)
         for row in results:
-            user_dict = {'id':row[1],
-                        'username':row[2],
-                        'first_name':row[3],
-                        'last_name':None,
-                        'user_type':row[4],
-                        'user_title':row[5],
-                        'profile_picture':row[6],
-                        'bio':row[7],
-                        'gender':row[8],
-                        'is_following':False,
-                        'channel_id':'user_{user_id}'.format(user_id=row[1]),
-                        'show_always': bool(row[9])
-                        }
+            user_dict = {
+                'id':row[1],
+                'username':row[2],
+                'first_name':row[3],
+                'last_name':None,
+                'user_type':row[4],
+                'user_title':row[5],
+                'profile_picture':row[6],
+                'bio':row[7],
+                'gender':row[8],
+                'is_following':False,
+                'channel_id':'user_{user_id}'.format(user_id=row[1]),
+                'show_always': bool(row[9])
+            }
             category_results[row[0]].append(user_dict)
-
 
         for category, users in category_results.items():
             if len(category_results[category]) > 3:
@@ -2475,7 +2498,7 @@ def parse_channel_id(channel_id):
     return channel_type, channel_id
 
 
-def get_channel_feed(cur_user_id, channel_id, offset, limit, device_id=None, version_code=None, append_top=''):
+def get_channel_feed(cur_user_id, channel_id, offset, limit, device_id=None, version_code=None, append_top='', visit=0):
     channel_type, channel_id = parse_channel_id(channel_id)
     
     device_type = get_device_type(device_id) if device_id else None
@@ -2491,7 +2514,7 @@ def get_channel_feed(cur_user_id, channel_id, offset, limit, device_id=None, ver
         return home_feed(cur_user_id, offset, limit, web)
 
     if channel_type == 'discover':
-        return get_new_discover(cur_user_id, offset, limit, device_id, version_code, append_top=append_top)
+        return get_new_discover(cur_user_id, offset, limit, device_id, version_code, append_top=append_top, visit=visit)
 
 def get_channel_list(cur_user_id, device_id, version_code):
     feed_banner = {'type':'banner',
@@ -2629,3 +2652,21 @@ def user_upload_contacts(user_id, device_id, contacts):
     query_contacts = list(query_contacts)
     query_emails = list(query_emails)
 
+def get_resized_image(image_url, height=262, width=262):
+    from image_processors import resize_video_thumb
+    import os
+    image_path = media_uploader.download_file(image_url)
+    resized_image = resize_video_thumb(image_path, height, width)
+    if os.path.exists(image_path):
+        os.remove(image_path)
+    return resized_image
+
+def register_bad_email(email,reason_type,reason_subtype):
+    new_bad_email = BadEmail(email,reason_type,reason_subtype)
+    db.session.add(new_bad_email)
+    try:
+        db.session.commit() # TODO : handle duplicate insert in unique column
+    except Exception as e: 
+        db.session.rollback()
+        print e.message
+    return {'success':'true', 'email':email , 'reason':reason_type}     

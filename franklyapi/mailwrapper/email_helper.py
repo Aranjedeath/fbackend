@@ -21,7 +21,7 @@ render_dict = {
     "signature": personal_signature
 }
 
-mail_sender = SimpleMailer('Frankly@frankly.me')
+mail_sender = SimpleMailer('Frankly@franklymail.com')
 
 
 def welcome_mail(receiver_email,receiver_name,receiver_username,receiver_password):
