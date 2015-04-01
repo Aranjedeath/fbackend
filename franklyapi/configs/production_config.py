@@ -21,7 +21,7 @@ AWS_SECRET = 'RFzbvP+kFYxW4PFW828bsF/HVBargsNagvzaBnDo'
 CURRENT_S3_BUCKET_NAME = 'franklymestorage'
 OLD_S3_BUCKET_NAME = 'franklyapp'
 
-SENDER_EMAIL = 'hello@frankly.me'
+SENDER_EMAIL = 'hello@franklymail.com'
 
 TWITTER_APP_TOKEN = 'aaNDJcxdHadQTxBW8P7B42yoy'
 TWITTER_APP_SECRET = 'AAOwvDBHlci4WmJANTmgOLJg28v3HSx0SogBEfQY9TGamsF9CS'
@@ -51,7 +51,7 @@ ALLOWED_CHARACTERS = [ chr(item) for item in range(48,58)+range(65,91)+[95]+rang
 ADMIN_USERS = ['cab4132c53c6b197df310373dba38e5f','cab4132c53c6a513df310374a482ef4e','cab4132c53c6a447df3103743a3fabdf']
 TEST_USERS = []
 
-SPREADSHEET_EMAIL = 'tempuser@frankly.me'
+SPREADSHEET_EMAIL = 'tempuser@franklyme'
 SPREADSHEET_PASSWORD = 'franklydocs'
 
 DEFAULT_BIO = "Ask me anything for video replies."
@@ -83,6 +83,6 @@ DEV_EMAILS = ['varun@frankly.me', 'shashank@frankly.me', 'nikhil@frankly.me', 'a
               'amritanshu@frankly.me']
 WEEKLY_MAIL_RECIPIENTS = ['varun@frankly.me','nikunj@frankly.me', 'abhishek@frankly.me', 'shashank@frankly.me',
                           'gourav@frankly.me']
-DAILY_CONTENT_MAIL_RECIPIENTS = ['varun@frankly.me', 'swati@frankly.me', 'ferheen@frankly.me','pranav@frankly.me']
+DAILY_CONTENT_MAIL_RECIPIENTS = ['varun@frankly.me', 'swati@frankly.me', 'ferheen@frankly.me','pranav@frankly.me','goelrishabh09@gmail.com'] #
 
 GLOBAL_PUSH_NOTIFICATION_DAY_LIMIT = 3

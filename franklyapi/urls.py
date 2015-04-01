@@ -104,6 +104,10 @@ api.add_resource(ReportAbuse, '/reportabuse')
 
 api.add_resource(ArrowDirection, '/one_direction')
 
+api.add_resource(ImageResizer, '/image_resize')
+
+#api.add_resource(RegisterBadEmail, '/email/failed')
+api.add_resource(ReceiveSNSNotifications, '/email/report')
 
 #api.add_resource(PostLikeUsers, '/post/like/users')
 

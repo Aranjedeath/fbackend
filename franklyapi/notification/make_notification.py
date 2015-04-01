@@ -7,8 +7,7 @@ from configs import config
 from database import get_item_id
 from app import db
 from notification import helper, notification_decision
-from CustomExceptions import ObjectNotFoundException
-
+from sqlalchemy.orm.exc import NoResultFound
 
 key = helper.key
 
@@ -31,15 +30,24 @@ def add_notification_for_user(notification_id, user_ids, list_type, push_at=date
         if push_at:
             push_notification(notification_id, user_id)
 
+def get_device_type(device_id):
+    if len(device_id)<17:
+        if 'web' in device_id:
+            return 'web'
+        return 'android'
+    return 'ios'
+
 
 def push_notification(notification_id, user_id, source='application'):
 
     if notification_decision.\
             count_of_push_notifications_sent(user_id = user_id) <= config.GLOBAL_PUSH_NOTIFICATION_DAY_LIMIT:
 
+
         print 'Still under limits for number of daily notifications'
 
         from controllers import get_device_type
+
 
         notification = Notification.query.get(notification_id)
 
@@ -125,8 +133,8 @@ def ask_question(question_id, notification_type = 'question-ask-self_user'):
     of user's popularity'''
     try:
         delay_push = UserNotificationInfo.query.filter(UserNotificationInfo.user_id ==
-                                                       question_to.id).first().is_popular
-    except ObjectNotFoundException:
+                                                       question_to.id).one().is_popular
+    except NoResultFound:
         ''' In case of celeb user delay_push would always be true
         '''
         delay_push = 1 if question_to.user_type == 2 else 0

@@ -56,9 +56,11 @@ def reassign_pending_video_tasks():
                                                     AND v.promo IS NULL
                                                     AND v.ultralow IS NULL
                                                     AND v.delete = 0
+                                                    AND v.created_at > :begin_time
                                                 ORDER BY u.user_type DESC
                                             """
-                                            )
+                                            ),
+                                        params = dict(begin_time=datetime.datetime.now()-datetime.timedelta(days=2))
                                         )
 
     assigned_urls = []
@@ -79,11 +81,12 @@ def reassign_pending_video_tasks():
                                                     OR v.promo IS NULL
                                                     OR v.ultralow IS NULL)
                                                     AND v.delete = 0
+                                                    AND v.created_at > :begin_time
                                                     AND v.url NOT IN :assigned_urls 
                                                 ORDER BY u.user_type DESC, no_video_made
                                             """
                                             ),
-                                        params=dict(assigned_urls=assigned_urls)
+                                        params=dict(assigned_urls=assigned_urls, begin_time=datetime.datetime.now()-datetime.timedelta(days=2))
                                     )
 
     profiles = ['opt', 'medium', 'low', 'ultralow', 'promo']
