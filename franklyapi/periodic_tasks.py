@@ -21,6 +21,12 @@ def notification_question_asked():
     notification_decision.question_asked_notifications()
 
 '''
+@ 4 PM Every day
+'''
+def share_my_popular_question_notification():
+    notification_decision.prompt_sharing_popular_question()
+
+
 @ Every 5 minutes
 '''
 def update_view_count():
