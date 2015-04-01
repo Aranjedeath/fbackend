@@ -2339,11 +2339,11 @@ class ReceiveSNSNotifications(restful.Resource):
         """
         try:
             notification = json.loads(request.data)
-            email = notification['message']['mail']['destination'][0]
-            notificationType = notification['message']['notificationType']
+            email = notification['Message']['mail']['destination'][0]
+            notificationType = notification['Message']['notificationType']
 
             if notificationType == 'Bounce':
-                if notification['message']['bounce']['bounceType'] == 'Permanent':
+                if notification['Message']['bounce']['bounceType'] == 'Permanent':
                     return controllers.register_bad_email( email=email, reason_type=notificationType, reason_subtype='')
 
             return {'success':'false','email':email,'reason':'Not a bad email'}
