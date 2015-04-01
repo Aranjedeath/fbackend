@@ -746,8 +746,6 @@ def user_view_profile(current_user_id, user_id, username=None):
         user = None
         if username:
             user = User.query.filter(User.username==username).one()
-            print user
-            print user_to_dict(user)
         elif user_id:
             user = User.query.get(user_id)
 
@@ -2044,7 +2042,6 @@ def get_notifications(cur_user_id, device_id, version_code, notification_categor
 
     count = len(notifications)
     next_index = -1 if count<original_limit else offset+limit
-    print {'notifications':notifications, 'count':count, 'next_index':next_index}
 
     return {'notifications':notifications, 'count':count, 'next_index':next_index, 'current_time':int(time.mktime(datetime.datetime.now().timetuple()))}
 

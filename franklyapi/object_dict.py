@@ -401,7 +401,7 @@ def post_to_dict(post, cur_user_id=None, distance=None, include_comments=3):
         'web_link':'http://frankly.me/p/{client_id}'.format(client_id=post.client_id),
         'whatsapp_share_count':post_stats[post.id]['whatsapp_share_count'],
         'other_share_count':post_stats[post.id]['other_share_count'],
-        'comments':all_comments[post.id] if include_comments else {}
+        #'comments':all_comments[post.id] if include_comments else {}
     }
     post_dict['answer']['media']['thumbnail_url'] = post_dict['answer']['media_urls']['thumb']
     return post_dict
