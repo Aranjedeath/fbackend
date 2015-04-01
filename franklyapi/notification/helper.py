@@ -15,6 +15,29 @@ key = {
     },
     'new-celeb-user': {
 
+    },
+    'popular-question-self_user': {
+        'text': '''Your question "<question_body>" has received <upvote_count>+ upvotes. Share it to get more upvotes.''',
+        'url': config.WEB_URL + '/q/%s' ,
+        'day-limit': 1
+    }
+
+    'following-new-post': {
+        'text': '''<question_author> answered the question <question_body>''',
+        'url': config.WEB_URL + '/p/%s',
+        'day-limit': 1
+
+    },
+    'user_followers_milestone':{
+        'text': 'You just got your <milestone_count>th follower. Get more by sharing your profile.',
+        'url': config.WEB_URL + '%s',
+        'day-limit': 1
+    },
+    'post_likes_milestone':{
+        'text': 'Your answer has crossed over <milestone_count> likes. Share it to become popular.',
+        'url': config.WEB_URL + '/p/%s',
+        'day-limit': 1
+
     }
 
 }
@@ -38,3 +61,81 @@ def post_add(answer_author, question_body):
     text = text.replace('<answer_author_name>', answer_author.first_name)
     text = text.replace('<question_body>', question_body)
     return text
+
+def popular_question_text(question_body, upvote_count):
+    text = key['popular-question-self_user']['text']
+    return text.replace('<question_body>', question_body).replace('<upvote_count>', str(((upvote_count/10)*10)))
+
+def following_answered_question(author_name, question_body):
+    text = key['following-new-post']['text']
+    return text.replace('<question_author', author_name).replace('<question_body>', question_body)
+
+def milestone_text(milestone_name, milestone_count):
+    text = key[milestone_name]['text']
+    return text.replace('<milestone_count>',milestone_count)
+
+
+milestones = {
+    'user_followers':{
+        '100'       :100,
+        '200'       :200,
+        '500'       :500,
+        '1000'      :1000,
+        '5000'      :5000,
+        '10000'     :10000,
+        '20000'     :20000,
+        '50000'     :50000,
+        '1000000'   :1000000,
+        '10000000'  :10000000,
+    },
+    'post_likes':{
+        '100'       :100,
+        '200'       :200,
+        '500'       :500,
+        '1000'      :1000,
+        '5000'      :5000,
+        '10000'     :10000,
+        '20000'     :20000,
+        '50000'     :50000,
+        '1000000'   :1000000,
+        '10000000'  :10000000,
+    },
+    'upvotes':{
+        '100'       :100,
+        '200'       :200,
+        '500'       :500,
+        '1000'      :1000,
+        '5000'      :5000,
+        '10000'     :10000,
+        '20000'     :20000,
+        '50000'     :50000,
+        '1000000'   :1000000,
+        '10000000'  :10000000,
+    },
+    'profile_views':{
+        '100'       :100,
+        '200'       :200,
+        '500'       :500,
+        '1000'      :1000,
+        '5000'      :5000,
+        '10000'     :10000,
+        '20000'     :20000,
+        '50000'     :50000,
+        '1000000'   :1000000,
+        '10000000'  :10000000,
+    },
+    'post_views':{
+        '100'       :100,
+        '200'       :200,
+        '500'       :500,
+        '1000'      :1000,
+        '5000'      :5000,
+        '10000'     :10000,
+        '20000'     :20000,
+        '50000'     :50000,
+        '1000000'   :1000000,
+        '10000000'  :10000000,
+    }
+
+}
+
