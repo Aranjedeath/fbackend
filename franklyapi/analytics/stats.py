@@ -62,14 +62,14 @@ def daily_content_report():
     email_helper.content_report(config.DAILY_CONTENT_MAIL_RECIPIENTS, 'Daily Report', body)
 
 
-def intra_day_content_report():
+def intra_day_content_report(interval):
 
     msg1 = make_panel('New registrations (celeb and non-celeb) in last 12 hours  Source '
-                      '& number of registrations', new_registrations())
+                      '& number of registrations', new_registrations(interval))
 
-    msg2 = make_panel('No. of questions asked (excluding those from the dashboard)', count_of_question_asked())
+    msg2 = make_panel('No. of questions asked (excluding those from the dashboard)', count_of_question_asked(interval))
 
-    msg3 = make_panel('Videos uploaded   (celeb and non-celeb) with link', videos_uploaded())
+    msg3 = make_panel('Videos uploaded   (celeb and non-celeb) with link', videos_uploaded(interval))
 
     body = add_style() + msg1 + msg2 + msg3
 
