@@ -12,7 +12,8 @@ from sqlalchemy.orm.exc import NoResultFound
 key = helper.key
 
 
-def add_notification_for_user(notification_id, user_ids, list_type, push_at=datetime.datetime.now()):
+def add_notification_for_user(notification_id, user_ids, list_type,
+    push_at=datetime.datetime.now()):
 
     for user_id in user_ids:
         user_notification = UserNotification(notification_id=notification_id, user_id=user_id,
@@ -31,7 +32,7 @@ def add_notification_for_user(notification_id, user_ids, list_type, push_at=date
             push_notification(notification_id, user_id)
 
 def get_device_type(device_id):
-    if len(device_id)<17:
+    if len(device_id) < 17:
         if 'web' in device_id:
             return 'web'
         return 'android'
@@ -41,7 +42,7 @@ def get_device_type(device_id):
 def push_notification(notification_id, user_id, source='application'):
 
     if notification_decision.\
-            count_of_push_notifications_sent(user_id = user_id) <= config.GLOBAL_PUSH_NOTIFICATION_DAY_LIMIT:
+            count_of_push_notifications_sent(user_id=user_id) <= config.GLOBAL_PUSH_NOTIFICATION_DAY_LIMIT:
 
 
         print 'Still under limits for number of daily notifications'
@@ -52,9 +53,9 @@ def push_notification(notification_id, user_id, source='application'):
         notification = Notification.query.get(notification_id)
 
         group_id = '-'.join([str(notification.type), str(notification.object_id)])
-        for device in AccessToken.query.filter(AccessToken.user==user_id,
-                                                AccessToken.active==True,
-                                                AccessToken.push_id!=None).all():
+        for device in AccessToken.query.filter(AccessToken.user == user_id,
+                                                AccessToken.active == True,
+                                                AccessToken.push_id != None).all():
 
             print 'Found valid devices for push notifications'
 
@@ -90,21 +91,21 @@ def push_notification(notification_id, user_id, source='application'):
                         "seen" : False,
                         "heading":"Frankly.me"
                     }
-            if get_device_type(device.device_id)=='android':
+            if get_device_type(device.device_id) == 'android':
                 print 'pushing gcm for android'
                 from GCM_notification import GCM
                 gcm_sender = GCM()
                 gcm_sender.send_message([device.push_id], payload)
 
-            if get_device_type(device.device_id)=='ios':
+            if get_device_type(device.device_id) == 'ios':
                 print 'pushing for iOS'
                 from APN_notification import  APN
                 apns = APN()
-                apns.send_message([device.push_id],payload)
+                apns.send_message([device.push_id], payload)
 
 
 
-def ask_question(question_id, notification_type = 'question-ask-self_user'):
+def ask_question(question_id, notification_type='question-ask-self_user'):
 
     k = key[notification_type]
     question = Question.query.get(question_id)
@@ -144,9 +145,9 @@ def ask_question(question_id, notification_type = 'question-ask-self_user'):
     add_notification_for_user(notification_id=notification.id,
                                 user_ids=[question_to.id],
                                 list_type='me',
-                                push_at= None if delay_push else datetime.datetime.now()
-                            )
-    
+                                push_at=None if delay_push else datetime.datetime.now()
+                                )
+
 
     return notification
 
@@ -182,7 +183,7 @@ def new_celebrity_user(users=[], notification_id=None, celebrity_id=None):
                                 push_at=datetime.datetime.now()
                             )
 
-def new_post(post_id, question_body="", notification_type = 'post-add-self_user',
+def new_post(post_id, question_body="", notification_type='post-add-self_user',
              delay_push=True):
 
 
@@ -203,7 +204,7 @@ def new_post(post_id, question_body="", notification_type = 'post-add-self_user'
     icon = answer_author.profile_picture
 
     link = k['url'] % post.client_id
-    
+
     notification = Notification(type=notification_type, text=text,
                                 link=link, object_id=post_id,
                                 icon=icon, created_at=datetime.datetime.now(),
@@ -212,17 +213,17 @@ def new_post(post_id, question_body="", notification_type = 'post-add-self_user'
     db.session.commit()
 
 
-    upvoters = [upvote.user for upvote in Upvote.query.filter(Upvote.question==post.question, Upvote.downvoted==False).all()]
-    upvoters = set([question_author.id]+upvoters)
+    upvoters = [upvote.user for upvote in Upvote.query.filter(
+        Upvote.question == post.question, Upvote.downvoted == False).all()]
+    upvoters = set([question_author.id] + upvoters)
 
 
-    add_notification_for_user(notification_id=notification.id,
-                                user_ids=list(upvoters),
-                                list_type='me',
-                                push_at=None if delay_push else datetime.datetime.now()
-                            )
-    
-
+    add_notification_for_user(
+        notification_id=notification.id,
+        user_ids=list(upvoters),
+        list_type='me',
+        push_at=None if delay_push else datetime.datetime.now()
+        )
     return notification
 
 ''' Sent if the user's question is becoming popular
@@ -245,7 +246,7 @@ def share_popular_question(user_id, question_id, upvote_count, question_body):
     add_notification_for_user(notification_id=notification.id,
                                 user_ids=[user_id],
                                 list_type='me',
-                                push_at= datetime.datetime.now()
+                                push_at=datetime.datetime.now()
                             )
 
 
@@ -293,9 +294,9 @@ def following_answered_question():
         user_ids = [f[0] for f in followers]
 
         add_notification_for_user(notification_id=notification.id,
-                                  user_ids= user_ids,
+                                  user_ids=user_ids,
                                   list_type='me',
-                                  push_at= datetime.datetime.now())
+                                  push_at=datetime.datetime.now())
 
 def send_milestone_notification(milestone_name, milestone_crossed, object_id, user_id):
     '''
@@ -320,7 +321,9 @@ def send_milestone_notification(milestone_name, milestone_crossed, object_id, us
 
 
 def notification_user_follow(follow_id):
-    follow = Follow.query.filter(Follow.id==follow_id, Follow.deleted==False)
+    follow = Follow.query.filter(
+        Follow.id == follow_id,
+        Follow.deleted == False)
     users = User.query.filter(User.id.in_([follow.user, follow.followed])).all()
 
     for u in users:
@@ -334,7 +337,7 @@ def notification_user_follow(follow_id):
     text = text.replace('<follower_name>', follower.first_name)
     icon = None
     link = config.WEB_URL + '/p/{client_id}'.format(client_id=post.client_id)
-    
+
     notification = Notification(type=notification_type, text=text,
                                 link=link, object_id=post_id,
                                 icon=icon, created_at=datetime.datetime.now(),
@@ -343,16 +346,14 @@ def notification_user_follow(follow_id):
     db.session.commit()
 
 
-    upvoters = [upvote.user for upvote in Upvote.query.filter(Upvote.question==post.question, Upvote.downvoted==False).all()]
+    upvoters = [upvote.user for upvote in Upvote.query.filter(
+        Upvote.question == post.question,
+        Upvote.downvoted == False
+        ).all()]
 
     add_notification_for_user(notification_id=notification.id,
                                 user_ids=list(set([question_author.id]+upvoters)),
                                 list_type='me',
                                 push_at=datetime.datetime.now()
                             )
-    
-
     return notification
-
-
-
