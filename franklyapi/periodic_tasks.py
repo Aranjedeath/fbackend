@@ -132,9 +132,9 @@ def reassign_pending_video_tasks():
             for profile in profiles:
                 if not getattr(v, profile):
                     profiles_to_encode.append(profile)
-            async_encoder.encode_video_task.delay(video_url=v.url, username=v.username, profiles=profiles_to_encode, queues=dict(low=low_priority_queue, ultralow=retry_queue, medium=retry_queue, opt=retry_queue))
-            print profiles_to_encode, v.url
-            other_video_count +=1
+            #async_encoder.encode_video_task.delay(video_url=v.url, username=v.username, profiles=profiles_to_encode, queues=dict(low=low_priority_queue, ultralow=retry_queue, medium=retry_queue, opt=retry_queue))
+            #print profiles_to_encode, v.url
+            #other_video_count +=1
     print 'Virgin Videos Assigned:', virgin_video_count
     print 'Other Videos Assigned:', other_video_count
 
