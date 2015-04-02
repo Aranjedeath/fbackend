@@ -1150,12 +1150,15 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_b
 
 
     if question_to != cur_user_id and question_to != '737c6f8a7ac04d7e9380f1d37c011531':
+
         users = User.query.filter(User.id.in_([cur_user_id,question_to]))
+
         for user in users:
             if user.id == cur_user_id:
                 mail_reciever = user
             if user.id == question_to:
                 question_to = user
+
         email_helper.question_asked(receiver_email=mail_reciever.email,
                                     receiver_name=mail_reciever.first_name,
                                     question_to_name=question_to.first_name,

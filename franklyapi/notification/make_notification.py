@@ -9,6 +9,7 @@ from app import db
 from notification import helper, notification_decision
 from sqlalchemy.orm.exc import NoResultFound
 
+
 key = helper.key
 
 
@@ -257,6 +258,8 @@ answered a question
 '''
 def following_answered_question():
 
+    from sqlalchemy.sql import text
+
     notification_type = 'following-new-post'
     k = key[notification_type]
     #Get post id and post author for the last one day
@@ -271,8 +274,8 @@ def following_answered_question():
                                       LEFT JOIN users u on u.id = p.question_author
                                       WHERE
                                       p.timestamp >= date_sub(NOW(), INTERVAL 1 DAY)
-                                      AND n.type = :notification_type
-                                      AND n.id IS NULL ;
+                                      AND n.type != :notification_type
+                                      ;
                                       '''), params={'notification_type': notification_type})
 
     for row in results:
@@ -283,9 +286,9 @@ def following_answered_question():
         icon = row[4]
 
         notification = Notification(type=notification_type, text=text,
-                                link=link, object_id=row[1],
-                                icon=icon, created_at=datetime.datetime.now(),
-                                manual=False, id=get_item_id())
+                                 link=link, object_id=row[1],
+                                 icon=icon, created_at=datetime.datetime.now(),
+                                 manual=False, id=get_item_id())
         db.session.add(notification)
         db.session.commit()
 
