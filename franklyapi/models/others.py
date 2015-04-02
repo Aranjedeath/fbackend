@@ -284,3 +284,19 @@ class Tester(Base):
 
     def __repr__(self):
         return '<Tester %r:%r>' % (self.id, self.username)
+
+class ProfileRequest(Base):
+    __tablename__ = 'profile_requests'
+    id = Column(CHAR(32), primary_key=True)
+    request_for = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
+    request_by = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
+    request_type = Column(String(45), nullable=False)
+    request_count = Column(Integer, default = 1)
+    created_at = Column(DateTime(), default=datetime.datetime.now())
+    updated_at = Column(DateTime())
+
+    def __init__ (self):
+        self.id = get_item_id()
+
+    def __repr__(self):
+        return '<ProfileRequests %r:%r>' %(self.request_by, self.request_for)

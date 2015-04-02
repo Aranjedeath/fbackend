@@ -8,6 +8,7 @@ api.add_resource(LoginEmail, '/login/email')
 
 api.add_resource(UserProfile, '/user/profile/<user_id>')
 api.add_resource(UserUpdateForm, '/user/update_profile/<user_id>')
+api.add_resource(UserProfileRequest, '/user/profile/request')
 
 api.add_resource(UserFollow, '/user/follow')
 api.add_resource(UserFollowers, '/user/followers/<user_id>')

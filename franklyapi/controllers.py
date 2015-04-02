@@ -2258,6 +2258,28 @@ def prompt_for_profile_video(user_id):
     return not bool(User.query.filter(User.id==user_id, User.user_since<time_threshold, User.profile_picture!=None).count())
 
 
+def user_profile_request(current_user_id, request_by, request_type):
+    request_type = ['intro-video-request'][request_type]
+    result = db.session.execute(text('''
+                                        INSERT INTO profile_requests
+                                        (id, request_for, request_by, request_type, created_at)
+                                        VALUES
+                                        (:id, :request_for, :request_by, :request_type, :created_at)
+                                        ON DUPLICATE KEY
+                                        UPDATE request_count = request_count + 1, updated_at=:updated_at
+                                     '''),
+                                params={
+                                    'id': get_item_id(),
+                                    'request_for': current_user_id,
+                                    'request_by': request_by,
+                                    'request_type': request_type,
+                                    'created_at': datetime.datetime.now(),
+                                    'updated_at': datetime.datetime.now()
+                                })
+    db.session.commit()
+
+    return {'success': True}
+
 
 def get_new_discover(current_user_id, offset, limit, device_id, version_code, visit=0, append_top=''):
     from manage_discover import get_discover_list
