@@ -1150,12 +1150,15 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_b
 
 
     if question_to != cur_user_id and question_to != '737c6f8a7ac04d7e9380f1d37c011531':
+
         users = User.query.filter(User.id.in_([cur_user_id,question_to]))
+
         for user in users:
             if user.id == cur_user_id:
                 mail_reciever = user
             if user.id == question_to:
                 question_to = user
+
         email_helper.question_asked(receiver_email=mail_reciever.email,
                                     receiver_name=mail_reciever.first_name,
                                     question_to_name=question_to.first_name,
@@ -2254,6 +2257,33 @@ def prompt_for_profile_video(user_id):
     time_threshold = datetime.datetime.now() - datetime.timedelta(hours=48)
     return not bool(User.query.filter(User.id==user_id, User.user_since<time_threshold, User.profile_picture!=None).count())
 
+
+def user_profile_request(current_user_id, request_by, request_type):
+
+    request_id = get_item_id()
+    result = db.session.execute(text('''
+                                        INSERT INTO profile_requests
+                                        (id, request_for, request_by, request_type, created_at)
+                                        VALUES
+                                        (:id, :request_for, :request_by, :request_type, :created_at)
+                                        ON DUPLICATE KEY
+                                        UPDATE request_count = request_count + 1, updated_at=:updated_at
+                                     '''),
+                                params={
+                                    'id': request_id,
+                                    'request_for': current_user_id,
+                                    'request_by': request_by,
+                                    'request_type': request_type,
+                                    'created_at': datetime.datetime.now(),
+                                    'updated_at': datetime.datetime.now()
+                                })
+    db.session.commit()
+
+    notification.user_profile_request(user_id=current_user_id, request_by=request_by,
+                                      request_type=request_type,
+                                      request_id=request_id)
+
+    return {'success': True}
 
 
 def get_new_discover(current_user_id, offset, limit, device_id, version_code, visit=0, append_top=''):

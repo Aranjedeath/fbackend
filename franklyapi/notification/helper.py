@@ -37,6 +37,11 @@ key = {
         'url': config.WEB_URL + '/p/%s',
         'day-limit': 1
 
+    },
+    'intro-video-request':{
+         'text': '<requester_name> just asked you to shoot an about me video.',
+         'url': config.WEB_URL + '/p/%s',
+         'day-limit': 1
     }
 
 }
@@ -73,7 +78,9 @@ def milestone_text(milestone_name, milestone_count):
     text = key[milestone_name]['text']
     return text.replace('<milestone_count>',milestone_count)
 
-
+def user_profile_request(requester_name):
+    text = key['intro-video-request']['text']
+    return text.replace('<requester_name>', requester_name)
 milestones = {
     'user_followers':{
         '100'       :100,

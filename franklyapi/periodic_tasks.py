@@ -27,11 +27,11 @@ def decide_popular_users_based_on_questions_asked():
 def following_answered_question():
     make_notification.following_answered_question()
 
-'''
-@ 4 PM Every day
-'''
-def share_my_popular_question_notification():
-    notification_decision.prompt_sharing_popular_question()
+# '''
+# @ 4 PM Every day
+# '''
+# def share_my_popular_question_notification():
+#     notification_decision.prompt_sharing_popular_question()
 
 '''
 @ 10 AM Every day
