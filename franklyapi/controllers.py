@@ -2259,7 +2259,7 @@ def prompt_for_profile_video(user_id):
 
 
 def user_profile_request(current_user_id, request_by, request_type):
-    request_type = ['intro-video-request'][request_type]
+
     request_id = get_item_id()
     result = db.session.execute(text('''
                                         INSERT INTO profile_requests

@@ -289,7 +289,7 @@ class UserProfileRequest(restful.Resource):
 
     post_parser = reqparse.RequestParser()
     post_parser.add_argument('request_by', type=str, default='',location = 'json')
-    post_parser.add_argument('request_type', type=int, default=0,location = 'json')
+    post_parser.add_argument('request_type', type=str, default='intro-video-request',location = 'json')
 
     @login_required
     def post(self):
