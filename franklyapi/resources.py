@@ -288,8 +288,8 @@ class UserUpdateForm(restful.Resource):
 class UserProfileRequest(restful.Resource):
 
     post_parser = reqparse.RequestParser()
-    post_parser.add_argument('request_by', type=str, default='',location = 'json')
-    post_parser.add_argument('request_type', type=str, default='intro-video-request',location = 'json')
+    post_parser.add_argument('request_by', type=str, default='', location = 'json')
+    post_parser.add_argument('request_type', type=str, required=True, location = 'json', choices=['intro-video-request'] )
 
     @login_required
     def post(self):
