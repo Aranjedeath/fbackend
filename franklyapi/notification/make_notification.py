@@ -300,6 +300,8 @@ def following_answered_question():
                                   list_type='me',
                                   push_at= datetime.datetime.now())
 
+'''Generic method for sending all sorts of milestone
+notifications'''
 def send_milestone_notification(milestone_name, milestone_crossed, object_id, user_id):
     '''
     read notification by notification_type
@@ -321,6 +323,32 @@ def send_milestone_notification(milestone_name, milestone_crossed, object_id, us
                                 list_type='me',
                                 push_at=datetime.datetime.now())
 
+''' Notification for requests to
+update the profile'''
+def user_profile_request(user_id, request_by, request_type, request_id):
+
+    request_by = User.query.filter(User.id == request_by).one()
+
+
+    k = key[request_type]
+
+    text = helper.user_profile_request(requester_name=request_by.first_name)
+
+    icon = request_by.profile_picture
+
+    link = k['url'] % user_id
+
+    notification = Notification(type=request_type, text=text,
+                                link=link, object_id=request_id,
+                                icon=icon, created_at=datetime.datetime.now(),
+                                manual=False, id=get_item_id())
+    db.session.add(notification)
+    db.session.commit()
+
+    add_notification_for_user(notification_id=notification.id,
+                              user_ids=[user_id],
+                              list_type='me',
+                              push_at=datetime.datetime.now())
 
 def notification_user_follow(follow_id):
     follow = Follow.query.filter(Follow.id==follow_id, Follow.deleted==False)
