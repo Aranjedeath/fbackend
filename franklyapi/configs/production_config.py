@@ -84,6 +84,9 @@ DEV_EMAILS = ['varun@frankly.me', 'shashank@frankly.me', 'nikhil@frankly.me', 'a
 WEEKLY_MAIL_RECIPIENTS = ['varun@frankly.me','nikunj@frankly.me', 'abhishek@frankly.me', 'shashank@frankly.me',
                           'gourav@frankly.me']
                           
+
+PUBLIC_API_KEY = 'ade9158ad9ef11e4ac86c82a1418d24a'
+
 DAILY_CONTENT_MAIL_RECIPIENTS = ['varun@frankly.me', 'swati@frankly.me', 'ferheen@frankly.me','pranav@frankly.me','goelrishabh09@gmail.com']
 
 GLOBAL_PUSH_NOTIFICATION_DAY_LIMIT = 3

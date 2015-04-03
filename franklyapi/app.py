@@ -5,6 +5,7 @@ import traceback
 from flask import Flask,request,g
 from flask.ext import restful
 from flask.ext.login import LoginManager
+from flask.ext.restful import abort
 from raygun4py import raygunprovider
 from flask.ext.sqlalchemy import SQLAlchemy
 from datetime import datetime
@@ -92,7 +93,9 @@ def shutdown_session(exception=None):
 @login_manager.multiple_headers_loader
 def load_header(header_vals):
     from controllers import check_access_token
-    access_token, device_id = header_vals.get('X-Token'), header_vals.get('X-Deviceid')
+    access_token, device_id, api_key = header_vals.get('X-Token'), header_vals.get('X-Deviceid'), header_vals.get('X-Api-Key')
     if not (access_token and device_id):
         return None
+    if api_key and api_key != config.PUBLIC_API_KEY:
+        abort('403', message='Invalid API Key')
     return check_access_token(access_token, device_id)
