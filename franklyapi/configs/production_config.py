@@ -87,3 +87,5 @@ WEEKLY_MAIL_RECIPIENTS = ['varun@frankly.me','nikunj@frankly.me', 'abhishek@fran
 DAILY_CONTENT_MAIL_RECIPIENTS = ['varun@frankly.me', 'swati@frankly.me', 'ferheen@frankly.me','pranav@frankly.me','goelrishabh09@gmail.com']
 
 GLOBAL_PUSH_NOTIFICATION_DAY_LIMIT = 3
+
+REQUEST_TYPE = ['intro-video-request']

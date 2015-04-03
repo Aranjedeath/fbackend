@@ -24,8 +24,11 @@ def post_notifications(post_id):
                                          from posts p
                                          left join questions q on q.id = p.question
                                          left join users aa on aa.id = p.answer_author
-                                         left join notifications n on n.object_id = :post_id and n.type = 'post-add-self_user'
-                                         where p.id = :post_id limit 1 ;
+                                         left join notifications n on n.object_id = :post_id
+                                         where p.id = :post_id
+                                         and n.type in ('post-add-self_user','post-add-following_user')
+                                         group by n.type
+                                         limit 2 ;
                                          '''), params={'post_id': post_id})
     try:
         for row in result:

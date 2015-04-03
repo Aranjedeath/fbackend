@@ -1,17 +1,25 @@
 from configs import config
 key = {
     'question-ask-self_user' : {
-
+        'title': '',
         'text': "<b><question_author_name></b> asked you '<question_body>'",
         'url': config.WEB_URL + '/q/%s',
-        'day-limit': 2
+        'day_limit': 2
 
     },
     'post-add-self_user': {
-
+        'title': '<b><answer_author_name></b> answered your question.',
         'text': "<b><answer_author_name></b> answered your question <question_body>",
         'url': config.WEB_URL + '/p/%s',
-        'day-limit': 3
+        'day_limit': 3,
+        'positive_label': 'Play'
+    },
+    'post-add-following_user': {
+        'title': '<b><answer_author_name></b> answered a new question',
+        'text': '''<question_author> answered the question <question_body>''',
+        'url': config.WEB_URL + '/p/%s',
+        'day_limit': 1,
+        'label_one': 'Play'
     },
     'new-celeb-user': {
 
@@ -21,12 +29,7 @@ key = {
         'url': config.WEB_URL + '/q/%s' ,
         'day-limit': 1
     },
-    'following-new-post': {
-        'text': '''<question_author> answered the question <question_body>''',
-        'url': config.WEB_URL + '/p/%s',
-        'day-limit': 1
 
-    },
     'user_followers_milestone':{
         'text': 'You just got your <milestone_count>th follower. Get more by sharing your profile.',
         'url': config.WEB_URL + '%s',
@@ -63,7 +66,7 @@ def question_asked_text(question,question_author,question_to):
 
 def post_add(answer_author, question_body):
     text = key['post-add-self_user']['text']
-    text = text.replace('<answer_author_name>', answer_author.first_name)
+    text = text.replace('<answer_author_name>', answer_author)
     text = text.replace('<question_body>', question_body)
     return text
 
@@ -82,67 +85,13 @@ def milestone_text(milestone_name, milestone_count):
 def user_profile_request(requester_name):
     text = key['intro-video-request']['text']
     return text.replace('<requester_name>', requester_name)
+
 milestones = {
-    'user_followers':{
-        '100'       :100,
-        '200'       :200,
-        '500'       :500,
-        '1000'      :1000,
-        '5000'      :5000,
-        '10000'     :10000,
-        '20000'     :20000,
-        '50000'     :50000,
-        '1000000'   :1000000,
-        '10000000'  :10000000,
-    },
-    'post_likes':{
-        '100'       :100,
-        '200'       :200,
-        '500'       :500,
-        '1000'      :1000,
-        '5000'      :5000,
-        '10000'     :10000,
-        '20000'     :20000,
-        '50000'     :50000,
-        '1000000'   :1000000,
-        '10000000'  :10000000,
-    },
-    'upvotes':{
-        '100'       :100,
-        '200'       :200,
-        '500'       :500,
-        '1000'      :1000,
-        '5000'      :5000,
-        '10000'     :10000,
-        '20000'     :20000,
-        '50000'     :50000,
-        '1000000'   :1000000,
-        '10000000'  :10000000,
-    },
-    'profile_views':{
-        '100'       :100,
-        '200'       :200,
-        '500'       :500,
-        '1000'      :1000,
-        '5000'      :5000,
-        '10000'     :10000,
-        '20000'     :20000,
-        '50000'     :50000,
-        '1000000'   :1000000,
-        '10000000'  :10000000,
-    },
-    'post_views':{
-        '100'       :100,
-        '200'       :200,
-        '500'       :500,
-        '1000'      :1000,
-        '5000'      :5000,
-        '10000'     :10000,
-        '20000'     :20000,
-        '50000'     :50000,
-        '1000000'   :1000000,
-        '10000000'  :10000000,
-    }
+    'user_followers':[100, 200, 500, 1000, 5000, 10000, 20000, 50000, 1000000, 10000000],
+    'post_likes': [100, 200, 500, 1000, 5000, 10000, 20000, 50000, 1000000, 10000000],
+    'upvotes': [100, 200, 500, 1000, 5000, 10000, 20000, 50000, 1000000, 10000000],
+    'profile_views': [100, 200, 500, 1000, 5000, 10000, 20000, 50000, 1000000, 10000000],
+    'post_views':[100, 200, 500, 1000, 5000, 10000, 20000, 50000, 1000000, 10000000]
 
 }
 
