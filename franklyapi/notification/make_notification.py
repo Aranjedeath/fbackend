@@ -12,7 +12,7 @@ key = helper.key
 
 
 def notification_logger(nobject, for_users, manual=False, created_at=datetime.datetime.now(),
-                        list_type='me', push_at=None):
+                        list_type='me', push_at=None,k=None):
 
     notification = Notification(type=nobject['notification_type'], text=nobject['text'],
                                 link=nobject['link'], object_id=nobject['object_id'],
@@ -23,7 +23,7 @@ def notification_logger(nobject, for_users, manual=False, created_at=datetime.da
 
     un.add_notification_for_user(notification_id=notification.id, for_users=for_users,
                                  list_type=list_type,
-                                 push_at=push_at)
+                                 push_at=push_at,k=k)
     return notification
 
 '''Creates an in-app notification
@@ -165,45 +165,37 @@ notification for a new celebrity that has joined the paltform.
 Typically to be sent out to users who interact with a similar list
 '''
 
-def new_celebrity_user(celebrity_id=None, users=[], notification_type='new-celebrity-followed_category'):
 
+def new_celebrity_user(celebrity_id=None, users=[], notification_type='new-celebrity-followed_category'):
 
     k = key[notification_type]
 
     celebrity = User.query.filter(User.id == celebrity_id).first()
 
+    nobject = {
+        'notification_type': notification_type,
+        'text': k['text'].replace('<celebrity_name>', celebrity.first_name),
+        'icon': celebrity.profile_picture,
+        'link': k['url'] % celebrity.username,
+        'object_id': celebrity_id
+    }
 
-    text = k['text'] % celebrity.first_name
-    icon = celebrity.profile_picture
-    link = k['url'] % celebrity.username
-
-
-    notification_logger(notification_type=notification_type, text=text, icon=icon, link=link,
-                        object_id=celebrity_id, for_users=users)
+    notification_logger(nobject=nobject, for_users=users, push_at=datetime.datetime.now())
 
 
 '''Generic method for sending all sorts of milestone
 notifications'''
 def send_milestone_notification(milestone_name, milestone_crossed, object_id, user_id):
-    '''
-    read notification by notification_type
-        and send it to user
-    '''
-    text = helper.milestone_text(milestone_name, milestone_crossed)
 
-    link = key[milestone_name]['url'] % object_id
+    nobject = {
+        'notification_type': (milestone_name+ '_' + milestone_crossed),
+        'text': helper.milestone_text(milestone_name, milestone_crossed),
+        'icon': None,
+        'link': key[milestone_name]['url'] % object_id,
+        'object_id': object_id
+    }
 
-    notification = Notification(type=(milestone_name+'_'+milestone_crossed), text=text,
-                                link=link, object_id=user_id,
-                                icon=None, created_at=datetime.datetime.now(),
-                                manual=False, id=get_item_id())
-    db.session.add(notification)
-    db.session.commit()
-
-    add_notification_for_user(notification_id=notification.id,
-                                user_ids=[user],
-                                list_type='me',
-                                push_at=datetime.datetime.now())
+    notification_logger(nobject=nobject, for_users=[user_id], push_at=datetime.datetime.now(), k=key[milestone_name])
 
 ''' Notification for requests to
 update the profile'''
@@ -224,6 +216,10 @@ def user_profile_request(user_id, request_by, request_id, request_type=config.RE
     }
 
     notification_logger(nobject=nobject, for_users=[user_id], push_at=datetime.datetime.now())
+
+def like_on_post(post_id, notification_type='like-post-self_user'):
+
+    post = Post.query.filter(Post.id == post_id).one()
 
 
 def comment_on_post(post_id, comment_id, comment_author):
@@ -256,14 +252,15 @@ def comment_on_post(post_id, comment_id, comment_author):
 
 
 def hack():
-    users = User.query.limit(11).offset(1000)
 
+    users = User.query.filter(User.monkness != -1).limit(1000).offset(0)
+    print 'Here'
 
     import controllers
 
     for user in users:
         print user.first_name
-        controllers.question_upvote(user.id, '73c699ac929e47ff84dee366b52d75e3')
+        controllers.user_follow(user.id, 'cab4132c53e4940ddf31032f794967c6')
 
     # text = "Your followers want to know more about you! Answer the best ones from more than 500 questions asked to you."
     # link = "http://frankly.me/answer"

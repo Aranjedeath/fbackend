@@ -191,22 +191,11 @@ user's likes
 '''
 
 
-def post_likes_milestone_notifications():
+def decide_post_milestone(post_id, user_id):
+    check_and_make_milestone('post-likes-milestone', user_id, post_id, controllers.get_post_like_count(post_id))
 
-    result = db.session.execute(text('''SELECT distinct pl.post as post, posts.question_author
-                                                            from post_likes pl
-                                                            inner join posts on posts.id = pl.post
-                                                            where pl.timestamp >= date_sub(now(), interval 1 day)
-                                                            group by pl.post
-                                        union SELECT distinct pl.post as post, posts.question_author
-                                                            from inflated_stats pl
-                                                            inner join posts on posts.id = pl.post
-                                                            where pl.timestamp >= date_sub(now(), interval 1 day)
-                                                            group by pl.post;
-                                                        '''))
-    for row in result:
-        check_and_make_milestone('post_likes_milestone', row[1], row[0], controllers.get_post_like_count(row[0]))
-
+def decide_follow_milestone(user_id):
+    check_and_make_milestone('user-followers-milestone', user_id, user_id, controllers.get_follower_count(user_id))
 
 def question_upvotes_milestone_notifications():
     result = db.session.execute(text('''SELECT distinct pl.question as question, questions.question_author
@@ -240,21 +229,21 @@ def check_and_make_milestone(milestone_name, user_id, associated_item_id, count)
     if milestone_crossed:
 
         # make notification type by appending name and count.
-        notification_type = milestone_name + milestone_crossed
+        notification_type =  milestone_name + '_' + milestone_crossed
 
         #check if a notification has been sent to user about this milestone or not
         if count_of_notifications_sent_by_type(user_id=user_id, notification_type=notification_type,
-                                               interval = datetime.datetime.now() - datetime.timedelta(days = 100000)) == 0:
+                                               interval=datetime.datetime.now() - datetime.timedelta(days=100000)) == 0:
 
             #send milestone notification
-            notification.send_milestone_notification(milestone_name, milestone_crossed, associated_item_id ,user_id)
+            notification.send_milestone_notification(milestone_name, milestone_crossed, associated_item_id, user_id)
 
 def get_milestone_crossed(count, milestone_count_list):
     '''
     Returns largest milestone count crossed smaller than count.
         otherwise None
     '''
-    try: return str(max(int(t) for t in milestone_count_list if t != '' and int(t) < int(count)))
+    try: return str(max(int(t) for t in milestone_count_list if t != '' and int(t) <= int(count)))
     except ValueError: return None
 
 

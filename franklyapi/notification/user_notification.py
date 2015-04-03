@@ -10,7 +10,7 @@ user and notification
 '''
 
 
-def add_notification_for_user(notification_id, for_users, list_type, push_at=datetime.datetime.now()):
+def add_notification_for_user(notification_id, for_users, list_type, push_at=datetime.datetime.now(),k=None):
 
     for user_id in for_users:
         user_notification = UserNotification(notification_id=notification_id, user_id=user_id,
@@ -24,6 +24,6 @@ def add_notification_for_user(notification_id, for_users, list_type, push_at=dat
         db.session.commit()
 
         if push_at:
-            push.push_notification(notification_id, user_id)
+            push.push_notification(notification_id, user_id,k)
 
 

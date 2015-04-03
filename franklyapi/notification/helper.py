@@ -14,47 +14,59 @@ key = {
         'text': "<b><answer_author_name></b> answered your question <question_body>",
         'url': config.WEB_URL + '/p/%s',
         'day_limit': 3,
-        'positive_label': 'Play'
+        'positive_label': 'Play',
+        'label_one': 'Play',
+        'label_two': ''
     },
     'post-add-following_user': {
         'title': '<b><answer_author_name></b> answered a new question',
         'text': '''<question_author> answered the question <question_body>''',
         'url': config.WEB_URL + '/p/%s',
         'day_limit': 1,
-        'label_one': 'Play'
+        'label_one': 'Play',
+        'label_two':''
     },
     'new-celebrity-followed_category': {
         'title':'',
         'text': '''<celebrity_name> has just joined Frankly. Ask him anything.''',
-        'url': config.WEB_URL + '%s',
+        'url': config.WEB_URL + '/%s',
         'day-limit': 1,
         'label_one': 'Ask Now',
         'label_two': 'Later'
     },
     'popular-question-self_user': {
+        'title':'',
         'text': '''Your question "<question_body>" has received <upvote_count>+ upvotes. Share it to get more upvotes.''',
-        'url': config.WEB_URL + '/q/%s' ,
-        'day-limit': 1
+        'url': config.WEB_URL + '/q/%s',
+        'day-limit': 1,
+        'label_one':'',
+        'label_two': ''
     },
-
-    'user_followers_milestone':{
+    'user-followers-milestone': {
+        'title':'',
         'text': 'You just got your <milestone_count>th follower. Get more by sharing your profile.',
-        'url': config.WEB_URL + '%s',
-        'day-limit': 1
+        'url': config.WEB_URL + '/%s',
+        'day-limit': 1,
+        'label_one':'',
+        'label_two': ''
     },
-    'post_likes_milestone':{
+    'post-likes-milestone': {
+        'title':'',
         'text': 'Your answer has crossed over <milestone_count> likes. Share it to become popular.',
         'url': config.WEB_URL + '/p/%s',
-        'day-limit': 1
+        'day-limit': 1,
+        'label_one':'',
+        'label_two': ''
 
     },
     'intro-video-request':{
          'title': 'You are in demand!',
          'text': '<requester_name> just asked you for an intro video.',
-         'url': config.WEB_URL + '/p/%s',
-         'day-limit': 1
+         'url': config.WEB_URL + '/%s',
+         'day-limit': 1,
+         'label_one':'',
+         'label_two': ''
     }
-
 }
 
 
@@ -81,7 +93,7 @@ def popular_question_text(question_body, upvote_count):
 
 def following_answered_question(author_name, question_body):
     text = key['following-new-post']['text']
-    return text.replace('<question_author', author_name).replace('<question_body>', question_body)
+    return text.replace('<question_author>', author_name).replace('<question_body>', question_body)
 
 def milestone_text(milestone_name, milestone_count):
     text = key[milestone_name]['text']
@@ -92,8 +104,8 @@ def user_profile_request(requester_name):
     return text.replace('<requester_name>', requester_name)
 
 milestones = {
-    'user_followers':[100, 200, 500, 1000, 5000, 10000, 20000, 50000, 1000000, 10000000],
-    'post_likes': [100, 200, 500, 1000, 5000, 10000, 20000, 50000, 1000000, 10000000],
+    'user-followers-milestone':[100, 200, 500, 1000, 5000, 10000, 20000, 50000, 1000000, 10000000],
+    'post-likes-milestone': [100, 200, 500, 1000, 5000, 10000, 20000, 50000, 1000000, 10000000],
     'upvotes': [100, 200, 500, 1000, 5000, 10000, 20000, 50000, 1000000, 10000000],
     'profile_views': [100, 200, 500, 1000, 5000, 10000, 20000, 50000, 1000000, 10000000],
     'post_views':[100, 200, 500, 1000, 5000, 10000, 20000, 50000, 1000000, 10000000]

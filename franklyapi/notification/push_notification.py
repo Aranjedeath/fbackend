@@ -13,7 +13,7 @@ import notification_decision
 
 key = helper.key
 
-def push_notification(notification_id, user_id, source='application'):
+def push_notification(notification_id, user_id, k=None, source='application'):
     if notification_decision.\
             count_of_push_notifications_sent(user_id=user_id) <= 50: #config.GLOBAL_PUSH_NOTIFICATION_DAY_LIMIT:
 
@@ -21,7 +21,8 @@ def push_notification(notification_id, user_id, source='application'):
         from controllers import get_item_id
         notification = Notification.query.get(notification_id)
 
-        k = key[notification.type]
+        if k is None:
+            k = key[notification.type]
 
         group_id = '-'.join([str(notification.type), str(notification.object_id)])
         for device in AccessToken.query.filter(AccessToken.user == user_id,
@@ -49,20 +50,18 @@ def push_notification(notification_id, user_id, source='application'):
                         "type": 1,
                         "id": user_push_notification.id,
                         "notification_id": notification.id,
+                        "heading": k['title'],
                         "text": notification.text.replace('<b>', '').replace('</b>', ''),
                         "styled_text": notification.text,
                         "icon": notification.icon,
                         "cover_image": None,
-                        "is_actionable": False,
                         "group_id": group_id,
                         "link": notification.link,
                         "deeplink": notification.link,
                         "timestamp": int(time.mktime(user_push_notification.added_at.timetuple())),
                         "seen": False,
-                        "heading": "Frankly",
-                        "title": k['title'],
-                        'label_one': k['label_one'],
-                        'label_two': k['label_two']
+                        "label_one": k['label_one'],
+                        "label_two": k['label_two']
                     }
             if get_device_type(device.device_id) == 'android':
                 print 'pushing gcm for android'

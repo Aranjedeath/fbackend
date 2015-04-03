@@ -872,7 +872,7 @@ def user_follow(cur_user_id, user_id):
 
 
     db.session.commit()
-
+    notification_decision.decide_follow_milestone(user_id=user_id)
     return {'user_id': user_id}
 
 
@@ -1329,7 +1329,8 @@ def post_like(cur_user_id, post_id):
                             )
 
         db.session.commit()
-        #send notification
+
+        notification_decision.decide_post_milestone(post_id=post_id, user_id=answer_author)
         return {'id': post_id, 'success':True}
 
     else:
