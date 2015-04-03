@@ -41,25 +41,25 @@ def get_discover_list(current_user_id, offset, limit=10, day_count=0, add_super=
                 db.session.commit()
             else:
                 print 'scroll data found'
-            
-                if check_user_last_visit_threshold_cross(user_scroll.last_visit):
-                    print 'threshold crossed'
-                    if check_last_added_discover_item(user_scroll.last_visit):
-                        print 'last item added was way too puraana'
-                        recycled_items, recycled_upto = get_recycled_items(current_user_id,user_scroll.recycled_upto)
-                        recycled_items = make_resp_multitype(current_user_id,
-                                                             recycled_items,
-                                                             order_key='recycled_index',
-                                                             reverse_sort=True)
+                
+                if check_not_added_discover_item(user_scroll.last_visit):
+                    print 'last item added was way too puraana'
+                    recycled_items, recycled_upto = get_recycled_items(current_user_id,user_scroll.recycled_upto)
+                    recycled_items = make_resp_multitype(current_user_id,
+                                                         recycled_items,
+                                                         order_key='recycled_index',
+                                                         reverse_sort=True)
+
+                    if check_user_last_visit_threshold_cross(user_scroll.last_visit):
+                        print 'threshold crossed'
                         if user_scroll:
                             user_scroll.last_visit = datetime.datetime.now()
                             user_scroll.recycled_upto = recycled_upto
                             db.session.commit()
-
                     else:
-                        print 'abhi abhi to post add hua h boss'
+                        print 'time nhi hua jyada beta.'
                 else:
-                    print 'time nhi hua jyada beta.'
+                    print 'abhi abhi to post add hua h boss'
             
         if day_count < 10:
             super_inclusion.remove(True)
@@ -221,7 +221,7 @@ def check_user_last_visit_threshold_cross(last_visit):
     print (datetime.datetime.now() - last_visit).total_seconds() > config.DISCOVER_RECYCLE_HOURS * 3600
     return (datetime.datetime.now() - last_visit).total_seconds() > config.DISCOVER_RECYCLE_HOURS * 3600
             
-def check_last_added_discover_item(last_visit):
+def check_not_added_discover_item(last_visit):
     count = DiscoverList.query.filter(DiscoverList.added_at > last_visit).count()
     print count, last_visit
     # items = db.session.execute(
