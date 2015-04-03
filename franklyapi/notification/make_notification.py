@@ -210,15 +210,11 @@ def new_post(post_id, question_body="", notification_type='post-add-self_user',
     db.session.commit()
 
 
-<<<<<<< HEAD
+
     upvoters = [upvote.user for upvote in Upvote.query.filter(Upvote.question==post.question,
                                                               Upvote.downvoted==False).all()]
     followers = Follow.query.with_entities(Follow.followed).filter(Follow.followed == answer_author.id).all()
-=======
-    upvoters = [upvote.user for upvote in Upvote.query.filter(
-        Upvote.question == post.question, Upvote.downvoted == False).all()]
-    upvoters = set([question_author.id] + upvoters)
->>>>>>> master
+
 
     followers = [f[0] for f in followers]
     upvoters = set([question_author.id]+upvoters + followers)
