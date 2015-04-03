@@ -123,10 +123,10 @@ class DateSortedItems(Base):
 class UserScroll(Base):
     __tablename__      = 'user_scrolls'
     user               = Column(CHAR(32), ForeignKey('users.id'), primary_key=True)
-    recycled_upto      = Column(Integer, default = 0)
-    last_recycled_upto = Column(Integer, default = 0)
-    scrolled_upto      = Column(Integer, default = 0)
-    last_visit         = Column(DateTime, onupdate = datetime.datetime.now(), default=datetime.datetime.now())
+    recycled_upto      = Column(Integer, default=0)
+    last_recycled_upto = Column(Integer, default=0)
+    scrolled_upto      = Column(Integer, default=0)
+    last_visit         = Column(DateTime, default=datetime.datetime.now())
 
     def __init__(self, user, recycled_upto=None, last_recycled_upto=None, scrolled_upto=None):
         self.user = user
