@@ -9,15 +9,14 @@ from object_dict import questions_to_dict, guest_user_to_dict, posts_to_dict
 
 def get_discover_list(current_user_id, offset, limit=10, day_count=0, add_super=False, exclude_users=[]):
     if not day_count:
-        day_count=0
-    
+        day_count = 0
+
     if current_user_id:
-        result = db.session.execute(text("""SELECT users.user_since 
+        result = db.session.execute(text("""SELECT users.user_since
                                                 FROM users 
                                                 WHERE users.id=:current_user_id
                                             """),
-                                        params={'current_user_id':current_user_id}
-                                        )
+                                    params={'current_user_id':current_user_id})
         for row in result:
             user_since = row[0]
             day_count = int((datetime.datetime.now() - user_since).total_seconds())/(3600*24)
