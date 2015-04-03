@@ -7,109 +7,114 @@ from models import User, Post, Question, DiscoverList, UserScroll
 from object_dict import questions_to_dict, guest_user_to_dict, posts_to_dict
 from configs import config
 
+
 def get_discover_list(current_user_id, offset, limit=10, day_count=0, add_super=False, exclude_users=[]):
-    try:
-        if not day_count:
-            day_count = 0
+    if not day_count:
+        day_count = 0
 
-        if current_user_id:
-            # get user'sday_count
-            result = db.session.execute(text("""SELECT users.user_since
-                                                    FROM users 
-                                                    WHERE users.id=:current_user_id
-                                                """),
-                                        params={'current_user_id':current_user_id})
-            for row in result:
-                user_since = row[0]
-                day_count = int((datetime.datetime.now()-user_since).total_seconds())/(3600*24)
+    if current_user_id:
+        # get user'sday_count
+        result = db.session.execute(text("""SELECT users.user_since
+                                                FROM users 
+                                                WHERE users.id=:current_user_id
+                                            """),
+                                    params={'current_user_id':current_user_id})
+        for row in result:
+            user_since = row[0]
+            day_count = int((datetime.datetime.now()-user_since).total_seconds())/(3600*24)
 
 
-        super_inclusion = [False, True, None]
-        count_of_dirty_sent = 0
-        dirty_items = []
+    super_inclusion = [False, True, None]
+    count_of_dirty_sent = 0
+    dirty_items = []
 
-        recycled_items = []
-        recycled_upto = 0
-        if offset == 0 and current_user_id:
-            print 'offset 0'
-            user_scroll = UserScroll.query.filter(UserScroll.user == current_user_id).first()
-            if not user_scroll:
-                print 'scroll data not found.. creating and skipping recycle'
-            
-                user_scroll = UserScroll(current_user_id)
-                db.session.add(user_scroll)
-                db.session.commit()
-            else:
-                print 'scroll data found'
-                
-                if check_not_added_discover_item(user_scroll.last_visit):
-                    print 'last item added was way too puraana'
-                    recycled_items, recycled_upto = get_recycled_items(current_user_id,user_scroll.recycled_upto)
-                    recycled_items = make_resp_multitype(current_user_id,
-                                                         recycled_items,
-                                                         order_key='recycled_index',
-                                                         reverse_sort=True)
+    recycled_items = []
+    recycled_upto = 0
+    updating_user_scroll = False
 
-                    if check_user_last_visit_threshold_cross(user_scroll.last_visit):
-                        print 'threshold crossed'
-                        if user_scroll:
-                            user_scroll.last_visit = datetime.datetime.now()
-                            user_scroll.recycled_upto = recycled_upto
-                            db.session.commit()
-                    else:
-                        print 'time nhi hua jyada beta.'
-                else:
-                    print 'abhi abhi to post add hua h boss'
-            
-        if day_count < 10:
-            super_inclusion.remove(True)
-            dirty_items = get_dirty_items(current_user_id, offset, limit, day_count)
-            dirty_items = make_resp_multitype(current_user_id, dirty_items,
-                                              order_key='dirty_index',
-                                              reverse_sort=False)
-            count_of_dirty_sent = get_count_of_dirty_items_sent(offset, day_count)
-
-        items = db.session.execute(
-            text("""SELECT discover_list.post,
-                           discover_list.question,
-                           discover_list.user,
-                           discover_list.id
-                    FROM discover_list
-                    WHERE discover_list.removed=false
-                      AND discover_list.display_on_day<=:day_count
-                      AND discover_list.is_super in :super_inclusion
-                    ORDER BY discover_list.id DESC
-                    LIMIT :offset, :limit
-                """),
-            params={'super_inclusion':super_inclusion,
-                    'day_count':day_count,
-                    'offset':offset-count_of_dirty_sent,
-                    'limit':limit-len(dirty_items)-len(recycled_items)}
-            )
-        resp = {}
-        for item in items:
-            if item[0]:
-                resp.update({item[0]: {'type':'post', 'show_order':item[3]}})
-            if item[1]:
-                resp.update({item[1]: {'type':'question', 'show_order':item[3]}})
-            if item[2]:
-                resp.update({item[2]: {'type':'user', 'show_order':item[3]}})
-
-        all_other_items = make_resp_multitype(current_user_id, resp,
-                                              order_key='show_order',
-                                              reverse_sort=True)
-        [all_other_items.insert(dirty_item['dirty_index'],
-                                                  dirty_item
-                                                 ) for dirty_item in dirty_items]
-        print 'dirty items added'
-        print 'item count: ',len(all_other_items)
+    if offset == 0 and current_user_id:
+        print 'offset 0'
         
-        [all_other_items.insert(0,recycled_item)for recycled_item in recycled_items]
+        user_scroll = UserScroll.query.filter(UserScroll.user == current_user_id).first()
+        if not user_scroll:
+            print 'scroll data not found.. creating and skipping recycle'
+        
+            user_scroll = UserScroll(current_user_id)
+            db.session.add(user_scroll)
+            db.session.commit()
+        else:
+            print 'scroll data found'
+            
+            if check_not_added_discover_item(user_scroll.last_visit):
+                print 'last item added was way too puraana'
+                
+                if check_user_last_visit_threshold_cross(user_scroll.last_visit):
+                    print 'threshold crossed'
+                    if user_scroll:
+                        user_scroll.last_visit = datetime.datetime.now()
+                        user_scroll.last_recycled_upto = user_scroll.recycled_upto
+                        updating_user_scroll = True
+                else:
+                    print 'time nhi hua jyada beta.'
 
-        return all_other_items
-    except Exception as e:
-        print traceback.format_exc(e)
-        return None
+                recycled_items, recycled_upto = get_recycled_items(current_user_id, user_scroll.last_recycled_upto)
+                recycled_items = make_resp_multitype(current_user_id,
+                                                     recycled_items,
+                                                     order_key='recycled_index',
+                                                     reverse_sort=True)
+                if updating_user_scroll:
+                    user_scroll.recycled_upto = recycled_upto
+                    db.session.commit()
+            else:
+                print 'abhi abhi to post add hua h boss'
+        
+    if day_count < 10:
+        super_inclusion.remove(True)
+        dirty_items = get_dirty_items(current_user_id, offset, limit, day_count)
+        dirty_items = make_resp_multitype(current_user_id, dirty_items,
+                                          order_key='dirty_index',
+                                          reverse_sort=False)
+        count_of_dirty_sent = get_count_of_dirty_items_sent(offset, day_count)
+
+    items = db.session.execute(
+        text("""SELECT discover_list.post,
+                       discover_list.question,
+                       discover_list.user,
+                       discover_list.id
+                FROM discover_list
+                WHERE discover_list.removed=false
+                  AND discover_list.display_on_day<=:day_count
+                  AND discover_list.is_super in :super_inclusion
+                ORDER BY discover_list.id DESC
+                LIMIT :offset, :limit
+            """),
+        params={'super_inclusion':super_inclusion,
+                'day_count':day_count,
+                'offset':offset-count_of_dirty_sent,
+                'limit':limit-len(dirty_items)-len(recycled_items)}
+        )
+    resp = {}
+    for item in items:
+        if item[0]:
+            resp.update({item[0]: {'type':'post', 'show_order':item[3]}})
+        if item[1]:
+            resp.update({item[1]: {'type':'question', 'show_order':item[3]}})
+        if item[2]:
+            resp.update({item[2]: {'type':'user', 'show_order':item[3]}})
+
+    all_other_items = make_resp_multitype(current_user_id, resp,
+                                          order_key='show_order',
+                                          reverse_sort=True)
+    [all_other_items.insert(dirty_item['dirty_index'],
+                                              dirty_item
+                                             ) for dirty_item in dirty_items]
+    print 'dirty items added'
+    print 'item count: ',len(all_other_items)
+    
+    [all_other_items.insert(0,recycled_item)for recycled_item in recycled_items]
+
+    return all_other_items
+
 
 def get_dirty_items(current_user_id, offset, limit, day_count):
     dirty_items = db.session.execute(text("""SELECT discover_list.post,
@@ -155,9 +160,11 @@ def get_count_of_dirty_items_sent(offset, day_count):
 
     return dirty_item_sent_count
 
-def get_recycled_items(current_user_id, recycled_upto):
+def get_recycled_items(current_user_id, last_recycled_upto):
     try:
+        recycled_upto = last_recycled_upto
         print 'recycled_upto ', recycled_upto
+
         items = db.session.execute(
             text("""SELECT
                         discover_list.post,
@@ -170,14 +177,14 @@ def get_recycled_items(current_user_id, recycled_upto):
                     ORDER BY id
                     LIMIT :count
             """),
-            params={'start_pointer':recycled_upto,
+            params={'start_pointer':last_recycled_upto,
                     'count':config.DISCOVER_RECYCLE_COUNT
                    }
             )
         resp = {}
 
         for index, item in enumerate(items, start=0):
-            recycled_upto = max(recycled_upto, item[3])
+            recycled_upto = max(last_recycled_upto, item[3])
             if item[0]:
                 resp.update({item[0]: {'type':'post', 'recycled_index':index}})
             if item[1]:
