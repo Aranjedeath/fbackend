@@ -53,9 +53,9 @@ def post_notifications(post_id):
             print row[0]
             if row[0] == question_author_id or count_of_push_notifications_sent(user_id=row[0]) < 5:
                 notification.push_notification(notification_id=notification_id, user_id = row[0])
-                email_helper.question_answered(receiver_email = row[2], receiver_name = row[1],
-                                           celebrity_name = answer_author_name,
-                                           question = question_body, web_link=link)
+                # email_helper.question_answered(receiver_email = row[2], receiver_name = row[1],
+                #                            celebrity_name = answer_author_name,
+                #                            question = question_body, web_link=link)
     except ObjectNotFoundException:
         pass
 

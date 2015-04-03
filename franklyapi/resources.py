@@ -284,6 +284,40 @@ class UserUpdateForm(restful.Resource):
             raygun.send(err[0],err[1],err[2])
             abort(500, message=internal_server_error_message)
 
+
+class UserProfileRequest(restful.Resource):
+
+    post_parser = reqparse.RequestParser()
+    post_parser.add_argument('request_by', type=str, default='', location = 'json')
+    post_parser.add_argument('request_type', type=str, required=True, location = 'json', choices=['intro-video-request'] )
+
+    @login_required
+    def post(self):
+        """
+        Requests the user for a profile update
+
+        Controller Functions Used:
+            - user_profile_request
+
+        Authentication: Required
+        """
+        args = self.post_parser.parse_args()
+
+        try:
+            resp = controllers.user_profile_request(current_user_id=current_user.id, request_by=args['request_by'],
+                                                    request_type=args['request_type'])
+            return resp
+
+        except CustomExceptions.BadRequestException as e:
+            abort(400, message=str(e))
+
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
+
+
 class SlugItem(restful.Resource):
 
     def get(self, username, slug):

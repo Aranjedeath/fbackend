@@ -27,11 +27,11 @@ def decide_popular_users_based_on_questions_asked():
 def following_answered_question():
     make_notification.following_answered_question()
 
-'''
-@ 4 PM Every day
-'''
-def share_my_popular_question_notification():
-    notification_decision.prompt_sharing_popular_question()
+# '''
+# @ 4 PM Every day
+# '''
+# def share_my_popular_question_notification():
+#     notification_decision.prompt_sharing_popular_question()
 
 '''
 @ 10 AM Every day
@@ -132,9 +132,9 @@ def reassign_pending_video_tasks():
             for profile in profiles:
                 if not getattr(v, profile):
                     profiles_to_encode.append(profile)
-            async_encoder.encode_video_task.delay(video_url=v.url, username=v.username, profiles=profiles_to_encode, queues=dict(low=low_priority_queue, ultralow=retry_queue, medium=retry_queue, opt=retry_queue))
-            print profiles_to_encode, v.url
-            other_video_count +=1
+            #async_encoder.encode_video_task.delay(video_url=v.url, username=v.username, profiles=profiles_to_encode, queues=dict(low=low_priority_queue, ultralow=retry_queue, medium=retry_queue, opt=retry_queue))
+            #print profiles_to_encode, v.url
+            #other_video_count +=1
     print 'Virgin Videos Assigned:', virgin_video_count
     print 'Other Videos Assigned:', other_video_count
 
