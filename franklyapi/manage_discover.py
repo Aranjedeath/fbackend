@@ -26,13 +26,18 @@ def get_discover_list(current_user_id, offset, limit=10, day_count=0, add_super=
     count_of_dirty_sent = 0
     dirty_items = []
     
+    recycled_items = []
+
+    if datetime.datetime.now() - user_last_visit > config.DISCOVER_RECYCLE_TIME:
+        if offset = 0:
+            recycled_items = get_recycled_items(current_user_id)
+            recycled_items = make_resp_multitype(current_user_id, recycled_items, order_key='recycled_index', reverse_sort=False)
+
     if day_count < 10:
         super_inclusion.remove(True)
         dirty_items = get_dirty_items(current_user_id, offset, limit, day_count)
         dirty_items = make_resp_multitype(current_user_id, dirty_items, order_key='dirty_index', reverse_sort=False)
-        
         count_of_dirty_sent = get_count_of_dirty_items_sent(offset, day_count)
-
 
     items = db.session.execute(text("""SELECT discover_list.post, 
                                                 discover_list.question,
@@ -48,7 +53,7 @@ def get_discover_list(current_user_id, offset, limit=10, day_count=0, add_super=
                                 params = {'super_inclusion':super_inclusion, 
                                             'day_count':day_count, 
                                             'offset':offset-count_of_dirty_sent, 
-                                            'limit':limit-len(dirty_items)}
+                                            'limit':limit - len(dirty_items) - len(recycled_items)}
                                 )
     resp = {}
     for item in items:
@@ -61,6 +66,8 @@ def get_discover_list(current_user_id, offset, limit=10, day_count=0, add_super=
 
     all_other_items = make_resp_multitype(current_user_id, resp, order_key='show_order', reverse_sort=True)
     [all_other_items.insert(dirty_item['dirty_index'], dirty_item) for dirty_item in dirty_items]
+    [all_other_items.insert(recycled_item['recycled_index'],recycled_item) for recycled_item in recycled_items]
+
     return all_other_items
 
 def get_dirty_items(current_user_id, offset, limit, day_count):
@@ -107,6 +114,37 @@ def get_count_of_dirty_items_sent(offset, day_count):
 
     return dirty_item_sent_count
 
+def get_recycled_items(current_user_id, offset, limit, day_count):
+    # TODO: write query to get N iitems after users B pointer
+    items = db.session.execute(
+        text("""SELECT 
+                    discover_list.post,
+                    discover_list.question,
+                    discover_list.user,
+                    discover_list.id
+                FROM discover_list
+                WHERE 
+                    discover_list.is_super=true
+                    AND discover_list.display_on_day<=:day_count
+                    AND discover_list.dirty_index>=:lower_limit
+                    AND discover_list.dirty_index<:upper_limit
+                ORDER BY id DESC
+        """),
+        params={'day_count':day_count, 
+                'lower_limit':offset, 
+                'upper_limit':offset+limit
+                }
+        )
+    resp = {}
+
+    for index,item in enumerate(items, start=1):
+        if item[0]:
+            resp.update({item[0]: {'type':'post', 'recycled_index':-index}})
+        if item[1]:
+            resp.update({item[1]: {'type':'question', 'recycled_index':-index}})
+        if item[2]:
+            resp.update({item[2]: {'type':'user', 'recycled_index':-index}})
+    return resp
 
 
 
