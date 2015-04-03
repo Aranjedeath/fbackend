@@ -2393,3 +2393,22 @@ class ReceiveSNSNotifications(restful.Resource):
             with open('data.txt', 'w') as outfile:
                 json.dump(request.data, outfile)
             abort(500, message=internal_server_error_message)
+
+
+class PublicDocumentation(restful.Resource):
+    get_parser = reqparse.RequestParser()
+    get_parser.add_argument('doc_key', type=str, location='args', required=True)
+    def get(self):
+        args = self.get_parser.parse_args()
+        if args['doc_key'] == 'AFfbe394002dde':
+            from flask import render_template
+            import json
+            with open("newcontextdict") as infile :
+                newcontext = json.load(infile)  
+            #return Response(json.dumps(doc_gen(app, resources)), content_type='application/json')
+            resp = flask.make_response(render_template('api_docnew.html', endpoints=newcontext))
+            resp.headers['content-type'] = 'text/html'
+            return resp
+        else:
+            abort(403, message='Ra Ra Rasputin says: You are are hitting a wrong url.')
+

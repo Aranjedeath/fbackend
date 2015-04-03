@@ -22,18 +22,23 @@ if not os.path.exists(temp_path):
         os.mkdir(temp_path)
 
 
-def download_file(url):
+def download_file(url, check_cache=True):
     try:
-        res = requests.get(url)
         if not os.path.exists(temp_path):
             os.mkdir(temp_path)
-        path= '%s/%s'%(temp_path, uuid.uuid4().hex)
+        file_name = url.lstrip('http://').lstrip('https://').replace('/', '_').replace('.', '-')
+        path= os.path.join(temp_path, file_name)
+
+        if check_cache and os.path.exists(path):
+            return path
+
+        res = requests.get(url)
         if res.status_code == 200:
             with open(path, 'wb') as f:
                 f.write(res.content)
             return path
     except requests.ConnectionError, requests.SSLError:
-        return download_file(url)
+        return download_file(url, check_cache=False)
 
 def save_file_from_request(file_to_save):
     import uuid

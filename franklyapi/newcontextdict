@@ -1,0 +1,223 @@
+[
+    {
+        "url": "/user/profile/<user_id>",
+        "GET": {
+            "args": [
+                
+            ],
+            "docstring": "Returns profile information of the user.\n\n        user_id can be username or user_id of the user or 'me'(only with valid authentication).\n\n        Authentication: Optional"
+        },
+        "name": "userprofile",
+        "methods": [
+            "GET"
+        ]
+    },
+    {
+        "url": "/question/list/public/<user_id>",
+        "GET": {
+            "args": [
+                {
+                    "name": "limit",
+                    "default": 10,
+                    "required": false,
+                    "location": "args",
+                    "type": "int"
+                },
+                {
+                    "name": "offset",
+                    "default": 0,
+                    "required": false,
+                    "location": "args",
+                    "type": "int"
+                }
+            ],
+            "docstring": "Returns list of public questions asked to the user with user_id.\n            user_id can be the id or username of the user whose question list id to be fetched.\n\n        Authentication: Optional"
+        },
+        "name": "questionlistpublic",
+        "methods": [
+            "GET"
+        ]
+    },
+    {
+        "url": "/reg/email",
+        "POST": {
+            "args": [
+                {
+                    "name": "device_id",
+                    "required": true,
+                    "location": "json",
+                    "type": "str",
+                    "help": "device_id should be str(16) for android, str(32) for iOS, 'web' for browsers"
+                },
+                {
+                    "name": "email",
+                    "required": true,
+                    "location": "json",
+                    "type": "str"
+                },
+                {
+                    "name": "full_name",
+                    "required": true,
+                    "location": "json",
+                    "type": "str"
+                },
+                {
+                    "name": "country_code",
+                    "default": null,
+                    "required": false,
+                    "location": "json",
+                    "type": "str"
+                },
+                {
+                    "name": "country_name",
+                    "default": null,
+                    "required": false,
+                    "location": "json",
+                    "type": "str"
+                },
+                {
+                    "name": "gender",
+                    "default": "M",
+                    "required": false,
+                    "choices": [
+                        "M",
+                        "F"
+                    ],
+                    "location": "json",
+                    "type": "str"
+                },
+                {
+                    "name": "lat",
+                    "default": null,
+                    "required": false,
+                    "location": "json",
+                    "type": "str"
+                },
+                {
+                    "name": "location_name",
+                    "default": null,
+                    "required": false,
+                    "location": "json",
+                    "type": "str"
+                },
+                {
+                    "name": "lon",
+                    "default": null,
+                    "required": false,
+                    "location": "json",
+                    "type": "str"
+                },
+                {
+                    "name": "password",
+                    "default": null,
+                    "required": false,
+                    "location": "json",
+                    "type": "str",
+                    "help": "if password is not provided, user will recieve an email with a link to set his password."
+                },
+                {
+                    "name": "phone_num",
+                    "default": null,
+                    "required": false,
+                    "location": "json",
+                    "type": "str"
+                },
+                {
+                    "name": "username",
+                    "default": null,
+                    "required": false,
+                    "location": "json",
+                    "type": "str",
+                    "help": "username should be 6 to 24 characters and can only contain A-Z, a-z, 0-9 and _ .If not provided, a username will be generated."
+                }
+            ],
+            "docstring": "Register a new user with email and password.\n\n        Authentication: None"
+        },
+        "name": "registeremail",
+        "methods": [
+            "POST"
+        ]
+    },
+    {
+        "url": "/question/ask",
+        "POST": {
+            "args": [
+                {
+                    "name": "body",
+                    "required": true,
+                    "location": "json",
+                    "type": "str"
+                },
+                {
+                    "name": "is_anonymous",
+                    "required": true,
+                    "location": "json",
+                    "type": "bool"
+                },
+                {
+                    "name": "question_to",
+                    "required": true,
+                    "location": "json",
+                    "type": "str",
+                    "help": "question_to must be user_id of the user to whom the question is being asked."
+                },
+                {
+                    "name": "coordinate_point",
+                    "default": [
+                        null,
+                        null
+                    ],
+                    "required": false,
+                    "location": "json",
+                    "type": "list",
+                    "help": "coordinate_point should be an array of format [longitude(float), latitude(float)]"
+                }
+            ],
+            "docstring": "Lets the current_user ask question to a given user.\n\n        Authentication: Required"
+        },
+        "name": "questionask",
+        "methods": [
+            "POST"
+        ]
+    },
+    {
+        "url": "/timeline/user/<user_id>/multitype",
+        "GET": {
+            "args": [
+                {
+                    "name": "limit",
+                    "default": 10,
+                    "required": false,
+                    "location": "args",
+                    "type": "int"
+                },
+                {
+                    "name": "offset",
+                    "default": 0,
+                    "required": false,
+                    "location": "args",
+                    "type": "int"
+                }
+            ],
+            "docstring": "Returns the profile timeline of the user.\n        user_id should be id of the user or 'me' for current_user's timeline.\n\n        Authentication: Optional"
+        },
+        "name": "timelineuser",
+        "methods": [
+            "GET"
+        ]
+    },
+    {
+        "url": "/post/view/<post_id/post_client_id>",
+        "GET": {
+            "args": [
+                
+            ],
+            "docstring": "        Returns a single post.\n        post_id can be id of the post or client_id of the post.\n\n        Authentication: Optional"
+        },
+        "name": "postview",
+        "methods": [
+            "GET"
+        ]
+    }
+    
+]
