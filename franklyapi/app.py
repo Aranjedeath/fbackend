@@ -53,13 +53,21 @@ def log_to_time_log(response_time,request,response):
         log_string = ' :: '.join([str(response_time),  response.status, request.url, json.dumps(request.args), now_string]) + '\n'
         f.write(log_string)
         print log_string
-        pass
+        api_key = request.headers.get('X-Api-Key')
+        invalid_request = False
+        if api_key and api_key != config.PUBLIC_API_KEY:
+           invalid_request = True
     except Exception, e:
         print traceback.format_exc(e)
+    if invalid_request:
+         abort(403, message='Invalid API Key')
     f.close()
+
+
 @app.before_request
 def add_begin_time_to_g():
     g.begin_time = datetime.now()
+
 
 @app.after_request
 def add_access_control_headers(response):
@@ -96,6 +104,4 @@ def load_header(header_vals):
     access_token, device_id, api_key = header_vals.get('X-Token'), header_vals.get('X-Deviceid'), header_vals.get('X-Api-Key')
     if not (access_token and device_id):
         return None
-    if api_key and api_key != config.PUBLIC_API_KEY:
-        abort('403', message='Invalid API Key')
     return check_access_token(access_token, device_id)
