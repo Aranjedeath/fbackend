@@ -1423,12 +1423,14 @@ def comment_add(cur_user_id, post_id, body, lat, lon):
 
     if not (has_blocked(cur_user_id, answer_author) or has_blocked(cur_user_id, answer_author)):
         from database import get_item_id
-        comment = Comment(id=get_item_id(), on_post=post_id, body=body, comment_author=cur_user_id, lat=lat, lon=lon, timestamp=datetime.datetime.now())
+        comment = Comment(id=get_item_id(), on_post=post_id, body=body, comment_author=cur_user_id,
+                          lat=lat, lon=lon, timestamp=datetime.datetime.now())
         db.session.add(comment)
 
         db.session.commit()
-    
-        user_update_location(cur_user_id, lat, lon, country=None, country_code=None, loc_name=None)
+
+        notification.comment_on_post(comment_id=comment.id, comment_author=cur_user_id, post_id=post_id)
+        #user_update_location(cur_user_id, lat, lon, country=None, country_code=None, loc_name=None)
 
         return {'comment': comment_to_dict(comment), 'id':comment.id, 'success':True}
     else:

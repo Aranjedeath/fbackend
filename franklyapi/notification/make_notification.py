@@ -26,10 +26,9 @@ def add_notification_for_user(notification_id, user_ids, list_type, push_at=date
         db.session.add(user_notification)
         db.session.commit()
 
-
-
         if push_at:
             push_notification(notification_id, user_id)
+
 
 def get_device_type(device_id):
     if len(device_id)<17:
@@ -44,23 +43,20 @@ def push_notification(notification_id, user_id, source='application'):
     if notification_decision.\
             count_of_push_notifications_sent(user_id = user_id) <= config.GLOBAL_PUSH_NOTIFICATION_DAY_LIMIT:
 
-
         print 'Still under limits for number of daily notifications'
 
         from controllers import get_device_type
 
-
         notification = Notification.query.get(notification_id)
 
         group_id = '-'.join([str(notification.type), str(notification.object_id)])
-        for device in AccessToken.query.filter(AccessToken.user==user_id,
-                                                AccessToken.active==True,
-                                                AccessToken.push_id!=None).all():
+        for device in AccessToken.query.filter(AccessToken.user == user_id,
+                                               AccessToken.active is True,
+                                               AccessToken.push_id is not None).all():
 
             print 'Found valid devices for push notifications'
 
-            user_push_notification = UserPushNotification(
-                                                          notification_id=notification_id,
+            user_push_notification = UserPushNotification(notification_id=notification_id,
                                                           user_id=user_id,
                                                           device_id=device.device_id,
                                                           push_id=device.push_id,
@@ -70,38 +66,37 @@ def push_notification(notification_id, user_id, source='application'):
                                                           source=source,
                                                           cancelled=False,
                                                           result=None,
-                                                          id=get_item_id()
-                                                         )
+                                                          id=get_item_id())
             db.session.add(user_push_notification)
             db.session.commit()
             payload = {
-                        "user_to" : user_id,
-                        "type" : 1,
-                        "id" : user_push_notification.id,
+                        "user_to": user_id,
+                        "type": 1,
+                        "id": user_push_notification.id,
                         "notification_id": notification.id,
-                        "text" : notification.text.replace('<b>', '').replace('</b>', ''),
-                        "styled_text":notification.text,
-                        "icon" : notification.icon,
-                        "cover_image":None,
-                        "is_actionable":False,
+                        "text": notification.text.replace('<b>', '').replace('</b>', ''),
+                        "styled_text": notification.text,
+                        "icon": notification.icon,
+                        "cover_image": None,
+                        "is_actionable": False,
                         "group_id": group_id,
-                        "link" : notification.link,
-                        "deeplink" : notification.link,
-                        "timestamp" : int(time.mktime(user_push_notification.added_at.timetuple())),
-                        "seen" : False,
-                        "heading":"Frankly.me"
+                        "link": notification.link,
+                        "deeplink": notification.link,
+                        "timestamp": int(time.mktime(user_push_notification.added_at.timetuple())),
+                        "seen": False,
+                        "heading": "Frankly.me"
                     }
-            if get_device_type(device.device_id)=='android':
+            if get_device_type(device.device_id) == 'android':
                 print 'pushing gcm for android'
                 from GCM_notification import GCM
                 gcm_sender = GCM()
                 gcm_sender.send_message([device.push_id], payload)
 
-            if get_device_type(device.device_id)=='ios':
+            if get_device_type(device.device_id) == 'ios':
                 print 'pushing for iOS'
-                from APN_notification import  APN
+                from APN_notification import APN
                 apns = APN()
-                apns.send_message([device.push_id],payload)
+                apns.send_message([device.push_id], payload)
 
 
 
@@ -213,9 +208,12 @@ def new_post(post_id, question_body="", notification_type = 'post-add-self_user'
     db.session.commit()
 
 
-    upvoters = [upvote.user for upvote in Upvote.query.filter(Upvote.question==post.question, Upvote.downvoted==False).all()]
-    upvoters = set([question_author.id]+upvoters)
+    upvoters = [upvote.user for upvote in Upvote.query.filter(Upvote.question==post.question,
+                                                              Upvote.downvoted==False).all()]
+    followers = Follow.query.with_entities(Follow.followed).filter(Follow.followed == answer_author.id).all()
 
+    followers = [f[0] for f in followers]
+    upvoters = set([question_author.id]+upvoters + followers)
 
     add_notification_for_user(notification_id=notification.id,
                                 user_ids=list(upvoters),
@@ -312,7 +310,7 @@ def send_milestone_notification(milestone_name, milestone_crossed, object_id, us
     link = key[milestone_name]['url'] % object_id
 
     notification = Notification(type=(milestone_name+'_'+milestone_crossed), text=text,
-                                link=None, object_id=user_id,
+                                link=link, object_id=user_id,
                                 icon=None, created_at=datetime.datetime.now(),
                                 manual=False, id=get_item_id())
     db.session.add(notification)
@@ -349,6 +347,36 @@ def user_profile_request(user_id, request_by, request_type, request_id):
                               user_ids=[user_id],
                               list_type='me',
                               push_at=datetime.datetime.now())
+
+
+def comment_on_post(post_id, comment_id, comment_author):
+
+    post = Post.query.filter(Post.id == post_id).one()
+
+    comment_author = User.query.filter(User.id == comment_author).one()
+
+    notification_type = 'comment_on_post'
+
+    k = key[notification_type]
+
+    text = helper.comment_on_post()
+
+    link = k['url'] % post_id
+
+    icon = comment_author.profile_picture
+
+    notification = Notification(type=notification_type, text=text,
+                                link=link, object_id=comment_id,
+                                icon=icon, created_at=datetime.datetime.now(),
+                                manual=False, id=get_item_id())
+    db.session.add(notification)
+    db.session.commit()
+
+    add_notification_for_user(notification_id=notification.id,
+                              user_ids=[post.answer_author, post.question_author],
+                              list_type='me',
+                              push_at=datetime.datetime.now())
+
 
 def notification_user_follow(follow_id):
     follow = Follow.query.filter(Follow.id==follow_id, Follow.deleted==False)

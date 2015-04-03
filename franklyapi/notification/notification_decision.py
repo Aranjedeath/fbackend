@@ -1,13 +1,13 @@
-import datetime
-
 from app import db
 from sqlalchemy.sql import text
-import make_notification as notification
 from mailwrapper import email_helper
 from CustomExceptions import ObjectNotFoundException
 
 import controllers
 import helper
+import make_notification as notification
+import datetime
+
 
 '''
 Sends out both Push and email.
@@ -49,6 +49,9 @@ def post_notifications(post_id):
                                              where un.notification_id = :notification_id
                                              and upn.user_id is null'''),
                                              params={'notification_id': notification_id})
+
+
+
         for row in results:
             print row[0]
             if row[0] == question_author_id or count_of_push_notifications_sent(user_id=row[0]) < 5:
@@ -62,11 +65,13 @@ def post_notifications(post_id):
 '''
 Sends notifications of 'my' most upvoted question
 that has not been answered or pushed till now
-(Sent to only poular users)
+(Sent to only popular users)
 '''
+
+
 def question_asked_notifications():
 
-    #Get all popular users who have been asked a question in the last day
+    # Get all popular users who have been asked a question in the last day
     users = db.session.execute(text(''' Select u.id, u.email, u.first_name, uni.is_popular, q.id,
                                         q.body
                                         from users u
@@ -78,7 +83,8 @@ def question_asked_notifications():
                                         group by q.question_to
                                     '''))
 
-    #For these popular users get the most popular question that has not been answered and push a notification for the same
+    # For these popular users get the most popular question that has not been
+    # answered and push a notification for the same
     for user in users:
         print user[2]
         if count_of_notifications_sent_by_type(user_id=user[0], notification_type='question-ask-self_user') == 0:
@@ -115,12 +121,11 @@ def question_asked_notifications():
 ''' Gets most popular question that have been asked
 and sends out a notification prompting to share the question
 '''
+
+
 def prompt_sharing_popular_question():
 
-
-
-    ''' Select questions that have been upvoted the most
-'''
+    # Select questions that have been upvoted the most
     results = db.session.execute(text('''  Select count(*) as real_upvote_count, i.upvote_count,
                                            q.question_author, q.body,
                                            qu.question
@@ -147,6 +152,8 @@ def prompt_sharing_popular_question():
 ''' Creates milestone notifications
 for a user's followers
 '''
+
+
 def user_followers_milestone_notifications():
 
     result = db.session.execute(text('''SELECT distinct uf.followed as user
@@ -168,11 +175,13 @@ def user_followers_milestone_notifications():
         check_and_make_milestone('user_followers_milestone', row[0], row[0], controllers.get_follower_count(row[0]))
 
 
-''' Creates milestone notifications for a
+'''
+Creates milestone notifications for a
 user's likes
 '''
-def post_likes_milestone_notifications():
 
+
+def post_likes_milestone_notifications():
 
     result = db.session.execute(text('''SELECT distinct pl.post as post, posts.question_author
                                                             from post_likes pl

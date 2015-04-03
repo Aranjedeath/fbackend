@@ -39,7 +39,8 @@ key = {
 
     },
     'intro-video-request':{
-         'text': '<requester_name> just asked you to shoot an about me video.',
+         'title': 'You are in demand!',
+         'text': '<requester_name> just asked you for an intro video.',
          'url': config.WEB_URL + '/p/%s',
          'day-limit': 1
     }
