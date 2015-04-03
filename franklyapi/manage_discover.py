@@ -10,56 +10,13 @@ from configs import config
 
 def get_discover_list(current_user_id, offset, limit=10, day_count=0,
                       add_super=False, exclude_users=[]):
+    # include dirty items
     if not day_count:
         day_count = 0
-
     day_count = get_day_count(current_user_id)
     super_inclusion = [False, True, None]
     count_of_dirty_sent = 0
     dirty_items = []
-
-    recycled_items = []
-    recycled_upto = 0
-    updating_user_scroll = False
-
-    if offset == 0 and current_user_id:
-        print 'offset 0'
-
-        user_scroll = UserScroll.query.filter(
-            UserScroll.user == current_user_id).first()
-        if not user_scroll:
-            print 'scroll data not found.. creating and skipping recycle'
-
-            user_scroll = UserScroll(current_user_id)
-            db.session.add(user_scroll)
-            db.session.commit()
-        else:
-            print 'scroll data found'
-
-            if check_not_added_discover_item(user_scroll.last_visit):
-                print 'last item added was way too puraana'
-
-                if check_user_last_visit_threshold_cross(user_scroll.last_visit):
-                    print 'threshold crossed'
-                    if user_scroll:
-                        user_scroll.last_visit = datetime.datetime.now()
-                        user_scroll.last_recycled_upto = \
-                            user_scroll.recycled_upto
-                        updating_user_scroll = True
-                else:
-                    print 'time nhi hua jyada beta.'
-
-                recycled_items, recycled_upto = \
-                    get_recycled_items(user_scroll.last_recycled_upto)
-                recycled_items = make_resp_multitype(current_user_id,
-                                                     recycled_items,
-                                                     order_key='recycled_index',
-                                                     reverse_sort=True)
-                if updating_user_scroll:
-                    user_scroll.recycled_upto = recycled_upto
-                    db.session.commit()
-            else:
-                print 'abhi abhi to post add hua h boss'
 
     if day_count < 10:
         super_inclusion.remove(True)
@@ -69,6 +26,49 @@ def get_discover_list(current_user_id, offset, limit=10, day_count=0,
                                           reverse_sort=False)
         count_of_dirty_sent = get_count_of_dirty_items_sent(offset, day_count)
 
+    # recycle discover feeds
+    recycled_items = []
+    recycled_upto = 0
+
+    if offset == 0 and current_user_id:
+        print 'offset 0'
+        user_scroll = UserScroll.query.filter(
+            UserScroll.user == current_user_id).first()
+        if user_scroll:
+            print 'scroll data found'
+            if check_not_added_discover_item(user_scroll.last_visit):
+                print 'last item added was way too puraana'
+                if check_user_last_visit_threshold_cross(user_scroll.last_visit):
+                    print 'threshold crossed'
+                    if user_scroll:
+                        if check_recycle_upper_limit_reached(user_scroll.last_recycled_upto, limit-len(dirty_items)):
+                            user_scroll.last_recycled_upto = 0
+                            user_scroll.recycled_upto = 0
+                        else:
+                            user_scroll.last_recycled_upto = \
+                                user_scroll.recycled_upto
+                            user_scroll.recycled_upto = recycled_upto
+
+                        user_scroll.last_visit = datetime.datetime.now()
+                        db.session.commit()
+                else:
+                    print 'time nhi hua jyada beta.'
+
+                recycled_items, recycled_upto = \
+                    get_recycled_items(user_scroll.last_recycled_upto)
+                recycled_items = make_resp_multitype(current_user_id,
+                                                     recycled_items,
+                                                     order_key='recycled_index',
+                                                     reverse_sort=True)
+            else:
+                print 'abhi abhi to post add hua h boss'
+        else:
+            print 'scroll data not found.. creating data'
+            user_scroll = UserScroll(current_user_id)
+            db.session.add(user_scroll)
+            db.session.commit()
+
+    # fetch normal discover feeds
     items = db.session.execute(
         text("""SELECT discover_list.post,
                        discover_list.question,
@@ -98,17 +98,23 @@ def get_discover_list(current_user_id, offset, limit=10, day_count=0,
     all_other_items = make_resp_multitype(current_user_id, resp,
                                           order_key='show_order',
                                           reverse_sort=True)
+    # merge dirty items
     [all_other_items.insert(dirty_item['dirty_index'],
                                               dirty_item
                                              ) for dirty_item in dirty_items]
-    print 'dirty items added'
-    print 'item count: ', len(all_other_items)
-
+    print 'dirty added :',len(dirty_items)
+    
+    print 'count : ', len(all_other_items)
+    # prepend recycled items
     [all_other_items.insert(0, recycled_item)
         for recycled_item in recycled_items]
+    print 'recycled :', len(recycled_items)
+    
+    print 'count : ', len(all_other_items)
+    
+    print day_count
 
     return all_other_items
-
 
 def get_dirty_items(offset, limit, day_count):
     dirty_items = db.session.execute(text("""SELECT discover_list.post,
@@ -254,3 +260,7 @@ def check_not_added_discover_item(last_visit):
             count()
     print count, last_visit
     return count == 0
+def check_recycle_upper_limit_reached(last_recycled_upto, margin):
+    count = DiscoverList.query.filter(DiscoverList.id >= last_recycled_upto,
+                                      DiscoverList.is_super == False).count()
+    return count < margin
