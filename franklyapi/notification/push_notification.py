@@ -1,23 +1,27 @@
 from configs import config
 from apns import APNs, Payload
 from models import AccessToken, Notification, UserPushNotification
-from GCM_notification import GCM
-from APN_notification import APN
+from notification import helper
 from app import db
+
 
 import gcm
 import random
 import time
+import datetime
 import notification_decision
 
+key = helper.key
 
 def push_notification(notification_id, user_id, source='application'):
     if notification_decision.\
-            count_of_push_notifications_sent(user_id=user_id) <= config.GLOBAL_PUSH_NOTIFICATION_DAY_LIMIT:
+            count_of_push_notifications_sent(user_id=user_id) <= 50: #config.GLOBAL_PUSH_NOTIFICATION_DAY_LIMIT:
 
         print 'Still under limits for number of daily notifications'
-
+        from controllers import get_item_id
         notification = Notification.query.get(notification_id)
+
+        k = key[notification.type]
 
         group_id = '-'.join([str(notification.type), str(notification.object_id)])
         for device in AccessToken.query.filter(AccessToken.user == user_id,
@@ -55,7 +59,10 @@ def push_notification(notification_id, user_id, source='application'):
                         "deeplink": notification.link,
                         "timestamp": int(time.mktime(user_push_notification.added_at.timetuple())),
                         "seen": False,
-                        "heading": "Frankly.me"
+                        "heading": "Frankly",
+                        "title": k['title'],
+                        'label_one': k['label_one'],
+                        'label_two': k['label_two']
                     }
             if get_device_type(device.device_id) == 'android':
                 print 'pushing gcm for android'

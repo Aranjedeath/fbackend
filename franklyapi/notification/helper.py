@@ -4,6 +4,8 @@ key = {
         'title': '',
         'text': "<b><question_author_name></b> asked you '<question_body>'",
         'url': config.WEB_URL + '/q/%s',
+        'label_one': 'Answer',
+        'label_two': 'Later',
         'day_limit': 2
 
     },
@@ -21,8 +23,13 @@ key = {
         'day_limit': 1,
         'label_one': 'Play'
     },
-    'new-celeb-user': {
-
+    'new-celebrity-followed_category': {
+        'title':'',
+        'text': '''<celebrity_name> has just joined Frankly. Ask him anything.''',
+        'url': config.WEB_URL + '%s',
+        'day-limit': 1,
+        'label_one': 'Ask Now',
+        'label_two': 'Later'
     },
     'popular-question-self_user': {
         'text': '''Your question "<question_body>" has received <upvote_count>+ upvotes. Share it to get more upvotes.''',
@@ -56,11 +63,9 @@ def question_asked_text(question,question_author,question_to):
     if question.is_anonymous:
         text = text.replace('<question_author_name>', 'Anonymous')
     else:
-        text = text.replace('<question_author_name>', question_author.first_name)
+        text = text.replace('<question_author_name>', question_author)
     text = text.replace('<question_body>', question.body)
-    text = text.replace('<question_to_name>', question_to.first_name)
-    text = text.replace('<question_to_username>', question_to.username)
-    text = text.replace('<question_author_username>', question_author.username)
+    text = text.replace('<question_to_name>', question_to)
 
     return text
 

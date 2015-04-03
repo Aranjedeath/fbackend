@@ -27,6 +27,8 @@ from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
                     SearchDefault, IntervalCountMap, ReportAbuse, SearchCategory,\
                     Email, BadEmail, EmailSent
 
+from notification import notification_decision
+
 from app import redis_client, raygun, db, redis_views, redis_pending_post
 
 from object_dict import user_to_dict, guest_user_to_dict,\
@@ -1149,7 +1151,7 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_b
         is_first = True
 
 
-    if question_to != cur_user_id and question_to != '737c6f8a7ac04d7e9380f1d37c011531':
+    if question_to != cur_user_id:
 
         users = User.query.filter(User.id.in_([cur_user_id,question_to]))
 
@@ -1163,16 +1165,6 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_b
                                     receiver_name=mail_reciever.first_name,
                                     question_to_name=question_to.first_name,
                                     is_first=is_first)
-
-
-
-
-    ''' God forgive me for I maketh this hack
-        Id is that of Jatin Sapru, please delete this piece o shit code
-        asap ~ MilfHunter II '''
-    if question_to == '737c6f8a7ac04d7e9380f1d37c011531':
-        notification.idreamofsapru(cur_user_id,question.id)
-
 
     resp = {'success':True, 'id':str(question.id), 'question':question_to_dict(question)}
     return resp
@@ -1258,6 +1250,7 @@ def question_list_public(current_user_id, user_id, username=None, offset=0, limi
 
     return {'current_user_questions':cur_user_questions, 'questions': questions, 'count': len(questions),  'next_index' : next_index}
 
+
 def question_upvote(cur_user_id, question_id):
     if Question.query.filter(
                             Question.id==question_id, 
@@ -1276,10 +1269,11 @@ def question_upvote(cur_user_id, question_id):
                                     'timestamp':datetime.datetime.now()}
                             )
         db.session.commit()
+        notification_decision.push_question_notification(question_id=question_id)
     else:
         raise CustomExceptions.BadRequestException("Question is not available for upvote")
     
-    return {'id':question_id, 'success':True}
+    return {'id': question_id, 'success': True}
 
 def question_downvote(cur_user_id, question_id):
     if Question.query.filter(Question.id==question_id, Question.question_author==cur_user_id).count():

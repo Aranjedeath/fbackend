@@ -3,7 +3,7 @@ from database import get_item_id
 from app import db
 
 import datetime
-import push_notification
+import push_notification as push
 
 ''' Creates relationship between
 user and notification
@@ -24,6 +24,6 @@ def add_notification_for_user(notification_id, for_users, list_type, push_at=dat
         db.session.commit()
 
         if push_at:
-            push_notification(notification_id, user_id)
+            push.push_notification(notification_id, user_id)
 
 

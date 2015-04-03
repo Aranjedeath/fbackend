@@ -3,7 +3,7 @@ from models import User, Question, Notification, Post, Upvote, \
 from database import get_item_id
 from app import db
 from configs import config
-from notification import helper, user_notification as un
+from notification import helper, user_notification as un, notification_decision
 from sqlalchemy.orm.exc import NoResultFound
 
 import datetime
@@ -11,13 +11,12 @@ import datetime
 key = helper.key
 
 
-def notification_logger(notification_type, text, link, object_id,
-                        icon, for_users, manual=False, created_at=datetime.datetime.now(),
+def notification_logger(nobject, for_users, manual=False, created_at=datetime.datetime.now(),
                         list_type='me', push_at=None):
 
-    notification = Notification(type=notification_type, text=text,
-                                link=link, object_id=object_id,
-                                icon=icon, created_at=created_at,
+    notification = Notification(type=nobject['notification_type'], text=nobject['text'],
+                                link=nobject['link'], object_id=nobject['object_id'],
+                                icon=nobject['icon'], created_at=created_at,
                                 manual=manual, id=get_item_id())
     db.session.add(notification)
     db.session.commit()
@@ -44,26 +43,18 @@ def ask_question(question_id, notification_type='question-ask-self_user'):
         if u.id == question.question_to:
             question_to = u
 
-    text = helper.question_asked_text(question=question, question_author=question_author, question_to=question_to)
+    nobject = {
+        'notification_type': notification_type,
+        'text': helper.question_asked_text(question=question, question_author=question_author.first_name,
+                                           question_to=question_to.first_name),
+        'icon': question_author.profile_picture,
+        'link': k['url'] % question.short_id,
+        'object_id': question_id
+    }
 
-    icon = question_author.profile_picture
-
-    link = k['url'] % question.short_id
-
-    ''' Decide pushing notification on the basis
-    of user's popularity'''
-    try:
-        delay_push = UserNotificationInfo.query.filter(UserNotificationInfo.user_id ==
-                                                       question_to.id).one().is_popular
-    except NoResultFound:
-        ''' In case of celeb user delay_push would always be true
-        '''
-        delay_push = 1 if question_to.user_type == 2 else 0
-
-
-    notification = notification_logger(notification_type=notification_type, text=text, link=link,
-                                       object_id=question_id, icon=icon, for_users=[question_to.id],
-                                       push_at=None if delay_push else datetime.datetime.now())
+    push_now = notification_decision.decide_question_push(question_to.id, question_id)
+    notification = notification_logger(nobject=nobject, for_users=[question_to.id],
+                                       push_at=datetime.datetime.now() if push_now else None)
 
     return notification
 
@@ -81,7 +72,6 @@ c) Followers of answer author
 
 def new_post(post_id, question_body="", notification_type='post-add-self_user'):
 
-
     k = key[notification_type]
     post = Post.query.get(post_id)
     users = User.query.filter(User.id.in_([post.answer_author, post.question_author])).all()
@@ -92,20 +82,21 @@ def new_post(post_id, question_body="", notification_type='post-add-self_user'):
         if u.id == post.answer_author:
             answer_author = u
 
+    nobject = {
+        'object_id': post_id,
+        'text':  helper.post_add(answer_author=answer_author.firt_name, question_body=question_body),
+        'notification_type': notification_type,
+        'icon': answer_author.profile_picture,
+        'link': k['url'] % post.client_id,
+    }
 
-    text = helper.post_add(answer_author=answer_author.firt_name, question_body=question_body)
-
-    icon = answer_author.profile_picture
-
-    link = k['url'] % post.client_id
 
     upvoters = [upvote.user for upvote in Upvote.query.filter(Upvote.question==post.question,
                                                               Upvote.downvoted==False).all()]
 
     upvoters = list(set([question_author.id]+upvoters))
 
-    notification = notification_logger(notification_type=notification_type, text=text, link=link,
-                                       object_id=post_id, icon=icon, for_users=upvoters)
+    notification = notification_logger(nobject=nobject, for_users=upvoters)
 
     following_answered_question(post_id=post_id, question_body=question_body, author_id=answer_author.id)
     return notification
@@ -123,19 +114,24 @@ def following_answered_question(post_id, author_id, question_body, notification_
 
     author = User.query.filter(User.id == author_id).one()
 
-    text = helper.following_answered_question(question_body=question_body, author_name=author.first_name)
+    nobject = {
+        'object_id': post_id,
+        'text':   helper.following_answered_question(question_body=question_body, author_name=author.first_name),
+        'notification_type': notification_type,
+        'icon': author.profile_picture,
+        'link': k['url'] % post_id,
+    }
 
-    link = k['url'] % post_id
+    try:
+        following = Follow.query.with_entities(Follow.followed).filter(Follow.followed == author_id).all()
+        followers = [f[0] for f in following]
 
-    icon = author.profile_picture
+        notification = notification_logger(nobject=nobject, for_users=followers)
+        return notification
+    except NoResultFound:
+        return None
 
-    followers = Follow.query.with_entities(Follow.followed).filter(Follow.followed == author_id).all()
-    user_ids = [f[0] for f in followers]
 
-    notification = notification_logger(notification_type=notification_type, text=text, link=link,
-                                       object_id=post_id, icon=icon, for_users=followers)
-
-    return notification
 
 
 ''' Sent if the user's question is becoming popular
@@ -164,37 +160,26 @@ def share_popular_question(user_id, question_id, upvote_count, question_body,
 
     return notification
 
+''' Sends out a
+notification for a new celebrity that has joined the paltform.
+Typically to be sent out to users who interact with a similar list
+'''
 
-def new_celebrity_user(users=[], notification_id=None, celebrity_id=None):
-    '''Either create a new notification or fetch a pre-existing one.
-    Users would be a list that can be empty as well'''
+def new_celebrity_user(celebrity_id=None, users=[], notification_type='new-celebrity-followed_category'):
 
 
-    for user in users:
-        notification.new_celebrity_user(users=[user.id], notification_id=notification_id, celebrity_id=object_id)
-    if notification_id is None and celebrity_id is not None:
-        celebrity = User.query.filter(User.id == celebrity_id).first()
+    k = key[notification_type]
 
-        notification_type = "new-celeb-user"
-        text = "%s just joined frankly. Be the first one to ask a question." % celebrity.first_name
-        icon = celebrity.profile_picture
-        link = "http://frankly.me/%s" % celebrity.username
+    celebrity = User.query.filter(User.id == celebrity_id).first()
 
-        notification = Notification(type=notification_type, text=text,
-                                    link=link, object_id=celebrity.id,
-                                    icon=icon, created_at=datetime.datetime.now(),
-                                    manual=False, id=get_item_id())
-        db.session.add(notification)
-        db.session.commit()
-    else:
-        notification = Notification.query.filter(Notification.id == notification_id).first()
 
-    for user in users:
-        add_notification_for_user(notification_id=notification.id,
-                                user_ids=[user],
-                                list_type='me',
-                                push_at=datetime.datetime.now()
-                            )
+    text = k['text'] % celebrity.first_name
+    icon = celebrity.profile_picture
+    link = k['url'] % celebrity.username
+
+
+    notification_logger(notification_type=notification_type, text=text, icon=icon, link=link,
+                        object_id=celebrity_id, for_users=users)
 
 
 '''Generic method for sending all sorts of milestone
@@ -230,14 +215,15 @@ def user_profile_request(user_id, request_by, request_id, request_type=config.RE
 
     k = key[request_type]
 
-    text = helper.user_profile_request(requester_name=request_by.first_name)
+    nobject = {
+        'notification_type': request_type,
+        'text': helper.user_profile_request(requester_name=request_by.first_name),
+        'icon': request_by.profile_picture,
+        'link': k['url'] % user_id,
+        'object_id': request_id
+    }
 
-    icon = request_by.profile_picture
-
-    link = k['url'] % user_id
-
-    notification_logger(notification_type=request_type, text=text, link=link, object_id=request_id,
-                        icon=icon, for_users=[user_id])
+    notification_logger(nobject=nobject, for_users=[user_id], push_at=datetime.datetime.now())
 
 
 def comment_on_post(post_id, comment_id, comment_author):
@@ -270,11 +256,18 @@ def comment_on_post(post_id, comment_id, comment_author):
 
 
 def hack():
-    user = User.query.filter(User.username == 'nititaylor').one()
+    users = User.query.limit(11).offset(1000)
 
-    text = "Your followers want to know more about you! Answer the best ones from more than 500 questions asked to you."
-    link = "http://frankly.me/answer"
-    icon = None
-    notification_logger(notification_type='pending-question-self_user',text=text,link=link,
-                        object_id = user.id,
-                        icon=icon,pushed_for=[user.id], push_at=datetime.datetime.now())
+
+    import controllers
+
+    for user in users:
+        print user.first_name
+        controllers.question_upvote(user.id, '73c699ac929e47ff84dee366b52d75e3')
+
+    # text = "Your followers want to know more about you! Answer the best ones from more than 500 questions asked to you."
+    # link = "http://frankly.me/answer"
+    # icon = None
+    # notification_logger(notification_type='pending-question-self_user',text=text,link=link,
+    #                     object_id = user.id,
+    #                     icon=icon,pushed_for=[user.id], push_at=datetime.datetime.now())
