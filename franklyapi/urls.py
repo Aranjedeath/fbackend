@@ -79,6 +79,11 @@ api.add_resource(BucketName, '/utils/bucket_name')
 
 api.add_resource(GetListItems, '/list/items')
 api.add_resource(GetRemote, '/remote/get')
+api.add_resource(GetListTrending, '/list/trending/<object_type>')
+api.add_resource(GetListFeatured, '/list/featured/<object_type>')
+api.add_resource(GetListFeed, '/list/feed')
+
+
 
 #api.add_resource(ListFollow, '/list/follow')
 

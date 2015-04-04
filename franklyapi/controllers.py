@@ -3025,6 +3025,7 @@ def get_featured_users(cur_user_id, list_id, offset=0, limit=20):
                                     ).offset(
                                     ).limit(
                                     ).all()
+    users = User.query.filter(User.user_type==2).offset(offset).limit(limit).all()
     user_dicts = guest_users_to_dict(users, cur_user_id)
     user_dicts = [{'type':'user', 'user':user_dict} for user_dict in user_dicts]
     
@@ -3045,6 +3046,7 @@ def get_trending_users(cur_user_id, list_id, offset=0, limit=20):
                                     ).offset(
                                     ).limit(
                                     ).all()
+    users = User.query.filter(User.user_type==2).offset(offset).limit(limit).all()
     user_dicts = guest_users_to_dict(users, cur_user_id)
     user_dicts = [{'type':'user', 'user':user_dict} for user_dict in user_dicts]
     
@@ -3055,23 +3057,55 @@ def get_trending_users(cur_user_id, list_id, offset=0, limit=20):
 
 
 def get_featured_posts(cur_user_id, list_id, offset=0, limit=20):
-    posts = Post.query.filter(Post.deleted==False).offset(offset).limit(limit).all()
+    posts = Post.query.filter(Post.deleted==False,
+                            Post.answer_author.in_([u.id for u in User.query.filter(User.user_type==2)])).offset(offset).limit(limit).all()
+
+    post_dicts = posts_to_dict(posts, cur_user_id)
+    post_dicts = [{'type':'post', 'post':post_dict} for post_dict in post_dicts]
+    
+    count = len(post_dicts)
+    next_index = -1 if count<limit else offset+limit
+    return {'count':count, 'next_index':next_index, 'stream':post_dicts}
 
 
 def get_trending_posts(cur_user_id, list_id, offset=0, limit=20):
-    pass
+    posts = Post.query.filter(Post.deleted==False,
+                            Post.answer_author.in_([u.id for u in User.query.filter(User.user_type==2)])).offset(offset).limit(limit).all()
+
+    post_dicts = posts_to_dict(posts, cur_user_id)
+    post_dicts = [{'type':'post', 'post':post_dict} for post_dict in post_dicts]
+    
+    count = len(post_dicts)
+    next_index = -1 if count<limit else offset+limit
+    return {'count':count, 'next_index':next_index, 'stream':post_dicts}
 
 
 def get_featured_questions(cur_user_id, list_id, offset=0, limit=20):
-    pass
+    questions = Question.query.filter(Question.deleted==False,
+                            Question.question_to.in_([u.id for u in User.query.filter(User.user_type==2)])).offset(offset).limit(limit).all()
+
+    question_dicts = questions_to_dict(questions, cur_user_id)
+    question_dicts = [{'type':'question', 'question':question_dict} for question_dict in question_dicts]
+    
+    count = len(question_dicts)
+    next_index = -1 if count<limit else offset+limit
+    return {'count':count, 'next_index':next_index, 'stream':question_dicts}
+
 
 def get_trending_questions(cur_user_id, list_id, offset=0, limit=20):
-    pass
+    questions = Question.query.filter(Question.deleted==False,
+                            Question.question_to.in_([u.id for u in User.query.filter(User.user_type==2)])).offset(offset).limit(limit).all()
+
+    question_dicts = questions_to_dict(questions, cur_user_id)
+    question_dicts = [{'type':'question', 'question':question_dict} for question_dict in question_dicts]
+    
+    count = len(question_dicts)
+    next_index = -1 if count<limit else offset+limit
+    return {'count':count, 'next_index':next_index, 'stream':question_dicts}
 
 
 def get_list_feed(cur_user_id, list_id, offset=0, limit=20):
-    pass
-
+    return get_new_discover(cur_user_id, offset, limit, device_id='web', version_code=0)
 
 
 
