@@ -3022,7 +3022,8 @@ def get_remote(cur_user_id, offset=0, limit=20):
     
 def get_featured_users(cur_user_id, list_id, offset=0, limit=20):
     try:
-        parent_list = get_list_from_name_or_id(list_id)
+        if list_id:
+            parent_list = get_list_from_name_or_id(list_id)
 
         users = User.query.join(ListItem, User.id==ListItem.child_user_id
                                 ).filter(ListItem.parent_list_id==list_id,
@@ -3048,7 +3049,8 @@ def get_featured_users(cur_user_id, list_id, offset=0, limit=20):
 
 def get_trending_users(cur_user_id, list_id, offset=0, limit=20):
     try:
-        parent_list = get_list_from_name_or_id(list_id)
+        if list_id:
+            parent_list = get_list_from_name_or_id(list_id)
 
         users = User.query.join(ListItem, User.id==ListItem.child_user_id
                                 ).filter(ListItem.parent_list_id==list_id,
@@ -3074,7 +3076,8 @@ def get_trending_users(cur_user_id, list_id, offset=0, limit=20):
 
 def get_featured_posts(cur_user_id, list_id, offset=0, limit=20):
     try:
-        parent_list = get_list_from_name_or_id(list_id)
+        if list_id:
+            parent_list = get_list_from_name_or_id(list_id)
         posts = Post.query.filter(Post.deleted==False,
                                 Post.answer_author.in_([u.id for u in User.query.filter(User.user_type==2)])).offset(offset).limit(limit).all()
 
@@ -3090,7 +3093,8 @@ def get_featured_posts(cur_user_id, list_id, offset=0, limit=20):
 
 def get_trending_posts(cur_user_id, list_id, offset=0, limit=20):
     try:
-        parent_list = get_list_from_name_or_id(list_id)
+        if list_id:
+            parent_list = get_list_from_name_or_id(list_id)
         posts = Post.query.filter(Post.deleted==False,
                                 Post.answer_author.in_([u.id for u in User.query.filter(User.user_type==2)])).offset(offset).limit(limit).all()
 
@@ -3106,7 +3110,8 @@ def get_trending_posts(cur_user_id, list_id, offset=0, limit=20):
 
 def get_featured_questions(cur_user_id, list_id, offset=0, limit=20):
     try:
-        parent_list = get_list_from_name_or_id(list_id)
+        if list_id:
+            parent_list = get_list_from_name_or_id(list_id)
         questions = Question.query.filter(Question.deleted==False, Question.is_answered==False, Question.is_ignored==False, Question.flag.in_([1, 2]),
                                 Question.question_to.in_([u.id for u in User.query.filter(User.user_type==2)])).offset(offset).limit(limit).all()
 
@@ -3122,7 +3127,8 @@ def get_featured_questions(cur_user_id, list_id, offset=0, limit=20):
 
 def get_trending_questions(cur_user_id, list_id, offset=0, limit=20):
     try:
-        parent_list = get_list_from_name_or_id(list_id)
+        if list_id:
+            parent_list = get_list_from_name_or_id(list_id)
         questions = Question.query.filter(Question.deleted==False, Question.is_answered==False, Question.is_ignored==False, Question.flag.in_([1, 2]),
                                 Question.question_to.in_([u.id for u in User.query.filter(User.user_type==2)])).offset(offset).limit(limit).all()
 

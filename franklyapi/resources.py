@@ -2259,7 +2259,7 @@ class GetListFeed(restful.Resource):
 
 class GetListFeatured(restful.Resource):
     get_parser = reqparse.RequestParser()
-    get_parser.add_argument('list_id', type=str, location='args', required=True)
+    get_parser.add_argument('list_id', type=str, location='args')
     get_parser.add_argument('offset',  type=int, location='args', default=0)
     get_parser.add_argument('limit',   type=int, location='args', default=20)
 
@@ -2270,7 +2270,9 @@ class GetListFeatured(restful.Resource):
         object_type can one of ['users', 'posts', 'questions']
 
         Controller Functions Used:
-            - get_trending_users
+            - get_featured_users
+            - get_featured_posts
+            - get_featured_questions
 
         Authentication: Optional
         """
@@ -2299,7 +2301,7 @@ class GetListFeatured(restful.Resource):
 
 class GetListTrending(restful.Resource):
     get_parser = reqparse.RequestParser()
-    get_parser.add_argument('list_id', type=str, location='args', required=True)
+    get_parser.add_argument('list_id', type=str, location='args')
     get_parser.add_argument('offset',  type=int, location='args', default=0)
     get_parser.add_argument('limit',   type=int, location='args', default=20)
 
@@ -2311,6 +2313,8 @@ class GetListTrending(restful.Resource):
 
         Controller Functions Used:
             - get_trending_users
+            - get_trending_posts
+            - get_trending_questions
 
         Authentication: Optional
         """
