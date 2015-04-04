@@ -1,58 +1,62 @@
-import datetime
-
 from app import db
 from sqlalchemy.sql import text
-import make_notification as notification
 from mailwrapper import email_helper
 from CustomExceptions import ObjectNotFoundException
+from models import User, Question, Notification, UserNotificationInfo, UserPushNotification
 
 import controllers
 import helper
+import make_notification as notification
+import push_notification as push
+import datetime
+
 
 '''
 Sends out both Push and email.
 Called after the low quality of
 video is ready. Since this is a super high priority notification
-it is sent to all those users who upvoted or asked the question'''
+it is sent to all those users who upvoted, asked the question or follows the user'''
 def post_notifications(post_id):
 
     result = db.session.execute(text('''Select
-                                         p.question, p.question_author, p.answer_author,
-                                         q.body,
-                                         aa.email, aa.first_name,
-                                         n.id, n.link
+                                         p.question, p.question_author,
+                                         n.id
                                          from posts p
                                          left join questions q on q.id = p.question
                                          left join users aa on aa.id = p.answer_author
-                                         left join notifications n on n.object_id = :post_id and n.type = 'post-add-self_user'
-                                         where p.id = :post_id limit 1 ;
+                                         left join notifications n on n.object_id = :post_id
+                                         where p.id = :post_id
+                                         and n.type in ('post-add-self_user','post-add-following_user')
+                                         group by n.type
+                                         limit 2 ;
                                          '''), params={'post_id': post_id})
     try:
         for row in result:
             question_id = row[0]
             question_author_id = row[1]
-            answer_author_id = row[2]
-            question_body = row[3]
-            answer_author_email = row[4]
-            answer_author_name = row[5]
-            notification_id = row[6]
-            link = row[7]
+            notification_id = row[2]
 
-        #Get a set of users who haven't been sent this gcm notification yet
-        #This includes the question author
-        results = db.session.execute(text('''Select
+
+            #Get a set of users who haven't been sent this gcm notification yet
+            #This includes the question author
+            results = db.session.execute(text('''Select
                                              un.user_id, u.first_name, u.email
                                              from user_notifications un
                                              left join user_push_notifications upn
                                              on upn.notification_id  = :notification_id and upn.user_id = un.user_id
                                              left join users u on u.id = un.user_id
-                                             where un.notification_id = :notification_id
+                                             where
+                                             u.monkness = -1 and
+                                             un.notification_id = :notification_id
                                              and upn.user_id is null'''),
                                              params={'notification_id': notification_id})
-        for row in results:
-            print row[0]
-            if row[0] == question_author_id or count_of_push_notifications_sent(user_id=row[0]) < 5:
-                notification.push_notification(notification_id=notification_id, user_id = row[0])
+
+            print 'Notification id: ', notification_id
+
+
+            for row in results:
+                print row[0]
+                push.push_notification(notification_id=notification_id, user_id = row[0])
                 # email_helper.question_answered(receiver_email = row[2], receiver_name = row[1],
                 #                            celebrity_name = answer_author_name,
                 #                            question = question_body, web_link=link)
@@ -60,48 +64,63 @@ def post_notifications(post_id):
         pass
 
 '''
-Sends notifications of 'my' most upvoted question
-that has not been answered or pushed till now
-(Sent to only poular users)
+Decides whether question should be pushed or not
+based on
+
+a) Question's upvotes
+b) Questions asked that day
+c) Such notifications sent to the user
+d) Time of day
+e) User's overall popularity
 '''
-def question_asked_notifications():
+def decide_question_push(user_id, question_id):
+    ''' Decide pushing notification on the basis
+    of user's popularity'''
 
-    #Get all popular users who have been asked a question in the last day
-    users = db.session.execute(text(''' Select u.id, u.email, u.first_name, uni.is_popular, q.id,
-                                        q.body
-                                        from users u
-                                        left join questions q on q.question_to = u.id
-                                        and q.timestamp >= date_sub(now(), interval 1 day)
-                                        left join user_notification_info uni on uni.user_id = u.id
-                                        where q.body is not null
-                                        and uni.is_popular = 1
-                                        group by q.question_to
-                                    '''))
+    notifications_sent_today = count_of_notifications_sent_by_type(user_id=user_id,
+                                                                   notification_type='question-ask-self_user')
 
-    #For these popular users get the most popular question that has not been answered and push a notification for the same
-    for user in users:
-        print user[2]
-        if count_of_notifications_sent_by_type(user_id=user[0], notification_type='question-ask-self_user') == 0:
+    good_time = 10 < (datetime.datetime.now() + datetime.timedelta(seconds=18600)).hour < 22
 
-            results = db.session.execute(text('''SELECT n.id
-                                                 FROM questions q
-                                                 LEFT JOIN question_upvotes qu on qu.question = q.id
-                                                 LEFT JOIN notifications n on n.object_id = q.id
-                                                 LEFT JOIN user_push_notifications upn on upn.notification_id  = n.id
-                                                 WHERE
-                                                 q.question_to = :user_id
-                                                 AND q.is_answered = 0
-                                                 AND upn.notification_id IS NULL
-                                                 AND n.type = 'question-ask-self_user'
-                                                 AND n.id IS NOT NULL
-                                                 GROUP BY qu.question
-                                                 ORDER BY question_upvotes DESC
-                                                 LIMIT 1'''),
-                                                  params={'user_id': user[0]})
-            for row in results:
 
-                if row[0] is not None:
-                    notification.push_notification(notification_id=row[0], user_id = user[0])
+    if notifications_sent_today < 2 and good_time:
+        questions_today = Question.query.filter(Question.question_to == user_id, Question.timestamp >=
+                                            datetime.datetime.now() - datetime.timedelta(days=1)).count()
+        print 'Good time bro'
+        if questions_today > 10 or is_popular(user_id):
+
+            upvotes = controllers.get_question_upvote_count(question_id)
+            print 'Upvotes are good'
+            if upvotes > 10:
+                return True
+            else:
+                return False
+
+        else:
+            return True
+    else:
+        return False
+
+
+def push_question_notification(question_id):
+
+    user_id = Question.query.filter(Question.id == question_id).first().question_to
+    n = Notification.query.filter(Notification.object_id == question_id,
+                                  Notification.type == 'question-ask-self_user').first()
+    pushed = UserPushNotification.query.filter(UserPushNotification.notification_id == n.id,
+                                               UserPushNotification.user_id == user_id).count()
+    print 'pushed is:', pushed
+    if pushed == 0 and decide_question_push(user_id=user_id, question_id=question_id):
+        push.push_notification(notification_id=n.id, user_id=user_id)
+
+
+def is_popular(user_id):
+
+    is_popular = UserNotificationInfo.query.filter(UserNotificationInfo.user_id == user_id).first()
+    if is_popular is not None:
+        return is_popular.is_popular
+    else:
+        return 0
 
 
 # def decide_question_ask_notification(question_id, user_id):
@@ -115,12 +134,11 @@ def question_asked_notifications():
 ''' Gets most popular question that have been asked
 and sends out a notification prompting to share the question
 '''
+
+
 def prompt_sharing_popular_question():
 
-
-
-    ''' Select questions that have been upvoted the most
-'''
+    # Select questions that have been upvoted the most
     results = db.session.execute(text('''  Select count(*) as real_upvote_count, i.upvote_count,
                                            q.question_author, q.body,
                                            qu.question
@@ -147,6 +165,8 @@ def prompt_sharing_popular_question():
 ''' Creates milestone notifications
 for a user's followers
 '''
+
+
 def user_followers_milestone_notifications():
 
     result = db.session.execute(text('''SELECT distinct uf.followed as user
@@ -168,26 +188,17 @@ def user_followers_milestone_notifications():
         check_and_make_milestone('user_followers_milestone', row[0], row[0], controllers.get_follower_count(row[0]))
 
 
-''' Creates milestone notifications for a
+'''
+Creates milestone notifications for a
 user's likes
 '''
-def post_likes_milestone_notifications():
 
 
-    result = db.session.execute(text('''SELECT distinct pl.post as post, posts.question_author
-                                                            from post_likes pl
-                                                            inner join posts on posts.id = pl.post
-                                                            where pl.timestamp >= date_sub(now(), interval 1 day)
-                                                            group by pl.post
-                                        union SELECT distinct pl.post as post, posts.question_author
-                                                            from inflated_stats pl
-                                                            inner join posts on posts.id = pl.post
-                                                            where pl.timestamp >= date_sub(now(), interval 1 day)
-                                                            group by pl.post;
-                                                        '''))
-    for row in result:
-        check_and_make_milestone('post_likes_milestone', row[1], row[0], controllers.get_post_like_count(row[0]))
+def decide_post_milestone(post_id, user_id):
+    check_and_make_milestone('post-likes-milestone', user_id, post_id, controllers.get_post_like_count(post_id))
 
+def decide_follow_milestone(user_id):
+    check_and_make_milestone('user-followers-milestone', user_id, user_id, controllers.get_follower_count(user_id))
 
 def question_upvotes_milestone_notifications():
     result = db.session.execute(text('''SELECT distinct pl.question as question, questions.question_author
@@ -221,21 +232,21 @@ def check_and_make_milestone(milestone_name, user_id, associated_item_id, count)
     if milestone_crossed:
 
         # make notification type by appending name and count.
-        notification_type = milestone_name + milestone_crossed
+        notification_type =  milestone_name + '_' + milestone_crossed
 
         #check if a notification has been sent to user about this milestone or not
         if count_of_notifications_sent_by_type(user_id=user_id, notification_type=notification_type,
-                                               interval = datetime.datetime.now() - datetime.timedelta(days = 100000)) == 0:
+                                               interval=datetime.datetime.now() - datetime.timedelta(days=100000)) == 0:
 
             #send milestone notification
-            notification.send_milestone_notification(milestone_name, milestone_crossed, associated_item_id ,user_id)
+            notification.send_milestone_notification(milestone_name, milestone_crossed, associated_item_id, user_id)
 
 def get_milestone_crossed(count, milestone_count_list):
     '''
     Returns largest milestone count crossed smaller than count.
         otherwise None
     '''
-    try: return str(max(int(t) for t in milestone_count_list if t != '' and int(t) < int(count)))
+    try: return str(max(int(t) for t in milestone_count_list if t != '' and int(t) <= int(count)))
     except ValueError: return None
 
 

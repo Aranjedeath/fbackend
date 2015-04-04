@@ -27,6 +27,8 @@ from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
                     SearchDefault, IntervalCountMap, ReportAbuse, SearchCategory,\
                     Email, BadEmail, EmailSent
 
+from notification import notification_decision
+
 from app import redis_client, raygun, db, redis_views, redis_pending_post
 
 from object_dict import user_to_dict, guest_user_to_dict,\
@@ -870,7 +872,7 @@ def user_follow(cur_user_id, user_id):
 
 
     db.session.commit()
-
+    notification_decision.decide_follow_milestone(user_id=user_id)
     return {'user_id': user_id}
 
 
@@ -1149,7 +1151,7 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_b
         is_first = True
 
 
-    if question_to != cur_user_id and question_to != '737c6f8a7ac04d7e9380f1d37c011531':
+    if question_to != cur_user_id:
 
         users = User.query.filter(User.id.in_([cur_user_id,question_to]))
 
@@ -1163,16 +1165,6 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_b
                                     receiver_name=mail_reciever.first_name,
                                     question_to_name=question_to.first_name,
                                     is_first=is_first)
-
-
-
-
-    ''' God forgive me for I maketh this hack
-        Id is that of Jatin Sapru, please delete this piece o shit code
-        asap ~ MilfHunter II '''
-    if question_to == '737c6f8a7ac04d7e9380f1d37c011531':
-        notification.idreamofsapru(cur_user_id,question.id)
-
 
     resp = {'success':True, 'id':str(question.id), 'question':question_to_dict(question)}
     return resp
@@ -1258,6 +1250,7 @@ def question_list_public(current_user_id, user_id, username=None, offset=0, limi
 
     return {'current_user_questions':cur_user_questions, 'questions': questions, 'count': len(questions),  'next_index' : next_index}
 
+
 def question_upvote(cur_user_id, question_id):
     if Question.query.filter(
                             Question.id==question_id, 
@@ -1276,10 +1269,11 @@ def question_upvote(cur_user_id, question_id):
                                     'timestamp':datetime.datetime.now()}
                             )
         db.session.commit()
+        notification_decision.push_question_notification(question_id=question_id)
     else:
         raise CustomExceptions.BadRequestException("Question is not available for upvote")
     
-    return {'id':question_id, 'success':True}
+    return {'id': question_id, 'success': True}
 
 def question_downvote(cur_user_id, question_id):
     if Question.query.filter(Question.id==question_id, Question.question_author==cur_user_id).count():
@@ -1335,7 +1329,8 @@ def post_like(cur_user_id, post_id):
                             )
 
         db.session.commit()
-        #send notification
+
+        notification_decision.decide_post_milestone(post_id=post_id, user_id=answer_author)
         return {'id': post_id, 'success':True}
 
     else:
@@ -1423,12 +1418,14 @@ def comment_add(cur_user_id, post_id, body, lat, lon):
 
     if not (has_blocked(cur_user_id, answer_author) or has_blocked(cur_user_id, answer_author)):
         from database import get_item_id
-        comment = Comment(id=get_item_id(), on_post=post_id, body=body, comment_author=cur_user_id, lat=lat, lon=lon, timestamp=datetime.datetime.now())
+        comment = Comment(id=get_item_id(), on_post=post_id, body=body, comment_author=cur_user_id,
+                          lat=lat, lon=lon, timestamp=datetime.datetime.now())
         db.session.add(comment)
 
         db.session.commit()
-    
-        user_update_location(cur_user_id, lat, lon, country=None, country_code=None, loc_name=None)
+
+        notification.comment_on_post(comment_id=comment.id, comment_author=cur_user_id, post_id=post_id)
+
 
         return {'comment': comment_to_dict(comment), 'id':comment.id, 'success':True}
     else:

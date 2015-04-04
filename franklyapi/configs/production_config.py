@@ -90,3 +90,5 @@ PUBLIC_API_KEY = 'ade9158ad9ef11e4ac86c82a1418d24a'
 DAILY_CONTENT_MAIL_RECIPIENTS = ['varun@frankly.me', 'swati@frankly.me', 'ferheen@frankly.me','pranav@frankly.me','goelrishabh09@gmail.com']
 
 GLOBAL_PUSH_NOTIFICATION_DAY_LIMIT = 3
+
+REQUEST_TYPE = ['intro-video-request']
