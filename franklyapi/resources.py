@@ -2585,3 +2585,15 @@ class PublicDocumentation(restful.Resource):
         else:
             abort(403, message='Ra Ra Rasputin says: You are are hitting a wrong url.')
 
+
+
+class QuoraAnswerAuthorSuggest(restful.Resource):
+    get_parser = reqparse.RequestParser()
+    get_parser.add_argument('question_body', type=str, location='args', required=True)
+    def get(self):
+        args = self.get_parser.parse_args()
+        return controllers.quora_suggest_answer_author(args['question_body'])
+
+
+
+

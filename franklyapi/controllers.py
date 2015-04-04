@@ -3155,14 +3155,9 @@ def get_list_feed(cur_user_id, list_id, offset=0, limit=20):
         raise CustomExceptions.ObjectNotFoundException('List has been deleted or does not exit')
 
 
-
-
-
-
-
-
-
-
+def quora_suggest_answer_author(question_body):
+    users = User.query.filter(User.username.in_(['arvindkejriwal', 'javedakhtar', 'ranveerbrar'])).all()
+    return {'count':len(users), 'users':[thumb_user_to_dict(user) for user in users]}
 
 
 
