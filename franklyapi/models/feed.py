@@ -127,7 +127,7 @@ class UserScroll(Base):
     last_recycled_upto = Column(Integer, default=0)
     scrolled_upto      = Column(Integer, default=0)
     feed_update_count  = Column(Integer, default=0)
-    fed_upto           = Column(DateTime)
+    fed_upto           = Column(CHAR(32), ForeignKey('posts.id'))
     last_visit         = Column(DateTime, default=datetime.datetime.now())
     last_fed           = Column(DateTime, default=datetime.datetime.now())
 

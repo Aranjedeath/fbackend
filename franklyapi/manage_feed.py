@@ -16,9 +16,10 @@ def get_home_feed(cur_user_id, offset, limit=10):
     celebs_following = get_celebs_following(cur_user_id)
 
     
-    fed_upto = get_and_update_fed_marker(cur_user_id, offset)
+    fed_upto_time,fed_upto = get_and_update_fed_marker(cur_user_id, offset)
 
     print 'fed_upto', fed_upto
+    print 'fed_upto_time', fed_upto_time
 
     # TODO: rewrite query to get feeds after LAST FED MARKER
     posts = db.session.execute(text("""SELECT posts.show_after, posts.id, posts.question_author,
@@ -29,12 +30,10 @@ def get_home_feed(cur_user_id, offset, limit=10):
                                         posts.popular, posts.view_count, posts.client_id
                                         FROM posts INNER JOIN user_follows ON user_follows.followed = posts.answer_author
                                         AND user_follows.user = :cur_user_id and user_follows.unfollowed=:unfollowed 
-                                        #AND timestampdiff(minute, user_follows.timestamp, now()) >= posts.show_after 
                                         WHERE deleted=false AND answer_author != :cur_user_id
-                                        AND posts.timestamp < :fed_upto
-
+                                        AND posts.timestamp < :fed_upto_time
                                         ORDER BY posts.timestamp DESC,posts.show_after DESC LIMIT :offset, :limit"""),
-                                    params = {'cur_user_id':cur_user_id, 'offset':offset, 'limit':limit, 'unfollowed':False, 'fed_upto':fed_upto}
+                                    params = {'cur_user_id':cur_user_id, 'offset':offset, 'limit':limit, 'unfollowed':False, 'fed_upto_time':fed_upto_time}
                                 )
 
     posts = list(posts)
@@ -122,39 +121,47 @@ def get_and_update_fed_marker(cur_user_id, offset):
         else:
             print 'user_scroll data found'
 
+        post = Post.query.filter(Post.id == UserScroll.fed_upto).first()
+        if post:
+            fed_upto_time = post.timestamp
+        else:
+            fed_upto_time = None
+
         if offset == 0:
             if check_time_threshold_crossed(user_scroll.last_fed,config.HOME_FEED_UPDATE_HOURS):
                 if check_time_threshold_crossed(user_scroll.last_fed,config.HOME_FEED_UPDATE_LIMIT_REFRESH_HOURS):
                     user_scroll.feed_update_count = 0
                     print 'feed update count reset'
                 if user_scroll.feed_update_count < config.HOME_FEED_UPDATE_LIMIT:
-                    user_scroll.fed_upto = get_updated_feed_marker(cur_user_id,user_scroll.fed_upto)
+                    user_scroll.fed_upto, fed_upto_time = get_updated_feed_marker(cur_user_id,fed_upto_time)
                     user_scroll.feed_update_count += 1
                     print 'feed update count : ', user_scroll.feed_update_count
 
                 user_scroll.last_fed = datetime.datetime.now()
                 db.session.commit()
-        return user_scroll.fed_upto
+        return fed_upto_time, user_scroll.fed_upto
     else:
         return None
 
 def get_updated_feed_marker(cur_user_id,fed_upto):
     count = 1
+
+    
     result = db.session.execute(text("""SELECT count(*)
-                                        FROM posts 
+                                        FROM posts
                                         INNER JOIN user_follows
                                             ON user_follows.followed = posts.answer_author
                                                AND user_follows.user = :cur_user_id
                                                and user_follows.unfollowed=:unfollowed 
                                         WHERE deleted=false AND answer_author != :cur_user_id
-                                        AND posts.timestamp >= :fed_upto
-                                        ORDER BY
-                                            posts.timestamp 
+                                        AND (posts.timestamp >= :fed_upto
+                                        OR :new_entry = true)
                                     """),
                                 params = {
                                     'cur_user_id':cur_user_id,
                                     'unfollowed':False,
-                                    'fed_upto':fed_upto}
+                                    'fed_upto':fed_upto,
+                                    'new_entry':(fed_upto==None)}
                                 )
     for row in result:
         count = row[0]
@@ -163,28 +170,30 @@ def get_updated_feed_marker(cur_user_id,fed_upto):
     print 'count: ', count
     print 'shifted marker :', offset, 'places'
 
-    result = db.session.execute(text("""SELECT posts.timestamp
+    result = db.session.execute(text("""SELECT posts.id, posts.timestamp
                                         FROM posts 
                                         INNER JOIN user_follows
                                             ON user_follows.followed = posts.answer_author
                                                AND user_follows.user = :cur_user_id
                                                and user_follows.unfollowed=:unfollowed 
                                         WHERE deleted=false AND answer_author != :cur_user_id
-                                        AND posts.timestamp >= :fed_upto
-                                        ORDER BY
-                                            posts.timestamp 
+                                        AND (posts.timestamp >= :fed_upto
+                                        OR :new_entry = true)
                                         Limit :offset, 1
                                     """),
                                 params = {
                                     'cur_user_id':cur_user_id,
                                     'unfollowed':False,
                                     'offset':offset,
-                                    'fed_upto':fed_upto}
+                                    'fed_upto':fed_upto,
+                                    'new_entry':(fed_upto==None)}
                                 )
+
     for row in result:
         marker = row[0]
+        fed_upto_time = row[1]
 
-    return marker
+    return marker, fed_upto_time
 
 def check_time_threshold_crossed(last_fed, hours):
     return ((datetime.datetime.now() - last_fed).total_seconds() >
