@@ -2254,7 +2254,7 @@ def return_none_feed():
 
 def prompt_for_profile_video(user_id):
     time_threshold = datetime.datetime.now() - datetime.timedelta(hours=48)
-    return not bool(User.query.filter(User.id==user_id, User.user_since<time_threshold, User.profile_picture!=None).count())
+    return bool(User.query.filter(User.id==user_id, User.user_since<time_threshold, User.profile_video!=None).count())
 
 
 def user_profile_request(current_user_id, request_for, request_type):
@@ -2293,8 +2293,9 @@ def get_new_discover(current_user_id, offset, limit, device_id, version_code, vi
     
     resp = [{'type':'user', 'user':guest_user_to_dict(current_user_id, u)} for u in users]
     
-    if offset ==0 and current_user_id and prompt_for_profile_video(current_user_id):
-        resp = [{'type':'upload_profile_video', 'upload_profile_video':{}}] + resp
+    add_profile_video_prompt = False
+    if offset ==0 and current_user_id:
+        add_profile_video_prompt = prompt_for_profile_video(current_user_id)
         limit -= 1
     
     day_count = 0
@@ -2304,6 +2305,8 @@ def get_new_discover(current_user_id, offset, limit, device_id, version_code, vi
     resp.extend(get_discover_list(current_user_id, offset, limit, 
                                     day_count=day_count, add_super=True, 
                                     exclude_users=[u.id for u in users]))
+    if add_profile_video_prompt:
+        resp.insert(3, {'type':'upload_profile_video', 'upload_profile_video':{}})
 
     
     next_index = offset+limit if len(resp) else -1
@@ -2542,7 +2545,6 @@ def save_feedback_response(cur_user_id, medium, message, version):
     db.session.add(feedback)
     db.session.commit()
     return {'success': True}
-
 
 def update_post_share(current_user_id, post_id, platform):
     from models import PostShare
@@ -2926,26 +2928,30 @@ def edit_list_child(cur_user_id, parent_list_id, child_user_id, child_list_id, s
     return {'success':True, 'list_item':list_items_to_dict(list_item, cur_user_id)[0]}
 
 
-def get_list_items(cur_user_id, list_id, offset=0, limit=10):
+def get_list_items(cur_user_id, list_id, offset=0, limit=20):
     try:
-        if len(list_id)>30:
-            parent_list = List.query.filter(List.id==list_id, List.deleted==False).one()
+        if not list_id:
+            list_dicts = get_top_level_lists(offset=offset, limit=limit)
         else:
-            parent_list = List.query.filter(List.name==list_id, List.deleted==False).one()
+            if len(list_id)>30:
+                parent_list = List.query.filter(List.id==list_id, List.deleted==False).one()
+            else:
+                parent_list = List.query.filter(List.name==list_id, List.deleted==False).one()
 
 
-        list_items = ListItem.query.filter(ListItem.parent_list_id==list_id,
-                                                ListItem.deleted==False,
-                                                ListItem.show_on_list==True
-                                            ).order_by(ListItem.score
-                                            ).offset(offset
-                                            ).limit(limit
-                                            ).all()
+            list_items = ListItem.query.filter(ListItem.parent_list_id==list_id,
+                                                    ListItem.deleted==False,
+                                                    ListItem.show_on_list==True
+                                                ).order_by(ListItem.score
+                                                ).offset(offset
+                                                ).limit(limit
+                                                ).all()
+            list_dicts = list_items_to_dict(list_items, cur_user_id)
 
         count = len(list_items)
         next_index = -1 if count<limit else offset+limit
 
-        return {'list_items':list_items_to_dict(list_items, cur_user_id), 
+        return {'list_items':list_dicts, 
                 'list_id':parent_list.id,
                 'count':count,
                 'next_index':next_index}
@@ -2953,6 +2959,15 @@ def get_list_items(cur_user_id, list_id, offset=0, limit=10):
         raise CustomExceptions.ObjectNotFoundException('The list does not exist or has been deleted')
 
 
+def get_top_level_lists(offset=0, limit=20):
+    lists = List.query.filter(List.show_on_remote==True,
+                                List.deleted==False
+                            ).order_by(List.score
+                            ).offset(offset
+                            ).limit(limit
+                            ).all()
+
+    return lists_to_dict(lists, cur_user_id)
 
 
 def get_remote(cur_user_id, offset=0, limit=20):
@@ -2981,14 +2996,7 @@ def get_remote(cur_user_id, offset=0, limit=20):
         remote.extend([feed_banner, discover_banner])
         limit -=2
 
-    lists = List.query.filter(List.show_on_remote==True,
-                                List.deleted==False
-                            ).order_by(List.score
-                            ).offset(offset
-                            ).limit(limit
-                            ).all()
-
-    list_dicts = lists_to_dict(lists, cur_user_id)
+    list_dicts = get_top_level_lists(offset=offset, limit=limit)
     remote.extend([{'type':'banner', 'content_type':'list', 'list':list_dict} for list_dict in list_dicts])
 
     count = len(remote)
@@ -2999,7 +3007,63 @@ def get_remote(cur_user_id, offset=0, limit=20):
 
 
     
+def get_featured_users(cur_user_id, list_id, offset=0, limit=20):
+    users = User.query.join(ListItem, User.id==ListItem.child_user_id
+                            ).filter(ListItem.parent_list_id==list_id,
+                                        ListItem.deleted==False,
+                                        ListItems.child_user_id!=None,
+                                        ListItem.show_on_list==True
+                                        User.deleted==False
+                                    ).order_by(ListItem.score
+                                    ).offset(
+                                    ).limit(
+                                    ).all()
+    user_dicts = guest_users_to_dict(users, cur_user_id)
+    user_dicts = [{'type':'user', 'user':user_dict for user_dict in user_dicts}]
+    
+    count = len(user_dicts)
+    next_index = -1 if count<limit else offset+limit
+    return {'count':count, 'next_index':next_index, 'stream':user_dicts}
 
+
+
+def get_trending_users(cur_user_id, list_id, offset=0, limit=20):
+    users = User.query.join(ListItem, User.id==ListItem.child_user_id
+                            ).filter(ListItem.parent_list_id==list_id,
+                                        ListItem.deleted==False,
+                                        ListItems.child_user_id!=None,
+                                        ListItem.show_on_list==True
+                                        User.deleted==False
+                                    ).order_by(ListItem.score
+                                    ).offset(
+                                    ).limit(
+                                    ).all()
+    user_dicts = guest_users_to_dict(users, cur_user_id)
+    user_dicts = [{'type':'user', 'user':user_dict for user_dict in user_dicts}]
+    
+    count = len(user_dicts)
+    next_index = -1 if count<limit else offset+limit
+    return {'count':count, 'next_index':next_index, 'stream':user_dicts}
+
+
+
+def get_featured_posts(cur_user_id, list_id, offset=0, limit=20):
+    posts = Post.query.filter(Post.deleted==False).offset(offset).limit(limit).all()
+
+
+def get_trending_posts(cur_user_id, list_id, offset=0, limit=20):
+    pass
+
+
+def get_featured_questions(cur_user_id, list_id, offset=0, limit=20):
+    pass
+
+def get_trending_questions(cur_user_id, list_id, offset=0, limit=20):
+    pass
+
+
+def get_list_feed(cur_user_id, list_id, offset=0, limit=20):
+    pass
 
 
 

@@ -53,6 +53,7 @@ def user_to_dict(user):
         'view_count' : user_stats[user.id]['view_count'],
         'web_link':'http://frankly.me/{username}'.format(username=user.username),
         'channel_id':'user_{user_id}'.format(user_id=user.id),
+        'profile_video_requested':user_stats[user.id]['is_requested'],
         
         'user_type':user.user_type,
         'user_title':user.user_title,
@@ -98,18 +99,54 @@ def guest_user_to_dict(user, current_user_id, cur_user_interest_tags=None):
         'user_title':user.user_title,
         'profile_videos':get_video_states({user.profile_video:user.cover_picture})[user.profile_video] if user.profile_video else {},
         'web_link':'http://frankly.me/{username}'.format(username=user.username),
-        'channel_id':'user_{user_id}'.format(user_id=user.id)
+        'channel_id':'user_{user_id}'.format(user_id=user.id),
+        'profile_video_requested':user_stats[user.id]['is_requested']
     }
     if user_dict['profile_video']:
         user_dict['answer_count'] = user_dict['answer_count']+1
-    '''
-    if user.username.lower() in ['arvindkejriwal', 'kiranbedi', 'ajaymaken', 'javedakhtar']:
-        profile_videos = {}
-        for key, value in user_dict['profile_videos'].items():
-            profile_videos[key] = value.replace('http://d35wlof4jnjr70.cloudfront.net', 'http://storage.googleapis.com')
-        user_dict['profile_videos'] = profile_videos
-    '''
+
     return user_dict
+
+def guest_users_to_dict(users, current_user_id, cur_user_interest_tags=None):
+    from configs import config
+    from controllers import get_video_states, get_users_stats
+
+    user_stats = get_users_stats([user.id for user in users], cur_user_id=current_user_id)
+    
+    user_dicts = []
+
+    for user in users:
+
+        user_dict = {
+            'id': user.id,
+            'username': user.username,
+            'first_name': user.first_name,
+            'last_name': None,
+            'bio': user.bio or config.DEFAULT_BIO,
+            'profile_picture': user.profile_picture,
+            'cover_picture': user.cover_picture,
+            'profile_video': user.profile_video,
+            'gender': user.gender,
+            'follower_count': user_stats[user.id]['follower_count'],
+            'following_count': user_stats[user.id]['following_count'],
+            'answer_count': user_stats[user.id]['answer_count'],
+            'likes_count': 0,
+            'location': location_dict(user.lat, user.lon, user.location_name, user.country_name, user.country_code),
+            'is_follower':False,
+            'is_following':user_stats[user.id]['is_following'],
+            'allow_anonymous_question': user.allow_anonymous_question,
+            'view_count' : user_stats[user.id]['view_count'],
+            'user_type':user.user_type,
+            'user_title':user.user_title,
+            'profile_videos':get_video_states({user.profile_video:user.cover_picture})[user.profile_video] if user.profile_video else {},
+            'web_link':'http://frankly.me/{username}'.format(username=user.username),
+            'channel_id':'user_{user_id}'.format(user_id=user.id),
+            'profile_video_requested':user_stats[user.id]['is_requested']
+        }
+        if user_dict['profile_video']:
+            user_dict['answer_count'] = user_dict['answer_count']+1
+        user_dicts.append(user_dict)
+    return user_dicts
 
 
 def invitable_to_dict(invitable, current_user_id):

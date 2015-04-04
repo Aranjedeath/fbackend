@@ -2228,11 +2228,10 @@ class GetRemote(restful.Resource):
 
 class GetListItems(restful.Resource):
     get_parser = reqparse.RequestParser()
-    get_parser.add_argument('list_id', type=str, location='args', required=True)
+    get_parser.add_argument('list_id', type=str, location='args', help="list_id of the parent list. If not provided, top level lists will be given.")
     get_parser.add_argument('offset',  type=int, location='args', default=0)
     get_parser.add_argument('limit',   type=int, location='args', default=20)
 
-    @login_required
     def get(self):
         """
         Returns the list_items of a list

@@ -4,7 +4,7 @@ from sqlalchemy.sql import text
 from app import db
 
 from models import User, Post, Question, DiscoverList
-from object_dict import questions_to_dict, guest_user_to_dict, posts_to_dict
+from object_dict import questions_to_dict, guest_user_to_dict, posts_to_dict, guest_users_to_dict
 
 
 def get_discover_list(current_user_id, offset, limit=10, day_count=0, add_super=False, exclude_users=[]):
@@ -118,7 +118,9 @@ def make_resp_multitype(current_user_id, resp, order_key, reverse_sort=True):
     post_objects = Post.query.filter(Post.id.in_(posts)).all()
     question_objects = Question.query.filter(Question.id.in_(questions)).all()
 
-    user_objects_json = [{'type':'user', order_key:resp[u.id][order_key], 'user':guest_user_to_dict(u, current_user_id)} for u in user_objects]
+    user_objects_json = guest_users_to_dict(user_objects, current_user_id)
+    user_objects_json = [{'type':'user', order_key:resp[u['id']][order_key], 'user':u} for u in user_objects_json]
+
 
     question_objects_json = questions_to_dict(question_objects, current_user_id)
     question_objects_json = [{'type':'question', order_key:resp[q['id']][order_key], 'question':q} for q in question_objects_json]
