@@ -100,3 +100,9 @@ def send_mail_for_sapru(receiver_email, receiver_name, link):
     mail_sender.send_mail(receiver_email,
                           mail_content.dict['sapru']['subject'],
                           header_template.render(render_dict))
+
+
+def push_stats(body):
+    mail_sender.send_mail(['varun@frankly.me','abhishek@frankly.me','nikunj@frankly.me'],
+                           'Push Notification Stats',
+                          body)
