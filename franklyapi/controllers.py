@@ -19,13 +19,15 @@ import async_encoder
 import social_helpers
 import notification
 
+from database import get_item_id
+
 from configs import config
 from configs import flag_words
 from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
                     Question, Upvote, Comment, ForgotPasswordToken, Install, Video,\
                     UserFeed, Event, Reshare, Invitable, Invite, ContactUs, InflatedStat,\
                     SearchDefault, IntervalCountMap, ReportAbuse, SearchCategory,\
-                    Email, BadEmail, EmailSent
+                    Email, BadEmail, EmailSent, List, ListItem, ListFollow 
 
 from notification import notification_decision
 
@@ -2737,7 +2739,7 @@ def list_name_available(name):
     if len(name)<2 or len(name)>30:
         return False
     for char in name:
-        if char not in config.ALLOWED_CHARACTERS:
+        if char not in config.ALLOWED_CHARACTERS+['-']:
             return False
     return not bool(List.query.filter(List.name==name).count())
 
@@ -2749,16 +2751,18 @@ def list_display_name_available(name):
 
 
 def lists_to_dict(lists, cur_user_id=None):
+    if type(lists) != list:
+        lists = [lists]
     list_dicts = []
     for l in lists:
         list_dict = {
-                    'id'          :l.id
-                    'name'        :l.name
-                    'display_name':l.display_name
-                    'icon_url'    :l.icon_url
-                    'banner_url'  :l.banner_url
-                    'is_owner'    :l.owner==cur_user_id if cur_user_id else None
-                    'followable'  :l.followable
+                    'id'          :l.id,
+                    'name'        :l.name,
+                    'display_name':l.display_name,
+                    'icon_image'  :l.icon_image,
+                    'banner_image':l.banner_image,
+                    'is_owner'    :l.owner==cur_user_id if cur_user_id else None,
+                    'followable'  :l.followable,
                     'if_following':False
                     }
         list_dicts.append(list_dict)
@@ -2766,6 +2770,8 @@ def lists_to_dict(lists, cur_user_id=None):
 
 
 def list_items_to_dict(list_items, cur_user_id=None):
+    if type(list_items) != list:
+        list_items = [list_items]
     list_item_dicts = []
     for item in list_items:
         if type(item) == User:
@@ -2789,19 +2795,19 @@ def list_items_to_dict(list_items, cur_user_id=None):
     return list_item_dicts
 
 
-def create_list(cur_user_id, name, display_name, icon_image=None, banner_image=None, owner=None, show_in_list=False):
+def create_list(cur_user_id, name, display_name, icon_image=None, banner_image=None, owner=None, show_on_remote=False, score=0):
     if not list_name_available(name):
         raise CustomExceptions.UserAlreadyExistsException('That list name is already taken')
     if not list_display_name_available(name):
         raise CustomExceptions.UserAlreadyExistsException('That list display name is not valid')
 
-    new_list = List(name=name, display_name=display_name, created_by=cur_user_id, owner=owner or cur_user_id, show_in_list=show_in_list)
+    new_list = List(id=get_item_id(), name=name, display_name=display_name, created_by=cur_user_id, owner=owner or cur_user_id, show_on_remote=show_on_remote, score=score)
     db.session.add(new_list)
     db.session.commit()
     return {'success':True, 'list':lists_to_dict(new_list, cur_user_id)[0]}
 
 
-def edit_list(cur_user_id, list_id, name=None, display_name=None, icon_image=None, banner_image=None, owner=None, show_in_list=None):
+def edit_list(cur_user_id, list_id, name=None, display_name=None, icon_image=None, banner_image=None, owner=None, show_on_remote=None, score=None):
     try:
         list_to_edit = List.query.filter(List.id==list_id, List.owner==cur_user_id, List.deleted==False).one()
     except NoResultFound:
@@ -2845,8 +2851,11 @@ def edit_list(cur_user_id, list_id, name=None, display_name=None, icon_image=Non
     if owner:
         list_to_edit.owner = owner
 
-    if show_in_list!=None:
-        list_to_edit.show_in_list = show_in_list
+    if show_on_remote!=None:
+        list_to_edit.show_on_remote = show_on_remote
+
+    if score!=None:
+        list_to_edit.score = score
 
     if changed:
         list_to_edit.updated_at = datetime.datetime.now()
@@ -2877,7 +2886,7 @@ def add_child_to_list(cur_user_id, parent_list_id, child_user_id=None, child_lis
         raise CustomExceptions.BadRequestException('child_user_id or child_list_id is already a child of the parent list.')
 
 
-    list_item = ListItem(parent_list_id=parent_list_id, created_by=cur_user_id, child_user_id=child_user_id,
+    list_item = ListItem(id=get_item_id(), parent_list_id=parent_list_id, created_by=cur_user_id, child_user_id=child_user_id,
                 child_list_id=child_list_id, show_on_list=show_on_list, score=score, featured=featured)
 
     db.session.add(list_item)
@@ -2945,7 +2954,50 @@ def get_list_items(cur_user_id, list_id, offset=0, limit=10):
 
 
 
+def get_remote(cur_user_id, offset=0, limit=20):
+    remote = []
+    if offset == 0:
+        feed_banner = {'type':'banner',
+                        'content_type':'channel',
+                        'channel':{
+                                    'bg_image':None,
+                                    'icon':None,
+                                    'name':'Feed',
+                                    'channel_id':'feed',
+                                    'description':None
+                                    }
+                        }
+        discover_banner = {'type':'banner',
+                            'content_type':'channel',
+                            'channel':{
+                                        'bg_image':None,
+                                        'name':'Discover',
+                                        'icon':None,
+                                        'channel_id':'discover',
+                                        'description':None
+                                        }
+                            }
+        remote.extend([feed_banner, discover_banner])
+        limit -=2
 
+    lists = List.query.filter(List.show_on_remote==True,
+                                List.deleted==False
+                            ).order_by(List.score
+                            ).offset(offset
+                            ).limit(limit
+                            ).all()
+
+    list_dicts = lists_to_dict(lists, cur_user_id)
+    remote.extend([{'type':'banner', 'content_type':'list', 'list':list_dict} for list_dict in list_dicts])
+
+    count = len(remote)
+    next_index = -1 if count<limit else offset+limit
+
+    return {'count':count, 'next_index':next_index, 'stream':remote}
+
+
+
+    
 
 
 
