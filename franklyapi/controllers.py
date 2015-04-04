@@ -397,7 +397,11 @@ def get_users_stats(user_ids, cur_user_id=None):
                                                 WHERE questions.question_to=users.id
                                                     AND questions.deleted=false
                                                     AND questions.is_ignored=false
-                                                    AND questions.is_answered=false) AS question_count
+                                                    AND questions.is_answered=false) AS question_count,
+                                            (SELECT count(*) FROM profile_requests
+                                                WHERE request_to = users.id AND
+                                                      request_from = :cur_user_id) AS is_requested
+
                                     FROM users
                                     WHERE users.id in :user_ids"""),
                                 params={'cur_user_id':cur_user_id, 'user_ids':list(user_ids), 'trend_time':trend_time}
@@ -419,7 +423,8 @@ def get_users_stats(user_ids, cur_user_id=None):
                         'view_count':row[2],
                         'answer_count':row[5],
                         'is_following':bool(row[6]),
-                        'question_count':row[7]
+                        'question_count':row[7],
+                        'is_requested': bool(row[8])
                         }
 
     inflated_stats = InflatedStat.query.filter(InflatedStat.user.in_(user_ids)).all()
@@ -445,11 +450,11 @@ def question_count(user_id):
 
 def get_user_stats(user_id):
     following_count = 0#get_following_count(user_id)
-    follower_count  = get_follower_count(user_id)
-    view_count      = get_user_view_count(user_id)
-    answer_count    = get_answer_count(user_id)
+    follower_count = get_follower_count(user_id)
+    view_count = get_user_view_count(user_id)
+    answer_count = get_answer_count(user_id)
 
-    inflated_stat = InflatedStat.query.filter(InflatedStat.user==user_id).first()
+    inflated_stat = InflatedStat.query.filter(InflatedStat.user == user_id).first()
     if inflated_stat:
         follower_count += inflated_stat.follower_count
         view_count += inflated_stat.view_count
@@ -566,6 +571,7 @@ def get_answer_count(user_id):
 
 def get_invite_count(invitable_id):
     return Invite.query.filter(Invite.invitable == invitable_id).count()
+
 
 def has_invited(cur_user_id, invitable_id):
     return bool(Invite.query.filter(Invite.user==cur_user_id, Invite.invitable==invitable_id).limit(1).count())
