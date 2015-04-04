@@ -21,39 +21,6 @@ def log_video_count():
 def decide_popular_users_based_on_questions_asked():
     notification_decision.decide_popular_users()
 
-'''
-@ 9 AM Every day
-'''
-def following_answered_question():
-    make_notification.following_answered_question()
-
-# '''
-# @ 4 PM Every day
-# '''
-# def share_my_popular_question_notification():
-#     notification_decision.prompt_sharing_popular_question()
-
-'''
-@ 10 AM Every day
-'''
-def user_followers_milestone_notifications():
-    notification_decision.user_followers_milestone_notifications()
-
-'''
-@ 12 Noon every day
-'''
-def post_likes_milestone_notifications():
-    notification_decision.post_likes_milestone_notifications()
-
-'''
-@ 7 PM Every day
-'''
-def notification_question_asked():
-    notification_decision.question_asked_notifications()
-
-
-
-
 
 '''
 @ Every 5 minutes
@@ -191,9 +158,7 @@ if __name__ == '__main__':
 
     'heartbeat': heartbeat,
 
-    'decide_popular': decide_popular_users_based_on_questions_asked,
-
-    'notification_question_asked': notification_question_asked
+    'decide_popular': decide_popular_users_based_on_questions_asked
         }
     try:
         method_dict[args[0]]()

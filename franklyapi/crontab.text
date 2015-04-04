@@ -1,0 +1,33 @@
+#Heartbeat of the cron goes to the devs
+0 */12 * * * bash ~/franklysql/cron-jobs.sh heartbeat
+
+#Log video count every day at 6:30(so that it is midnight in IST)
+30 18 * * * bash ~/franklysql/cron-jobs.sh log_video_count
+
+#Calculate popular users at 7:00 (so that it is 00:30 in IST)
+0 19 * * * bash ~/franklysql/cron-jobs.sh decide_popular
+
+
+#Daily Content Report - 1
+#Every day at 11
+30 5 * * * bash ~/franklysql/cron-jobs.sh daily_report
+
+
+#Daily Content Report - 2
+#Every day at 11
+30 5 * * * bash ~/franklysql/cron-jobs.sh daily_report_two
+
+#Every day at 5
+30 11 * * * bash ~/franklysql/cron-jobs.sh daily_report_two
+
+#Weekly report - Every week on monday
+30 5 * * Mon bash ~/franklysql/cron-jobs.sh weekly_report
+
+#Update view count - Every 5 minutes
+*/5 * * * * bash ~/franklysql/cron-jobs.sh update_view_count
+
+#Update user view count - Every 10 minutes
+*/10 * * * * bash ~/franklysql/cron-jobs.sh update_user_view_count
+
+#Reassign pending video tasks  - Every hour
+0 * * * * bash ~/franklysql/cron-jobs.sh reassign_pending_video_tasks
