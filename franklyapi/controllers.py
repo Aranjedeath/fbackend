@@ -1581,105 +1581,17 @@ def get_celeb_users_for_feed(offset, limit, cur_user_id=None, users=[], feed_typ
                                             ).limit(limit)
     return celeb_user_query.all()
 
-def get_question_from_followings(followings, count = 2, cur_user_id=None):
-    from random import choice
-    following = choice(followings)[0]
-    user = User.query.filter(User.id == following).first()
-    
-    questions_query = Question.query.filter(Question.question_to==following, 
-                                            Question.question_author!=cur_user_id,
-                                            Question.deleted==False,
-                                            Question.is_answered==False,
-                                            Question.is_ignored==False
-                                            ).outerjoin(Upvote
-                                            ).group_by(Question.id
-                                            ).order_by(Question.score.desc()
-                                            ).order_by(func.count(Upvote.id).desc()
-                                            ).limit(40)
-    questions = questions_query.all()
-    _q_len = len(questions)
-    if _q_len < 2:
-        return _q_len, [], following
-    else:
-        q1, q2 = choice(questions), choice(questions)
-        while q1 == q2:
-            q2 = choice(questions)
-        return _q_len, [q1, q2], following
-
 def home_feed(cur_user_id, offset, limit, web):
-    from math import sqrt
-    from random import randint
+    from manage_feed import get_home_feed
+
     if offset == -1:
         return {
                 'stream' : [],
                 'count' : 0,
                 'next_index' : -1
             }
-    #follows = Follow.query.filter(Follow.user==cur_user_id, Follow.unfollowed==False)
-    #followings = [follow.followed for follow in follows]
-    #followings = filter(lambda x:x,map(lambda x:x if x not in config.TEST_USERS else None, followings))
-    
-    celebs_following = db.session.execute(text("""SELECT followed from user_follows
-                                                    left join users on user_follows.followed = users.id 
-                                                    where user_follows.user = :cur_user_id and user_follows.unfollowed = :unfollowed and users.user_type = 2"""),
-                                            params={'cur_user_id':cur_user_id, 'unfollowed':False}
-                                        ).fetchall()
-    
 
-    #posts = Post.query.filter(or_(Post.answer_author.in_(followings),
-                                    #Post.question_author==cur_user_id)
-                    #).filter(Post.deleted==False, Post.answer_author!=cur_user_id
-                    #).order_by(Post.timestamp.desc()
-                    #).offset(offset
-                    #).limit(limit
-                    #).all()
-    
-    posts = db.session.execute(text("""SELECT posts.show_after, posts.id, posts.question_author,
-                                        posts.question, posts.answer_author, posts.media_url,
-                                        posts.thumbnail_url, posts.answer_type, posts.timestamp,
-                                        posts.deleted, posts.lat, posts.lon, posts.location_name,
-                                        posts.country_name, posts.country_code, posts.ready,
-                                        posts.popular, posts.view_count, posts.client_id
-                                        FROM posts INNER JOIN user_follows ON user_follows.followed = posts.answer_author
-                                        AND user_follows.user = :cur_user_id and user_follows.unfollowed=:unfollowed AND timestampdiff(minute, user_follows.timestamp, now()) >= posts.show_after 
-                                        WHERE deleted=false AND answer_author != :cur_user_id
-                                        ORDER BY posts.timestamp DESC,posts.show_after DESC LIMIT :offset, :limit"""),
-                                    params = {'cur_user_id':cur_user_id, 'offset':offset, 'limit':limit, 'unfollowed':False}
-                                )
-
-    posts = list(posts)
-    posts = posts_to_dict(posts, cur_user_id)
-    
-    shortner = 0
-    questions = []
-    feeds = []
-    _q_len = 0
-    if len(celebs_following) > 0:
-        _q_len, questions, following = get_question_from_followings(celebs_following, cur_user_id=cur_user_id)
-        if questions:
-            shortner = 1
-    
-    if posts:
-        feeds = [{'type':'post', 'post':post} for post in posts[:len(posts) - shortner]]
-
-    if questions:
-        question_user = thumb_user_to_dict(User.query.filter(User.id == following).first(), cur_user_id)
-        question_user['questions'] = []
-        for q in questions:
-            question_user['questions'].append(question_to_dict(q, cur_user_id))
-            if len(q.body) > 150:
-                break
-            if randint(0,9) % 2 == 0:
-                break
-        if posts:
-            idx = randint(0,len(posts)- 1)
-        else:
-            idx = 0
-        feeds.insert(idx, {'questions': question_user, 'type' : 'questions'} )
-    tentative_idx = -1
-    if int(len(celebs_following) * sqrt(_q_len)): 
-        tentative_idx = offset + limit + int(len(celebs_following) * sqrt(_q_len))
-    next_index = offset+limit-shortner if posts else tentative_idx if offset < 40 else -1
+    feeds, next_index = get_home_feed(current_user_id, offset, limit)
 
     return {'stream': feeds, 'count':len(feeds), 'next_index':next_index}
 
