@@ -1,5 +1,5 @@
 from database import Base
-from sqlalchemy import Column, Integer, String, Boolean, Float, DateTime, ForeignKey, CHAR
+from sqlalchemy import Column, Integer, String, Boolean, Float, DateTime, ForeignKey, CHAR, UniqueConstraint
 from database import get_item_id
 import datetime
 
@@ -17,11 +17,13 @@ class List(Base):
     created_by     = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
     updated_at     = Column(DateTime())
     updated_by     = Column(CHAR(32), ForeignKey('users.id'))
+    deleted        = Column(Boolean(), default=False)
     followable     = Column(Boolean(), default=True)
 
     def __init__(self, name, display_name, created_by, owner=None, show_on_remote=False, 
                         created_at=datetime.datetime.now(), updated_at=None, updated_by=None,
-                        score=None, icon_image=None, banner_image=None, followable=False, id=get_item_id()):
+                        score=None, icon_image=None, banner_image=None, followable=False,
+                        deleted=False, id=get_item_id()):
         self.name           = name
         self.display_name   = display_name
         self.created_by     = created_by
@@ -35,6 +37,10 @@ class List(Base):
         self.icon_image     = icon_image
         self.banner_image   = banner_image
         self.owner          = owner or created_by
+        self.deleted        = deleted
+
+    def __repr__(self):
+        return '<List %r:%r:%r>' % (self.id, self.name, self.display_name)
 
 
 class ListItem(Base):
@@ -47,8 +53,12 @@ class ListItem(Base):
     score          = Column(Float())
     created_at     = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
     created_by     = Column(DateTime(), default=datetime.datetime.now())
+    is_featured    = Column(Boolean(), default=False)
+    deleted        = Column(Boolean(), default=False)
 
-    def __init__(self, parent_list_id, created_by, child_user_id=None, child_list_id=None, show_on_list=False, score=0, created_at=datetime.datetime.now()):
+    def __init__(self, parent_list_id, created_by, child_user_id=None, child_list_id=None, 
+                show_on_list=False, score=0, created_at=datetime.datetime.now(),
+                is_featured=False, deleted=False):
         if not child_user_id:
             self.child_user_id  = child_user_id 
         elif child_list_id:
@@ -61,6 +71,29 @@ class ListItem(Base):
         self.score          = score
         self.created_at     = created_at
         self.created_by     = created_by
+        self.is_featured    = is_featured
+        self.deleted        = deleted
+
+    def __repr__(self):
+        return '<ListItem %r:%r:%r>' % (self.child_user_id, self.child_list_id, self.parent_list_id)
+
+
+class ListFollow(Base):
+    __tablename__ = 'list_follows'
+    __table_args__ = ( UniqueConstraint('user_id', 'list_id'),)
+    id            = Column(Integer(), primary_key=True)
+    list_id       = Column(CHAR(32), ForeignKey('lists.id'), nullable=False)
+    user_id       = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
+    unfollowed    = Column(Boolean(), default=False)
+    created_at    = Column(DateTime(), default=datetime.datetime.now())
+
+    def __init__(self, list_id, user_id, unfollowed=False, created_at=datetime.datetime.now()):
+        self.list_id    = list_id 
+        self.user_id    = user_id
+        self.created_at = created_at
+        self.unfollowed = unfollowed
+
+
 
 class Domain(Base):
     __tablename__  = 'domains'

@@ -2200,6 +2200,62 @@ class ReportAbuse(restful.Resource):
             abort(500, message=internal_server_error_message)
 
 
+class GetRemote(restful.Resource):
+    get_parser = reqparse.RequestParser()
+    get_parser.add_argument('offset',  type=int, location='args', default=0)
+    get_parser.add_argument('limit',   type=int, location='args', default=20)
+
+    @login_required
+    def get(self):
+        """
+        Returns the data for remote screen
+
+        Controller Functions Used:
+            - get_remote
+
+        Authentication: Required
+        """
+        args = self.get_parser.parse_args()
+        try:
+            return controllers.get_remote(current_user.id, args['offset'], args['limit'])
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0], err[1], err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
+
+
+
+class GetListItems(restful.Resource):
+    get_parser = reqparse.RequestParser()
+    get_parser.add_argument('list_id', type=str, location='args', required=True)
+    get_parser.add_argument('offset',  type=int, location='args', default=0)
+    get_parser.add_argument('limit',   type=int, location='args', default=20)
+
+    @login_required
+    def get(self):
+        """
+        Returns the list_items of a list
+
+        Controller Functions Used:
+            - get_list_items
+
+        Authentication: Required
+        """
+        args = self.get_parser.parse_args()
+        try:
+            return controllers.get_list_items(current_user.id, args['list_id'], args['offset'])
+        
+        except CustomExceptions.ObjectNotFoundException as e:
+            abort(404, message=e.message)
+
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0], err[1], err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
+
+
 class EncodeStatistics(restful.Resource):
 
     get_parser = reqparse.RequestParser()
