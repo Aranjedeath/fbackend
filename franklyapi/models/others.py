@@ -300,3 +300,23 @@ class ProfileRequest(Base):
 
     def __repr__(self):
         return '<ProfileRequests %r:%r>' %(self.request_by, self.request_for)
+
+
+class MailLog(Base):
+    __tablename__ = 'mail_log'
+
+    id= Column(CHAR(32), primary_key=True)
+    email_id = Column(CHAR(100))
+    mail_type = Column(CHAR(45))
+    object_id = Column(CHAR(100))
+    created_at = Column(DateTime(), default=datetime.datetime.now())
+    updated_at = Column(DateTime(), default=datetime.datetime.now())
+
+    def __init__ (self, email_id, mail_type, object_id):
+        self.id = get_item_id()
+        self.email_id = email_id
+        self.mail_type = mail_type
+        self.object_id = object_id
+
+    def __repr__(self):
+        return '<MailLog %r:%r>' %(self.id, self.email_id, self.mail_type, self.object_id, self.created_at)
