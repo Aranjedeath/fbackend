@@ -401,7 +401,7 @@ def get_users_stats(user_ids, cur_user_id=None):
                                             
                                             (SELECT count(*) FROM profile_requests
                                                 WHERE profile_requests.request_for = users.id AND
-                                                      profile_requests.request_from = :cur_user_id) AS is_requested
+                                                      profile_requests.request_by = :cur_user_id) AS is_requested
 
                                     FROM users
                                     WHERE users.id in :user_ids"""),
