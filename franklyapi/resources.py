@@ -2284,10 +2284,10 @@ class GetListFeatured(restful.Resource):
                 return controllers.get_featured_users(current_user_id, args['list_id'], args['offset'], args['limit'])
             elif object_type=='posts':
                 return controllers.get_featured_posts(current_user_id, args['list_id'], args['offset'], args['limit'])
-            elif object_type=='users':
+            elif object_type=='questions':
                 return controllers.get_featured_questions(current_user_id, args['list_id'], args['offset'], args['limit'])
             else:
-                raise CustomExceptions.ObjectNotFoundException('{object_type} is not an object'.format(object_type))
+                raise CustomExceptions.ObjectNotFoundException('{object_type} is not an object'.format(object_type=object_type))
         except CustomExceptions.ObjectNotFoundException as e:
             abort(404, message=e.message)
 
@@ -2324,12 +2324,13 @@ class GetListTrending(restful.Resource):
                 return controllers.get_trending_users(current_user_id, args['list_id'], args['offset'], args['limit'])
             elif object_type=='posts':
                 return controllers.get_trending_posts(current_user_id, args['list_id'], args['offset'], args['limit'])
-            elif object_type=='users':
+            elif object_type=='questions':
                 return controllers.get_trending_questions(current_user_id, args['list_id'], args['offset'], args['limit'])
             else:
-                raise CustomExceptions.ObjectNotFoundException('{object_type} is not an object'.format(object_type))
+                raise CustomExceptions.ObjectNotFoundException('shashank')
         except CustomExceptions.ObjectNotFoundException as e:
-            abort(404, message=e.message)
+            print e.message
+            abort(404, message=str(e))
 
         except Exception as e:
             err = sys.exc_info()

@@ -2936,18 +2936,20 @@ def edit_list_child(cur_user_id, parent_list_id, child_user_id, child_list_id, s
     db.session.commit()
     return {'success':True, 'list_item':list_items_to_dict(list_item, cur_user_id)[0]}
 
+def get_list_from_name_or_id(list_id):
+    if len(list_id)>30:
+        list_object = List.query.filter(List.id==list_id, List.deleted==False).one()
+    else:
+        list_object = List.query.filter(List.name==list_id, List.deleted==False).one()
+    return list_object
+
 
 def get_list_items(cur_user_id, list_id, offset=0, limit=20):
     try:
         if not list_id:
-
             list_dicts = list_items_to_dict(get_top_level_lists(offset=offset, limit=limit), cur_user_id)
         else:
-            if len(list_id)>30:
-                parent_list = List.query.filter(List.id==list_id, List.deleted==False).one()
-            else:
-                parent_list = List.query.filter(List.name==list_id, List.deleted==False).one()
-
+            parent_list = get_list_from_name_or_id(list_id)
 
             list_items = ListItem.query.filter(ListItem.parent_list_id==list_id,
                                                     ListItem.deleted==False,
@@ -3018,97 +3020,127 @@ def get_remote(cur_user_id, offset=0, limit=20):
 
     
 def get_featured_users(cur_user_id, list_id, offset=0, limit=20):
-    users = User.query.join(ListItem, User.id==ListItem.child_user_id
-                            ).filter(ListItem.parent_list_id==list_id,
-                                        ListItem.deleted==False,
-                                        ListItems.child_user_id!=None,
-                                        ListItem.show_on_list==True,
-                                        User.deleted==False
-                                    ).order_by(ListItem.score
-                                    ).offset(
-                                    ).limit(
-                                    ).all()
-    users = User.query.filter(User.user_type==2).offset(offset).limit(limit).all()
-    user_dicts = guest_users_to_dict(users, cur_user_id)
-    user_dicts = [{'type':'user', 'user':user_dict} for user_dict in user_dicts]
-    
-    count = len(user_dicts)
-    next_index = -1 if count<limit else offset+limit
-    return {'count':count, 'next_index':next_index, 'stream':user_dicts}
+    try:
+        parent_list = get_list_from_name_or_id(list_id)
+
+        users = User.query.join(ListItem, User.id==ListItem.child_user_id
+                                ).filter(ListItem.parent_list_id==list_id,
+                                            ListItem.deleted==False,
+                                            ListItems.child_user_id!=None,
+                                            ListItem.show_on_list==True,
+                                            User.deleted==False
+                                        ).order_by(ListItem.score
+                                        ).offset(
+                                        ).limit(
+                                        ).all()
+        users = User.query.filter(User.user_type==2).offset(offset).limit(limit).all()
+        user_dicts = guest_users_to_dict(users, cur_user_id)
+        user_dicts = [{'type':'user', 'user':user_dict} for user_dict in user_dicts]
+        
+        count = len(user_dicts)
+        next_index = -1 if count<limit else offset+limit
+        return {'count':count, 'next_index':next_index, 'stream':user_dicts}
+    except NoResultFound:
+        raise CustomExceptions.ObjectNotFoundException('List has been deleted or does not exit')
 
 
 
 def get_trending_users(cur_user_id, list_id, offset=0, limit=20):
-    users = User.query.join(ListItem, User.id==ListItem.child_user_id
-                            ).filter(ListItem.parent_list_id==list_id,
-                                        ListItem.deleted==False,
-                                        ListItems.child_user_id!=None,
-                                        ListItem.show_on_list==True,
-                                        User.deleted==False
-                                    ).order_by(ListItem.score
-                                    ).offset(
-                                    ).limit(
-                                    ).all()
-    users = User.query.filter(User.user_type==2).offset(offset).limit(limit).all()
-    user_dicts = guest_users_to_dict(users, cur_user_id)
-    user_dicts = [{'type':'user', 'user':user_dict} for user_dict in user_dicts]
-    
-    count = len(user_dicts)
-    next_index = -1 if count<limit else offset+limit
-    return {'count':count, 'next_index':next_index, 'stream':user_dicts}
+    try:
+        parent_list = get_list_from_name_or_id(list_id)
+
+        users = User.query.join(ListItem, User.id==ListItem.child_user_id
+                                ).filter(ListItem.parent_list_id==list_id,
+                                            ListItem.deleted==False,
+                                            ListItems.child_user_id!=None,
+                                            ListItem.show_on_list==True,
+                                            User.deleted==False
+                                        ).order_by(ListItem.score
+                                        ).offset(
+                                        ).limit(
+                                        ).all()
+        users = User.query.filter(User.user_type==2).offset(offset).limit(limit).all()
+        user_dicts = guest_users_to_dict(users, cur_user_id)
+        user_dicts = [{'type':'user', 'user':user_dict} for user_dict in user_dicts]
+        
+        count = len(user_dicts)
+        next_index = -1 if count<limit else offset+limit
+        return {'count':count, 'next_index':next_index, 'stream':user_dicts}
+    except NoResultFound:
+        raise CustomExceptions.ObjectNotFoundException('List has been deleted or does not exit')
 
 
 
 def get_featured_posts(cur_user_id, list_id, offset=0, limit=20):
-    posts = Post.query.filter(Post.deleted==False,
-                            Post.answer_author.in_([u.id for u in User.query.filter(User.user_type==2)])).offset(offset).limit(limit).all()
+    try:
+        parent_list = get_list_from_name_or_id(list_id)
+        posts = Post.query.filter(Post.deleted==False,
+                                Post.answer_author.in_([u.id for u in User.query.filter(User.user_type==2)])).offset(offset).limit(limit).all()
 
-    post_dicts = posts_to_dict(posts, cur_user_id)
-    post_dicts = [{'type':'post', 'post':post_dict} for post_dict in post_dicts]
-    
-    count = len(post_dicts)
-    next_index = -1 if count<limit else offset+limit
-    return {'count':count, 'next_index':next_index, 'stream':post_dicts}
+        post_dicts = posts_to_dict(posts, cur_user_id)
+        post_dicts = [{'type':'post', 'post':post_dict} for post_dict in post_dicts]
+        
+        count = len(post_dicts)
+        next_index = -1 if count<limit else offset+limit
+        return {'count':count, 'next_index':next_index, 'stream':post_dicts}
+    except NoResultFound:
+        raise CustomExceptions.ObjectNotFoundException('List has been deleted or does not exit')
 
 
 def get_trending_posts(cur_user_id, list_id, offset=0, limit=20):
-    posts = Post.query.filter(Post.deleted==False,
-                            Post.answer_author.in_([u.id for u in User.query.filter(User.user_type==2)])).offset(offset).limit(limit).all()
+    try:
+        parent_list = get_list_from_name_or_id(list_id)
+        posts = Post.query.filter(Post.deleted==False,
+                                Post.answer_author.in_([u.id for u in User.query.filter(User.user_type==2)])).offset(offset).limit(limit).all()
 
-    post_dicts = posts_to_dict(posts, cur_user_id)
-    post_dicts = [{'type':'post', 'post':post_dict} for post_dict in post_dicts]
-    
-    count = len(post_dicts)
-    next_index = -1 if count<limit else offset+limit
-    return {'count':count, 'next_index':next_index, 'stream':post_dicts}
+        post_dicts = posts_to_dict(posts, cur_user_id)
+        post_dicts = [{'type':'post', 'post':post_dict} for post_dict in post_dicts]
+        
+        count = len(post_dicts)
+        next_index = -1 if count<limit else offset+limit
+        return {'count':count, 'next_index':next_index, 'stream':post_dicts}
+    except NoResultFound:
+        raise CustomExceptions.ObjectNotFoundException('List has been deleted or does not exit')
 
 
 def get_featured_questions(cur_user_id, list_id, offset=0, limit=20):
-    questions = Question.query.filter(Question.deleted==False,
-                            Question.question_to.in_([u.id for u in User.query.filter(User.user_type==2)])).offset(offset).limit(limit).all()
+    try:
+        parent_list = get_list_from_name_or_id(list_id)
+        questions = Question.query.filter(Question.deleted==False,
+                                Question.question_to.in_([u.id for u in User.query.filter(User.user_type==2)])).offset(offset).limit(limit).all()
 
-    question_dicts = questions_to_dict(questions, cur_user_id)
-    question_dicts = [{'type':'question', 'question':question_dict} for question_dict in question_dicts]
-    
-    count = len(question_dicts)
-    next_index = -1 if count<limit else offset+limit
-    return {'count':count, 'next_index':next_index, 'stream':question_dicts}
+        question_dicts = questions_to_dict(questions, cur_user_id)
+        question_dicts = [{'type':'question', 'question':question_dict} for question_dict in question_dicts]
+        
+        count = len(question_dicts)
+        next_index = -1 if count<limit else offset+limit
+        return {'count':count, 'next_index':next_index, 'stream':question_dicts}
+    except NoResultFound:
+        raise CustomExceptions.ObjectNotFoundException('List has been deleted or does not exit')
 
 
 def get_trending_questions(cur_user_id, list_id, offset=0, limit=20):
-    questions = Question.query.filter(Question.deleted==False,
-                            Question.question_to.in_([u.id for u in User.query.filter(User.user_type==2)])).offset(offset).limit(limit).all()
+    try:
+        parent_list = get_list_from_name_or_id(list_id)
+        questions = Question.query.filter(Question.deleted==False,
+                                Question.question_to.in_([u.id for u in User.query.filter(User.user_type==2)])).offset(offset).limit(limit).all()
 
-    question_dicts = questions_to_dict(questions, cur_user_id)
-    question_dicts = [{'type':'question', 'question':question_dict} for question_dict in question_dicts]
-    
-    count = len(question_dicts)
-    next_index = -1 if count<limit else offset+limit
-    return {'count':count, 'next_index':next_index, 'stream':question_dicts}
+        question_dicts = questions_to_dict(questions, cur_user_id)
+        question_dicts = [{'type':'question', 'question':question_dict} for question_dict in question_dicts]
+        
+        count = len(question_dicts)
+        next_index = -1 if count<limit else offset+limit
+        return {'count':count, 'next_index':next_index, 'stream':question_dicts}
+    except NoResultFound:
+        raise CustomExceptions.ObjectNotFoundException('List has been deleted or does not exit')
 
 
 def get_list_feed(cur_user_id, list_id, offset=0, limit=20):
-    return get_new_discover(cur_user_id, offset, limit, device_id='web', version_code=0)
+    try:
+        parent_list = get_list_from_name_or_id(list_id)
+        return get_new_discover(cur_user_id, offset, limit, device_id='web', version_code=0)
+    except NoResultFound:
+        raise CustomExceptions.ObjectNotFoundException('List has been deleted or does not exit')
 
 
 
