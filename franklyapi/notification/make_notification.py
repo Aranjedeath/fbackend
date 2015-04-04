@@ -1,5 +1,5 @@
 from models import User, Question, Notification, Post, Upvote, \
-                   Follow, UserNotificationInfo
+                   Follow, UserNotificationInfo, Comment
 from database import get_item_id
 from app import db
 from configs import config
@@ -84,7 +84,7 @@ def new_post(post_id, question_body="", notification_type='post-add-self_user'):
 
     nobject = {
         'object_id': post_id,
-        'text':  helper.post_add(answer_author=answer_author.firt_name, question_body=question_body),
+        'text':  helper.post_add(answer_author=answer_author.first_name, question_body=question_body),
         'notification_type': notification_type,
         'icon': answer_author.profile_picture,
         'link': k['url'] % post.client_id,
@@ -96,9 +96,12 @@ def new_post(post_id, question_body="", notification_type='post-add-self_user'):
 
     upvoters = list(set([question_author.id]+upvoters))
 
+    print 'Number of upvoters: ', len(upvoters)
+
     notification = notification_logger(nobject=nobject, for_users=upvoters)
 
-    following_answered_question(post_id=post_id, question_body=question_body, author_id=answer_author.id)
+    following_answered_question(question_body=question_body,
+                                author_id=answer_author.id, nobject=nobject, upvoters=upvoters)
     return notification
 
 
@@ -108,24 +111,19 @@ def new_post(post_id, question_body="", notification_type='post-add-self_user'):
 '''
 
 
-def following_answered_question(post_id, author_id, question_body, notification_type='post-add-following_user'):
-
-    k = key[notification_type]
+def following_answered_question(author_id, question_body, nobject, upvoters, notification_type='post-add-following_user'):
 
     author = User.query.filter(User.id == author_id).one()
 
-    nobject = {
-        'object_id': post_id,
-        'text':   helper.following_answered_question(question_body=question_body, author_name=author.first_name),
-        'notification_type': notification_type,
-        'icon': author.profile_picture,
-        'link': k['url'] % post_id,
-    }
+    nobject['text'] = helper.following_answered_question(question_body=question_body, author_name=author.first_name)
+    nobject['notification_type'] = notification_type
+
 
     try:
-        following = Follow.query.with_entities(Follow.followed).filter(Follow.followed == author_id).all()
-        followers = [f[0] for f in following]
-
+        following = Follow.query.with_entities(Follow.user).filter(Follow.followed == author_id).all()
+        followers = [f[0] for f in following if f[0] != author_id]
+        followers = list(set(followers) - set(upvoters))
+        print 'Number of followers who have not upovted or asked the question: ', len(followers)
         notification = notification_logger(nobject=nobject, for_users=followers)
         return notification
     except NoResultFound:
@@ -217,39 +215,25 @@ def user_profile_request(user_id, request_by, request_id, request_type=config.RE
 
     notification_logger(nobject=nobject, for_users=[user_id], push_at=datetime.datetime.now())
 
-def like_on_post(post_id, notification_type='like-post-self_user'):
-
-    post = Post.query.filter(Post.id == post_id).one()
 
 
-def comment_on_post(post_id, comment_id, comment_author):
+def comment_on_post(post_id, comment_id, comment_author, notification_type='comment-add-self_post'):
 
     post = Post.query.filter(Post.id == post_id).one()
 
     comment_author = User.query.filter(User.id == comment_author).one()
 
-    notification_type = 'comment_on_post'
-
     k = key[notification_type]
 
-    text = helper.comment_on_post()
+    nobject = {
+        'notification_type': notification_type,
+        'text': ("%s just commented on your answer." % comment_author.first_name),
+        'icon': comment_author.profile_picture,
+        'link': k['url'] % post_id,
+        'object_id': comment_id
+    }
 
-    link = k['url'] % post_id
-
-    icon = comment_author.profile_picture
-
-    notification = Notification(type=notification_type, text=text,
-                                link=link, object_id=comment_id,
-                                icon=icon, created_at=datetime.datetime.now(),
-                                manual=False, id=get_item_id())
-    db.session.add(notification)
-    db.session.commit()
-
-    add_notification_for_user(notification_id=notification.id,
-                              user_ids=[post.answer_author, post.question_author],
-                              list_type='me',
-                              push_at=datetime.datetime.now())
-
+    notification_logger(nobject=nobject, for_users=[post.answer_author], push_at=datetime.datetime.now())
 
 def hack():
 

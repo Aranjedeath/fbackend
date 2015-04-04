@@ -1,7 +1,7 @@
 from configs import config
 key = {
     'question-ask-self_user' : {
-        'title': '',
+        'title': 'New Question',
         'text': "<b><question_author_name></b> asked you '<question_body>'",
         'url': config.WEB_URL + '/q/%s',
         'label_one': 'Answer',
@@ -10,7 +10,7 @@ key = {
 
     },
     'post-add-self_user': {
-        'title': '<b><answer_author_name></b> answered your question.',
+        'title': 'Your question got answered!',
         'text': "<b><answer_author_name></b> answered your question <question_body>",
         'url': config.WEB_URL + '/p/%s',
         'day_limit': 3,
@@ -19,15 +19,23 @@ key = {
         'label_two': ''
     },
     'post-add-following_user': {
-        'title': '<b><answer_author_name></b> answered a new question',
+        'title': 'New answer!',
         'text': '''<question_author> answered the question <question_body>''',
         'url': config.WEB_URL + '/p/%s',
         'day_limit': 1,
         'label_one': 'Play',
         'label_two':''
     },
+    'comment-add-self_post':{
+         'title': 'New comment',
+         'text': '<commentator>',
+         'url': config.WEB_URL + '/p/%s',
+         'day-limit': 1,
+         'label_one':'',
+         'label_two': ''
+    },
     'new-celebrity-followed_category': {
-        'title':'',
+        'title':'New celebrity on Frankly',
         'text': '''<celebrity_name> has just joined Frankly. Ask him anything.''',
         'url': config.WEB_URL + '/%s',
         'day-limit': 1,
@@ -43,7 +51,7 @@ key = {
         'label_two': ''
     },
     'user-followers-milestone': {
-        'title':'',
+        'title':'You are getting noticed.',
         'text': 'You just got your <milestone_count>th follower. Get more by sharing your profile.',
         'url': config.WEB_URL + '/%s',
         'day-limit': 1,
@@ -51,7 +59,7 @@ key = {
         'label_two': ''
     },
     'post-likes-milestone': {
-        'title':'',
+        'title':'Your answer is becoming popular.',
         'text': 'Your answer has crossed over <milestone_count> likes. Share it to become popular.',
         'url': config.WEB_URL + '/p/%s',
         'day-limit': 1,
@@ -92,7 +100,7 @@ def popular_question_text(question_body, upvote_count):
     return text.replace('<question_body>', question_body).replace('<upvote_count>', str(((upvote_count/10)*10)))
 
 def following_answered_question(author_name, question_body):
-    text = key['following-new-post']['text']
+    text = key['post-add-following_user']['text']
     return text.replace('<question_author>', author_name).replace('<question_body>', question_body)
 
 def milestone_text(milestone_name, milestone_count):

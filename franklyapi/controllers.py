@@ -1425,7 +1425,7 @@ def comment_add(cur_user_id, post_id, body, lat, lon):
         db.session.commit()
 
         notification.comment_on_post(comment_id=comment.id, comment_author=cur_user_id, post_id=post_id)
-        #user_update_location(cur_user_id, lat, lon, country=None, country_code=None, loc_name=None)
+
 
         return {'comment': comment_to_dict(comment), 'id':comment.id, 'success':True}
     else:

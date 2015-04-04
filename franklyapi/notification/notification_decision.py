@@ -37,26 +37,29 @@ def post_notifications(post_id):
             notification_id = row[2]
 
 
-        #Get a set of users who haven't been sent this gcm notification yet
-        #This includes the question author
-        results = db.session.execute(text('''Select
+            #Get a set of users who haven't been sent this gcm notification yet
+            #This includes the question author
+            results = db.session.execute(text('''Select
                                              un.user_id, u.first_name, u.email
                                              from user_notifications un
                                              left join user_push_notifications upn
                                              on upn.notification_id  = :notification_id and upn.user_id = un.user_id
                                              left join users u on u.id = un.user_id
-                                             where un.notification_id = :notification_id
+                                             where
+                                             u.monkness = -1 and
+                                             un.notification_id = :notification_id
                                              and upn.user_id is null'''),
                                              params={'notification_id': notification_id})
 
+            print 'Notification id: ', notification_id
 
 
-        for row in results:
-
-            notification.push_notification(notification_id=notification_id, user_id = row[0])
-            # email_helper.question_answered(receiver_email = row[2], receiver_name = row[1],
-            #                            celebrity_name = answer_author_name,
-            #                            question = question_body, web_link=link)
+            for row in results:
+                print row[0]
+                push.push_notification(notification_id=notification_id, user_id = row[0])
+                # email_helper.question_answered(receiver_email = row[2], receiver_name = row[1],
+                #                            celebrity_name = answer_author_name,
+                #                            question = question_body, web_link=link)
     except ObjectNotFoundException:
         pass
 
