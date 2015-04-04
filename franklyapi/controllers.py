@@ -2261,6 +2261,8 @@ def return_none_feed():
 
 def prompt_for_profile_video(user_id):
     time_threshold = datetime.datetime.now() - datetime.timedelta(hours=48)
+    if user_id == '481bc87c43bc4812b0e333ecd9cd4c2c':
+        return True
     return bool(User.query.filter(User.id==user_id, User.user_since<time_threshold, User.profile_video!=None).count())
 
 
