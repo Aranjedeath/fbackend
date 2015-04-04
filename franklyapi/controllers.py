@@ -398,9 +398,10 @@ def get_users_stats(user_ids, cur_user_id=None):
                                                     AND questions.deleted=false
                                                     AND questions.is_ignored=false
                                                     AND questions.is_answered=false) AS question_count,
+                                            
                                             (SELECT count(*) FROM profile_requests
-                                                WHERE request_to = users.id AND
-                                                      request_from = :cur_user_id) AS is_requested
+                                                WHERE profile_requests.request_to = users.id AND
+                                                      profile_requests.request_from = :cur_user_id) AS is_requested
 
                                     FROM users
                                     WHERE users.id in :user_ids"""),
