@@ -213,7 +213,8 @@ def user_profile_request(user_id, request_for, request_id, request_type=config.R
         'object_id': request_id
     }
 
-    notification_logger(nobject=nobject, for_users=[request_for], push_at=datetime.datetime.now())
+
+    notification_logger(nobject=nobject, for_users=[request_for.id], push_at=datetime.datetime.now())
 
 
 

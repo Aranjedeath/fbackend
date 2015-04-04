@@ -2278,6 +2278,7 @@ def user_profile_request(current_user_id, request_for, request_type):
                                 })
     db.session.commit()
 
+   
     notification.user_profile_request(user_id=current_user_id, request_for=request_for,
                                       request_type=request_type,
                                       request_id=request_id)
