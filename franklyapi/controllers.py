@@ -2940,7 +2940,7 @@ def edit_list_child(cur_user_id, parent_list_id, child_user_id, child_list_id, s
 def get_list_items(cur_user_id, list_id, offset=0, limit=20):
     try:
         if not list_id:
-            
+
             list_dicts = lists_to_dict(get_top_level_lists(offset=offset, limit=limit), cur_user_id)
         else:
             if len(list_id)>30:
@@ -2958,11 +2958,11 @@ def get_list_items(cur_user_id, list_id, offset=0, limit=20):
                                                 ).all()
             list_dicts = list_items_to_dict(list_items, cur_user_id)
 
-        count = len(list_items)
+        count = len(list_dicts)
         next_index = -1 if count<limit else offset+limit
 
         return {'list_items':list_dicts, 
-                'list_id':parent_list.id,
+                'list_id':list_id,
                 'count':count,
                 'next_index':next_index}
     except NoResultFound:
