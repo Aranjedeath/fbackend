@@ -19,8 +19,9 @@ it is sent to all those users who upvoted, asked the question or follows the use
 def post_notifications(post_id):
 
     result = db.session.execute(text('''Select
-                                         p.question, p.question_author,
-                                         n.id
+
+                                         aa.first_name, q.body
+                                         n.id, n.link
                                          from posts p
                                          left join questions q on q.id = p.question
                                          left join users aa on aa.id = p.answer_author
@@ -32,9 +33,11 @@ def post_notifications(post_id):
                                          '''), params={'post_id': post_id})
     try:
         for row in result:
-            question_id = row[0]
-            question_author_id = row[1]
+
+            answer_author_name = row[0]
+            question_body = row[1]
             notification_id = row[2]
+            link = row[3]
 
 
             #Get a set of users who haven't been sent this gcm notification yet
@@ -52,14 +55,13 @@ def post_notifications(post_id):
                                              params={'notification_id': notification_id})
 
             print 'Notification id: ', notification_id
+            for user in results:
 
-
-            for row in results:
-                print row[0]
-                push.push_notification(notification_id=notification_id, user_id = row[0])
-                # email_helper.question_answered(receiver_email = row[2], receiver_name = row[1],
-                #                            celebrity_name = answer_author_name,
-                #                            question = question_body, web_link=link)
+                push.push_notification(notification_id=notification_id, user_id=user[0])
+                email_helper.question_answered(receiver_email=user[2], receiver_name=user[1],
+                                               celebrity_name=answer_author_name,
+                                               question=question_body, web_link=link,
+                                               object_id=post_id)
     except ObjectNotFoundException:
         pass
 

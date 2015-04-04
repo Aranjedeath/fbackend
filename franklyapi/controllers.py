@@ -2169,7 +2169,7 @@ def prompt_for_profile_video(user_id):
     return not bool(User.query.filter(User.id==user_id, User.user_since<time_threshold, User.profile_picture!=None).count())
 
 
-def user_profile_request(current_user_id, request_by, request_type):
+def user_profile_request(current_user_id, request_for, request_type):
 
     request_id = get_item_id()
     result = db.session.execute(text('''
@@ -2182,15 +2182,16 @@ def user_profile_request(current_user_id, request_by, request_type):
                                      '''),
                                 params={
                                     'id': request_id,
-                                    'request_for': current_user_id,
-                                    'request_by': request_by,
+                                    'request_for': request_for,
+                                    'request_by': current_user_id,
                                     'request_type': request_type,
                                     'created_at': datetime.datetime.now(),
                                     'updated_at': datetime.datetime.now()
                                 })
     db.session.commit()
 
-    notification.user_profile_request(user_id=current_user_id, request_by=request_by,
+   
+    notification.user_profile_request(user_id=current_user_id, request_for=request_for,
                                       request_type=request_type,
                                       request_id=request_id)
 

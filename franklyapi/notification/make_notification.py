@@ -199,21 +199,22 @@ def send_milestone_notification(milestone_name, milestone_crossed, object_id, us
 update the profile'''
 
 
-def user_profile_request(user_id, request_by, request_id, request_type=config.REQUEST_TYPE):
+def user_profile_request(user_id, request_for, request_id, request_type=config.REQUEST_TYPE):
 
-    request_by = User.query.filter(User.id == request_by).one()
+    request_for = User.query.filter(User.id == request_for).one()
 
     k = key[request_type]
 
     nobject = {
         'notification_type': request_type,
-        'text': helper.user_profile_request(requester_name=request_by.first_name),
-        'icon': request_by.profile_picture,
-        'link': k['url'] % user_id,
+        'text': helper.user_profile_request(requester_name=request_for.first_name),
+        'icon': request_for.profile_picture,
+        'link': k['url'] % request_for,
         'object_id': request_id
     }
 
-    notification_logger(nobject=nobject, for_users=[user_id], push_at=datetime.datetime.now())
+
+    notification_logger(nobject=nobject, for_users=[request_for.id], push_at=datetime.datetime.now())
 
 
 

@@ -1,6 +1,9 @@
 from jinja2 import Environment, PackageLoader
 from kabootar import SimpleMailer
+from models import MailLog
+from app import db
 import mail_content
+
 
 from configs import config
 import os
@@ -62,14 +65,21 @@ def question_asked(receiver_email, receiver_name, question_to_name, is_first):
                           header_template.render(render_dict))
 
 
-def question_answered(receiver_email, receiver_name, celebrity_name, question, web_link):
+def question_answered(receiver_email, receiver_name, celebrity_name, question, web_link,
+                      post_id, mail_type='post-add'):
 
     render_dict['salutation'] = "Hi %s" % receiver_name
     render_dict['email_text'] = mail_content.dict['question_answered']['body'] % (celebrity_name, web_link, question)
 
-    mail_sender.send_mail(receiver_email,
-                          mail_content.dict['question_answered']['subject'],
-                          header_template.render(render_dict))
+    if MailLog.query.filter(MailLog.email_id == receiver_email, MailLog.object_id == post_id,
+                            MailLog.mail_type == mail_type).count() == 0:
+        print 'sending mail'
+        mail_sender.send_mail(receiver_email,
+                              mail_content.dict['question_answered']['subject'],
+                              header_template.render(render_dict))
+        log = MailLog(email_id=receiver_email, mail_type=mail_type, object_id=post_id)
+        db.session.add(log)
+        db.session.commit()
 
 #Weekly Email
 def inactive_profile(receiver_email, receiver_name):
@@ -100,3 +110,9 @@ def send_mail_for_sapru(receiver_email, receiver_name, link):
     mail_sender.send_mail(receiver_email,
                           mail_content.dict['sapru']['subject'],
                           header_template.render(render_dict))
+
+
+def push_stats(body):
+    mail_sender.send_mail(['varun@frankly.me','abhishek@frankly.me','nikunj@frankly.me'],
+                           'Push Notification Stats',
+                          body)

@@ -8,6 +8,9 @@
 0 19 * * * bash ~/franklysql/cron-jobs.sh decide_popular
 
 
+# Push notification stats at 10 AM every morning
+30 4 * * * bash ~/franklysql/cron-jobs.sh push_stats
+
 #Daily Content Report - 1
 #Every day at 11
 30 5 * * * bash ~/franklysql/cron-jobs.sh daily_report

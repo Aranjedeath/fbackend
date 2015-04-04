@@ -288,7 +288,7 @@ class UserUpdateForm(restful.Resource):
 class UserProfileRequest(restful.Resource):
 
     post_parser = reqparse.RequestParser()
-    post_parser.add_argument('request_by', type=str, default='', location = 'json')
+    post_parser.add_argument('request_for', type=str, default='', location = 'json')
     post_parser.add_argument('request_type', type=str, required=True, location = 'json', choices=config.REQUEST_TYPE)
 
     @login_required
@@ -304,7 +304,7 @@ class UserProfileRequest(restful.Resource):
         args = self.post_parser.parse_args()
 
         try:
-            resp = controllers.user_profile_request(current_user_id=current_user.id, request_by=args['request_by'],
+            resp = controllers.user_profile_request(current_user_id=current_user.id, request_for=args['request_for'],
                                                     request_type=args['request_type'])
             return resp
 

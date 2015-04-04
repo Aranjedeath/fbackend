@@ -3,7 +3,7 @@ from app import db
 from models import User
 from analytics import stats
 from mailwrapper import email_helper
-from notification import notification_decision, make_notification
+from notification import notification_decision, push_notification
 
 import datetime
 import async_encoder
@@ -21,6 +21,11 @@ def log_video_count():
 def decide_popular_users_based_on_questions_asked():
     notification_decision.decide_popular_users()
 
+'''
+@ 10 AM Every day
+'''
+def push_stats():
+    push_notification.stats()
 
 '''
 @ Every 5 minutes
@@ -158,7 +163,9 @@ if __name__ == '__main__':
 
     'heartbeat': heartbeat,
 
-    'decide_popular': decide_popular_users_based_on_questions_asked
+    'decide_popular': decide_popular_users_based_on_questions_asked,
+
+    'push_stats': push_stats
         }
     try:
         method_dict[args[0]]()
