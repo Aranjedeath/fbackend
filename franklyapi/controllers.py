@@ -2940,7 +2940,8 @@ def edit_list_child(cur_user_id, parent_list_id, child_user_id, child_list_id, s
 def get_list_items(cur_user_id, list_id, offset=0, limit=20):
     try:
         if not list_id:
-            list_dicts = get_top_level_lists(offset=offset, limit=limit)
+            
+            list_dicts = lists_to_dict(get_top_level_lists(offset=offset, limit=limit), cur_user_id)
         else:
             if len(list_id)>30:
                 parent_list = List.query.filter(List.id==list_id, List.deleted==False).one()
@@ -2976,7 +2977,7 @@ def get_top_level_lists(offset=0, limit=20):
                             ).limit(limit
                             ).all()
 
-    return lists_to_dict(lists, cur_user_id)
+    return lists
 
 
 def get_remote(cur_user_id, offset=0, limit=20):
@@ -3005,7 +3006,7 @@ def get_remote(cur_user_id, offset=0, limit=20):
         remote.extend([feed_banner, discover_banner])
         limit -=2
 
-    list_dicts = get_top_level_lists(offset=offset, limit=limit)
+    list_dicts = lists_to_dict(get_top_level_lists(offset=offset, limit=limit), cur_user_id)
     remote.extend([{'type':'banner', 'content_type':'list', 'list':list_dict} for list_dict in list_dicts])
 
     count = len(remote)
