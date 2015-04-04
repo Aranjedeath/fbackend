@@ -400,7 +400,7 @@ def get_users_stats(user_ids, cur_user_id=None):
                                                     AND questions.is_answered=false) AS question_count,
                                             
                                             (SELECT count(*) FROM profile_requests
-                                                WHERE profile_requests.request_to = users.id AND
+                                                WHERE profile_requests.request_for = users.id AND
                                                       profile_requests.request_from = :cur_user_id) AS is_requested
 
                                     FROM users
