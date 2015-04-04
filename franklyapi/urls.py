@@ -120,7 +120,7 @@ api.add_resource(ImageResizer, '/image_resize')
 api.add_resource(ReceiveSNSNotifications, '/email/report')
 api.add_resource(PublicDocumentation, '/documentation')
 
-api.add_resource(QuoraAnswerAuthorSuggest, '/quora/answer_author/suggest')
+api.add_resource(AnswerAuthorSuggest, '/suggest/answer_author')
 
 
 '''

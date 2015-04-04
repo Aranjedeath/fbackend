@@ -2587,12 +2587,12 @@ class PublicDocumentation(restful.Resource):
 
 
 
-class QuoraAnswerAuthorSuggest(restful.Resource):
+class AnswerAuthorSuggest(restful.Resource):
     get_parser = reqparse.RequestParser()
     get_parser.add_argument('question_body', type=str, location='args', required=True)
     def get(self):
         args = self.get_parser.parse_args()
-        return controllers.quora_suggest_answer_author(args['question_body'])
+        return controllers.suggest_answer_author(args['question_body'])
 
 
 
