@@ -2711,6 +2711,7 @@ def user_upload_contacts(user_id, device_id, contacts):
     query_contacts = list(query_contacts)
     query_emails = list(query_emails)
 
+
 def get_resized_image(image_url, height=262, width=262):
     from image_processors import resize_video_thumb
     import os
@@ -2719,6 +2720,7 @@ def get_resized_image(image_url, height=262, width=262):
     if os.path.exists(image_path):
         os.remove(image_path)
     return resized_image
+
 
 def register_bad_email(email,reason_type,reason_subtype):
     new_bad_email = BadEmail(email,reason_type,reason_subtype)
@@ -2739,23 +2741,67 @@ def list_name_available(name):
             return False
     return not bool(List.query.filter(List.name==name).count())
 
+
 def list_display_name_available(name):
     if len(name)<2 or len(name)>40:
         return False
     return True
 
-def create_list(cur_user_id, name, display_name, icon_image=None, banner_image=None, owner=None):
+
+def lists_to_dict(lists, cur_user_id=None):
+    list_dicts = []
+    for l in lists:
+        list_dict = {
+                    'id'          :l.id
+                    'name'        :l.name
+                    'display_name':l.display_name
+                    'icon_url'    :l.icon_url
+                    'banner_url'  :l.banner_url
+                    'is_owner'    :l.owner==cur_user_id if cur_user_id else None
+                    'followable'  :l.followable
+                    'if_following':False
+                    }
+        list_dicts.append(list_dict)
+    return list_dicts
+
+
+def list_items_to_dict(list_items, cur_user_id=None):
+    list_item_dicts = []
+    for item in list_items:
+        if type(item) == User:
+            item_dict = {
+                                'id'             : item.id,
+                                'username'       : item.username,
+                                'first_name'     : item.first_name,
+                                'profile_picture': item.profile_picture,
+                                'gender'         : item.gender,
+                                'user_type'      : item.user_type,
+                                'bio'            : item.bio,
+                                'user_title'     : item.user_title,
+                                'is_following'   : False
+                            }
+            item_dict = {'type':'user', 'user':item_dict} 
+        
+        elif type(item) == List:
+            item_dict = lists_to_dict([item], cur_user_id)[0]
+            item_dict = {'type':'user', 'user':item_dict} 
+        list_item_dicts.append(item_dict)
+    return list_item_dicts
+
+
+def create_list(cur_user_id, name, display_name, icon_image=None, banner_image=None, owner=None, show_in_list=False):
     if not list_name_available(name):
         raise CustomExceptions.UserAlreadyExistsException('That list name is already taken')
     if not list_display_name_available(name):
         raise CustomExceptions.UserAlreadyExistsException('That list display name is not valid')
 
-    new_list = List(name=name, display_name=display_name, created_by=cur_user_id, owner=owner or cur_user_id)
+    new_list = List(name=name, display_name=display_name, created_by=cur_user_id, owner=owner or cur_user_id, show_in_list=show_in_list)
     db.session.add(new_list)
     db.session.commit()
-    return {'success':True, 'list':list_to_dict(new_list, cur_user_id)}
+    return {'success':True, 'list':lists_to_dict(new_list, cur_user_id)[0]}
 
-def edit_list(cur_user_id, list_id, name=None, display_name=None, icon_image=None, banner_image=None, owner=None):
+
+def edit_list(cur_user_id, list_id, name=None, display_name=None, icon_image=None, banner_image=None, owner=None, show_in_list=None):
     try:
         list_to_edit = List.query.filter(List.id==list_id, List.owner==cur_user_id, List.deleted==False).one()
     except NoResultFound:
@@ -2799,13 +2845,16 @@ def edit_list(cur_user_id, list_id, name=None, display_name=None, icon_image=Non
     if owner:
         list_to_edit.owner = owner
 
+    if show_in_list!=None:
+        list_to_edit.show_in_list = show_in_list
+
     if changed:
         list_to_edit.updated_at = datetime.datetime.now()
         list_to_edit.updated_by = cur_user_id
         db.session.add(list_to_edit)
         db.session.commit()
 
-    return {'success':True, 'list':list_to_dict(new_list, cur_user_id)}
+    return {'success':True, 'list':lists_to_dict(new_list, cur_user_id)[0]}
 
 
 def delete_list(cur_user_id, list_id):
@@ -2814,7 +2863,7 @@ def delete_list(cur_user_id, list_id):
     return {'success':True, 'list_id':list_id}
 
 
-def add_child_to_list(cur_user_id, parent_list_id, child_user_id=None, child_list_id=None, show_on_list=False, score=0):
+def add_child_to_list(cur_user_id, parent_list_id, child_user_id=None, child_list_id=None, show_on_list=False, score=0, featured=False):
     if (not child_user_id and not child_list_id) or (child_list_id and child_user_id):
         raise CustomExceptions.BadRequestException('Either child_user_id or child_list_id must be provided.')
     try:
@@ -2829,14 +2878,14 @@ def add_child_to_list(cur_user_id, parent_list_id, child_user_id=None, child_lis
 
 
     list_item = ListItem(parent_list_id=parent_list_id, created_by=cur_user_id, child_user_id=child_user_id,
-                child_list_id=child_list_id, show_on_list=show_on_list, score=score)
+                child_list_id=child_list_id, show_on_list=show_on_list, score=score, featured=featured)
 
     db.session.add(list_item)
     db.session.commit()
     return {'success':True, 'list_item':list_items_to_dict(list_item, cur_user_id)[0]}
 
 
-def edit_list_child(cur_user_id, parent_list_id, child_user_id, child_list_id, show_on_list=None, score=None, deleted=False):
+def edit_list_child(cur_user_id, parent_list_id, child_user_id, child_list_id, show_on_list=None, score=None, deleted=False, featured=None):
     if (not child_user_id and not child_list_id) or (child_list_id and child_user_id):
         raise CustomExceptions.BadRequestException('Either child_user_id or child_list_id must be provided.')
     try:
@@ -2859,6 +2908,8 @@ def edit_list_child(cur_user_id, parent_list_id, child_user_id, child_list_id, s
         list_item.score = score
     if deleted != None:
         list_item.deleted = deleted
+    if featured != None:
+        list_item.featured = featured
 
     db.session.add(list_item)
     db.session.commit()
@@ -2866,26 +2917,56 @@ def edit_list_child(cur_user_id, parent_list_id, child_user_id, child_list_id, s
 
 
 def get_list_items(cur_user_id, list_id, offset=0, limit=10):
-    if len(list_id)>30:
-        parent_list = List.query.filter(List.id==list_id, List.deleted==False).one()
-    else:
-        parent_list = List.query.filter(List.name==list_id, List.deleted==False).one()
+    try:
+        if len(list_id)>30:
+            parent_list = List.query.filter(List.id==list_id, List.deleted==False).one()
+        else:
+            parent_list = List.query.filter(List.name==list_id, List.deleted==False).one()
 
 
-    list_items = ListItem.query.filter(ListItem.parent_list_id==list_id,
-                                            ListItem.deleted==False,
-                                            ListItem.show_on_list==True
-                                        ).order_by(ListItem.score
-                                        ).offset(offset
-                                        ).limit(limit
-                                        ).all()
+        list_items = ListItem.query.filter(ListItem.parent_list_id==list_id,
+                                                ListItem.deleted==False,
+                                                ListItem.show_on_list==True
+                                            ).order_by(ListItem.score
+                                            ).offset(offset
+                                            ).limit(limit
+                                            ).all()
 
-    count = len(list_items)
-    next_index = -1 if count<limit else offset+limit
+        count = len(list_items)
+        next_index = -1 if count<limit else offset+limit
 
-    return {'list_items':list_items_to_dict(list_items, cur_user_id), 
-            'list_id':parent_list.id, 'count':count,
-            'next_index':next_index}
+        return {'list_items':list_items_to_dict(list_items, cur_user_id), 
+                'list_id':parent_list.id,
+                'count':count,
+                'next_index':next_index}
+    except NoResultFound:
+        raise CustomExceptions.ObjectNotFoundException('The list does not exist or has been deleted')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

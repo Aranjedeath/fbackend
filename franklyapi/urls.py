@@ -77,6 +77,9 @@ api.add_resource(BadUsernames, '/utils/badusernames')
 api.add_resource(BucketName, '/utils/bucket_name')
 
 
+api.add_resource(GetListItems, '/list/items')
+api.add_resource(ListFollow, '/list/follow')
+
 api.add_resource(Logout, '/logout')
 api.add_resource(VideoView, '/videoview')
 

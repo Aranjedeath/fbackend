@@ -294,7 +294,7 @@ def question_to_dict(question, cur_user_id=None):
                             'profile_picture': users[question.question_author]['profile_picture'] if not question.is_anonymous else None,
                             'gender':users[question.question_author]['gender'],
                             'channel_id':'user_{user_id}'.format(user_id=users[question.question_author]['id'])
-
+                            
                             },
         'question_to':{
                         'id':users[question.question_to]['id'],
