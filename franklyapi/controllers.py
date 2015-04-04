@@ -3012,14 +3012,14 @@ def get_featured_users(cur_user_id, list_id, offset=0, limit=20):
                             ).filter(ListItem.parent_list_id==list_id,
                                         ListItem.deleted==False,
                                         ListItems.child_user_id!=None,
-                                        ListItem.show_on_list==True
+                                        ListItem.show_on_list==True,
                                         User.deleted==False
                                     ).order_by(ListItem.score
                                     ).offset(
                                     ).limit(
                                     ).all()
     user_dicts = guest_users_to_dict(users, cur_user_id)
-    user_dicts = [{'type':'user', 'user':user_dict for user_dict in user_dicts}]
+    user_dicts = [{'type':'user', 'user':user_dict} for user_dict in user_dicts]
     
     count = len(user_dicts)
     next_index = -1 if count<limit else offset+limit
@@ -3032,14 +3032,14 @@ def get_trending_users(cur_user_id, list_id, offset=0, limit=20):
                             ).filter(ListItem.parent_list_id==list_id,
                                         ListItem.deleted==False,
                                         ListItems.child_user_id!=None,
-                                        ListItem.show_on_list==True
+                                        ListItem.show_on_list==True,
                                         User.deleted==False
                                     ).order_by(ListItem.score
                                     ).offset(
                                     ).limit(
                                     ).all()
     user_dicts = guest_users_to_dict(users, cur_user_id)
-    user_dicts = [{'type':'user', 'user':user_dict for user_dict in user_dicts}]
+    user_dicts = [{'type':'user', 'user':user_dict} for user_dict in user_dicts]
     
     count = len(user_dicts)
     next_index = -1 if count<limit else offset+limit
