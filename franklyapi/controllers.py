@@ -3026,12 +3026,12 @@ def get_featured_users(cur_user_id, list_id, offset=0, limit=20):
         users = User.query.join(ListItem, User.id==ListItem.child_user_id
                                 ).filter(ListItem.parent_list_id==list_id,
                                             ListItem.deleted==False,
-                                            ListItems.child_user_id!=None,
+                                            ListItem.child_user_id!=None,
                                             ListItem.show_on_list==True,
                                             User.deleted==False
                                         ).order_by(ListItem.score
-                                        ).offset(
-                                        ).limit(
+                                        ).offset(offset
+                                        ).limit(limit
                                         ).all()
         users = User.query.filter(User.user_type==2).offset(offset).limit(limit).all()
         user_dicts = guest_users_to_dict(users, cur_user_id)
