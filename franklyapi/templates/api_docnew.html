@@ -1,0 +1,167 @@
+<html>
+<head>
+<meta charset="utf-8">
+<title>API Doc - Frankly.me API</title>
+<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="white">
+<link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+
+
+<script type="text/javascript">
+   var collapse_all = function(){
+                            var items = document.getElementsByClassName("collapse");
+                            console.log(items);
+                            $.map(items, function(i){i.setAttribute('class', 'collapse well')});
+
+                        };
+
+
+    var expand_all = function(){
+                            var items = document.getElementsByClassName("collapse");
+                            for(i=0; i<items.length; i++){
+                                items[i].setAttribute('class', 'collapse in well');
+                            }
+                        };
+
+
+</script>
+
+
+<head>
+
+<body>
+
+
+
+
+
+<div class="container">
+
+    <h2><a href="#">Frankly API doc</a></h2>
+
+<div class="explanatory">
+<h3>Request Arguments</h3>
+Every request should have the following headers:<br>
+<ul>
+    <li><code>X-Device_id</code> : For browsers the value should be <code>'web'</code>. For android/iOS devices, it should be the Device id of the device.
+
+    <li><code>X-Api-Key</code> : The API key provided to you for your application.
+    
+    <li><code>Content-Type</code> : For POST requests that require JSON arguments the <code>Content-Type</code> header should be set to <code>'application/json'</code>
+
+</ul><br>
+
+
+<h3>Authenticated Requests</h3>
+An authenticated requests must have the following request headers:
+<ul>
+    <li><code>X-Device_id</code> : For browsers the value should be <code>'web'</code>. For android/iOS devices, it should be the Device id of the device.
+    
+    <li><code>X-Token</code> : The access_token provided to the user on login/registration.
+
+    <li><code>X-Api-Key</code> : The API key provided to you for your application.
+
+
+</ul>
+
+<h3>Terminology</h3>
+
+Description of arguments for requests have following properties.
+<ul>
+    <li><b>Location</b> : The expected location of argument.<br>
+        <ul>
+            <li><code>args</code>: arguments should be in the query string
+            <li><code>form</code>: arguments should be sent in form data in a post request.
+            <li><code>json</code>: arguments should be json in a post request with <code>'application/json'</code> as <code>Content-Type</code>.
+        </ul>
+    <li><b>Required</b> : The argument is optional if required is <code>false</code>
+    <li><b>Type</b> : The data type of the argument's value. These are represented by Python default data types.
+    <li><b>Choices</b> : For arguments with choices defined, the value of the argument must be one of the given values in the choices.
+    <li><b>Default</b> : For optional arguments, it defines the default value.
+
+</ul>
+
+</div> 
+
+    <h3></h3>
+        
+        <div class="form-group">
+            <input class="form-control" id="searchinput" type="search" placeholder="Search..." />
+        </div>
+        <button class="btn" onclick="collapse_all()">Collapse All</button>
+        <button class="btn" onclick="expand_all()">Expand All</button>
+        <div id="searchlist" class="list-group">
+
+            {% for endpoint in endpoints %}
+                <div class="list-group-item">
+                    <div class="hidden" id="search_field">{{endpoint.url|e}}</div>
+                    <a class="list-group-item" style="background-color:#BCDEC1;" data-toggle="collapse" data-target="#{{endpoint.name}}">
+                        <code id='url'>
+                            <span id="search_field">{{endpoint.url|e}}</span>
+                        </code>&nbsp;
+                        <samp><b> {{endpoint.methods|join(' ')}} </b></samp>
+                        <i class="badge">&nbsp;
+                            <span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span>&nbsp;
+                        </i>
+                    </a>
+                    <div id="{{endpoint.name}}" class="collapse well">
+                            
+                        {% for method in endpoint.methods %}
+                            <div class="panel panel-info">
+                              <!-- Default panel contents -->
+                                <div class="panel-heading"><h3 class="panel-title">{{method}}</h3></div>
+                                <div class="panel-body">
+                                    <p>{{endpoint[method].docstring|replace('\n', '<br>')|safe}}</p>
+                                </div>
+                                <ul class="list-group">
+                                    {% for arg in endpoint[method].args %}
+                                        <li class="list-group-item">
+                                            <div class="row">
+                                                <div class="col-md-4">
+                                                    <code>{{arg.name}}</code>&nbsp;&nbsp;
+                                                    {% if arg.required == true %}
+                                                        <span class="label label-primary">Required</span>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="col-md-8">
+                                                    {{arg.help}}
+                                                    <br>&nbsp;
+                                                    {% if arg.get('location') %}
+                                                        <br><b>Location</b>: {{arg.location}}
+                                                    {% endif %}
+                                                    {% if arg.get('type') %}
+                                                        <br><b>Type</b>: <samp>{{arg.type}}</samp>
+                                                    {% endif %}
+                                                    {% if arg.get('choices') %}
+                                                        <br><b>Choices</b>: <samp>{{arg.choices|join(', ')}}</samp>
+                                                    {% endif %}
+                                                    {% if arg.get('default') %}
+                                                        <br><b>Default</b>: <samp>{{arg.default}}<samp>
+                                                    {% endif %}
+                                                        
+                                                </div>
+                                            </div>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+            
+        </div>
+</div>
+
+<script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+<script src="http://netdna.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+<script src="{{ url_for('static', filename='filter_list.js') }}"></script>
+<script>
+
+$('#searchlist').btsListFilter('#searchinput', {itemChild: 'span'});
+
+</script>
+</body>
+</html>

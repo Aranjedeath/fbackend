@@ -2728,4 +2728,165 @@ def register_bad_email(email,reason_type,reason_subtype):
     except Exception as e: 
         db.session.rollback()
         print e.message
-    return {'success':'true', 'email':email , 'reason':reason_type}     
+    return {'success':'true', 'email':email , 'reason':reason_type}
+
+
+def list_name_available(name):
+    if len(name)<2 or len(name)>30:
+        return False
+    for char in name:
+        if char not in config.ALLOWED_CHARACTERS:
+            return False
+    return not bool(List.query.filter(List.name==name).count())
+
+def list_display_name_available(name):
+    if len(name)<2 or len(name)>40:
+        return False
+    return True
+
+def create_list(cur_user_id, name, display_name, icon_image=None, banner_image=None, owner=None):
+    if not list_name_available(name):
+        raise CustomExceptions.UserAlreadyExistsException('That list name is already taken')
+    if not list_display_name_available(name):
+        raise CustomExceptions.UserAlreadyExistsException('That list display name is not valid')
+
+    new_list = List(name=name, display_name=display_name, created_by=cur_user_id, owner=owner or cur_user_id)
+    db.session.add(new_list)
+    db.session.commit()
+    return {'success':True, 'list':list_to_dict(new_list, cur_user_id)}
+
+def edit_list(cur_user_id, list_id, name=None, display_name=None, icon_image=None, banner_image=None, owner=None):
+    try:
+        list_to_edit = List.query.filter(List.id==list_id, List.owner==cur_user_id, List.deleted==False).one()
+    except NoResultFound:
+        raise CustomExceptions.ObjectNotFoundException('Either the list is deleted or you dont have permission to edit it.')
+    changed = False
+
+    if name:
+        if not list_name_available(name):
+            raise CustomExceptions.UserAlreadyExistsException('That list name is already taken')
+        list_to_edit.name = name
+        changed = True
+
+    if display_name:
+        if not list_display_name_available(name):
+            raise CustomExceptions.UserAlreadyExistsException('That list display name is not valid')
+        list_to_edit.display_name = display_name
+        changed = True
+
+    if icon_image:
+        tmp_path = '/tmp/request/{random_string}.jpeg'.format(random_string=uuid.uuid1().hex)
+        icon_image.save(tmp_path)
+        icon_image_url = media_uploader.upload_user_image(user_id=user_id, image_file_path=tmp_path, image_type='list_icon_image')
+        try:
+            os.remove(tmp_path)
+        except:
+            pass
+        list_to_edit.icon_image = icon_image_url
+        changed = True
+
+    if banner_image:
+        tmp_path = '/tmp/request/{random_string}.jpeg'.format(random_string=uuid.uuid1().hex)
+        banner_image.save(tmp_path)
+        banner_image_url = media_uploader.upload_user_image(user_id=user_id, image_file_path=tmp_path, image_type='list_banner_image')
+        try:
+            os.remove(tmp_path)
+        except:
+            pass
+        list_to_edit.banner_image = banner_image_url
+        changed = True
+
+    if owner:
+        list_to_edit.owner = owner
+
+    if changed:
+        list_to_edit.updated_at = datetime.datetime.now()
+        list_to_edit.updated_by = cur_user_id
+        db.session.add(list_to_edit)
+        db.session.commit()
+
+    return {'success':True, 'list':list_to_dict(new_list, cur_user_id)}
+
+
+def delete_list(cur_user_id, list_id):
+    success = List.query.filter(List.id==list_id, List.owner==cur_user_id).update({'deleted':True})
+    db.session.commit()
+    return {'success':True, 'list_id':list_id}
+
+
+def add_child_to_list(cur_user_id, parent_list_id, child_user_id=None, child_list_id=None, show_on_list=False, score=0):
+    if (not child_user_id and not child_list_id) or (child_list_id and child_user_id):
+        raise CustomExceptions.BadRequestException('Either child_user_id or child_list_id must be provided.')
+    try:
+        parent_list = List.query.filter(List.id==list_id, List.owner==cur_user_id, List.deleted==False).one()
+    except NoResultFound:
+        raise CustomExceptions.ObjectNotFoundException('Either the list is deleted or you dont have permission to edit it.')
+    if ListItem.query.filter(ListItem.parent_list_id==parent_list_id,
+                            ListItem.child_list_id==child_list_id,
+                            ListItem.child_user_id==child_user_id
+                        ).first():
+        raise CustomExceptions.BadRequestException('child_user_id or child_list_id is already a child of the parent list.')
+
+
+    list_item = ListItem(parent_list_id=parent_list_id, created_by=cur_user_id, child_user_id=child_user_id,
+                child_list_id=child_list_id, show_on_list=show_on_list, score=score)
+
+    db.session.add(list_item)
+    db.session.commit()
+    return {'success':True, 'list_item':list_items_to_dict(list_item, cur_user_id)[0]}
+
+
+def edit_list_child(cur_user_id, parent_list_id, child_user_id, child_list_id, show_on_list=None, score=None, deleted=False):
+    if (not child_user_id and not child_list_id) or (child_list_id and child_user_id):
+        raise CustomExceptions.BadRequestException('Either child_user_id or child_list_id must be provided.')
+    try:
+        parent_list = List.query.filter(List.id==list_id, List.owner==cur_user_id, List.deleted==False).one()
+    except NoResultFound:
+        raise CustomExceptions.ObjectNotFoundException('Either the list is deleted or you dont have permission to edit it.')
+
+    try:
+        list_item = ListItem.query.filter(ListItem.parent_list_id==parent_list_id,
+                            ListItem.child_list_id==child_list_id,
+                            ListItem.child_user_id==child_user_id
+                        ).one()
+    except NoResultFound:
+        raise CustomExceptions.ObjectNotFoundException('The given user_id or list_id is not a child of the parent list.')
+
+
+    if show_on_list != None:
+        list_item.show_on_list = show_on_list
+    if score != None:
+        list_item.score = score
+    if deleted != None:
+        list_item.deleted = deleted
+
+    db.session.add(list_item)
+    db.session.commit()
+    return {'success':True, 'list_item':list_items_to_dict(list_item, cur_user_id)[0]}
+
+
+def get_list_items(cur_user_id, list_id, offset=0, limit=10):
+    if len(list_id)>30:
+        parent_list = List.query.filter(List.id==list_id, List.deleted==False).one()
+    else:
+        parent_list = List.query.filter(List.name==list_id, List.deleted==False).one()
+
+
+    list_items = ListItem.query.filter(ListItem.parent_list_id==list_id,
+                                            ListItem.deleted==False,
+                                            ListItem.show_on_list==True
+                                        ).order_by(ListItem.score
+                                        ).offset(offset
+                                        ).limit(limit
+                                        ).all()
+
+    count = len(list_items)
+    next_index = -1 if count<limit else offset+limit
+
+    return {'list_items':list_items_to_dict(list_items, cur_user_id), 
+            'list_id':parent_list.id, 'count':count,
+            'next_index':next_index}
+
+
+
+
