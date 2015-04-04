@@ -118,15 +118,20 @@ def make_resp_multitype(current_user_id, resp, order_key, reverse_sort=True):
     post_objects = Post.query.filter(Post.id.in_(posts)).all()
     question_objects = Question.query.filter(Question.id.in_(questions)).all()
 
-    user_objects_json = guest_users_to_dict(user_objects, current_user_id)
-    user_objects_json = [{'type':'user', order_key:resp[u['id']][order_key], 'user':u} for u in user_objects_json]
+    user_objects_json = []
+    if user_objects:
+        user_objects_json = guest_users_to_dict(user_objects, current_user_id)
+        user_objects_json = [{'type':'user', order_key:resp[u['id']][order_key], 'user':u} for u in user_objects_json]
 
+    question_objects_json = []
+    if question_objects:
+        question_objects_json = questions_to_dict(question_objects, current_user_id)
+        question_objects_json = [{'type':'question', order_key:resp[q['id']][order_key], 'question':q} for q in question_objects_json]
 
-    question_objects_json = questions_to_dict(question_objects, current_user_id)
-    question_objects_json = [{'type':'question', order_key:resp[q['id']][order_key], 'question':q} for q in question_objects_json]
-
-    post_objects_json = posts_to_dict(post_objects, current_user_id)
-    post_objects_json = [{'type':'post', order_key:resp[p['id']][order_key], 'post':p} for p in post_objects_json]
+    post_objects_json = []
+    if post_objects:
+        post_objects_json = posts_to_dict(post_objects, current_user_id)
+        post_objects_json = [{'type':'post', order_key:resp[p['id']][order_key], 'post':p} for p in post_objects_json]
 
     final_list = user_objects_json + question_objects_json + post_objects_json
     final_list.sort(key=lambda item: item[order_key], reverse=reverse_sort)

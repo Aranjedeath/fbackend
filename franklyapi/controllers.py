@@ -370,6 +370,7 @@ def get_answer_count(user_id):
 
 
 def get_users_stats(user_ids, cur_user_id=None):
+    print user_ids
     from math import log, sqrt
     from datetime import datetime, timedelta
     trend_time = datetime.now() - timedelta(minutes = 5)
