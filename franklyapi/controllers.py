@@ -2802,7 +2802,7 @@ def list_items_to_dict(list_items, cur_user_id=None):
         
         elif type(item) == List:
             item_dict = lists_to_dict([item], cur_user_id)[0]
-            item_dict = {'type':'user', 'user':item_dict} 
+            item_dict = {'type':'list', 'list':item_dict} 
         list_item_dicts.append(item_dict)
     return list_item_dicts
 
@@ -2941,7 +2941,7 @@ def get_list_items(cur_user_id, list_id, offset=0, limit=20):
     try:
         if not list_id:
 
-            list_dicts = lists_to_dict(get_top_level_lists(offset=offset, limit=limit), cur_user_id)
+            list_dicts = list_items_to_dict(get_top_level_lists(offset=offset, limit=limit), cur_user_id)
         else:
             if len(list_id)>30:
                 parent_list = List.query.filter(List.id==list_id, List.deleted==False).one()
