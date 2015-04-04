@@ -82,8 +82,6 @@ api.add_resource(GetRemote, '/remote/get')
 api.add_resource(GetListFeed, '/list/feed')
 api.add_resource(GetListTrending, '/list/trending/<object_type>')
 api.add_resource(GetListFeatured, '/list/featured/<object_type>')
-api.add_resource(GetTrending, '/trending/<object_type>')
-api.add_resource(GetFeatured, '/featured/<object_type>')
 
 
 
