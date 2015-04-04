@@ -126,21 +126,15 @@ class UserScroll(Base):
     recycled_upto      = Column(Integer, default=0)
     last_recycled_upto = Column(Integer, default=0)
     scrolled_upto      = Column(Integer, default=0)
+    feed_update_count  = Column(Integer, default=0)
+    fed_upto           = Column(DateTime)
     last_visit         = Column(DateTime, default=datetime.datetime.now())
+    last_fed           = Column(DateTime, default=datetime.datetime.now())
 
-    def __init__(self, user, recycled_upto=None, last_recycled_upto=None, scrolled_upto=None):
+    def __init__(self, user):
         self.user = user
-
-        if recycled_upto:
-            self.recycled_upto = recycled_upto
-
-        if last_recycled_upto:
-            self.last_recycled_upto = last_recycled_upto
-
-        if scrolled_upto:
-            self.scrolled_upto = scrolled_upto
-
         self.last_visit = datetime.datetime.now()
+
 
     def __repr__(self):
         return '<UserScroll: %r --scrolled: %r --recycled: %r >' %(self.user, self.scrolled_upto, self.recycled_upto)

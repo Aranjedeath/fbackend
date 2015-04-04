@@ -1,11 +1,13 @@
 import datetime
+from sqlalchemy import or_
+from sqlalchemy.sql import func
 from sqlalchemy.sql import text
 
 from app import db
 
-from models import User, Post, Question, DiscoverList
-from object_dict import questions_to_dict, guest_user_to_dict, posts_to_dict
-
+from models import User, Post, Question, UserScroll, Upvote, Question
+from object_dict import question_to_dict, posts_to_dict, thumb_user_to_dict
+from configs import config
 
 def get_home_feed(cur_user_id, offset, limit=10):
     from math import sqrt
@@ -14,8 +16,9 @@ def get_home_feed(cur_user_id, offset, limit=10):
     celebs_following = get_celebs_following(cur_user_id)
 
     
-    last_fed = get_and_update_fed_marker(cur_user_id, offset)
+    fed_upto = get_and_update_fed_marker(cur_user_id, offset)
 
+    print 'fed_upto', fed_upto
 
     # TODO: rewrite query to get feeds after LAST FED MARKER
     posts = db.session.execute(text("""SELECT posts.show_after, posts.id, posts.question_author,
@@ -28,10 +31,10 @@ def get_home_feed(cur_user_id, offset, limit=10):
                                         AND user_follows.user = :cur_user_id and user_follows.unfollowed=:unfollowed 
                                         #AND timestampdiff(minute, user_follows.timestamp, now()) >= posts.show_after 
                                         WHERE deleted=false AND answer_author != :cur_user_id
-                                        AND posts.timestamp > :last_fed
+                                        AND posts.timestamp < :fed_upto
 
                                         ORDER BY posts.timestamp DESC,posts.show_after DESC LIMIT :offset, :limit"""),
-                                    params = {'cur_user_id':cur_user_id, 'offset':offset, 'limit':limit, 'unfollowed':False, 'last_fed':user_scroll.last_fed}
+                                    params = {'cur_user_id':cur_user_id, 'offset':offset, 'limit':limit, 'unfollowed':False, 'fed_upto':fed_upto}
                                 )
 
     posts = list(posts)
@@ -115,22 +118,27 @@ def get_and_update_fed_marker(cur_user_id, offset):
             user_scroll = UserScroll(cur_user_id)
             db.session.add(user_scroll)
             db.session.commit()
+            print 'user_scroll data created'
+        else:
+            print 'user_scroll data found'
 
         if offset == 0:
             if check_time_threshold_crossed(user_scroll.last_fed,config.HOME_FEED_UPDATE_HOURS):
                 if check_time_threshold_crossed(user_scroll.last_fed,config.HOME_FEED_UPDATE_LIMIT_REFRESH_HOURS):
                     user_scroll.feed_update_count = 0
-                if user_scroll.feed_update_count >= config.HOME_FEED_UPDATE_LIMIT:
-                    user_scroll.fed_upto = get_updated_feed_marker()
+                    print 'feed update count reset'
+                if user_scroll.feed_update_count < config.HOME_FEED_UPDATE_LIMIT:
+                    user_scroll.fed_upto = get_updated_feed_marker(cur_user_id,user_scroll.fed_upto)
                     user_scroll.feed_update_count += 1
+                    print 'feed update count : ', user_scroll.feed_update_count
 
                 user_scroll.last_fed = datetime.datetime.now()
                 db.session.commit()
-        return user_scroll.last_fed
+        return user_scroll.fed_upto
     else:
         return None
 
-def get_updated_feed_marker(cur_user_id):
+def get_updated_feed_marker(cur_user_id,fed_upto):
     count = 1
     result = db.session.execute(text("""SELECT count(*)
                                         FROM posts 
@@ -138,20 +146,22 @@ def get_updated_feed_marker(cur_user_id):
                                             ON user_follows.followed = posts.answer_author
                                                AND user_follows.user = :cur_user_id
                                                and user_follows.unfollowed=:unfollowed 
-                                               # AND timestampdiff(minute, user_follows.timestamp, now()) >= posts.show_after 
                                         WHERE deleted=false AND answer_author != :cur_user_id
-                                        and (select count(*) from )
+                                        AND posts.timestamp >= :fed_upto
                                         ORDER BY
                                             posts.timestamp 
                                     """),
                                 params = {
                                     'cur_user_id':cur_user_id,
-                                    'unfollowed':False}
+                                    'unfollowed':False,
+                                    'fed_upto':fed_upto}
                                 )
     for row in result:
         count = row[0]
 
     offset = max(count/10,1)
+    print 'count: ', count
+    print 'shifted marker :', offset, 'places'
 
     result = db.session.execute(text("""SELECT posts.timestamp
                                         FROM posts 
@@ -159,9 +169,8 @@ def get_updated_feed_marker(cur_user_id):
                                             ON user_follows.followed = posts.answer_author
                                                AND user_follows.user = :cur_user_id
                                                and user_follows.unfollowed=:unfollowed 
-                                               # AND timestampdiff(minute, user_follows.timestamp, now()) >= posts.show_after 
                                         WHERE deleted=false AND answer_author != :cur_user_id
-                                        and (select count(*) from )
+                                        AND posts.timestamp >= :fed_upto
                                         ORDER BY
                                             posts.timestamp 
                                         Limit :offset, 1
@@ -169,13 +178,14 @@ def get_updated_feed_marker(cur_user_id):
                                 params = {
                                     'cur_user_id':cur_user_id,
                                     'unfollowed':False,
-                                    'offset':offset}
+                                    'offset':offset,
+                                    'fed_upto':fed_upto}
                                 )
     for row in result:
         marker = row[0]
 
     return marker
 
-def check_user_last_fed_threshold_cross(last_fed):
+def check_time_threshold_crossed(last_fed, hours):
     return ((datetime.datetime.now() - last_fed).total_seconds() >
-            config.HOME_FEED_UPDATE_HOURS * 3600)
+            hours * 3600)
