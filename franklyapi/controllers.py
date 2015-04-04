@@ -35,7 +35,7 @@ from app import redis_client, raygun, db, redis_views, redis_pending_post
 
 from object_dict import user_to_dict, guest_user_to_dict,\
                         thumb_user_to_dict, question_to_dict,questions_to_dict, post_to_dict, comment_to_dict,\
-                        comments_to_dict, posts_to_dict, make_celeb_questions_dict, media_dict,invitable_to_dict
+                        comments_to_dict, posts_to_dict, make_celeb_questions_dict, media_dict,invitable_to_dict, guest_users_to_dict
 
 from video_db import add_video_to_db
 from database import get_item_id
@@ -3052,12 +3052,12 @@ def get_trending_users(cur_user_id, list_id, offset=0, limit=20):
         users = User.query.join(ListItem, User.id==ListItem.child_user_id
                                 ).filter(ListItem.parent_list_id==list_id,
                                             ListItem.deleted==False,
-                                            ListItems.child_user_id!=None,
+                                            ListItem.child_user_id!=None,
                                             ListItem.show_on_list==True,
                                             User.deleted==False
                                         ).order_by(ListItem.score
-                                        ).offset(
-                                        ).limit(
+                                        ).offset(offset
+                                        ).limit(limit
                                         ).all()
         users = User.query.filter(User.user_type==2).offset(offset).limit(limit).all()
         user_dicts = guest_users_to_dict(users, cur_user_id)
@@ -3106,7 +3106,7 @@ def get_trending_posts(cur_user_id, list_id, offset=0, limit=20):
 def get_featured_questions(cur_user_id, list_id, offset=0, limit=20):
     try:
         parent_list = get_list_from_name_or_id(list_id)
-        questions = Question.query.filter(Question.deleted==False,
+        questions = Question.query.filter(Question.deleted==False, Question.is_answered==False, Question.is_ignored==False, Question.flag.in_([1, 2]),
                                 Question.question_to.in_([u.id for u in User.query.filter(User.user_type==2)])).offset(offset).limit(limit).all()
 
         question_dicts = questions_to_dict(questions, cur_user_id)
@@ -3122,7 +3122,7 @@ def get_featured_questions(cur_user_id, list_id, offset=0, limit=20):
 def get_trending_questions(cur_user_id, list_id, offset=0, limit=20):
     try:
         parent_list = get_list_from_name_or_id(list_id)
-        questions = Question.query.filter(Question.deleted==False,
+        questions = Question.query.filter(Question.deleted==False, Question.is_answered==False, Question.is_ignored==False, Question.flag.in_([1, 2]),
                                 Question.question_to.in_([u.id for u in User.query.filter(User.user_type==2)])).offset(offset).limit(limit).all()
 
         question_dicts = questions_to_dict(questions, cur_user_id)
@@ -3138,7 +3138,18 @@ def get_trending_questions(cur_user_id, list_id, offset=0, limit=20):
 def get_list_feed(cur_user_id, list_id, offset=0, limit=20):
     try:
         parent_list = get_list_from_name_or_id(list_id)
-        return get_new_discover(cur_user_id, offset, limit, device_id='web', version_code=0)
+        questions = get_trending_questions(cur_user_id, 'sports', offset=offset, limit=4)['stream']
+        question_count = len(questions)
+        limit -= question_count
+
+        resp = get_new_discover(cur_user_id, offset, limit, device_id='web', version_code=0)
+        if resp['stream']:
+            for question in questions:
+                idx = random.randint(0, resp['count'])
+                resp['stream'].insert(idx, question)
+                resp['count'] += 1
+        return resp
+
     except NoResultFound:
         raise CustomExceptions.ObjectNotFoundException('List has been deleted or does not exit')
 
