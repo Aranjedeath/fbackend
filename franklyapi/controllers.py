@@ -453,7 +453,6 @@ def get_user_stats(user_id):
     follower_count = get_follower_count(user_id)
     view_count = get_user_view_count(user_id)
     answer_count = get_answer_count(user_id)
-    is_about_me_requested = get_aboutme_request(user_id)
 
     inflated_stat = InflatedStat.query.filter(InflatedStat.user == user_id).first()
     if inflated_stat:
