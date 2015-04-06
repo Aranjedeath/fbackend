@@ -132,31 +132,31 @@ def following_answered_question(author_id, question_body, nobject, upvoters, not
 
 
 
-''' Sent if the user's question is becoming popular
-on count of number of upvotes received
-'''
-def share_popular_question(user_id, question_id, upvote_count, question_body,
-                           notification_type='post-add-following_user'):
-
-    text = helper.popular_question_text(question_body=question_body, upvote_count=upvote_count)
-    k = key[notification_type]
-    link = k['url'] % question_id
-
-    notification = Notification(type=notification_type, text=text,
-                                link=link, object_id=question_id,
-                                icon=None, created_at=datetime.datetime.now(),
-                                manual=False, id=get_item_id())
-    db.session.add(notification)
-    db.session.commit()
-
-    add_notification_for_user(notification_id=notification.id,
-                                user_ids=[user_id],
-                                list_type='me',
-                                push_at=datetime.datetime.now()
-                            )
-
-
-    return notification
+# ''' Sent if the user's question is becoming popular
+# on count of number of upvotes received
+# '''
+# def share_popular_question(user_id, question_id, upvote_count, question_body,
+#                            notification_type='post-add-following_user'):
+#
+#     text = helper.popular_question_text(question_body=question_body, upvote_count=upvote_count)
+#     k = key[notification_type]
+#     link = k['url'] % question_id
+#
+#     notification = Notification(type=notification_type, text=text,
+#                                 link=link, object_id=question_id,
+#                                 icon=None, created_at=datetime.datetime.now(),
+#                                 manual=False, id=get_item_id())
+#     db.session.add(notification)
+#     db.session.commit()
+#
+#     add_notification_for_user(notification_id=notification.id,
+#                                 user_ids=[user_id],
+#                                 list_type='me',
+#                                 push_at=datetime.datetime.now()
+#                             )
+#
+#
+#     return notification
 
 ''' Sends out a
 notification for a new celebrity that has joined the paltform.
