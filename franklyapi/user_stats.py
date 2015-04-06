@@ -1,9 +1,16 @@
-from models import Question, Upvote, InflatedStat, User, Follow, Like
+from models import Question, Upvote, InflatedStat, User, Follow, Like, Post
 import time
+
+
 
 def get_post_like_count(post_id):
     count = Like.query.filter(Like.post==post_id, Like.unliked==False).count()
     return count
+
+
+def get_post_view_count(post_id):
+    view_count = Post.query.with_entities('view_count').filter(Post.id==post_id).one().view_count
+    return view_count
 
 def get_question_upvote_count(question_id):
     from math import sqrt, log
@@ -29,6 +36,9 @@ def get_question_upvote_count(question_id):
     return count
 
 
+def get_comment_count(post_id):
+    return Comment.query.filter(Comment.on_post==post_id, Comment.deleted==False).count()
+
 def get_follower_count(user_id):
     from math import log, sqrt
     from datetime import datetime, timedelta
@@ -48,3 +58,10 @@ def get_follower_count(user_id):
             count = count_to_pump + count_as_such
 
     return count
+
+def get_answer_count(user_id):
+    return Post.query.filter(Post.answer_author==user_id, Post.deleted==False).count()
+
+def get_following_count(user_id):
+    return Follow.query.filter(Follow.user==user_id, Follow.unfollowed==False).count()
+
