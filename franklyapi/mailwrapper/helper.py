@@ -51,16 +51,15 @@ dict = {
                                     us on app or website and we will help you retrieve them.
                                     We miss you and wish to hear from you more often...'''
 
-                        },
-    "sapru"            : {
-        "subject" : " Win an Indian Jersey on Frankly.me!",
-
-                         "body" : '''
-                                     You have just asked a question from Jatin Sapru on FranklyMe <br/><br//>
-                                     %s <br/> <br/>
-                                     You've now officially entered the <b>#WinIndiaJersey</b> contest! <br/><br/>
-                                     The users with the top most up-voted questions get a chance to win an authentic Indian jersey signed by <b>Kapil Dev, VVS Laxman, Murali Kartik,</b> etc.
-                                     Just get your question up-voted by your friends and family to win your own Indian jersey and support Team India this Cricket World Cup!
-                                     <br/><br/>For any other information, write to us at hi@frankly.me .'''
                         }
+}
+
+team_signature = "Lots of love, <br/> Frankly.me Team"
+personal_signature = "Pallavi, <br/> Community Manager <br/> Frankly.me"
+
+render_dict = {
+    "logo_target_url": "http://frankly.me",
+    "logo_image_url": "http://frankly.me/images/icons/logoTrimmedOrange.png",
+    "company_name": "Frankly.me",
+    "signature": personal_signature
 }

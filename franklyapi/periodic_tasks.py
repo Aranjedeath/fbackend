@@ -2,7 +2,7 @@ from video_db import update_view_count_to_db, redis_views, update_total_view_cou
 from app import db
 from models import User
 from analytics import stats
-from mailwrapper import email_helper
+from mailwrapper import make_email
 from notification import notification_decision, push_notification
 
 import datetime
@@ -138,7 +138,7 @@ def twice_a_day_report():
 @ Every 6 hours
 '''
 def heartbeat():
-    email_helper.cron_job_update()
+    make_email.cron_job_update()
 
 
 
@@ -170,7 +170,7 @@ if __name__ == '__main__':
     try:
         method_dict[args[0]]()
     except Exception as e:
-        email_helper.cron_job_update(args[0], traceback.format_exc(e))
+        make_email.cron_job_update(args[0], traceback.format_exc(e))
 
 
 

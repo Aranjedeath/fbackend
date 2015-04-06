@@ -18,6 +18,7 @@ RAYGUN_PASSWORD = "dexter123"
 
 AWS_KEY = 'AKIAJ72DWIKVJZNTD2VA'
 AWS_SECRET = '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'
+AWS_REGION = 'us-east-1'
 CURRENT_S3_BUCKET_NAME = 'franklymestorage'
 OLD_S3_BUCKET_NAME = 'franklyapp'
 

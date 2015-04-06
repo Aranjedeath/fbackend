@@ -41,7 +41,7 @@ from video_db import add_video_to_db
 from database import get_item_id
 from trends import most_liked_users
 
-from mailwrapper import email_helper
+from mailwrapper import make_email
 
 
 
@@ -179,7 +179,7 @@ def get_device_type(device_id):
 def send_registration_mail(user_id, mail_password=False):
     user = User.query.filter(User.id==user_id).one()
     if 'twitter' not in user.registered_with:
-        email_helper.welcome_mail(user.email, user.first_name, user.username, user.password)
+        make_email.welcome_mail(user.email, user.first_name, user.username, user.password)
 
 
 def new_registration_task(user_id, mail_password=True):
@@ -1171,7 +1171,7 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_b
             if user.id == question_to:
                 question_to = user
 
-        email_helper.question_asked(receiver_email=mail_reciever.email,
+        make_email.question_asked(receiver_email=mail_reciever.email,
                                     receiver_name=mail_reciever.first_name,
                                     question_to_name=question_to.first_name,
                                     is_first=is_first)
@@ -1765,7 +1765,7 @@ def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None, visit=0)
 
 
 def create_forgot_password_token(username=None, email=None):
-    from mailwrapper import email_helper
+    from mailwrapper import make_email
     try:
         import hashlib
         if username:
@@ -1789,7 +1789,7 @@ def create_forgot_password_token(username=None, email=None):
 
         forgot_token = ForgotPasswordToken(user=user.id, token=token, email=user.email)
         db.session.add(forgot_token)
-        email_helper.forgot_password(user.email, token=token, reciever_name=user.first_name)
+        make_email.forgot_password(user.email, token=token, reciever_name=user.first_name)
         db.session.commit()
 
         return {'success':True}
