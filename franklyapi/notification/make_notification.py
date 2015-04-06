@@ -201,20 +201,27 @@ update the profile'''
 
 def user_profile_request(user_id, request_for, request_id, request_type=config.REQUEST_TYPE):
 
-    request_for = User.query.filter(User.id == request_for).one()
+
+    users = User.query.filter(User.id.in_([user_id, request_for])).all()
+
+    for u in users:
+        if u.id == user_id:
+            request_by = u
+        if u.id == request_for:
+            requested = u
 
     k = key[request_type]
 
     nobject = {
         'notification_type': request_type,
-        'text': helper.user_profile_request(requester_name=request_for.first_name),
-        'icon': request_for.profile_picture,
+        'text': helper.user_profile_request(requester_name=request_by.first_name),
+        'icon': request_by.profile_picture,
         'link': k['url'] % request_for,
         'object_id': request_id
     }
 
 
-    notification_logger(nobject=nobject, for_users=[request_for.id], push_at=datetime.datetime.now())
+    notification_logger(nobject=nobject, for_users=[requested.id], push_at=datetime.datetime.now())
 
 
 
