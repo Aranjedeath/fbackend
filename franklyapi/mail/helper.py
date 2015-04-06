@@ -1,3 +1,4 @@
+from configs import config
 dict = {
 
     "forgot_password": {
@@ -54,12 +55,11 @@ dict = {
                         }
 }
 
-team_signature = "Lots of love, <br/> Frankly.me Team"
-personal_signature = "Pallavi, <br/> Community Manager <br/> Frankly.me"
 
-render_dict = {
-    "logo_target_url": "http://frankly.me",
-    "logo_image_url": "http://frankly.me/images/icons/logoTrimmedOrange.png",
-    "company_name": "Frankly.me",
-    "signature": personal_signature
+mail_dict = {
+    "logo_target_url": config.WEB_URL,
+    "logo_image_url": config.LOGO_URL,
+    "company_name": config.COMPANY_NAME,
+    "signature": "Pallavi, <br/> Community Manager <br/> Frankly.me",
+    "team_signature": "Lots of love, <br/> Frankly.me Team"
 }

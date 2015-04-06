@@ -41,7 +41,7 @@ from video_db import add_video_to_db
 from database import get_item_id
 from trends import most_liked_users
 
-from mailwrapper import make_email
+from mail import make_email
 
 
 
@@ -179,7 +179,9 @@ def get_device_type(device_id):
 def send_registration_mail(user_id, mail_password=False):
     user = User.query.filter(User.id==user_id).one()
     if 'twitter' not in user.registered_with:
-        make_email.welcome_mail(user.email, user.first_name, user.username, user.password)
+        make_email.welcome_mail(receiver_email=user.email, receiver_name=user.first_name,
+                                receiver_username=user.username, receiver_password=user.password,
+                                user_id=user.id)
 
 
 def new_registration_task(user_id, mail_password=True):
@@ -1174,6 +1176,7 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_b
         make_email.question_asked(receiver_email=mail_reciever.email,
                                     receiver_name=mail_reciever.first_name,
                                     question_to_name=question_to.first_name,
+                                    question_id=question.id,
                                     is_first=is_first)
 
     resp = {'success':True, 'id':str(question.id), 'question':question_to_dict(question)}
@@ -1765,7 +1768,7 @@ def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None, visit=0)
 
 
 def create_forgot_password_token(username=None, email=None):
-    from mailwrapper import make_email
+    from mail import make_email
     try:
         import hashlib
         if username:
@@ -1789,7 +1792,7 @@ def create_forgot_password_token(username=None, email=None):
 
         forgot_token = ForgotPasswordToken(user=user.id, token=token, email=user.email)
         db.session.add(forgot_token)
-        make_email.forgot_password(user.email, token=token, reciever_name=user.first_name)
+        make_email.forgot_password(user.email, token=token, reciever_name=user.first_name, user_id=user.id)
         db.session.commit()
 
         return {'success':True}

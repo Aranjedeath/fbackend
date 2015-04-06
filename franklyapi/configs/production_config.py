@@ -61,6 +61,10 @@ GCM_API_KEY = 'AIzaSyBKa5pjzTdbdLwMcYkic1yK1q_fbHljbxY'
 
 WEB_URL = 'http://frankly.me'
 
+COMPANY_NAME = "Frankly"
+
+LOGO_URL = "http://frankly.me/images/icons/logoTrimmedOrange.png"
+
 HOSTNAME = socket.gethostname()
 
 GCM_API_KEY = 'AIzaSyBKa5pjzTdbdLwMcYkic1yK1q_fbHljbxY'
@@ -94,3 +98,5 @@ DAILY_CONTENT_MAIL_RECIPIENTS = ['varun@frankly.me', 'swati@frankly.me', 'ferhee
 GLOBAL_PUSH_NOTIFICATION_DAY_LIMIT = 3
 
 REQUEST_TYPE = ['intro-video-request']
+
+FROM_EMAIL_ADDRESS = "Frankly@franklymail.com"

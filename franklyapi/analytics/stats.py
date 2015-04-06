@@ -4,7 +4,7 @@ import json
 from sqlalchemy.sql import text, func
 from app import db
 from models import *
-from mailwrapper import email_helper
+from mailwrapper import admin_email
 from models import User
 from stats_html_helper import *
 from configs import production_config as config
@@ -32,7 +32,7 @@ def weekly_macro_metrics():
         report += "</tr>"
 
     report += "</tbody></table>"
-    email_helper.send_weekly_report(config.WEEKLY_MAIL_RECIPIENTS, report)
+    admin_email.send_weekly_report(config.WEEKLY_MAIL_RECIPIENTS, report)
 
 
 def daily_content_report():
@@ -60,7 +60,7 @@ def daily_content_report():
 
     body = add_style() + msg1 + msg2 + msg3 + msg4 + msg5 + msg6 + msg7
 
-    email_helper.content_report(config.DAILY_CONTENT_MAIL_RECIPIENTS, 'Daily Report', body)
+    admin_email.content_report(config.DAILY_CONTENT_MAIL_RECIPIENTS, 'Daily Report', body)
 
 
 def intra_day_content_report(interval):
@@ -74,7 +74,7 @@ def intra_day_content_report(interval):
 
     body = add_style() + msg1 + msg2 + msg3
 
-    email_helper.content_report(config.DAILY_CONTENT_MAIL_RECIPIENTS, 'Twice a day Report', body)
+    admin_email.content_report(config.DAILY_CONTENT_MAIL_RECIPIENTS, 'Twice a day Report', body)
 
 
 def day_distribution_questions_asked():

@@ -4,7 +4,7 @@ from models import AccessToken, Notification, UserPushNotification
 from notification import helper
 from app import db
 from sqlalchemy.sql import text
-from mailwrapper import email_helper
+from mailwrapper import admin_email
 
 
 import gcm
@@ -118,7 +118,7 @@ def stats():
 
     body += '</tbody></table>'
 
-    email_helper.push_stats(body)
+    admin_email.push_stats(body)
 
 class GCM():
 

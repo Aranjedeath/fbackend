@@ -2,7 +2,7 @@ from video_db import update_view_count_to_db, redis_views, update_total_view_cou
 from app import db
 from models import User
 from analytics import stats
-from mailwrapper import make_email
+from mail import admin_email
 from notification import notification_decision, push_notification
 
 import datetime
@@ -138,7 +138,7 @@ def twice_a_day_report():
 @ Every 6 hours
 '''
 def heartbeat():
-    make_email.cron_job_update()
+    admin_email.cron_job_update()
 
 
 
