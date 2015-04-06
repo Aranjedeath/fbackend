@@ -17,7 +17,7 @@ key = helper.key
 
 def send(notification_id, user_id, k=None, source='application'):
     if notification_decision.\
-            count_of_push_notifications_sent(user_id=user_id) <= 50: #config.GLOBAL_PUSH_NOTIFICATION_DAY_LIMIT:
+            count_of_push_notifications_sent(user_id=user_id) <= config.GLOBAL_PUSH_NOTIFICATION_DAY_LIMIT:
 
         print 'Still under limits for number of daily notifications'
         from controllers import get_item_id
