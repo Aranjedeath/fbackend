@@ -2,9 +2,9 @@ from app import db
 from sqlalchemy.sql import text
 from mailwrapper import email_helper
 from CustomExceptions import ObjectNotFoundException
-from models import User, Question, Notification, UserNotificationInfo, UserPushNotification
+from models import Question, Notification, UserNotificationInfo, UserPushNotification
 
-import controllers
+import fudger
 import helper
 import make_notification as notification
 import push_notification as push
@@ -57,7 +57,7 @@ def post_notifications(post_id):
             print 'Notification id: ', notification_id
             for user in results:
 
-                push.push_notification(notification_id=notification_id, user_id=user[0])
+                push.send(notification_id=notification_id, user_id=user[0])
                 email_helper.question_answered(receiver_email=user[2], receiver_name=user[1],
                                                celebrity_name=answer_author_name,
                                                question=question_body, web_link=link,
@@ -91,7 +91,7 @@ def decide_question_push(user_id, question_id):
         print 'Good time bro'
         if questions_today > 10 or is_popular(user_id):
 
-            upvotes = controllers.get_question_upvote_count(question_id)
+            upvotes = fudger.get_question_upvote_count(question_id)
             print 'Upvotes are good'
             if upvotes > 10:
                 return True
@@ -113,7 +113,7 @@ def push_question_notification(question_id):
                                                UserPushNotification.user_id == user_id).count()
     print 'pushed is:', pushed
     if pushed == 0 and decide_question_push(user_id=user_id, question_id=question_id):
-        push.push_notification(notification_id=n.id, user_id=user_id)
+        push.send(notification_id=n.id, user_id=user_id)
 
 
 def is_popular(user_id):
@@ -159,7 +159,7 @@ def prompt_sharing_popular_question():
     for row in results:
         upvote_count =row[0] + (row[1] if row[1] is not None else 0)
         if upvote_count > 10:
-           upvote_count = controllers.get_question_upvote_count(row[4])
+           upvote_count = fudger.get_question_upvote_count(row[4])
            notification.share_popular_question(user_id=row[2], question_id=row[4],
                                     question_body=row[3], upvote_count=upvote_count)
 
@@ -187,7 +187,7 @@ def user_followers_milestone_notifications():
                                                         '''))
 
     for row in result:
-        check_and_make_milestone('user_followers_milestone', row[0], row[0], controllers.get_follower_count(row[0]))
+        check_and_make_milestone('user_followers_milestone', row[0], row[0], fudger.get_follower_count(row[0]))
 
 
 '''
@@ -197,10 +197,11 @@ user's likes
 
 
 def decide_post_milestone(post_id, user_id):
-    check_and_make_milestone('post-likes-milestone', user_id, post_id, controllers.get_post_like_count(post_id))
+
+    check_and_make_milestone('post-likes-milestone', user_id, post_id, fudger.get_post_like_count(post_id))
 
 def decide_follow_milestone(user_id):
-    check_and_make_milestone('user-followers-milestone', user_id, user_id, controllers.get_follower_count(user_id))
+    check_and_make_milestone('user-followers-milestone', user_id, user_id, fudger.get_follower_count(user_id))
 
 def question_upvotes_milestone_notifications():
     result = db.session.execute(text('''SELECT distinct pl.question as question, questions.question_author
@@ -217,7 +218,7 @@ def question_upvotes_milestone_notifications():
                                                         '''))
     
     for row in result:
-        check_and_make_milestone('post_likes', row[1], row[0], controllers.get_post_like_count(row[0]))
+        check_and_make_milestone('post_likes', row[1], row[0], fudger.get_post_like_count(row[0]))
 
 
 def check_and_make_milestone(milestone_name, user_id, associated_item_id, count):
