@@ -1,4 +1,5 @@
 from models import Question, Upvote, InflatedStat, User, Follow, Like
+import time
 
 def get_post_like_count(post_id):
     count = Like.query.filter(Like.post==post_id, Like.unliked==False).count()
@@ -13,8 +14,10 @@ def get_question_upvote_count(question_id):
     time_factor = 0
     if t:
         time_factor = int(time.mktime(t.timetuple())) % 7
-    count_to_pump = Upvote.query.filter(Upvote.question==question_id, Upvote.downvoted==False, Upvote.timestamp <= d).count()
-    count_as_such = Upvote.query.filter(Upvote.question==question_id, Upvote.downvoted==False, Upvote.timestamp > d).count()
+    count_to_pump = Upvote.query.filter(Upvote.question==question_id, Upvote.downvoted==False,
+                                        Upvote.timestamp <= d).count()
+    count_as_such = Upvote.query.filter(Upvote.question==question_id, Upvote.downvoted==False,
+                                        Upvote.timestamp > d).count()
     if count_to_pump:
         count = int(11*count_to_pump+ log(count_to_pump, 2) + sqrt(count_to_pump)) + count_as_such
         count += time_factor
@@ -32,8 +35,10 @@ def get_follower_count(user_id):
     user = User.query.filter(User.id==user_id).one()
 
     d = datetime.now() - timedelta(minutes = 5)
-    count_to_pump =  Follow.query.filter(Follow.followed==user_id, Follow.unfollowed==False, Follow.timestamp <= d).count()
-    count_as_such = Follow.query.filter(Follow.followed==user_id, Follow.unfollowed==False, Follow.timestamp > d).count() +1
+    count_to_pump =  Follow.query.filter(Follow.followed==user_id, Follow.unfollowed==False,
+                                         Follow.timestamp <= d).count()
+    count_as_such = Follow.query.filter(Follow.followed==user_id, Follow.unfollowed==False,
+                                        Follow.timestamp > d).count() +1
     count = count_as_such + count_to_pump
 
     if user.user_type == 2:
