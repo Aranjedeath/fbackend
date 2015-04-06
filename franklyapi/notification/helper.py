@@ -29,7 +29,7 @@ key = {
     'comment-add-self_post':{
          'title': 'New comment',
          'text': '<commentator>',
-         'url': config.WEB_URL + '/p/%s',
+         'url': config.WEB_URL + '/p/%s/comments',
          'day-limit': 1,
          'label_one':'',
          'label_two': ''
@@ -70,7 +70,7 @@ key = {
     'intro-video-request':{
          'title': 'You are in demand!',
          'text': '<requester_name> just asked you for an intro video.',
-         'url': config.WEB_URL + '/u/%s',
+         'url': config.WEB_URL + '/u/   %s',
          'day-limit': 1,
          'label_one':'',
          'label_two': ''

@@ -2304,9 +2304,11 @@ def get_new_discover(current_user_id, offset, limit, device_id, version_code, vi
     resp = [{'type':'user', 'user':guest_user_to_dict(current_user_id, u)} for u in users]
     
     add_profile_video_prompt = False
+
     if offset ==0 and current_user_id:
         add_profile_video_prompt = prompt_for_profile_video(current_user_id)
         limit -= 1
+        add_profile_video_prompt = True
     
     day_count = 0
     if get_device_type(device_id)=='web':
@@ -2931,7 +2933,7 @@ def edit_list_child(cur_user_id, parent_list_id, child_user_id, child_list_id, s
     if deleted != None:
         list_item.deleted = deleted
     if featured != None:
-        list_item.featured = featured
+        list_item.is_featured = is_featured
 
     db.session.add(list_item)
     db.session.commit()
