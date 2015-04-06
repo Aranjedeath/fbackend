@@ -221,20 +221,20 @@ def user_profile_request(user_id, request_for, request_id, request_type=config.R
 def comment_on_post(post_id, comment_id, comment_author, notification_type='comment-add-self_post'):
 
     post = Post.query.filter(Post.id == post_id).one()
+    if (comment_author != post.answer_author):
+        comment_author = User.query.filter(User.id == comment_author).one()
 
-    comment_author = User.query.filter(User.id == comment_author).one()
+        k = key[notification_type]
 
-    k = key[notification_type]
+        nobject = {
+            'notification_type': notification_type,
+            'text': ("%s just commented on your answer." % comment_author.first_name),
+            'icon': comment_author.profile_picture,
+            'link': k['url'] % post_id,
+            'object_id': comment_id
+        }
 
-    nobject = {
-        'notification_type': notification_type,
-        'text': ("%s just commented on your answer." % comment_author.first_name),
-        'icon': comment_author.profile_picture,
-        'link': k['url'] % post_id,
-        'object_id': comment_id
-    }
-
-    notification_logger(nobject=nobject, for_users=[post.answer_author], push_at=datetime.datetime.now())
+        notification_logger(nobject=nobject, for_users=[post.answer_author], push_at=datetime.datetime.now())
 
 def hack():
 

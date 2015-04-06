@@ -57,7 +57,7 @@ def post_notifications(post_id):
             print 'Notification id: ', notification_id
             for user in results:
 
-                push.push_notification(notification_id=notification_id, user_id=user[0])
+                push.send(notification_id=notification_id, user_id=user[0])
                 email_helper.question_answered(receiver_email=user[2], receiver_name=user[1],
                                                celebrity_name=answer_author_name,
                                                question=question_body, web_link=link,
@@ -113,7 +113,7 @@ def push_question_notification(question_id):
                                                UserPushNotification.user_id == user_id).count()
     print 'pushed is:', pushed
     if pushed == 0 and decide_question_push(user_id=user_id, question_id=question_id):
-        push.push_notification(notification_id=n.id, user_id=user_id)
+        push.send(notification_id=n.id, user_id=user_id)
 
 
 def is_popular(user_id):

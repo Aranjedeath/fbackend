@@ -15,7 +15,7 @@ import notification_decision
 
 key = helper.key
 
-def push_notification(notification_id, user_id, k=None, source='application'):
+def send(notification_id, user_id, k=None, source='application'):
     if notification_decision.\
             count_of_push_notifications_sent(user_id=user_id) <= config.GLOBAL_PUSH_NOTIFICATION_DAY_LIMIT:
 

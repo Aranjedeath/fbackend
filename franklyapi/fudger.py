@@ -1,4 +1,4 @@
-from models import Question, Upvote, InflatedStat, User, Follow
+from models import Question, Upvote, InflatedStat, User, Follow, Like
 
 def get_post_like_count(post_id):
     count = Like.query.filter(Like.post==post_id, Like.unliked==False).count()
