@@ -18,6 +18,7 @@ RAYGUN_PASSWORD = "dexter123"
 
 AWS_KEY = 'AKIAJ72DWIKVJZNTD2VA'
 AWS_SECRET = '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'
+AWS_REGION = 'us-east-1'
 CURRENT_S3_BUCKET_NAME = 'franklymestorage'
 OLD_S3_BUCKET_NAME = 'franklyapp'
 
@@ -59,6 +60,10 @@ DEFAULT_BIO = "Ask me anything for video replies."
 GCM_API_KEY = 'AIzaSyBKa5pjzTdbdLwMcYkic1yK1q_fbHljbxY'
 
 WEB_URL = 'http://frankly.me'
+
+COMPANY_NAME = "Frankly"
+
+LOGO_URL = "http://frankly.me/images/icons/logoTrimmedOrange.png"
 
 HOSTNAME = socket.gethostname()
 
@@ -102,3 +107,4 @@ GLOBAL_PUSH_NOTIFICATION_DAY_LIMIT = 3
 DISCOVER_RECYCLE_HOURS = 2
 DISCOVER_RECYCLE_COUNT = 3
 
+FROM_EMAIL_ADDRESS = "Frankly@franklymail.com"

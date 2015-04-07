@@ -17,19 +17,22 @@ import CustomExceptions
 import media_uploader
 import async_encoder
 import social_helpers
-import notification
+import util
 
-from database import get_item_id
+
+
+
+
 
 from configs import config
 from configs import flag_words
 from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
                     Question, Upvote, Comment, ForgotPasswordToken, Install, Video,\
                     UserFeed, Event, Reshare, Invitable, Invite, ContactUs, InflatedStat,\
-                    SearchDefault, IntervalCountMap, ReportAbuse, SearchCategory,\
-                    Email, BadEmail, EmailSent, List, ListItem, ListFollow 
+                    IntervalCountMap, ReportAbuse, SearchCategory,\
+                    BadEmail, List, ListItem, ListFollow
 
-from notification import notification_decision
+from notification import notification_decision, make_notification as notification
 
 from app import redis_client, raygun, db, redis_views, redis_pending_post
 
@@ -41,7 +44,7 @@ from video_db import add_video_to_db
 from database import get_item_id
 from trends import most_liked_users
 
-from mailwrapper import email_helper
+from mail import make_email
 
 
 
@@ -184,9 +187,9 @@ def get_device_type(device_id):
 
 
 def send_registration_mail(user_id, mail_password=False):
-    user = User.query.filter(User.id==user_id).one()
+
     if 'twitter' not in user.registered_with:
-        email_helper.welcome_mail(user.email, user.first_name, user.username, user.password)
+        make_email.welcome_mail(user_id=user.id)
 
 
 def new_registration_task(user_id, mail_password=True):
@@ -351,103 +354,6 @@ def has_blocked(cur_user_id, user_id):
     return bool(Block.query.filter(or_(Block.user==cur_user_id, Block.blocked_user==cur_user_id)).filter(Block.user==user_id, Block.blocked_user==user_id).limit(1).count())
 
 
-def get_follower_count(user_id):
-    from math import log, sqrt
-    from datetime import datetime, timedelta
-    user = User.query.filter(User.id==user_id).one()
-
-    d = datetime.now() - timedelta(minutes = 5)
-    count_to_pump =  Follow.query.filter(Follow.followed==user_id, Follow.unfollowed==False, Follow.timestamp <= d).count() 
-    count_as_such = Follow.query.filter(Follow.followed==user_id, Follow.unfollowed==False, Follow.timestamp > d).count() +1
-    count = count_as_such + count_to_pump
-
-    if user.user_type == 2:
-        if count_to_pump:
-            count = int(11*count_to_pump + log(count_to_pump,2) + sqrt(count_to_pump)) + count_as_such
-        else:
-            count = count_to_pump + count_as_such
-
-    return count
-
-def get_user_view_count(user_id, user_view_count=None):
-    return User.query.get(user_id).total_view_count
-
-def get_answer_count(user_id):
-    return Post.query.filter(Post.answer_author==user_id, Post.deleted==False).count()
-
-
-def get_users_stats(user_ids, cur_user_id=None):
-    print user_ids
-    from math import log, sqrt
-    from datetime import datetime, timedelta
-    trend_time = datetime.now() - timedelta(minutes = 5)
-    results = db.session.execute(text("""SELECT users.id, users.user_type, users.total_view_count,
-                                            (SELECT count(*) FROM user_follows
-                                                WHERE user_follows.followed=users.id
-                                                    AND user_follows.unfollowed=false
-                                                    AND user_follows.timestamp<=:trend_time) AS follow_count_to_pump,
-                                            
-                                            (SELECT count(*) FROM user_follows
-                                                WHERE user_follows.followed=users.id
-                                                    AND user_follows.unfollowed=false
-                                                    AND user_follows.timestamp>:trend_time) AS follow_count_as_such,
-                                            
-                                            (SELECT count(posts.id) FROM posts
-                                                WHERE posts.answer_author=users.id
-                                                    AND posts.deleted=false) AS answer_count,
-
-                                            (SELECT count(*) FROM user_follows
-                                                WHERE user_follows.user=:cur_user_id
-                                                    AND user_follows.followed=users.id
-                                                    AND user_follows.unfollowed=false) AS is_following,
-                                            
-                                            (SELECT count(questions.id) FROM questions
-                                                WHERE questions.question_to=users.id
-                                                    AND questions.deleted=false
-                                                    AND questions.is_ignored=false
-                                                    AND questions.is_answered=false) AS question_count,
-                                            
-                                            (SELECT count(*) FROM profile_requests
-                                                WHERE profile_requests.request_for = users.id AND
-                                                      profile_requests.request_by = :cur_user_id) AS is_requested
-
-                                    FROM users
-                                    WHERE users.id in :user_ids"""),
-                                params={'cur_user_id':cur_user_id, 'user_ids':list(user_ids), 'trend_time':trend_time}
-                                )
-    data = {}
-    for row in results:
-        follower_count_to_pump = row[3]
-        follower_count_as_such = row[4]
-        follower_count = follower_count_as_such + follower_count_to_pump
-        if row[1] == 2:
-            if follower_count_to_pump:
-                follower_count = int(11*follower_count_to_pump + log(follower_count_to_pump,2) + sqrt(follower_count_to_pump)) + follower_count_as_such
-            else:
-                follower_count = follower_count_to_pump + follower_count_as_such
-
-        data[row[0]] = {
-                        'following_count':0,
-                        'follower_count':follower_count,
-                        'view_count':row[2],
-                        'answer_count':row[5],
-                        'is_following':bool(row[6]),
-                        'question_count':row[7],
-                        'is_requested': bool(row[8])
-                        }
-
-    inflated_stats = InflatedStat.query.filter(InflatedStat.user.in_(user_ids)).all()
-    for inflated_stat in inflated_stats:
-        data[inflated_stat.user]['follower_count'] += inflated_stat.follower_count
-        data[inflated_stat.user]['view_count'] += inflated_stat.view_count
-
-    for post_id, values in data.items():
-        if values['view_count'] < values['follower_count']:
-            values['view_count'] += values['follower_count'] + 45
-
-    return data
-
-    
 def question_count(user_id):
     question_count = Question.query.filter(Question.question_to==user_id,
                             Question.deleted==False,
@@ -457,39 +363,7 @@ def question_count(user_id):
     return {'question_count':question_count}
 
 
-def get_user_stats(user_id):
-    following_count = 0#get_following_count(user_id)
-    follower_count = get_follower_count(user_id)
-    view_count = get_user_view_count(user_id)
-    answer_count = get_answer_count(user_id)
 
-    inflated_stat = InflatedStat.query.filter(InflatedStat.user == user_id).first()
-    if inflated_stat:
-        follower_count += inflated_stat.follower_count
-        view_count += inflated_stat.view_count
-
-    if view_count < follower_count:
-        view_count += follower_count + follower_count/3
-
-        
-
-    return {
-            'following_count':following_count,
-            'follower_count':follower_count,
-            'view_count':view_count,
-            'answer_count':answer_count
-            }
-
-def get_post_like_count(post_id):
-    count = Like.query.filter(Like.post==post_id, Like.unliked==False).count()
-    return count
-
-def get_post_view_count(post_id):
-    view_count = Post.query.with_entities('view_count').filter(Post.id==post_id).one().view_count
-    return view_count
-
-def get_comment_count(post_id):
-    return Comment.query.filter(Comment.on_post==post_id, Comment.deleted==False).count()
 
 def get_posts_stats(post_ids, cur_user_id=None):
     results = db.session.execute(text("""SELECT posts.id, posts.view_count,
@@ -541,28 +415,6 @@ def get_posts_stats(post_ids, cur_user_id=None):
     return data
 
 
-def get_post_stats(post_id):
-    like_count = get_post_like_count(post_id)
-    view_count = get_post_view_count(post_id)
-    comment_count = get_comment_count(post_id)
-
-    inflated_stat = InflatedStat.query.filter(InflatedStat.post==post_id).first()
-    if inflated_stat:
-        view_count += inflated_stat.view_count
-        like_count += inflated_stat.like_count
-
-    if view_count < like_count:
-        view_count += like_count + like_count/3
-
-    return {
-            'view_count':view_count,
-            'like_count':like_count,
-            'comment_count':comment_count
-            }
-
-
-
-
 def get_post_id_from_question_id(question_id):
     post = Post.query.with_entities('id').filter(Post.question==question_id).first()
     if post:
@@ -571,9 +423,6 @@ def get_post_id_from_question_id(question_id):
         return None
 
 
-
-def get_following_count(user_id):
-    return Follow.query.filter(Follow.user==user_id, Follow.unfollowed==False).count()
 
 def get_answer_count(user_id):
     return Post.query.filter(Post.answer_author==user_id, Post.deleted==False).count()
@@ -1127,7 +976,7 @@ def question_is_clean(body):
     return True
 
 
-def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_by=None):
+def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, from_widget, added_by=None):
 
     if has_blocked(cur_user_id, question_to):
         raise CustomExceptions.BlockedUserException()
@@ -1155,33 +1004,11 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_b
 
     db.session.commit()
 
-    ''' Push Notification for the person who was
-        asked the question
-    '''
-    if clean:
+    if question_to != cur_user_id and clean:
         notification.ask_question(question_id=question.id)
-
-    ''' Send email to user who asked the question
-    confirming that the question has been asked'''
-    is_first = False
-    if db.session.query(Question).filter(Question.question_author == cur_user_id).count() == 1:
-        is_first = True
-
-
-    if question_to != cur_user_id:
-
-        users = User.query.filter(User.id.in_([cur_user_id,question_to]))
-
-        for user in users:
-            if user.id == cur_user_id:
-                mail_reciever = user
-            if user.id == question_to:
-                question_to = user
-
-        email_helper.question_asked(receiver_email=mail_reciever.email,
-                                    receiver_name=mail_reciever.first_name,
-                                    question_to_name=question_to.first_name,
-                                    is_first=is_first)
+        make_email.question_asked(question_from=cur_user_id, question_to=question_to, question_id=question.id,
+                                  question_body = question.body,
+                                  from_widget=from_widget)
 
     resp = {'success':True, 'id':str(question.id), 'question':question_to_dict(question)}
     return resp
@@ -1684,7 +1511,7 @@ def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None, visit=0)
 
 
 def create_forgot_password_token(username=None, email=None):
-    from mailwrapper import email_helper
+    from mail import make_email
     try:
         import hashlib
         if username:
@@ -1708,7 +1535,7 @@ def create_forgot_password_token(username=None, email=None):
 
         forgot_token = ForgotPasswordToken(user=user.id, token=token, email=user.email)
         db.session.add(forgot_token)
-        email_helper.forgot_password(user.email, token=token, reciever_name=user.first_name)
+        make_email.forgot_password(user.email, token=token, receiver_name=user.first_name, user_id=user.id)
         db.session.commit()
 
         return {'success':True}
@@ -1834,7 +1661,7 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
             except IOError:
                 raise CustomExceptions.BadRequestException('Couldnt read video file.')
             curuser = User.query.filter(User.id == cur_user_id).one()
-            cur_user_username = curuser.username
+
 
             if not client_id:
                 client_id = question.short_id
@@ -1860,13 +1687,14 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
                             thumbnail_url=thumbnail_url,
                             video_type='answer_video',
                             object_id=post.id,
-                            username=cur_user_username)
-            async_encoder.encode_video_task.delay(video_url, username=cur_user_username)
+                            username=curuser.username)
+            async_encoder.encode_video_task.delay(video_url, username=curuser.username)
 
 
             db.session.commit()
             redis_pending_post.delete(client_id)
             notification.new_post(post_id=post.id, question_body=question.body)
+
 
         return {'success': True, 'id': str(post.id), 'post':post_to_dict(post, cur_user_id)}
 

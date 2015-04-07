@@ -1,11 +1,10 @@
-import mailconfig
-import boto.ses
-import sys
-
 from configs import config
 from raygun4py import raygunprovider
 from models import Email, BadEmail, EmailSent
 from app import db
+
+import boto.ses
+import sys
 import datetime
 
 raygun = raygunprovider.RaygunSender(config.RAYGUN_KEY)
@@ -15,11 +14,12 @@ class SimpleMailer(object):
     """
     Class defining the simple mailer
     """
-    def __init__(self, sender, key=mailconfig.aws_access_key_id, secret_key=mailconfig.aws_secret_access_key, region='us-east-1'):
+    def __init__(self, sender = None, key=config.AWS_KEY, secret_key=config.AWS_SECRET, region=config.AWS_REGION):
         """
         Initializes the SES connection and sets up the sender mail ID
         """
-        self.sender_id = sender
+
+        self.sender_id = sender if sender else config.FROM_EMAIL_ADDRESS
         try:
             self.conn = boto.ses.connect_to_region(region, aws_access_key_id=key, aws_secret_access_key=secret_key)
         except Exception as e:

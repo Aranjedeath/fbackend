@@ -1,4 +1,4 @@
-from make_notification import *
-from push_notification import *
-from notification_decision import *
+import make_notification
+import push_notification
+import notification_decision
 
