@@ -1,3 +1,5 @@
+from configs import config
+
 dict = {
 
     "forgot_password": {
@@ -21,7 +23,7 @@ dict = {
                                       Username: %s <br/> Password: %s <br/><br/>\n
                                       Have a rocking stay at Frankly.me!''',
                         },
-    "question_asked": {
+    "question_asked_by": {
                           "subject" : "Your question has been asked",
 
                           "body": '''Congratulations!<br/><br/>Your question has been successfully posted.We will make sure it gets answered and till then, you can ask more questions to
@@ -34,11 +36,21 @@ dict = {
                                   " has been answered."
 
                         },
-    "question_answered": {
+    "question_asked_to": {
+                          "subject": "%s just asked you a question!",
+                          "body": '''%s has just asked you "%s". <br/><br/> Answer this and other interesting questions
+                                      on video through the Frankly android or iOS apps.'''
+
+                         },
+    "post_add": {
                           "subject" : "Your question has been answered!",
                           "body": '''%s has answered your question <a href='%s'>"%s"</a>. Check it out now!'''
 
                         },
+    "new_celebrity_profile": {
+                          "subject": "%s just joined frankly.me , Ask them anything",
+                          "body":""
+    },
     "inactive_profile" : {
                          "subject": "Howdy Rockstar! We are missing you!",
                          "body": '''Too busy at work? Or is it your beloved not letting you go? Or having more pressing issues?
@@ -51,16 +63,15 @@ dict = {
                                     us on app or website and we will help you retrieve them.
                                     We miss you and wish to hear from you more often...'''
 
-                        },
-    "sapru"            : {
-        "subject" : " Win an Indian Jersey on Frankly.me!",
-
-                         "body" : '''
-                                     You have just asked a question from Jatin Sapru on FranklyMe <br/><br//>
-                                     %s <br/> <br/>
-                                     You've now officially entered the <b>#WinIndiaJersey</b> contest! <br/><br/>
-                                     The users with the top most up-voted questions get a chance to win an authentic Indian jersey signed by <b>Kapil Dev, VVS Laxman, Murali Kartik,</b> etc.
-                                     Just get your question up-voted by your friends and family to win your own Indian jersey and support Team India this Cricket World Cup!
-                                     <br/><br/>For any other information, write to us at hi@frankly.me .'''
                         }
 }
+
+
+mail_dict = {
+    "logo_target_url": config.WEB_URL,
+    "logo_image_url": config.LOGO_URL,
+    "company_name": config.COMPANY_NAME,
+    "signature": "Pallavi, <br/> Community Manager <br/> Frankly.me",
+    "team_signature": "Lots of love, <br/> Frankly.me Team"
+}
+

@@ -1,10 +1,9 @@
 from app import db
 from sqlalchemy.sql import text
-from mailwrapper import email_helper
 from CustomExceptions import ObjectNotFoundException
 from models import Question, Notification, UserNotificationInfo, UserPushNotification
 
-import fudger
+import util
 import helper
 import make_notification as notification
 import push_notification as push
@@ -19,9 +18,8 @@ it is sent to all those users who upvoted, asked the question or follows the use
 def post_notifications(post_id):
 
     result = db.session.execute(text('''Select
-
-                                         aa.first_name, q.body
-                                         n.id, n.link
+                                        aa.first_name, q.body,
+                                         n.id, n.link, n.type
                                          from posts p
                                          left join questions q on q.id = p.question
                                          left join users aa on aa.id = p.answer_author
@@ -31,6 +29,7 @@ def post_notifications(post_id):
                                          group by n.type
                                          limit 2 ;
                                          '''), params={'post_id': post_id})
+    from mail import make_email
     try:
         for row in result:
 
@@ -38,6 +37,7 @@ def post_notifications(post_id):
             question_body = row[1]
             notification_id = row[2]
             link = row[3]
+            notification_type = row[4]
 
 
             #Get a set of users who haven't been sent this gcm notification yet
@@ -55,13 +55,19 @@ def post_notifications(post_id):
                                              params={'notification_id': notification_id})
 
             print 'Notification id: ', notification_id
+            print 'Notification type:', notification_type
+
             for user in results:
 
                 push.send(notification_id=notification_id, user_id=user[0])
-                email_helper.question_answered(receiver_email=user[2], receiver_name=user[1],
+                if notification_type == 'post-add-self_user':
+                    print user.email
+                    make_email.question_answered(receiver_email=user[2], receiver_name=user[1],
                                                celebrity_name=answer_author_name,
+                                               user_id=row[0],
                                                question=question_body, web_link=link,
-                                               object_id=post_id)
+                                               post_id=post_id)
+                    break
     except ObjectNotFoundException:
         pass
 
@@ -91,7 +97,7 @@ def decide_question_push(user_id, question_id):
         print 'Good time bro'
         if questions_today > 10 or is_popular(user_id):
 
-            upvotes = fudger.get_question_upvote_count(question_id)
+            upvotes = util.get_question_upvote_count(question_id)
             print 'Upvotes are good'
             if upvotes > 2:
                 return True
@@ -164,7 +170,7 @@ def prompt_sharing_popular_question():
     for row in results:
         upvote_count =row[0] + (row[1] if row[1] is not None else 0)
         if upvote_count > 10:
-           upvote_count = fudger.get_question_upvote_count(row[4])
+           upvote_count = util.get_question_upvote_count(row[4])
            notification.share_popular_question(user_id=row[2], question_id=row[4],
                                     question_body=row[3], upvote_count=upvote_count)
 
@@ -192,7 +198,7 @@ def user_followers_milestone_notifications():
                                                         '''))
 
     for row in result:
-        check_and_make_milestone('user_followers_milestone', row[0], row[0], fudger.get_follower_count(row[0]))
+        check_and_make_milestone('user_followers_milestone', row[0], row[0], util.get_follower_count(row[0]))
 
 
 '''
@@ -203,10 +209,10 @@ user's likes
 
 def decide_post_milestone(post_id, user_id):
 
-    check_and_make_milestone('post-likes-milestone', user_id, post_id, fudger.get_post_like_count(post_id))
+    check_and_make_milestone('post-likes-milestone', user_id, post_id, util.get_post_like_count(post_id))
 
 def decide_follow_milestone(user_id):
-    check_and_make_milestone('user-followers-milestone', user_id, user_id, fudger.get_follower_count(user_id))
+    check_and_make_milestone('user-followers-milestone', user_id, user_id, util.get_follower_count(user_id))
 
 def question_upvotes_milestone_notifications():
     result = db.session.execute(text('''SELECT distinct pl.question as question, questions.question_author
@@ -223,7 +229,7 @@ def question_upvotes_milestone_notifications():
                                                         '''))
     
     for row in result:
-        check_and_make_milestone('post_likes', row[1], row[0], fudger.get_post_like_count(row[0]))
+        check_and_make_milestone('post_likes', row[1], row[0], util.get_post_like_count(row[0]))
 
 
 def check_and_make_milestone(milestone_name, user_id, associated_item_id, count):
