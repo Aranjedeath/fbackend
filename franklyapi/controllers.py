@@ -2772,29 +2772,32 @@ def get_remote(cur_user_id, offset=0, limit=20):
     return {'count':count, 'next_index':next_index, 'stream':remote}
 
 def get_list_user_ids(list_id):
-    queries = """SELECT list_items.child_user_id 
-            FROM list_items 
-            WHERE list_items.parent_list_id = :parent_list_id 
-                AND list_items.deleted = False
-                AND list_items.child_user_id is NOT null
+    queries = """SELECT * FROM (SELECT list_items.child_user_id, list_items.parent_list_id, list_items.score
+                                FROM list_items 
+                                WHERE list_items.parent_list_id = :parent_list_id 
+                                    AND list_items.deleted = False
+                                    AND list_items.child_user_id is NOT null
 
-            UNION
+                                UNION
 
-            SELECT list_items.child_user_id 
-            FROM list_items 
-            WHERE list_items.parent_list_id in (SELECT list_items.child_list_id 
-                                                FROM list_items 
-                                                WHERE list_items.parent_list_id = :parent_list_id 
-                                                    AND list_items.deleted = False
-                                                    AND list_items.child_list_id is NOT null
-                                                )
-                AND list_items.deleted = False
-                AND list_items.child_user_id is NOT null
-            ORDER BY list_items.parent_list_id=:parent_list_id, list_items.score
+                                SELECT list_items.child_user_id, list_items.parent_list_id, list_items.score
+                                FROM list_items 
+                                WHERE list_items.parent_list_id in (SELECT list_items.child_list_id 
+                                                                    FROM list_items 
+                                                                    WHERE list_items.parent_list_id = :parent_list_id 
+                                                                        AND list_items.deleted = False
+                                                                        AND list_items.child_list_id is NOT null
+                                                                    )
+                                    AND list_items.deleted = False
+                                    AND list_items.child_user_id is NOT null
+                                ) as result
+            ORDER BY result.parent_list_id=:parent_list_id, result.score
         """
     results = db.session.execute(text(queries), params={'parent_list_id':list_id})
     
-    return [row[0] for row in results]
+    user_ids = [row[0] for row in results]
+    print user_ids
+    return user_ids
 
     
 def get_featured_users(cur_user_id, list_id, offset=0, limit=20):
@@ -2834,7 +2837,7 @@ def get_trending_users(cur_user_id, list_id, offset=0, limit=20):
         if list_id:
             parent_list = get_list_from_name_or_id(list_id)
         if list_id:
-            user_ids = get_list_user_ids(list_id)
+            user_ids = get_list_user_ids(parent_list.id)
             users = User.query.filter(User.id.in_(user_ids)).offset(offset).limit(limit).all()
         else:
             users = User.query.join(DiscoverList, User.id==DiscoverList.user
@@ -2856,8 +2859,9 @@ def get_trending_users(cur_user_id, list_id, offset=0, limit=20):
 def get_featured_posts(cur_user_id, list_id, offset=0, limit=20):
     try:
         if list_id:
+            parent_list = get_list_from_name_or_id(list_id)
             posts = Post.query.filter(Post.deleted==False,
-                                Post.answer_author.in_(get_list_user_ids(list_id))
+                                Post.answer_author.in_(get_list_user_ids(parent_list.id))
                                 ).order_by(Post.id.desc()).offset(offset).limit(limit).all()
         else:
             posts = Post.query.join(DiscoverList, Post.id==DiscoverList.post
@@ -2883,7 +2887,7 @@ def get_trending_posts(cur_user_id, list_id, offset=0, limit=20):
         if list_id:
             parent_list = get_list_from_name_or_id(list_id)
             posts = Post.query.filter(Post.deleted==False,
-                                Post.answer_author.in_(get_list_user_ids(list_id))
+                                Post.answer_author.in_(get_list_user_ids(parent_list.id))
                                 ).order_by(Post.id).offset(offset).limit(limit).all()
 
         else:
@@ -2912,7 +2916,7 @@ def get_featured_questions(cur_user_id, list_id, offset=0, limit=20):
                                             Question.is_answered==False,
                                             Question.is_ignored==False,
                                             Question.flag.in_([1, 2]),
-                                            Question.question_to.in_(get_list_user_ids(list_id))
+                                            Question.question_to.in_(get_list_user_ids(parent_list.id))
                                         ).order_by(Question.score.desc()
                                         ).offset(offset
                                         ).limit(limit
@@ -2949,7 +2953,7 @@ def get_trending_questions(cur_user_id, list_id, offset=0, limit=20):
                                             Question.is_answered==False,
                                             Question.is_ignored==False,
                                             Question.flag.in_([1, 2]),
-                                            Question.question_to.in_(get_list_user_ids(list_id))
+                                            Question.question_to.in_(get_list_user_ids(parent_list.id))
                                             ).outerjoin(Upvote
                                             ).group_by(Question.id
                                             ).order_by(func.count(Upvote.id).desc(), Question.score.desc()
@@ -2982,7 +2986,7 @@ def get_list_feed(cur_user_id, list_id, offset=0, limit=20):
     try:
         parent_list = get_list_from_name_or_id(list_id)
         users = User.query.join(ListItem, User.id==ListItem.child_user_id
-                                ).filter(ListItem.parent_list_id==list_id,
+                                ).filter(ListItem.parent_list_id==parent_list.id,
                                             ListItem.deleted==False,
                                             ListItem.child_user_id!=None,
                                             ListItem.show_on_list==True,
@@ -2991,22 +2995,25 @@ def get_list_feed(cur_user_id, list_id, offset=0, limit=20):
                                         ).offset(offset
                                         ).limit(1
                                         ).all()
-        users = [{'type':'user', 'user':u} for u in guest_users_to_dict(users, cur_user_id)]
 
-        questions = get_trending_questions(cur_user_id, list_id, offset=offset, limit=3)['stream']
+        users = [{'type':'user', 'user':u} for u in guest_users_to_dict(users, cur_user_id)] if users else []
+
+        questions = get_trending_questions(cur_user_id, parent_list.id, offset=offset, limit=3)['stream']
 
         posts = Post.query.filter(Post.deleted==False,
-                            Post.answer_author.in_(get_list_user_ids(list_id))
+                            Post.answer_author.in_(get_list_user_ids(parent_list.id))
                             ).order_by(Post.id.desc()).offset(offset).limit(limit-len(users)-len(questions)).all()
+        
+        print posts
 
-        posts = [{'type':'post', 'post':p} for p in posts_to_dict(posts, cur_user_id)]
+        posts = [{'type':'post', 'post':p} for p in posts_to_dict(posts, cur_user_id)] if posts else []
         stream = posts
         for item in users+questions:
             idx = random.randint(0, len(stream))
             stream.insert(idx, item)
 
         next_index = -1 if len(stream)<limit else offset+limit
-        return {'stream':stream, 'count':count, 'next_index':next_index}
+        return {'stream':stream, 'count':len(stream), 'next_index':next_index}
 
     except NoResultFound:
         raise CustomExceptions.ObjectNotFoundException('List has been deleted or does not exit')
