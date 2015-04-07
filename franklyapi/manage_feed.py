@@ -31,7 +31,7 @@ def get_home_feed(cur_user_id, offset, limit=10):
                                         FROM posts INNER JOIN user_follows ON user_follows.followed = posts.answer_author
                                         AND user_follows.user = :cur_user_id and user_follows.unfollowed=:unfollowed 
                                         WHERE deleted=false AND answer_author != :cur_user_id
-                                        AND posts.timestamp < :fed_upto_time
+                                        AND posts.timestamp <= :fed_upto_time
                                         ORDER BY posts.timestamp DESC,posts.show_after DESC LIMIT :offset, :limit"""),
                                     params = {'cur_user_id':cur_user_id, 'offset':offset, 'limit':limit, 'unfollowed':False, 'fed_upto_time':fed_upto_time}
                                 )
@@ -44,18 +44,34 @@ def get_home_feed(cur_user_id, offset, limit=10):
     questions = []
     feeds = []
     _q_len = 0
+
+    question_pages = []
+    question_pages_fetched = 0
+
     if len(celebs_following) > 0:
-        _q_len, questions, following = get_question_from_followings(celebs_following, cur_user_id=cur_user_id)
-        if questions:
-            shortner = 1
+        while question_pages_fetched < 4:
+            # TODO: logic to get question pages from different celebs.    
+            _q_len, questions, following = get_question_from_followings(celebs_following, cur_user_id=cur_user_id)
+            if questions:
+                shortner += 1
+                question_pages.append((following,questions))
+            question_pages_fetched += 1
 
     if posts:
+        print 'posts to hain bhai : ',len(posts)
+
+        # added logic to get count of posts + question pages ----> limit
+        if len(posts) + shortner <= limit:
+            shortner = 0
+        else:
+            shortner = len(posts) + shortner - limit
+
         feeds = [{'type':'post', 'post':post} for post in posts[:len(posts) - shortner]]
 
-    if questions:
-        question_user = thumb_user_to_dict(User.query.filter(User.id == following).first(), cur_user_id)
+    for question_page in question_pages:
+        question_user = thumb_user_to_dict(User.query.filter(User.id == question_page[0]).first(), cur_user_id)
         question_user['questions'] = []
-        for q in questions:
+        for q in question_page[1]:
             question_user['questions'].append(question_to_dict(q, cur_user_id))
             if len(q.body) > 150:
                 break
@@ -65,6 +81,7 @@ def get_home_feed(cur_user_id, offset, limit=10):
             idx = randint(0,len(posts)- 1)
         else:
             idx = 0
+        print 'inserting question_page at index : ', idx
         feeds.insert(idx, {'questions': question_user, 'type' : 'questions'} )
 
     tentative_idx = -1
@@ -133,63 +150,97 @@ def get_and_update_fed_marker(cur_user_id, offset):
                     user_scroll.feed_update_count = 0
                     print 'feed update count reset'
                 if user_scroll.feed_update_count < config.HOME_FEED_UPDATE_LIMIT:
-                    user_scroll.fed_upto, fed_upto_time = get_updated_feed_marker(cur_user_id,fed_upto_time)
-                    user_scroll.feed_update_count += 1
-                    print 'feed update count : ', user_scroll.feed_update_count
+                    marker,fed_upto_time = get_updated_feed_marker(cur_user_id,fed_upto_time)
+                    if marker == None:
+                        print 'marker not updated. no rows found.'
+                    else:
+                        user_scroll.fed_upto = marker
+                        user_scroll.feed_update_count += 1
+                        print 'feed update count : ', user_scroll.feed_update_count
 
                 user_scroll.last_fed = datetime.datetime.now()
                 db.session.commit()
         return fed_upto_time, user_scroll.fed_upto
     else:
-        return None
+        return None, None
 
-def get_updated_feed_marker(cur_user_id,fed_upto):
+def get_updated_feed_marker(cur_user_id,fed_upto_time):
     count = 1
-
+    marker = None
+    print 'time aya :', fed_upto_time
     
-    result = db.session.execute(text("""SELECT count(*)
-                                        FROM posts
-                                        INNER JOIN user_follows
-                                            ON user_follows.followed = posts.answer_author
-                                               AND user_follows.user = :cur_user_id
-                                               and user_follows.unfollowed=:unfollowed 
-                                        WHERE deleted=false AND answer_author != :cur_user_id
-                                        AND (posts.timestamp >= :fed_upto
-                                        OR :new_entry = true)
-                                    """),
-                                params = {
-                                    'cur_user_id':cur_user_id,
-                                    'unfollowed':False,
-                                    'fed_upto':fed_upto,
-                                    'new_entry':(fed_upto==None)}
-                                )
+    if fed_upto_time:
+        result = db.session.execute(text("""SELECT count(*)
+                                            FROM posts
+                                            INNER JOIN user_follows
+                                                ON user_follows.followed = posts.answer_author
+                                                   AND user_follows.user = :cur_user_id
+                                                   and user_follows.unfollowed=:unfollowed 
+                                            WHERE deleted=false AND answer_author != :cur_user_id
+                                            AND posts.timestamp > :fed_upto_time
+                                        """),
+                                    params = {
+                                        'cur_user_id':cur_user_id,
+                                        'unfollowed':False,
+                                        'fed_upto_time':fed_upto_time}
+                                    )
+    else:
+        result = db.session.execute(text("""SELECT count(*)
+                                            FROM posts
+                                            INNER JOIN user_follows
+                                                ON user_follows.followed = posts.answer_author
+                                                   AND user_follows.user = :cur_user_id
+                                                   and user_follows.unfollowed=:unfollowed 
+                                            WHERE deleted=false AND answer_author != :cur_user_id
+                                        """),
+                                    params = {
+                                        'cur_user_id':cur_user_id,
+                                        'unfollowed':False}
+                                    )
     for row in result:
         count = row[0]
 
-    offset = max(count/10,1)
+    offset = max(count/10,0)
     print 'count: ', count
     print 'shifted marker :', offset, 'places'
 
-    result = db.session.execute(text("""SELECT posts.id, posts.timestamp
-                                        FROM posts 
-                                        INNER JOIN user_follows
-                                            ON user_follows.followed = posts.answer_author
-                                               AND user_follows.user = :cur_user_id
-                                               and user_follows.unfollowed=:unfollowed 
-                                        WHERE deleted=false AND answer_author != :cur_user_id
-                                        AND (posts.timestamp >= :fed_upto
-                                        OR :new_entry = true)
-                                        Limit :offset, 1
-                                    """),
-                                params = {
-                                    'cur_user_id':cur_user_id,
-                                    'unfollowed':False,
-                                    'offset':offset,
-                                    'fed_upto':fed_upto,
-                                    'new_entry':(fed_upto==None)}
-                                )
+    if fed_upto_time:
+        result = db.session.execute(text("""SELECT posts.id, posts.timestamp
+                                            FROM posts 
+                                            INNER JOIN user_follows
+                                                ON user_follows.followed = posts.answer_author
+                                                   AND user_follows.user = :cur_user_id
+                                                   and user_follows.unfollowed=:unfollowed 
+                                            WHERE deleted=false AND answer_author != :cur_user_id
+                                            AND posts.timestamp > :fed_upto_time
+                                            ORDER BY posts.timestamp
+                                            Limit :offset, 1
+                                        """),
+                                    params = {
+                                        'cur_user_id':cur_user_id,
+                                        'unfollowed':False,
+                                        'offset':offset,
+                                        'fed_upto_time':fed_upto_time}
+                                    )
+    else:
+        result = db.session.execute(text("""SELECT posts.id, posts.timestamp
+                                            FROM posts 
+                                            INNER JOIN user_follows
+                                                ON user_follows.followed = posts.answer_author
+                                                   AND user_follows.user = :cur_user_id
+                                                   and user_follows.unfollowed=:unfollowed 
+                                            WHERE deleted=false AND answer_author != :cur_user_id
+                                            ORDER BY posts.timestamp
+                                            Limit :offset, 1
+                                        """),
+                                    params = {
+                                        'cur_user_id':cur_user_id,
+                                        'unfollowed':False,
+                                        'offset':offset}
+                                    )
 
     for row in result:
+        print row[0]
         marker = row[0]
         fed_upto_time = row[1]
 
