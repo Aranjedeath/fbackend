@@ -201,5 +201,3 @@ class UserArchive(Base):
 
     def __repr__(self):
         return '<UserArchive %r>' % (self.user)
-
-

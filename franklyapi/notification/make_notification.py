@@ -201,40 +201,47 @@ update the profile'''
 
 def user_profile_request(user_id, request_for, request_id, request_type=config.REQUEST_TYPE):
 
-    request_for = User.query.filter(User.id == request_for).one()
+
+    users = User.query.filter(User.id.in_([user_id, request_for])).all()
+
+    for u in users:
+        if u.id == user_id:
+            request_by = u
+        if u.id == request_for:
+            requested = u
 
     k = key[request_type]
 
     nobject = {
         'notification_type': request_type,
-        'text': helper.user_profile_request(requester_name=request_for.first_name),
-        'icon': request_for.profile_picture,
+        'text': helper.user_profile_request(requester_name=request_by.first_name),
+        'icon': request_by.profile_picture,
         'link': k['url'] % request_for,
         'object_id': request_id
     }
 
 
-    notification_logger(nobject=nobject, for_users=[request_for.id], push_at=datetime.datetime.now())
+    notification_logger(nobject=nobject, for_users=[requested.id], push_at=datetime.datetime.now())
 
 
 
 def comment_on_post(post_id, comment_id, comment_author, notification_type='comment-add-self_post'):
 
     post = Post.query.filter(Post.id == post_id).one()
+    if (comment_author != post.answer_author):
+        comment_author = User.query.filter(User.id == comment_author).one()
 
-    comment_author = User.query.filter(User.id == comment_author).one()
+        k = key[notification_type]
 
-    k = key[notification_type]
+        nobject = {
+            'notification_type': notification_type,
+            'text': ("%s just commented on your answer." % comment_author.first_name),
+            'icon': comment_author.profile_picture,
+            'link': k['url'] % post_id,
+            'object_id': comment_id
+        }
 
-    nobject = {
-        'notification_type': notification_type,
-        'text': ("%s just commented on your answer." % comment_author.first_name),
-        'icon': comment_author.profile_picture,
-        'link': k['url'] % post_id,
-        'object_id': comment_id
-    }
-
-    notification_logger(nobject=nobject, for_users=[post.answer_author], push_at=datetime.datetime.now())
+        notification_logger(nobject=nobject, for_users=[post.answer_author], push_at=datetime.datetime.now())
 
 def hack():
 

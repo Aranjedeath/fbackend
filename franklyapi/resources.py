@@ -2225,14 +2225,130 @@ class GetRemote(restful.Resource):
             abort(500, message=internal_server_error_message)
 
 
-
-class GetListItems(restful.Resource):
+class GetListFeed(restful.Resource):
     get_parser = reqparse.RequestParser()
     get_parser.add_argument('list_id', type=str, location='args', required=True)
     get_parser.add_argument('offset',  type=int, location='args', default=0)
     get_parser.add_argument('limit',   type=int, location='args', default=20)
 
-    @login_required
+    def get(self):
+        """
+        Returns feed for the given list
+
+        Controller Functions Used:
+            - get_trending_users
+
+        Authentication: Optional
+        """
+        args = self.get_parser.parse_args()
+        try:
+            current_user_id = None
+            if current_user.is_authenticated():
+                current_user_id = current_user.id
+
+            return controllers.get_list_feed(current_user_id, args['list_id'], args['offset'], args['limit'])
+        except CustomExceptions.ObjectNotFoundException as e:
+            abort(404, message=e.message)
+
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0], err[1], err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
+
+
+class GetListFeatured(restful.Resource):
+    get_parser = reqparse.RequestParser()
+    get_parser.add_argument('list_id', type=str, location='args')
+    get_parser.add_argument('offset',  type=int, location='args', default=0)
+    get_parser.add_argument('limit',   type=int, location='args', default=20)
+
+    def get(self, object_type):
+        """
+        Returns featured objects for the given list
+
+        object_type can one of ['users', 'posts', 'questions']
+
+        Controller Functions Used:
+            - get_featured_users
+            - get_featured_posts
+            - get_featured_questions
+
+        Authentication: Optional
+        """
+        args = self.get_parser.parse_args()
+        try:
+            current_user_id = None
+            if current_user.is_authenticated():
+                current_user_id = current_user.id
+
+            if object_type=='users':
+                return controllers.get_featured_users(current_user_id, args['list_id'], args['offset'], args['limit'])
+            elif object_type=='posts':
+                return controllers.get_featured_posts(current_user_id, args['list_id'], args['offset'], args['limit'])
+            elif object_type=='questions':
+                return controllers.get_featured_questions(current_user_id, args['list_id'], args['offset'], args['limit'])
+            else:
+                raise CustomExceptions.ObjectNotFoundException('{object_type} is not an object'.format(object_type=object_type))
+        except CustomExceptions.ObjectNotFoundException as e:
+            abort(404, message=e.message)
+
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0], err[1], err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
+
+class GetListTrending(restful.Resource):
+    get_parser = reqparse.RequestParser()
+    get_parser.add_argument('list_id', type=str, location='args')
+    get_parser.add_argument('offset',  type=int, location='args', default=0)
+    get_parser.add_argument('limit',   type=int, location='args', default=20)
+
+    def get(self, object_type):
+        """
+        Returns trending objects for the given list
+
+        object_type can one of ['users', 'posts', 'questions']
+
+        Controller Functions Used:
+            - get_trending_users
+            - get_trending_posts
+            - get_trending_questions
+
+        Authentication: Optional
+        """
+        args = self.get_parser.parse_args()
+        try:
+            current_user_id = None
+            if current_user.is_authenticated():
+                current_user_id = current_user.id
+
+            if object_type=='users':
+                return controllers.get_trending_users(current_user_id, args['list_id'], args['offset'], args['limit'])
+            elif object_type=='posts':
+                return controllers.get_trending_posts(current_user_id, args['list_id'], args['offset'], args['limit'])
+            elif object_type=='questions':
+                return controllers.get_trending_questions(current_user_id, args['list_id'], args['offset'], args['limit'])
+            else:
+                raise CustomExceptions.ObjectNotFoundException('shashank')
+        except CustomExceptions.ObjectNotFoundException as e:
+            print e.message
+            abort(404, message=str(e))
+
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0], err[1], err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
+
+
+class GetListItems(restful.Resource):
+    get_parser = reqparse.RequestParser()
+    get_parser.add_argument('list_id', type=str, location='args', help="list_id of the parent list. If not provided, top level lists will be given.")
+    get_parser.add_argument('offset',  type=int, location='args', default=0)
+    get_parser.add_argument('limit',   type=int, location='args', default=20)
+
     def get(self):
         """
         Returns the list_items of a list
@@ -2240,11 +2356,16 @@ class GetListItems(restful.Resource):
         Controller Functions Used:
             - get_list_items
 
-        Authentication: Required
+        Authentication: Optional
         """
         args = self.get_parser.parse_args()
         try:
-            return controllers.get_list_items(current_user.id, args['list_id'], args['offset'])
+
+            current_user_id = None
+            if current_user.is_authenticated():
+                current_user_id = current_user.id
+            
+            return controllers.get_list_items(current_user_id, args['list_id'], args['offset'])
         
         except CustomExceptions.ObjectNotFoundException as e:
             abort(404, message=e.message)
@@ -2467,4 +2588,16 @@ class PublicDocumentation(restful.Resource):
             return resp
         else:
             abort(403, message='Ra Ra Rasputin says: You are are hitting a wrong url.')
+
+
+
+class AnswerAuthorSuggest(restful.Resource):
+    get_parser = reqparse.RequestParser()
+    get_parser.add_argument('question_body', type=str, location='args', required=True)
+    def get(self):
+        args = self.get_parser.parse_args()
+        return controllers.suggest_answer_author(args['question_body'])
+
+
+
 

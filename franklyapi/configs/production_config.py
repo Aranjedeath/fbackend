@@ -2,7 +2,7 @@ from bad_usernames import UNAVAILABLE_USERNAMES_LAST_UPDATED, UNAVAILABLE_USERNA
 import socket
 import os
 
-DEBUG = True
+DEBUG = False
 
 SECRET_KEY = 'franklySpeakingThisIsVeryConfidential'
 MULTIPLE_AUTH_HEADERS = ['access_token', 'device']
