@@ -22,7 +22,8 @@ def media_dict(media_url, thumbnail_url):
 
 def user_to_dict(user):
     from configs import config
-    from controllers import get_video_states, get_users_stats
+    from controllers import get_video_states
+    from util import get_users_stats
     
     user_stats = get_users_stats([user.id])
 
@@ -69,7 +70,8 @@ def user_to_dict(user):
 
 def guest_user_to_dict(user, current_user_id, cur_user_interest_tags=None):
     from configs import config
-    from controllers import get_video_states, get_users_stats
+    from controllers import get_video_states
+    from util import get_users_stats
     
     if user.deleted == True:
         return thumb_user_to_dict(user)
@@ -109,7 +111,8 @@ def guest_user_to_dict(user, current_user_id, cur_user_interest_tags=None):
 
 def guest_users_to_dict(users, current_user_id, cur_user_interest_tags=None):
     from configs import config
-    from controllers import get_video_states, get_users_stats
+    from controllers import get_video_states
+    from util import get_users_stats
 
     user_stats = get_users_stats([user.id for user in users], cur_user_id=current_user_id)
     
@@ -367,7 +370,8 @@ def question_to_dict(question, cur_user_id=None):
 
 def post_to_dict(post, cur_user_id=None, distance=None, include_comments=3):
     from configs import config
-    from controllers import get_video_states, get_questions, get_thumb_users, get_posts_stats, get_users_stats, get_comments_for_posts
+    from controllers import get_video_states, get_questions, get_thumb_users, get_posts_stats, get_comments_for_posts
+    from util import get_users_stats
     users = get_thumb_users([post.question_author, post.answer_author], cur_user_id=cur_user_id)
     questions = get_questions([post.question], cur_user_id=cur_user_id)
     
@@ -450,7 +454,8 @@ def posts_to_dict(posts, cur_user_id=None, distance=None, include_comments=3):
         return []
 
     from configs import config
-    from controllers import get_video_states, get_questions, get_thumb_users, get_posts_stats, get_users_stats, get_comments_for_posts
+    from controllers import get_video_states, get_questions, get_thumb_users, get_posts_stats, get_comments_for_posts
+    from util import get_users_stats
     
     user_list = set()
     answer_media_urls = {}
