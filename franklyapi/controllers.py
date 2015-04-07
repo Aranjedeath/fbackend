@@ -82,10 +82,12 @@ def password_is_valid(password):
         return False
     return True
 
+
 def email_available(email):
     if email.split('@')[1].lower() in config.BLOCKED_EMAIL_DOMAINS:
         return False
     return not bool(User.query.filter(User.email==email).count())
+
 
 def username_available(username):
     if len(username)<6 or len(username)>30 or username in config.UNAVAILABLE_USERNAMES:
@@ -95,12 +97,14 @@ def username_available(username):
             return False
     return not bool(User.query.filter(User.username==username).count())
 
+
 def sanitize_username(username):
     username = username.title().replace(' ', '')
     for char in username:
         if char not in config.ALLOWED_CHARACTERS:
             username = username.replace(char, '') 
     return username 
+
 
 def make_username(email, full_name=None, social_username=None):
     username_candidates = [full_name, social_username, email.split('@')[0]]
@@ -133,9 +137,9 @@ def make_password():
     password = random.choice(suffix) + random.choice(prefix) + str(random.randint(0, 10000))
     return password
 
-
 def generate_access_token(user_id, device_id=None):
     return hashlib.sha1('%s%s' % (user_id, int(time.time()))).hexdigest()
+
 
 def set_access_token(device_id, device_type, user_id, access_token, push_id=None):
     from app import redis_client
@@ -159,7 +163,6 @@ def get_data_from_external_access_token(social_type, external_access_token, exte
         return user_data
     except TwitterError as e:
         raise CustomExceptions.InvalidTokenException(str(e))
-
 
 
 def get_user_from_social_id(social_type, social_id):
