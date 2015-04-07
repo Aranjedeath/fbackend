@@ -119,3 +119,22 @@ class DateSortedItems(Base):
             return '<DateSortedItems: %r -- User: %r >' %(self.id, self.user)
         elif self.post:
             return '<DateSortedItems: %r -- Post: %r >' %(self.id, self.post)
+
+class UserScroll(Base):
+    __tablename__      = 'user_scrolls'
+    user               = Column(CHAR(32), ForeignKey('users.id'), primary_key=True)
+    recycled_upto      = Column(Integer, default=0)
+    last_recycled_upto = Column(Integer, default=0)
+    scrolled_upto      = Column(Integer, default=0)
+    feed_update_count  = Column(Integer, default=0)
+    fed_upto           = Column(CHAR(32), ForeignKey('posts.id'))
+    last_visit         = Column(DateTime, default=datetime.datetime.now())
+    last_fed           = Column(DateTime, default=datetime.datetime.now())
+
+    def __init__(self, user):
+        self.user = user
+        self.last_visit = datetime.datetime.now()
+
+
+    def __repr__(self):
+        return '<UserScroll: %r --scrolled: %r --recycled: %r >' %(self.user, self.scrolled_upto, self.recycled_upto)
