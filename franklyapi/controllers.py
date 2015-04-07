@@ -2534,8 +2534,14 @@ def list_items_to_dict(list_items, cur_user_id=None):
     if type(list_items) != list:
         list_items = [list_items]
     list_item_dicts = []
+
     for item in list_items:
+        if item.child_user_id:
+            item = User.query.filter(User.id==item.child_user_id).first()
+        else:
+            item = List.query.filter(List.id==item.child_list_id).first()
         if type(item) == User:
+
             item_dict = {
                                 'id'             : item.id,
                                 'username'       : item.username,
@@ -2637,7 +2643,7 @@ def add_child_to_list(cur_user_id, parent_list_id, child_user_id=None, child_lis
     if (not child_user_id and not child_list_id) or (child_list_id and child_user_id):
         raise CustomExceptions.BadRequestException('Either child_user_id or child_list_id must be provided.')
     try:
-        parent_list = List.query.filter(List.id==list_id, List.owner==cur_user_id, List.deleted==False).one()
+        parent_list = List.query.filter(List.id==parent_list_id, List.owner==cur_user_id, List.deleted==False).one()
     except NoResultFound:
         raise CustomExceptions.ObjectNotFoundException('Either the list is deleted or you dont have permission to edit it.')
     if ListItem.query.filter(ListItem.parent_list_id==parent_list_id,
@@ -2647,12 +2653,12 @@ def add_child_to_list(cur_user_id, parent_list_id, child_user_id=None, child_lis
         raise CustomExceptions.BadRequestException('child_user_id or child_list_id is already a child of the parent list.')
 
 
-    list_item = ListItem(id=get_item_id(), parent_list_id=parent_list_id, created_by=cur_user_id, child_user_id=child_user_id,
-                child_list_id=child_list_id, show_on_list=show_on_list, score=score, featured=featured)
+    list_item = ListItem(parent_list_id=parent_list_id, created_by=cur_user_id, child_user_id=child_user_id,
+                child_list_id=child_list_id, show_on_list=show_on_list, score=score, is_featured=featured)
 
     db.session.add(list_item)
     db.session.commit()
-    return {'success':True, 'list_item':list_items_to_dict(list_item, cur_user_id)[0]}
+    return {'success':True, 'list_item':list_items_to_dict([list_item], cur_user_id)[0]}
 
 
 def edit_list_child(cur_user_id, parent_list_id, child_user_id, child_list_id, show_on_list=None, score=None, deleted=False, featured=None):
@@ -2765,24 +2771,52 @@ def get_remote(cur_user_id, offset=0, limit=20):
 
     return {'count':count, 'next_index':next_index, 'stream':remote}
 
+def get_list_user_ids(list_id):
+    queries = """SELECT list_items.child_user_id 
+            FROM list_items 
+            WHERE list_items.parent_list_id = :parent_list_id 
+                AND list_items.deleted = False
+                AND list_items.child_user_id is NOT null
 
+            UNION
+
+            SELECT list_items.child_user_id 
+            FROM list_items 
+            WHERE list_items.parent_list_id in (SELECT list_items.child_list_id 
+                                                FROM list_items 
+                                                WHERE list_items.parent_list_id = :parent_list_id 
+                                                    AND list_items.deleted = False
+                                                    AND list_items.child_list_id is NOT null
+                                                )
+                AND list_items.deleted = False
+                AND list_items.child_user_id is NOT null
+            ORDER BY list_items.parent_list_id=:parent_list_id, list_items.score
+        """
+    results = db.session.execute(text(queries), params={'parent_list_id':list_id})
+    
+    return [row[0] for row in results]
 
     
 def get_featured_users(cur_user_id, list_id, offset=0, limit=20):
     try:
         if list_id:
             parent_list = get_list_from_name_or_id(list_id)
+        if list_id:
+            users = User.query.join(ListItem, User.id==ListItem.child_user_id
+                                    ).filter(ListItem.parent_list_id==list_id,
+                                                ListItem.deleted==False,
+                                                ListItem.child_user_id!=None,
+                                                ListItem.show_on_list==True,
+                                                User.deleted==False
+                                            ).order_by(ListItem.score
+                                            ).offset(offset
+                                            ).limit(limit
+                                            ).all()
+        else:
+            users = User.query.join(DiscoverList, User.id==DiscoverList.user
+                                ).order_by(DiscoverList.id.desc()).offset(offset).limit(limit).all()
 
-        users = User.query.join(ListItem, User.id==ListItem.child_user_id
-                                ).filter(ListItem.parent_list_id==list_id,
-                                            ListItem.deleted==False,
-                                            ListItem.child_user_id!=None,
-                                            ListItem.show_on_list==True,
-                                            User.deleted==False
-                                        ).order_by(ListItem.score
-                                        ).offset(offset
-                                        ).limit(limit
-                                        ).all()
+
         users = User.query.filter(User.user_type==2).offset(offset).limit(limit).all()
         user_dicts = guest_users_to_dict(users, cur_user_id)
         user_dicts = [{'type':'user', 'user':user_dict} for user_dict in user_dicts]
@@ -2799,18 +2833,15 @@ def get_trending_users(cur_user_id, list_id, offset=0, limit=20):
     try:
         if list_id:
             parent_list = get_list_from_name_or_id(list_id)
+        if list_id:
+            user_ids = get_list_user_ids(list_id)
+            users = User.query.filter(User.id.in_(user_ids)).offset(offset).limit(limit).all()
+        else:
+            users = User.query.join(DiscoverList, User.id==DiscoverList.user
+                                ).filter(User.deleted==False
+                                ).order_by(User.id
+                                ).offset(offset).limit(limit).all()
 
-        users = User.query.join(ListItem, User.id==ListItem.child_user_id
-                                ).filter(ListItem.parent_list_id==list_id,
-                                            ListItem.deleted==False,
-                                            ListItem.child_user_id!=None,
-                                            ListItem.show_on_list==True,
-                                            User.deleted==False
-                                        ).order_by(ListItem.score
-                                        ).offset(offset
-                                        ).limit(limit
-                                        ).all()
-        users = User.query.filter(User.user_type==2).offset(offset).limit(limit).all()
         user_dicts = guest_users_to_dict(users, cur_user_id)
         user_dicts = [{'type':'user', 'user':user_dict} for user_dict in user_dicts]
         
@@ -2825,9 +2856,17 @@ def get_trending_users(cur_user_id, list_id, offset=0, limit=20):
 def get_featured_posts(cur_user_id, list_id, offset=0, limit=20):
     try:
         if list_id:
-            parent_list = get_list_from_name_or_id(list_id)
-        posts = Post.query.filter(Post.deleted==False,
-                                Post.answer_author.in_([u.id for u in User.query.filter(User.user_type==2)])).offset(offset).limit(limit).all()
+            posts = Post.query.filter(Post.deleted==False,
+                                Post.answer_author.in_(get_list_user_ids(list_id))
+                                ).order_by(Post.id.desc()).offset(offset).limit(limit).all()
+        else:
+            posts = Post.query.join(DiscoverList, Post.id==DiscoverList.post
+                                ).filter(Post.deleted==False
+                                ).order_by(DiscoverList.id.desc()
+                                ).offset(offset
+                                ).limit(limit
+                                ).all()
+
 
         post_dicts = posts_to_dict(posts, cur_user_id)
         post_dicts = [{'type':'post', 'post':post_dict} for post_dict in post_dicts]
@@ -2843,8 +2882,17 @@ def get_trending_posts(cur_user_id, list_id, offset=0, limit=20):
     try:
         if list_id:
             parent_list = get_list_from_name_or_id(list_id)
-        posts = Post.query.filter(Post.deleted==False,
-                                Post.answer_author.in_([u.id for u in User.query.filter(User.user_type==2)])).offset(offset).limit(limit).all()
+            posts = Post.query.filter(Post.deleted==False,
+                                Post.answer_author.in_(get_list_user_ids(list_id))
+                                ).order_by(Post.id).offset(offset).limit(limit).all()
+
+        else:
+            posts = Post.query.join(DiscoverList, Post.id==DiscoverList.post
+                                ).filter(Post.deleted==False
+                                ).order_by(Post.id.desc()
+                                ).offset(offset
+                                ).limit(limit
+                                ).all()
 
         post_dicts = posts_to_dict(posts, cur_user_id)
         post_dicts = [{'type':'post', 'post':post_dict} for post_dict in post_dicts]
@@ -2860,8 +2908,25 @@ def get_featured_questions(cur_user_id, list_id, offset=0, limit=20):
     try:
         if list_id:
             parent_list = get_list_from_name_or_id(list_id)
-        questions = Question.query.filter(Question.deleted==False, Question.is_answered==False, Question.is_ignored==False, Question.flag.in_([1, 2]),
-                                Question.question_to.in_([u.id for u in User.query.filter(User.user_type==2)])).offset(offset).limit(limit).all()
+            questions = Question.query.filter(Question.deleted==False,
+                                            Question.is_answered==False,
+                                            Question.is_ignored==False,
+                                            Question.flag.in_([1, 2]),
+                                            Question.question_to.in_(get_list_user_ids(list_id))
+                                        ).order_by(Question.score.desc()
+                                        ).offset(offset
+                                        ).limit(limit
+                                        ).all()
+        else:
+            questions = Question.query.filter(Question.deleted==False,
+                                            Question.is_answered==False,
+                                            Question.is_ignored==False,
+                                            Question.flag.in_([1, 2]),
+                                            Question.question_to.in_([item.user for item in DiscoverList.query.filter(DiscoverList.user!=None).all()])
+                                        ).order_by(Question.score.desc()
+                                        ).offset(offset
+                                        ).limit(limit
+                                        ).all()
 
         question_dicts = questions_to_dict(questions, cur_user_id)
         question_dicts = [{'type':'question', 'question':question_dict} for question_dict in question_dicts]
@@ -2877,9 +2942,32 @@ def get_trending_questions(cur_user_id, list_id, offset=0, limit=20):
     try:
         if list_id:
             parent_list = get_list_from_name_or_id(list_id)
-        questions = Question.query.filter(Question.deleted==False, Question.is_answered==False, Question.is_ignored==False, Question.flag.in_([1, 2]),
-                                Question.question_to.in_([u.id for u in User.query.filter(User.user_type==2)])).offset(offset).limit(limit).all()
 
+            
+
+            questions = Question.query.filter(Question.deleted==False,
+                                            Question.is_answered==False,
+                                            Question.is_ignored==False,
+                                            Question.flag.in_([1, 2]),
+                                            Question.question_to.in_(get_list_user_ids(list_id))
+                                            ).outerjoin(Upvote
+                                            ).group_by(Question.id
+                                            ).order_by(func.count(Upvote.id).desc(), Question.score.desc()
+                                            ).offset(offset
+                                            ).limit(limit
+                                            ).all()
+        else:
+            questions = Question.query.filter(Question.deleted==False,
+                                            Question.is_answered==False,
+                                            Question.is_ignored==False,
+                                            Question.flag.in_([1, 2]),
+                                            Question.question_to.in_([item.user for item in DiscoverList.query.filter(DiscoverList.user!=None).all()])
+                                            ).outerjoin(Upvote
+                                            ).group_by(Question.id
+                                            ).order_by(func.count(Upvote.id).desc(), Question.score.desc()
+                                            ).offset(offset
+                                            ).limit(limit
+                                            ).all()
         question_dicts = questions_to_dict(questions, cur_user_id)
         question_dicts = [{'type':'question', 'question':question_dict} for question_dict in question_dicts]
         
@@ -2893,17 +2981,32 @@ def get_trending_questions(cur_user_id, list_id, offset=0, limit=20):
 def get_list_feed(cur_user_id, list_id, offset=0, limit=20):
     try:
         parent_list = get_list_from_name_or_id(list_id)
-        questions = get_trending_questions(cur_user_id, 'sports', offset=offset, limit=4)['stream']
-        question_count = len(questions)
-        limit -= question_count
+        users = User.query.join(ListItem, User.id==ListItem.child_user_id
+                                ).filter(ListItem.parent_list_id==list_id,
+                                            ListItem.deleted==False,
+                                            ListItem.child_user_id!=None,
+                                            ListItem.show_on_list==True,
+                                            User.deleted==False
+                                        ).order_by(ListItem.score
+                                        ).offset(offset
+                                        ).limit(1
+                                        ).all()
+        users = [{'type':'user', 'user':u} for u in guest_users_to_dict(users, cur_user_id)]
 
-        resp = get_new_discover(cur_user_id, offset, limit, device_id='web', version_code=0)
-        if resp['stream']:
-            for question in questions:
-                idx = random.randint(0, resp['count'])
-                resp['stream'].insert(idx, question)
-                resp['count'] += 1
-        return resp
+        questions = get_trending_questions(cur_user_id, list_id, offset=offset, limit=3)['stream']
+
+        posts = Post.query.filter(Post.deleted==False,
+                            Post.answer_author.in_(get_list_user_ids(list_id))
+                            ).order_by(Post.id.desc()).offset(offset).limit(limit-len(users)-len(questions)).all()
+
+        posts = [{'type':'post', 'post':p} for p in posts_to_dict(posts, cur_user_id)]
+        stream = posts
+        for item in users+questions:
+            idx = random.randint(0, len(stream))
+            stream.insert(idx, item)
+
+        next_index = -1 if len(stream)<limit else offset+limit
+        return {'stream':stream, 'count':count, 'next_index':next_index}
 
     except NoResultFound:
         raise CustomExceptions.ObjectNotFoundException('List has been deleted or does not exit')

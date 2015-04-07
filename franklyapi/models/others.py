@@ -320,3 +320,4 @@ class MailLog(Base):
 
     def __repr__(self):
         return '<MailLog %r:%r>' %(self.id, self.email_id, self.mail_type, self.object_id, self.created_at)
+    

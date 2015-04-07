@@ -48,18 +48,18 @@ class ListItem(Base):
     id             = Column(Integer(), primary_key=True)
     parent_list_id = Column(CHAR(32), ForeignKey('lists.id'), nullable=False)
     child_user_id  = Column(CHAR(32), ForeignKey('users.id'))
-    child_list_id  = Column(CHAR(32), ForeignKey('lists.id'), nullable=False)
+    child_list_id  = Column(CHAR(32), ForeignKey('lists.id'))
     show_on_list   = Column(Boolean(), default=False)
     score          = Column(Float())
-    created_at     = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
-    created_by     = Column(DateTime(), default=datetime.datetime.now())
+    created_by     = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
+    created_at     = Column(DateTime(), default=datetime.datetime.now())
     is_featured    = Column(Boolean(), default=False)
     deleted        = Column(Boolean(), default=False)
 
     def __init__(self, parent_list_id, created_by, child_user_id=None, child_list_id=None, 
                 show_on_list=False, score=0, created_at=datetime.datetime.now(),
                 is_featured=False, deleted=False):
-        if not child_user_id:
+        if child_user_id:
             self.child_user_id  = child_user_id 
         elif child_list_id:
             self.child_list_id = child_list_id 
