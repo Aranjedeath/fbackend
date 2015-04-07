@@ -156,8 +156,12 @@ def set_access_token(device_id, device_type, user_id, access_token, push_id=None
 
 
 def get_data_from_external_access_token(social_type, external_access_token, external_token_secret=None):
-    user_data = social_helpers.get_user_data(social_type, external_access_token, external_token_secret)
-    return user_data
+    from twitter import TwitterError
+    try:
+        user_data = social_helpers.get_user_data(social_type, external_access_token, external_token_secret)
+        return user_data
+    except TwitterError as e:
+        raise CustomExceptions.InvalidTokenException(str(e))
 
 
 
@@ -2092,7 +2096,7 @@ def prompt_for_profile_video(user_id):
     time_threshold = datetime.datetime.now() - datetime.timedelta(hours=48)
     if user_id == '481bc87c43bc4812b0e333ecd9cd4c2c':
         return True
-    return bool(User.query.filter(User.id==user_id, User.user_since<time_threshold, User.profile_video!=None).count())
+    return bool(User.query.filter(User.id==user_id, User.user_since<time_threshold, User.profile_video==None).count())
 
 
 def user_profile_request(current_user_id, request_for, request_type):
@@ -2136,7 +2140,6 @@ def get_new_discover(current_user_id, offset, limit, device_id, version_code, vi
     if offset ==0 and current_user_id:
         add_profile_video_prompt = prompt_for_profile_video(current_user_id)
         limit -= 1
-        add_profile_video_prompt = True
     
     day_count = 0
     if get_device_type(device_id)=='web':
@@ -2994,11 +2997,6 @@ def get_list_feed(cur_user_id, list_id, offset=0, limit=20):
 def suggest_answer_author(question_body):
     users = User.query.filter(User.username.in_(['arvindkejriwal', 'javedakhtar', 'ranveerbrar'])).all()
     return {'count':len(users), 'users':[thumb_user_to_dict(user) for user in users]}
-
-
-
-
-
 
 
 

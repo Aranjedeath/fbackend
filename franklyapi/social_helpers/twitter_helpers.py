@@ -22,4 +22,4 @@ def get_twitter_data(access_token, access_secret, app_token=app_token,app_secret
 		return user_data
 	except Exception as e:
 		print traceback.format_exc(e)
-		raise e()
+		raise e
