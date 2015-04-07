@@ -3,7 +3,7 @@ from infra import SimpleMailer
 from models import MailLog, User, AccessToken, Question
 from notification import push_notification as push
 from app import db
-from configs import config
+
 from helper import *
 from CustomExceptions import ObjectNotFoundException
 
