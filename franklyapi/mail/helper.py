@@ -50,7 +50,7 @@ dict = {
     "new_celebrity_profile": {
                           "subject": "%s just joined frankly.me , Ask them anything",
                           "body":""
-    }
+    },
     "inactive_profile" : {
                          "subject": "Howdy Rockstar! We are missing you!",
                          "body": '''Too busy at work? Or is it your beloved not letting you go? Or having more pressing issues?
