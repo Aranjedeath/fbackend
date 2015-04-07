@@ -178,11 +178,9 @@ def get_device_type(device_id):
 
 
 def send_registration_mail(user_id, mail_password=False):
-    user = User.query.filter(User.id==user_id).one()
+
     if 'twitter' not in user.registered_with:
-        make_email.welcome_mail(receiver_email=user.email, receiver_name=user.first_name,
-                                receiver_username=user.username, receiver_password=user.password,
-                                user_id=user.id)
+        make_email.welcome_mail(user_id=user.id)
 
 
 def new_registration_task(user_id, mail_password=True):
@@ -1770,7 +1768,7 @@ def create_forgot_password_token(username=None, email=None):
 
         forgot_token = ForgotPasswordToken(user=user.id, token=token, email=user.email)
         db.session.add(forgot_token)
-        make_email.forgot_password(user.email, token=token, reciever_name=user.first_name, user_id=user.id)
+        make_email.forgot_password(user.email, token=token, receiver_name=user.first_name, user_id=user.id)
         db.session.commit()
 
         return {'success':True}

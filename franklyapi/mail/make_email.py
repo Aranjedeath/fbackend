@@ -17,8 +17,9 @@ header_template = env.get_template('style_zero.html')
 
 mail_sender = SimpleMailer()
 
-# TODO Add option to unsubscribe in the email
-
+# TODO Add option to unsubscribe in the email - GAUR
+# TODO Method which decides on inactive profiles ?
+# TODO Email content for new celeb email and for news digest - CONTENT TEAM
 def mail(email_id, object_id = None, mail_type="", subject="", body="",
          cutoff_time=datetime.timedelta(days=1), mail_limit=1):
     '''
@@ -44,19 +45,19 @@ def log_mail(email_id, mail_type, object_id):
     db.session.add(log)
     db.session.commit()
 
-# TODO Testing and sending login link instead of password
-def welcome_mail(receiver_email, receiver_name,
-                 receiver_username, receiver_password, user_id, mail_type="welcome-mail"):
 
+def welcome_mail(user_id, mail_type="welcome_mail"):
+
+    user = User.query.filter(User.id  == user_id).first()
     cutoff_time = datetime.timedelta(days=1000)
-    mail_dict['salutation'] = "Hi %s" % receiver_name
-    mail_dict['email_text'] = helper.dict[mail_type]['body'] % (receiver_username, receiver_password)
+    mail_dict['salutation'] = "Hi %s" % user.first_name
+    mail_dict['email_text'] = helper.dict[mail_type]['body'] % (user.username, user.password)
 
-    mail(email_id=receiver_email, subject=helper.dict[mail_type]['subject'],
+    mail(email_id=user.email, subject=helper.dict[mail_type]['subject'],
          body=header_template.render(mail_dict), mail_type=mail_type, object_id=user_id,
          cutoff_time= cutoff_time, mail_limit = 1)
 
-# TODO Testing
+
 def forgot_password(receiver_email, token, receiver_name, user_id, mail_type="forgot_password"):
     url = os.path.join(config.WEB_URL, 'reset-password?token={token}'.format(token=token))
 
@@ -68,7 +69,7 @@ def forgot_password(receiver_email, token, receiver_name, user_id, mail_type="fo
          body=header_template.render(mail_dict), mail_type=mail_type, object_id=user_id,
          cutoff_time=cutoff_time, mail_limit=3)
 
-# TODO Testing
+
 def question_asked(question_to, question_from, question_id, question_body,
                    from_widget=False, mail_type="question_asked"):
 
@@ -87,8 +88,8 @@ def question_asked(question_to, question_from, question_id, question_body,
         then send them an email notification
         confirming that the question has been asked
     '''
-    #from_widget and not
-    if len(push.get_active_mobile_devices(asker.id)):
+
+    if from_widget and not len(push.get_active_mobile_devices(asker.id)):
 
         is_first = True if Question.query.filter(Question.question_author == asker.id).count() == 1 else False
 
@@ -102,18 +103,21 @@ def question_asked(question_to, question_from, question_id, question_body,
         mail(email_id=asker.email, subject=helper.dict[mail_type]['subject'],
              body=header_template.render(mail_dict), mail_type=mail_type, object_id=question_id,
              cutoff_time=cutoff_time, mail_limit=1)
+        mail_type="question_asked"
 
-    if len(push.get_active_mobile_devices(asked.id)):
+
+    if not len(push.get_active_mobile_devices(asked.id)):
 
         mail_type += "_to"
+        subject = helper.dict[mail_type]['subject'] % asker.first_name
         mail_dict['salutation'] = "Hi %s" % asked.first_name
-        mail_dict['email_text'] = helper.dict[mail_type]['body'] % (asked.first_name, question_body)
+        mail_dict['email_text'] = helper.dict[mail_type]['body'] % (asker.first_name, question_body)
 
-        mail(email_id=asker.email, subject=helper.dict[mail_type]['subject'],
+        mail(email_id=asked.email, subject=subject,
              body=header_template.render(mail_dict), mail_type=mail_type, object_id=question_id,
              cutoff_time=cutoff_time, mail_limit=1)
 
-# TODO Testing
+
 def question_answered(receiver_email, receiver_name, celebrity_name, question, web_link,
                       post_id, user_id, mail_type='post_add'):
 
@@ -121,13 +125,13 @@ def question_answered(receiver_email, receiver_name, celebrity_name, question, w
         cutoff_time = datetime.timedelta(days=10000)
 
         mail_dict['salutation'] = "Hi %s" % receiver_name
-        mail_dict['email_text'] = helper.dict['question_answered']['body'] % (celebrity_name, web_link, question)
+        mail_dict['email_text'] = helper.dict[mail_type]['body'] % (celebrity_name, web_link, question)
 
         mail(email_id=receiver_email, subject=helper.dict[mail_type]['subject'],
              body=header_template.render(mail_dict), mail_type=mail_type, object_id=post_id,
              cutoff_time=cutoff_time, mail_limit=1)
 
-# TODO Method which would call this
+
 def inactive_profile(receiver_email, receiver_name, user_id, mail_type="inactive_profile"):
 
     cutoff_time = datetime.timedelta(days=30)
@@ -138,7 +142,7 @@ def inactive_profile(receiver_email, receiver_name, user_id, mail_type="inactive
          body=header_template.render(mail_dict), mail_type=mail_type, object_id=user_id,
          cutoff_time=cutoff_time, mail_limit=1)
 
-# TODO Email content
+
 def new_celebrity_profile(for_users, celebrity_id, mail_type="new_celebrity"):
 
     cutoff_time = datetime.timedelta(days=100)
@@ -158,19 +162,17 @@ def new_celebrity_profile(for_users, celebrity_id, mail_type="new_celebrity"):
     except ObjectNotFoundException:
         pass
 
-# TODO Email content
-def weekly_digest(for_users, mail_type="weekly_digest"):
+
+def weekly_digest(for_users, subject, mail_type="weekly_digest"):
     cutoff_time = datetime.timedelta(days=7)
     try:
 
         for user in for_users:
             u = User.query.filter(User.id == user).first()
 
-            mail_dict['salutation'] = "Hi %s" % u.first_name
-            mail_dict['email_text'] = helper.dict[mail_type]['body']
-
-            mail(email_id=u.email, subject=helper.dict[mail_type]['subject'],
-                 body=header_template.render(mail_dict), mail_type = mail_type,
+            body = "TODO"
+            mail(email_id=u.email, subject=subject,
+                 body=body, mail_type = mail_type,
                  object_id=user, cutoff_time=cutoff_time, mail_limit=1)
 
     except ObjectNotFoundException:

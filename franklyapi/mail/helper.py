@@ -42,11 +42,15 @@ dict = {
                                       on video through the Frankly android or iOS apps.'''
 
                          },
-    "question_answered": {
+    "post_add": {
                           "subject" : "Your question has been answered!",
                           "body": '''%s has answered your question <a href='%s'>"%s"</a>. Check it out now!'''
 
                         },
+    "new_celebrity_profile": {
+                          "subject": "%s just joined frankly.me , Ask them anything",
+                          "body":""
+    }
     "inactive_profile" : {
                          "subject": "Howdy Rockstar! We are missing you!",
                          "body": '''Too busy at work? Or is it your beloved not letting you go? Or having more pressing issues?

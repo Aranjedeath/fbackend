@@ -18,8 +18,7 @@ it is sent to all those users who upvoted, asked the question or follows the use
 def post_notifications(post_id):
 
     result = db.session.execute(text('''Select
-
-                                         aa.first_name, q.body
+                                        aa.first_name, q.body,
                                          n.id, n.link, n.type
                                          from posts p
                                          left join questions q on q.id = p.question
@@ -56,15 +55,19 @@ def post_notifications(post_id):
                                              params={'notification_id': notification_id})
 
             print 'Notification id: ', notification_id
+            print 'Notification type:', notification_type
+
             for user in results:
 
                 push.send(notification_id=notification_id, user_id=user[0])
                 if notification_type == 'post-add-self_user':
+                    print user.email
                     make_email.question_answered(receiver_email=user[2], receiver_name=user[1],
                                                celebrity_name=answer_author_name,
                                                user_id=row[0],
                                                question=question_body, web_link=link,
-                                               object_id=post_id)
+                                               post_id=post_id)
+                    break
     except ObjectNotFoundException:
         pass
 
