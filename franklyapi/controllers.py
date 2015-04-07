@@ -2702,7 +2702,7 @@ def get_list_from_name_or_id(list_id):
 def get_list_items(cur_user_id, list_id, offset=0, limit=20):
     try:
         if not list_id:
-            list_dicts = list_items_to_dict(get_top_level_lists(offset=offset, limit=limit), cur_user_id)
+            list_dicts = [{'type':'list', 'list':l} for l in lists_to_dict(get_top_level_lists(offset=offset, limit=limit), cur_user_id)]
         else:
             parent_list = get_list_from_name_or_id(list_id)
 
