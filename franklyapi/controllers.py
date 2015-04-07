@@ -153,8 +153,12 @@ def set_access_token(device_id, device_type, user_id, access_token, push_id=None
 
 
 def get_data_from_external_access_token(social_type, external_access_token, external_token_secret=None):
-    user_data = social_helpers.get_user_data(social_type, external_access_token, external_token_secret)
-    return user_data
+    from twitter import TwitterError
+    try:
+        user_data = social_helpers.get_user_data(social_type, external_access_token, external_token_secret)
+        return user_data
+    except TwitterError as e:
+        raise CustomExceptions.InvalidTokenException(str(e))
 
 
 
