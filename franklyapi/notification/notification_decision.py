@@ -110,11 +110,12 @@ def push_question_notification(question_id):
         user_id = Question.query.filter(Question.id == question_id).first().question_to
         n = Notification.query.filter(Notification.object_id == question_id,
                                       Notification.type == 'question-ask-self_user').first()
-        pushed = UserPushNotification.query.filter(UserPushNotification.notification_id == n.id,
-                                                   UserPushNotification.user_id == user_id).count()
-        print 'pushed is:', pushed
-        if pushed == 0 and decide_question_push(user_id=user_id, question_id=question_id):
-            push.send(notification_id=n.id, user_id=user_id)
+        if n is not None:
+            pushed = UserPushNotification.query.filter(UserPushNotification.notification_id == n.id,
+                                                       UserPushNotification.user_id == user_id).count()
+            print 'pushed is:', pushed
+            if pushed == 0 and decide_question_push(user_id=user_id, question_id=question_id):
+                push.send(notification_id=n.id, user_id=user_id)
     except ObjectNotFoundException:
         pass
 
