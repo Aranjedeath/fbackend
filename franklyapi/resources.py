@@ -830,7 +830,7 @@ class QuestionAsk(restful.Resource):
                                             lat=args['coordinate_point'][1], 
                                             lon=args['coordinate_point'][0], 
                                             is_anonymous=args['is_anonymous'],
-                                            from_widget = len(args['X-widget']) > 0
+                                            from_widget = len(args['X-widget-id']) > 0
                                             )
             
             return resp
