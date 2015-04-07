@@ -1,6 +1,5 @@
 from app import db
 from sqlalchemy.sql import text
-from mailwrapper import email_helper
 from CustomExceptions import ObjectNotFoundException
 from models import Question, Notification, UserNotificationInfo, UserPushNotification
 
@@ -21,7 +20,7 @@ def post_notifications(post_id):
     result = db.session.execute(text('''Select
 
                                          aa.first_name, q.body
-                                         n.id, n.link
+                                         n.id, n.link, n.type
                                          from posts p
                                          left join questions q on q.id = p.question
                                          left join users aa on aa.id = p.answer_author
@@ -31,6 +30,7 @@ def post_notifications(post_id):
                                          group by n.type
                                          limit 2 ;
                                          '''), params={'post_id': post_id})
+    from mail import make_email
     try:
         for row in result:
 
@@ -38,6 +38,7 @@ def post_notifications(post_id):
             question_body = row[1]
             notification_id = row[2]
             link = row[3]
+            notification_type = row[4]
 
 
             #Get a set of users who haven't been sent this gcm notification yet
@@ -58,8 +59,10 @@ def post_notifications(post_id):
             for user in results:
 
                 push.send(notification_id=notification_id, user_id=user[0])
-                email_helper.question_answered(receiver_email=user[2], receiver_name=user[1],
+                if notification_type == 'post-add-self_user':
+                    make_email.question_answered(receiver_email=user[2], receiver_name=user[1],
                                                celebrity_name=answer_author_name,
+                                               user_id=row[0],
                                                question=question_body, web_link=link,
                                                object_id=post_id)
     except ObjectNotFoundException:

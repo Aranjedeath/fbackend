@@ -1,4 +1,5 @@
 from configs import config
+
 dict = {
 
     "forgot_password": {
@@ -22,7 +23,7 @@ dict = {
                                       Username: %s <br/> Password: %s <br/><br/>\n
                                       Have a rocking stay at Frankly.me!''',
                         },
-    "question_asked": {
+    "question_asked_by": {
                           "subject" : "Your question has been asked",
 
                           "body": '''Congratulations!<br/><br/>Your question has been successfully posted.We will make sure it gets answered and till then, you can ask more questions to
@@ -35,6 +36,12 @@ dict = {
                                   " has been answered."
 
                         },
+    "question_asked_to": {
+                          "subject": "%s just asked you a question!",
+                          "body": '''%s has just asked you "%s". <br/><br/> Answer this and other interesting questions
+                                      on video through the Frankly android or iOS apps.'''
+
+                         },
     "question_answered": {
                           "subject" : "Your question has been answered!",
                           "body": '''%s has answered your question <a href='%s'>"%s"</a>. Check it out now!'''
@@ -63,3 +70,4 @@ mail_dict = {
     "signature": "Pallavi, <br/> Community Manager <br/> Frankly.me",
     "team_signature": "Lots of love, <br/> Frankly.me Team"
 }
+

@@ -803,10 +803,13 @@ class UserUpdateToken(restful.Resource):
 class QuestionAsk(restful.Resource):
     
     post_parser = reqparse.RequestParser()
-    post_parser.add_argument('question_to'     , type=str, required=True, location='json', help="question_to must be user_id of the user to whom the question is being asked.")
+    post_parser.add_argument('question_to', type=str, required=True,
+                             location='json',
+                             help="question_to must be user_id of the user to whom the question is being asked.")
     post_parser.add_argument('body'            , type=str, required=True, location='json')
     post_parser.add_argument('coordinate_point', type=list, default=[None, None], location='json')
     post_parser.add_argument('is_anonymous'    , type=bool, required=True, location='json')
+    post_parser.add_argument('X-widget-id', type=str, location='headers', default='')
 
     @login_required
     def post(self):
@@ -826,7 +829,8 @@ class QuestionAsk(restful.Resource):
                                             body=args['body'], 
                                             lat=args['coordinate_point'][1], 
                                             lon=args['coordinate_point'][0], 
-                                            is_anonymous=args['is_anonymous'], 
+                                            is_anonymous=args['is_anonymous'],
+                                            from_widget = len(args['X-widget']) > 0
                                             )
             
             return resp

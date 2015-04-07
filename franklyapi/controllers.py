@@ -17,7 +17,8 @@ import CustomExceptions
 import media_uploader
 import async_encoder
 import social_helpers
-import notification
+
+
 
 from database import get_item_id
 
@@ -29,7 +30,7 @@ from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
                     SearchDefault, IntervalCountMap, ReportAbuse, SearchCategory,\
                     Email, BadEmail, EmailSent, List, ListItem, ListFollow 
 
-from notification import notification_decision
+from notification import notification_decision, make_notification as notification
 
 from app import redis_client, raygun, db, redis_views, redis_pending_post
 
@@ -1122,7 +1123,7 @@ def question_is_clean(body):
     return True
 
 
-def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_by=None):
+def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, from_widget, added_by=None):
 
     if has_blocked(cur_user_id, question_to):
         raise CustomExceptions.BlockedUserException()
@@ -1150,34 +1151,11 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_b
 
     db.session.commit()
 
-    ''' Push Notification for the person who was
-        asked the question
-    '''
-    if clean:
+    if question_to != cur_user_id and clean:
         notification.ask_question(question_id=question.id)
-
-    ''' Send email to user who asked the question
-    confirming that the question has been asked'''
-    is_first = False
-    if db.session.query(Question).filter(Question.question_author == cur_user_id).count() == 1:
-        is_first = True
-
-
-    if question_to != cur_user_id:
-
-        users = User.query.filter(User.id.in_([cur_user_id,question_to]))
-
-        for user in users:
-            if user.id == cur_user_id:
-                mail_reciever = user
-            if user.id == question_to:
-                question_to = user
-
-        make_email.question_asked(receiver_email=mail_reciever.email,
-                                    receiver_name=mail_reciever.first_name,
-                                    question_to_name=question_to.first_name,
-                                    question_id=question.id,
-                                    is_first=is_first)
+        make_email.question_asked(question_from=cur_user_id, question_to=question_to, question_id=question.id,
+                                  question_body = question.body,
+                                  from_widget=from_widget)
 
     resp = {'success':True, 'id':str(question.id), 'question':question_to_dict(question)}
     return resp
@@ -1918,7 +1896,7 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
             except IOError:
                 raise CustomExceptions.BadRequestException('Couldnt read video file.')
             curuser = User.query.filter(User.id == cur_user_id).one()
-            cur_user_username = curuser.username
+
 
             if not client_id:
                 client_id = question.short_id
@@ -1944,13 +1922,14 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
                             thumbnail_url=thumbnail_url,
                             video_type='answer_video',
                             object_id=post.id,
-                            username=cur_user_username)
-            async_encoder.encode_video_task.delay(video_url, username=cur_user_username)
+                            username=curuser.username)
+            async_encoder.encode_video_task.delay(video_url, username=curuser.username)
 
 
             db.session.commit()
             redis_pending_post.delete(client_id)
             notification.new_post(post_id=post.id, question_body=question.body)
+
 
         return {'success': True, 'id': str(post.id), 'post':post_to_dict(post, cur_user_id)}
 

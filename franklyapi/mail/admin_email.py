@@ -1,8 +1,6 @@
 from configs import config
 from infra import SimpleMailer
 
-mail_sender = SimpleMailer(config.FROM_EMAIL_ADDRESS)
-
 
 # ADMIN EMAILS
 def send_weekly_report(recipients, report):

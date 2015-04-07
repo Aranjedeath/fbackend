@@ -14,11 +14,12 @@ class SimpleMailer(object):
     """
     Class defining the simple mailer
     """
-    def __init__(self, sender, key=config.AWS_KEY, secret_key=config.AWS_SECRET, region=config.AWS_REGION):
+    def __init__(self, sender = None, key=config.AWS_KEY, secret_key=config.AWS_SECRET, region=config.AWS_REGION):
         """
         Initializes the SES connection and sets up the sender mail ID
         """
-        self.sender_id = sender
+
+        self.sender_id = sender if sender else config.FROM_EMAIL_ADDRESS
         try:
             self.conn = boto.ses.connect_to_region(region, aws_access_key_id=key, aws_secret_access_key=secret_key)
         except Exception as e:
