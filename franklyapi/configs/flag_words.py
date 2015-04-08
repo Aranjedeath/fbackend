@@ -341,7 +341,15 @@ BAD_WORDS = [
 'yaoi',
 'yellow showers',
 'yiffy',
-'zoophilia']
+'zoophilia',
+
+'lund', 'chut', 'laude', 'harami', 'haramzada', 'haramzade', 'behenchod', 'madarchod', 'betichod', 'maderchod', 'bhaichod',
+'bakrichod', 'bhosadchod', 'bhonsadchod', 'gaand', 'gaandu', 'loda', 'lauda', 'bucklund', 'mammey',
+'tatte', 'boobay', 'chuchi', 'choochi', 'randi', 'jhantu', 'chutiye', 'bhosadiwala', 'bhonsadiwala',
+'laude', 'laaude', 'chutiya', 'bubey', 'chudai', 'muth', 'sadka', 'muuth', 'bhootnike', 'bhutnike',
+'gaandchod', 'gandfaadu', 'gandfaad', 'gandfad', 'gandfad']
+
+
 
 SPECIAL_CHARS_AND_NUMBERS = ['?', '!', '@', '#', '$', '%', '^', '&', '*', 
                                 '(', ')', '-', '_', '+', '=', '~', '`',
