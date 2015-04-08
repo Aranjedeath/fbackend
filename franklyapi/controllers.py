@@ -2711,19 +2711,22 @@ def get_list_from_name_or_id(list_id):
 
 def get_list_items(cur_user_id, list_id, offset=0, limit=20):
     try:
+        print list_id
         if not list_id:
             list_dicts = [{'type':'list', 'list':l} for l in lists_to_dict(get_top_level_lists(offset=offset, limit=limit), cur_user_id)]
         else:
             parent_list = get_list_from_name_or_id(list_id)
 
-            list_items = ListItem.query.filter(ListItem.parent_list_id==list_id,
+            list_items = ListItem.query.filter(ListItem.parent_list_id==parent_list.id,
                                                     ListItem.deleted==False,
                                                     ListItem.show_on_list==True
                                                 ).order_by(ListItem.score
                                                 ).offset(offset
                                                 ).limit(limit
                                                 ).all()
+            print list_items
             list_dicts = list_items_to_dict(list_items, cur_user_id)
+            print list_dicts
 
         count = len(list_dicts)
         next_index = -1 if count<limit else offset+limit
