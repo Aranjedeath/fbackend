@@ -249,8 +249,7 @@ def check_and_make_milestone(milestone_name, user_id, associated_item_id, count)
         notification_type =  milestone_name + '_' + milestone_crossed
 
         #check if a notification has been sent to user about this milestone or not
-        if count_of_notifications_sent_by_type(user_id=user_id, notification_type=notification_type,
-                                               interval=datetime.datetime.now() - datetime.timedelta(days=100000)) == 0:
+        if is_milestone_notification_created(user_id=user_id, milestone_name=notification_type) == False:
 
             #send milestone notification
             notification.send_milestone_notification(milestone_name, milestone_crossed, associated_item_id, user_id)
@@ -288,6 +287,22 @@ def count_of_notifications_sent_by_type(user_id, notification_type, interval=dat
                                          "interval": interval})
     for row in result:
         return row[0]
+
+
+def is_milestone_notification_created(user_id, milestone_name):
+
+    result = db.session.execute(text('''SELECT count(*) from
+                                        notifications n
+                                        LEFT JOIN user_notifications un on un.notification_id = n.id
+                                        where n.type = :milestone_name
+                                        and un.user_id = :user_id'''),
+                                params ={
+                                'milestone_name': milestone_name,
+                                'user_id': user_id
+                                })
+    for row in result:
+        return row[0] > 0
+
 
 
 '''Decides popular users on the basis
