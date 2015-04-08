@@ -1397,7 +1397,7 @@ class TimelineUser(restful.Resource):
     get_parser = reqparse.RequestParser()
     get_parser.add_argument('offset', type=int, default=0, location='args')
     get_parser.add_argument('limit' , type=int, default=10, location='args')
-    get_parser.add_argument('X-Deviceid' , type=str, location='args')
+    get_parser.add_argument('X-Deviceid', type=str, location='headers')
     
     def get(self, user_id):
         """

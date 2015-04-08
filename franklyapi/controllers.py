@@ -1388,7 +1388,7 @@ def get_user_timeline(cur_user_id, user_id, offset, limit, include_reshares=Fals
     if offset == -1:
         return {'stream': [], 'count':0, 'next_index':-1, 'total':total_count}
     data = []
-    if total_count<1 and 'web' in device_id:
+    if total_count<1 and device_id=='web':
         data = question_list_public(cur_user_id, user_id, username=None, offset=offset, limit=limit, version_code=0)['questions']
     else:
         question_data = question_list_public(cur_user_id, user_id, username=None, offset=offset, limit=2, version_code=0)['questions']
