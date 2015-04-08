@@ -1368,7 +1368,7 @@ def comment_list(cur_user_id, post_id, offset, limit):
         return {'comments': comments, 'post': post_id, 'next_index':next_index}
 
 
-def get_user_timeline(cur_user_id, user_id, offset, limit, include_reshares=False):
+def get_user_timeline(cur_user_id, user_id, offset, limit, include_reshares=False, device_id=False):
     
     if cur_user_id and has_blocked(cur_user_id, user_id):
         raise CustomExceptions.UserNotFoundException('User does not exist')
@@ -1387,7 +1387,8 @@ def get_user_timeline(cur_user_id, user_id, offset, limit, include_reshares=Fals
     total_count = posts_query.count()
     if offset == -1:
         return {'stream': [], 'count':0, 'next_index':-1, 'total':total_count}
-    if total_count<1:
+    data = []
+    if total_count<1 and 'web' in device_id:
         data = question_list_public(cur_user_id, user_id, username=None, offset=offset, limit=limit, version_code=0)['questions']
     else:
         question_data = question_list_public(cur_user_id, user_id, username=None, offset=offset, limit=2, version_code=0)['questions']

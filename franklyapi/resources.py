@@ -1397,6 +1397,7 @@ class TimelineUser(restful.Resource):
     get_parser = reqparse.RequestParser()
     get_parser.add_argument('offset', type=int, default=0, location='args')
     get_parser.add_argument('limit' , type=int, default=10, location='args')
+    get_parser.add_argument('X-Deviceid' , type=str, location='args')
     
     def get(self, user_id):
         """
@@ -1423,7 +1424,8 @@ class TimelineUser(restful.Resource):
             resp = controllers.get_user_timeline(cur_user_id, 
                                                 user_id=user_id,
                                                 offset=args['offset'],
-                                                limit=args['limit'])
+                                                limit=args['limit'],
+                                                device_id=args['X-Deviceid'])
             return resp
         except CustomExceptions.UserNotFoundException, e:
             abort(404, message=str(e))
