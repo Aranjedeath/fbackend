@@ -187,7 +187,7 @@ def get_device_type(device_id):
 
 
 def send_registration_mail(user_id, mail_password=False):
-
+    user = User.query.get(user_id)
     if 'twitter' not in user.registered_with:
         make_email.welcome_mail(user_id=user.id)
 
@@ -2804,9 +2804,8 @@ def get_featured_users(cur_user_id, list_id, offset=0, limit=20):
     try:
         if list_id:
             parent_list = get_list_from_name_or_id(list_id)
-        if list_id:
             users = User.query.join(ListItem, User.id==ListItem.child_user_id
-                                    ).filter(ListItem.parent_list_id==list_id,
+                                    ).filter(ListItem.parent_list_id==parent_list.id,
                                                 ListItem.deleted==False,
                                                 ListItem.child_user_id!=None,
                                                 ListItem.show_on_list==True,
@@ -2816,11 +2815,10 @@ def get_featured_users(cur_user_id, list_id, offset=0, limit=20):
                                             ).limit(limit
                                             ).all()
         else:
+            from models import DiscoverList
             users = User.query.join(DiscoverList, User.id==DiscoverList.user
-                                ).order_by(DiscoverList.id.desc()).offset(offset).limit(limit).all()
-
-
-        users = User.query.filter(User.user_type==2).offset(offset).limit(limit).all()
+                                ).order_by(DiscoverList.is_super.desc(), DiscoverList.id.desc()).offset(offset).limit(limit).all()
+        print users
         user_dicts = guest_users_to_dict(users, cur_user_id)
         user_dicts = [{'type':'user', 'user':user_dict} for user_dict in user_dicts]
         
