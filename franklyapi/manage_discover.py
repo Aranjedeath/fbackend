@@ -49,18 +49,17 @@ def get_discover_list(current_user_id, offset, limit=10, day_count=0,
                         else:
                             user_scroll.last_recycled_upto = \
                                 user_scroll.recycled_upto
-
-                        
                 else:
                     print 'time nhi hua jyada beta.'
 
                 recycled_items, recycled_upto = \
-                    get_recycled_items(user_scroll.last_recycled_upto)
-                recycled_items = make_resp_multitype(current_user_id,
-                                                     recycled_items,
-                                                     order_key='recycled_index',
-                                                     reverse_sort=True)
-                user_scroll.recycled_upto = recycled_upto
+                    get_recycled_items(user_scroll.last_recycled_upto, super_inclusion)
+                if len(recycled_items)>0:
+                    recycled_items = make_resp_multitype(current_user_id,
+                                                         recycled_items,
+                                                         order_key='recycled_index',
+                                                         reverse_sort=True)
+                    user_scroll.recycled_upto = recycled_upto
             else:
                 print 'abhi abhi to post add hua h boss'
             
@@ -81,6 +80,7 @@ def get_discover_list(current_user_id, offset, limit=10, day_count=0,
                 WHERE discover_list.removed=false
                   AND discover_list.display_on_day<=:day_count
                   AND discover_list.is_super in :super_inclusion
+                  AND discover_list.display_date <= now()
                 ORDER BY discover_list.id DESC
                 LIMIT :offset, :limit
             """),
@@ -184,7 +184,7 @@ def get_day_count(current_user_id):
     return day_count
 
 
-def get_recycled_items(last_recycled_upto):
+def get_recycled_items(last_recycled_upto, super_inclusion):
     try:
         recycled_upto = last_recycled_upto
         print 'recycled_upto ', recycled_upto
@@ -198,10 +198,13 @@ def get_recycled_items(last_recycled_upto):
                     FROM discover_list
                     WHERE 
                         discover_list.id > :start_pointer
+                        AND discover_list.is_super in :super_inclusion
+                        AND discover_list.display_date <= now()
                     ORDER BY id
                     LIMIT :count
             """),
             params={'start_pointer':last_recycled_upto,
+                    'super_inclusion':super_inclusion,            
                     'count':config.DISCOVER_RECYCLE_COUNT
                    }
             )
@@ -218,10 +221,11 @@ def get_recycled_items(last_recycled_upto):
         print 'recycled_upto ', recycled_upto
 
         return resp, recycled_upto
-    except Exception:
+    except Exception as e:
         # print traceback.format_exc(e)
+        print e.message
         print 'exception'
-        return None, None
+        return [], None
 
 def make_resp_multitype(current_user_id, resp, order_key, reverse_sort=True):
     users = filter(lambda x: resp[x]['type'] == 'user', resp)
@@ -265,11 +269,12 @@ def check_user_last_visit_threshold_cross(last_visit):
             config.DISCOVER_RECYCLE_HOURS * 3600)
 
 def check_not_added_discover_item(last_visit,max_id):
-    count = DiscoverList.query.filter(DiscoverList.added_at > last_visit, DiscoverList.id > max_id).\
+    count = DiscoverList.query.filter(DiscoverList.display_date > last_visit, DiscoverList.id > max_id).\
             count()
     print count, last_visit
     return count == 0
 def check_recycle_upper_limit_reached(last_recycled_upto, margin):
     count = DiscoverList.query.filter(DiscoverList.id >= last_recycled_upto,
+                                      DiscoverList.display_date <= datetime.datetime.now(),
                                       DiscoverList.is_super == False).count()
     return count < margin
