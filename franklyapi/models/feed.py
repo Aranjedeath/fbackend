@@ -15,11 +15,13 @@ class DiscoverList(Base):
     #show_order     = Column(Integer())
     removed        = Column(Boolean(), default=False)
     dirty_index    = Column(Integer())
+    display_date   = Column(DateTime(), nullable=False)
+
 
     def __init__(self, post=None, question=None, user=None,
                                     is_super=False, display_on_day=0,
                                     added_at=datetime.datetime.now(),
-                                    show_order=None, removed=False, dirty_index=None):            
+                                    show_order=None, removed=False, dirty_index=None, display_date=datetime.datetime.now()):            
         if post:
             self.post = post
         elif question:
@@ -34,6 +36,7 @@ class DiscoverList(Base):
         self.show_order     = show_order
         self.id             = id
         self.removed        = removed
+        self.display_date   = display_date
 
 
     def __repr__(self):
