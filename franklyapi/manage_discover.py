@@ -18,6 +18,7 @@ def get_discover_list(current_user_id, offset, limit=10, day_count=0,
     count_of_dirty_sent = 0
     dirty_items = []
     max_id = 0
+    user_scroll = None
     if day_count < 10:
         super_inclusion.remove(True)
         dirty_items = get_dirty_items(offset, limit, day_count)
