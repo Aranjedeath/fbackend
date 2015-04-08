@@ -17,7 +17,7 @@ def get_discover_list(current_user_id, offset, limit=10, day_count=0,
     super_inclusion = [False, True, None]
     count_of_dirty_sent = 0
     dirty_items = []
-
+    max_id = 0
     if day_count < 10:
         super_inclusion.remove(True)
         dirty_items = get_dirty_items(offset, limit, day_count)
@@ -29,17 +29,19 @@ def get_discover_list(current_user_id, offset, limit=10, day_count=0,
     # recycle discover feeds
     recycled_items = []
     recycled_upto = 0
-
     if offset == 0 and current_user_id:
         print 'offset 0'
         user_scroll = UserScroll.query.filter(
             UserScroll.user == current_user_id).first()
         if user_scroll:
             print 'scroll data found'
-            if check_not_added_discover_item(user_scroll.last_visit):
+            max_id = user_scroll.scrolled_upto
+            recycled_upto = user_scroll.recycled_upto
+            if check_not_added_discover_item(user_scroll.last_visit, max_id):
                 print 'last item added was way too puraana'
                 if check_user_last_visit_threshold_cross(user_scroll.last_visit):
                     print 'threshold crossed'
+                    user_scroll.last_visit = datetime.datetime.now()
                     if user_scroll:
                         if check_recycle_upper_limit_reached(user_scroll.last_recycled_upto, limit-len(dirty_items)):
                             user_scroll.last_recycled_upto = 0
@@ -47,10 +49,8 @@ def get_discover_list(current_user_id, offset, limit=10, day_count=0,
                         else:
                             user_scroll.last_recycled_upto = \
                                 user_scroll.recycled_upto
-                            user_scroll.recycled_upto = recycled_upto
 
-                        user_scroll.last_visit = datetime.datetime.now()
-                        db.session.commit()
+                        
                 else:
                     print 'time nhi hua jyada beta.'
 
@@ -60,8 +60,11 @@ def get_discover_list(current_user_id, offset, limit=10, day_count=0,
                                                      recycled_items,
                                                      order_key='recycled_index',
                                                      reverse_sort=True)
+                user_scroll.recycled_upto = recycled_upto
             else:
                 print 'abhi abhi to post add hua h boss'
+            
+            db.session.commit()
         else:
             print 'scroll data not found.. creating data'
             user_scroll = UserScroll(current_user_id)
@@ -87,13 +90,18 @@ def get_discover_list(current_user_id, offset, limit=10, day_count=0,
                 'limit':limit-len(dirty_items)-len(recycled_items)}
         )
     resp = {}
+
     for item in items:
+        max_id = max(item[3], max_id)
         if item[0]:
             resp.update({item[0]: {'type':'post', 'show_order':item[3]}})
         if item[1]:
             resp.update({item[1]: {'type':'question', 'show_order':item[3]}})
         if item[2]:
             resp.update({item[2]: {'type':'user', 'show_order':item[3]}})
+
+    user_scroll.scrolled_upto = max_id
+    db.session.commit()
 
     all_other_items = make_resp_multitype(current_user_id, resp,
                                           order_key='show_order',
@@ -212,6 +220,7 @@ def get_recycled_items(last_recycled_upto):
         return resp, recycled_upto
     except Exception:
         # print traceback.format_exc(e)
+        print 'exception'
         return None, None
 
 def make_resp_multitype(current_user_id, resp, order_key, reverse_sort=True):
@@ -255,8 +264,8 @@ def check_user_last_visit_threshold_cross(last_visit):
     return ((datetime.datetime.now() - last_visit).total_seconds() >
             config.DISCOVER_RECYCLE_HOURS * 3600)
 
-def check_not_added_discover_item(last_visit):
-    count = DiscoverList.query.filter(DiscoverList.added_at > last_visit).\
+def check_not_added_discover_item(last_visit,max_id):
+    count = DiscoverList.query.filter(DiscoverList.added_at > last_visit, DiscoverList.id > max_id).\
             count()
     print count, last_visit
     return count == 0
