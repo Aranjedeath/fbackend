@@ -2640,7 +2640,7 @@ def edit_list(cur_user_id, list_id, name=None, display_name=None, icon_image=Non
         db.session.add(list_to_edit)
         db.session.commit()
 
-    return {'success':True, 'list':lists_to_dict(new_list, cur_user_id)[0]}
+    return {'success':True, 'list':lists_to_dict([list_to_edit], cur_user_id)[0]}
 
 
 def delete_list(cur_user_id, list_id):
