@@ -80,9 +80,9 @@ def get_discover_list(current_user_id, offset, limit=10, day_count=0,
                 FROM discover_list
                 WHERE discover_list.removed=false
                   AND discover_list.display_on_day<=:day_count
-                  AND discover_list.is_super in :super_inclusion
+                  AND discover_list.is_super IN :super_inclusion
                   AND discover_list.display_date <= now()
-                ORDER BY discover_list.id DESC
+                ORDER BY discover_list.display_date DESC, discover_list.id DESC
                 LIMIT :offset, :limit
             """),
         params={'super_inclusion':super_inclusion,
