@@ -1390,9 +1390,14 @@ def get_user_timeline(cur_user_id, user_id, offset, limit, include_reshares=Fals
     if total_count<1:
         data = question_list_public(cur_user_id, user_id, username=None, offset=offset, limit=limit, version_code=0)['questions']
     else:
-        data = posts_query.offset(offset).limit(limit).all()
-        data = posts_to_dict(posts, cur_user_id)
-        data = [{'type':'post', 'post':post} for post in data]
+        question_data = question_list_public(cur_user_id, user_id, username=None, offset=offset, limit=2, version_code=0)['questions']
+        
+        posts = posts_query.offset(offset).limit(limit-len(question_data)).all()
+        posts = posts_to_dict(posts, cur_user_id)
+        data  = [{'type':'post', 'post':post} for post in posts]
+        for item in question_data:
+            idx = random.randint(0, len(data))
+            data.insert(idx, item)
 
     next_index = offset+limit if data else -1
     
