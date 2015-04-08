@@ -30,7 +30,7 @@ from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
                     Question, Upvote, Comment, ForgotPasswordToken, Install, Video,\
                     UserFeed, Event, Reshare, Invitable, Invite, ContactUs, InflatedStat,\
                     IntervalCountMap, ReportAbuse, SearchCategory,\
-                    BadEmail, List, ListItem, ListFollow
+                    BadEmail, List, ListItem, ListFollow, DiscoverList
 
 from notification import notification_decision, make_notification as notification
 
