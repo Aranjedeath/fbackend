@@ -100,8 +100,9 @@ def get_discover_list(current_user_id, offset, limit=10, day_count=0,
         if item[2]:
             resp.update({item[2]: {'type':'user', 'show_order':item[3]}})
 
-    user_scroll.scrolled_upto = max_id
-    db.session.commit()
+    if user_scroll:
+        user_scroll.scrolled_upto = max_id
+        db.session.commit()
 
     all_other_items = make_resp_multitype(current_user_id, resp,
                                           order_key='show_order',
