@@ -97,22 +97,54 @@ def get_device_type(device_id):
 
 def stats():
 
+    results = db.session.execute(text('''SELECT count(*) FROM user_notifications
+                                         WHERE added_at > date_sub(now(), interval 1 day)'''))
+
+    for row in results:
+        total_in_app_notifications = row[0]
+
+    body = 'Total in app notifications created: ' + str(total_in_app_notifications)
+
     results = db.session.execute(text('''Select count(*) from user_push_notifications
                                          where pushed_at > date_sub(now(), interval 1 day)'''))
 
     for row in results:
         total_push_notifications = row[0]
 
-    body = 'Total Push Notifications sent: ' + str(total_push_notifications)
+    body += '<br/><br/> Total Push Notifications sent: ' + str(total_push_notifications)
 
     results = db.session.execute(text('''Select count(*) from user_push_notifications
                                          where pushed_at > date_sub(now(), interval 1 day)
                                          group by user_id ;'''))
     unique_users = 0
+    users_at_limit = 0
     for user in results:
         unique_users += 1
+        if user[0] >= config.GLOBAL_PUSH_NOTIFICATION_DAY_LIMIT:
+            users_at_limit += 1
 
     body += '<br/><br/> Unique Users: ' + str(unique_users)
+    body += '<br/><br/> Users who have received %s notifications: %s' \
+             % (config.GLOBAL_PUSH_NOTIFICATION_DAY_LIMIT, users_at_limit)
+
+    devices = AccessToken.query.filter(AccessToken.active==True, AccessToken.push_id != None).count()
+
+    body += '<br/><br/> Total number of active devices available: %s' % str(devices)
+
+    results = db.session.execute(text('''Select n.type, count(n.id)
+                                         from user_notifications un
+                                         left join notifications n on n.id = un.notification_id
+                                         where un.added_at > date_sub(now(), interval 1 day)
+                                         group by n.type ;
+                                      '''))
+
+    body += '<br/><br/><br/> In app notification distribution: <table border=1 width=100%> <tbody> '
+
+    for type in results:
+        body += '<tr><td width="50%">' + str(type[0]) + '</td><td width="20%">' + str(type[1]) + '</td></tr>'
+
+    body += '</tbody></table>'
+
     results = db.session.execute(text('''Select n.type, count(n.id)
                                          from user_push_notifications upn
                                          left join notifications n on n.id = upn.notification_id
@@ -120,7 +152,7 @@ def stats():
                                          group by n.type ;
                                       '''))
 
-    body += '<br/><br/><br/><table border=1 width=100%> <tbody> '
+    body += '<br/><br/><br/> Push notification distribution: <table border=1 width=100%> <tbody> '
 
     for type in results:
         body += '<tr><td width="50%">' + str(type[0]) + '</td><td width="20%">' + str(type[1]) + '</td></tr>'
