@@ -170,7 +170,7 @@ if __name__ == '__main__':
     try:
         method_dict[args[0]]()
     except Exception as e:
-        make_email.cron_job_update(args[0], traceback.format_exc(e))
+        admin_email.cron_job_update(args[0], traceback.format_exc(e))
 
 
 

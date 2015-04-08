@@ -1,7 +1,7 @@
 from configs import config
 from infra import SimpleMailer
 
-
+mail_sender = SimpleMailer()
 # ADMIN EMAILS
 def send_weekly_report(recipients, report):
     mail_sender.send_mail(recipients, "Weekly Report", report)

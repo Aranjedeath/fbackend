@@ -4,7 +4,7 @@ import json
 from sqlalchemy.sql import text, func
 from app import db
 from models import *
-from mailwrapper import admin_email
+from mail import admin_email
 from models import User
 from stats_html_helper import *
 from configs import production_config as config
