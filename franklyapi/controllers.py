@@ -1388,11 +1388,11 @@ def get_user_timeline(cur_user_id, user_id, offset, limit, include_reshares=Fals
     if offset == -1:
         return {'stream': [], 'count':0, 'next_index':-1, 'total':total_count}
     if total_count<1:
-        data = question_list_public(current_user_id, user_id, username=None, offset=offset, limit=limit, version_code=0)['questions']
+        data = question_list_public(cur_user_id, user_id, username=None, offset=offset, limit=limit, version_code=0)['questions']
     else:
         data = posts_query.offset(offset).limit(limit).all()
         data = posts_to_dict(posts, cur_user_id)
-        data = [{'type':'post', 'post':post} for post in posts]
+        data = [{'type':'post', 'post':post} for post in data]
 
     next_index = offset+limit if data else -1
     
