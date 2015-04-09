@@ -40,7 +40,7 @@ def send(notification_id, user_id, k=None, source='application'):
 
 
             user_push_notification = UserPushNotification(notification_id=notification_id,
-                                                              user_id=user_id,
+                                                               user_id=user_id,
                                                               device_id=device.device_id,
                                                               push_id=device.push_id,
                                                               added_at=datetime.datetime.now(),
@@ -53,23 +53,24 @@ def send(notification_id, user_id, k=None, source='application'):
             db.session.add(user_push_notification)
             db.session.commit()
             payload = {
-                            "user_to": user_id,
-                            "type": 1,
-                            "id": user_push_notification.id,
-                            "notification_id": notification.id,
-                            "heading": k['title'],
-                            "text": notification.text.replace('<b>', '').replace('</b>', ''),
-                            "styled_text": notification.text,
-                            "icon_url": notification.icon,
-                            "cover_image": None,
-                            "group_id": group_id,
-                            "link": notification.link,
-                            "deeplink": notification.link,
-                            "timestamp": int(time.mktime(user_push_notification.added_at.timetuple())),
-                            "seen": False,
-                            "label_one": k['label_one'],
-                            "label_two": k['label_two']
-                        }
+                             "user_to": user_id,
+                             "type": 1,
+                             "id": user_push_notification.id,
+                             "notification_id": notification.id,
+                             "heading": k['title'],
+                             "text": notification.text.replace('<b>', '').replace('</b>', ''),
+                             "styled_text": notification.text,
+                             "icon_url": notification.icon,
+                             "cover_image": None,
+                             "group_id": group_id,
+                             "link": notification.link,
+                             "deeplink": notification.link,
+                             "timestamp": int(time.mktime(user_push_notification.added_at.timetuple())),
+                             "seen": False,
+                             "label_one": k['label_one'],
+                             "label_two": k['label_two']
+                         }
+
             if get_device_type(device.device_id) == 'android':
                 print 'pushing gcm for android'
                 gcm_sender = GCM()
@@ -77,7 +78,9 @@ def send(notification_id, user_id, k=None, source='application'):
 
             if get_device_type(device.device_id) == 'ios':
                 print 'pushing for iOS'
+                print 'For Push id', device.push_id
                 apns = APN()
+                payload = {"aps" : {"alert": payload}}
                 apns.send_message([device.push_id], payload)
 
 
@@ -97,13 +100,19 @@ def get_device_type(device_id):
 
 def stats():
 
-    results = db.session.execute(text('''SELECT count(*) FROM user_notifications
-                                         WHERE added_at > date_sub(now(), interval 1 day)'''))
-
+    results = db.session.execute(text('''SELECT count(*), user_id FROM user_notifications
+                                         WHERE added_at > date_sub(now(), interval 1 day)
+                                         GROUP BY user_id ; '''))
+    total_in_app_notifications = 0
+    pushable_devices = 0
     for row in results:
-        total_in_app_notifications = row[0]
+        total_in_app_notifications += row[0]
+        devices = get_active_mobile_devices(row[1])
+        pushable_devices += 0 if devices is None else len(devices)
 
     body = 'Total in app notifications created: ' + str(total_in_app_notifications)
+
+    body += '<br/><br/> Number of active devices available for these notifications: %s' % str(pushable_devices)
 
     results = db.session.execute(text('''Select count(*) from user_push_notifications
                                          where pushed_at > date_sub(now(), interval 1 day)'''))
@@ -127,9 +136,8 @@ def stats():
     body += '<br/><br/> Users who have received %s notifications: %s' \
              % (config.GLOBAL_PUSH_NOTIFICATION_DAY_LIMIT, users_at_limit)
 
-    devices = AccessToken.query.filter(AccessToken.active==True, AccessToken.push_id != None).count()
 
-    body += '<br/><br/> Total number of active devices available: %s' % str(devices)
+
 
     results = db.session.execute(text('''Select n.type, count(n.id)
                                          from user_notifications un

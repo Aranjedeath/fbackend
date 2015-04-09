@@ -1,7 +1,7 @@
 from configs import config
 key = {
     'question-ask-self_user' : {
-        'title': 'New Question',
+        'title': 'Somebody asked you a question',
         'text': "<b><question_author_name></b> asked you '<question_body>'",
         'url': config.WEB_URL + '/q/%s',
         'label_one': 'Answer',
@@ -14,13 +14,12 @@ key = {
         'text': "<b><answer_author_name></b> answered your question <question_body>",
         'url': config.WEB_URL + '/p/%s',
         'day_limit': 3,
-        'positive_label': 'Play',
         'label_one': 'Play',
         'label_two': ''
     },
     'post-add-following_user': {
         'title': 'New answer!',
-        'text': '''<question_author> answered the question <question_body>''',
+        'text': '''<b><question_author></b> answered the question <question_body>''',
         'url': config.WEB_URL + '/p/%s',
         'day_limit': 1,
         'label_one': 'Play',

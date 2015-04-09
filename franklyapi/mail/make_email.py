@@ -3,6 +3,7 @@ from infra import SimpleMailer
 from models import MailLog, User, AccessToken, Question
 from notification import push_notification as push
 from app import db
+from configs import config
 
 from helper import *
 from CustomExceptions import ObjectNotFoundException
@@ -17,8 +18,8 @@ header_template = env.get_template('style_zero.html')
 
 mail_sender = SimpleMailer()
 
-# TODO Add option to unsubscribe in the email - GAUR
-# TODO Method which decides on inactive profiles ?
+# TODO Change link to un-subscribe
+# TODO Content for inactive profile
 # TODO Email content for new celeb email and for news digest - CONTENT TEAM
 def mail(email_id, object_id = None, mail_type="", subject="", body="",
          cutoff_time=datetime.timedelta(days=1), mail_limit=1):
@@ -31,12 +32,12 @@ def mail(email_id, object_id = None, mail_type="", subject="", body="",
     if object_id:
 
         now = datetime.datetime.now()
-        if MailLog.query.filter(MailLog.email_id == email_id, MailLog.object_id == object_id,
-                                MailLog.mail_type == mail_type,
-                                MailLog.created_at > (now - cutoff_time)).count() < mail_limit:
+        # if MailLog.query.filter(MailLog.email_id == email_id, MailLog.object_id == object_id,
+        #                         MailLog.mail_type == mail_type,
+        #                         MailLog.created_at > (now - cutoff_time)).count() < mail_limit:
 
-            mail_sender.send_mail(email_id, subject, body)
-            log_mail(email_id=email_id, mail_type=mail_type, object_id=object_id)
+        mail_sender.send_mail(email_id, subject, body)
+        #    log_mail(email_id=email_id, mail_type=mail_type, object_id=object_id)
 
 
 
@@ -88,8 +89,8 @@ def question_asked(question_to, question_from, question_id, question_body,
         then send them an email notification
         confirming that the question has been asked
     '''
-
-    if from_widget and not len(push.get_active_mobile_devices(asker.id)):
+    #and not len(push.get_active_mobile_devices(asker.id))
+    if from_widget:
 
         is_first = True if Question.query.filter(Question.question_author == asker.id).count() == 1 else False
 
@@ -105,8 +106,8 @@ def question_asked(question_to, question_from, question_id, question_body,
              cutoff_time=cutoff_time, mail_limit=1)
         mail_type="question_asked"
 
-
-    if not len(push.get_active_mobile_devices(asked.id)):
+    #not
+    if len(push.get_active_mobile_devices(asked.id)):
 
         mail_type += "_to"
         subject = helper.dict[mail_type]['subject'] % asker.first_name
@@ -121,7 +122,7 @@ def question_asked(question_to, question_from, question_id, question_body,
 def question_answered(receiver_email, receiver_name, celebrity_name, question, web_link,
                       post_id, user_id, mail_type='post_add'):
 
-    if not len(push.get_active_mobile_devices(user_id)):
+    if  len(push.get_active_mobile_devices(user_id)):
         cutoff_time = datetime.timedelta(days=10000)
 
         mail_dict['salutation'] = "Hi %s" % receiver_name
@@ -132,14 +133,15 @@ def question_answered(receiver_email, receiver_name, celebrity_name, question, w
              cutoff_time=cutoff_time, mail_limit=1)
 
 
-def inactive_profile(receiver_email, receiver_name, user_id, mail_type="inactive_profile"):
+def inactive_profile(user_id, mail_type="inactive_profile"):
 
+    user = User.query.filter(User.id == user_id).first()
     cutoff_time = datetime.timedelta(days=30)
-    mail_dict['salutation'] = "Hi %s" % receiver_name
+    mail_dict['salutation'] = "Hi %s" % user.first_name
     mail_dict['email_text'] = helper.dict[mail_type]['body']
 
-    mail(email_id=receiver_email, subject=helper.dict[mail_type]['subject'],
-         body=header_template.render(mail_dict), mail_type=mail_type, object_id=user_id,
+    mail(email_id=user.email, subject=helper.dict[mail_type]['subject'],
+         body=header_template.render(mail_dict), mail_type=mail_type, object_id=user.id,
          cutoff_time=cutoff_time, mail_limit=1)
 
 
@@ -177,3 +179,24 @@ def weekly_digest(for_users, subject, mail_type="weekly_digest"):
 
     except ObjectNotFoundException:
         pass
+
+def inactive_users(users):
+    from sqlalchemy import desc
+    from models import Like, Follow, Upvote, Question
+    now = datetime.datetime.now()
+    time_span = now - datetime.timedelta(days=7)
+    for u in users:
+        last_like = Like.query.filter(Like.user
+                                      == u.id).order_by(desc(Like.timestamp)).first().timestamp < time_span
+        last_upvote = Follow.query.filter(Upvote.user
+                                          == u.id).order_by(desc(Upvote.timestamp)).first().timestamp < time_span
+        last_follow = Follow.query.filter(Follow.user
+                                          == u.id).order_by(desc(Follow.timestamp)).first().timestamp < time_span
+
+        last_question= Question.query.filter(Question.question_author ==
+                                             u.id).order_by(desc(Question.timestamp)).first().timestamp < time_span
+
+        if last_like or last_follow or last_upvote or last_question:
+            pass
+        else:
+            inactive_profile(u.id)
