@@ -2548,7 +2548,8 @@ def lists_to_dict(lists, cur_user_id=None):
                     'banner_image':l.banner_image,
                     'is_owner'    :l.owner==cur_user_id if cur_user_id else None,
                     'followable'  :l.followable,
-                    'if_following':False
+                    'if_following':False,
+                    'show_on_remote':l.show_on_remote
                     }
         list_dicts.append(list_dict)
     return list_dicts
