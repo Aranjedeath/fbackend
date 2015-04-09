@@ -80,7 +80,7 @@ def send(notification_id, user_id, k=None, source='application'):
                 print 'pushing for iOS'
                 print 'For Push id', device.push_id
                 apns = APN()
-                payload = {"aps" : {"alert": payload}}
+                payload = get_payload_apns(payload=payload)
                 apns.send_message([device.push_id], payload)
 
 
@@ -96,6 +96,17 @@ def get_device_type(device_id):
             return 'web'
         return 'android'
     return 'ios'
+
+def get_payload_for_apns(payload):
+
+    return {
+        "aps": {
+            "title": payload['heading'],
+            "body": payload['text'],
+            "deeplink": payload["deeplink"],
+            "id": payload['id']
+        }
+    }
 
 
 def stats():
