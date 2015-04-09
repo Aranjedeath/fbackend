@@ -19,7 +19,7 @@ def send(notification_id, user_id, k=None, source='application'):
     devices = get_active_mobile_devices(user_id)
 
     should_push = notification_decision.count_of_push_notifications_sent(user_id=user_id) \
-                                     <= config.GLOBAL_PUSH_NOTIFICATION_DAY_LIMIT
+                                       <= config.GLOBAL_PUSH_NOTIFICATION_DAY_LIMIT
 
     notification = Notification.query.get(notification_id)
 
@@ -81,6 +81,7 @@ def send(notification_id, user_id, k=None, source='application'):
                 print 'For Push id', device.push_id
                 apns = APN()
                 payload = get_payload_apns(payload=payload)
+                print payload
                 apns.send_message([device.push_id], payload)
 
 
@@ -97,16 +98,20 @@ def get_device_type(device_id):
         return 'android'
     return 'ios'
 
-def get_payload_for_apns(payload):
+def get_payload_apns(payload):
 
     return {
-        "aps": {
-            "title": payload['heading'],
-            "body": payload['text'],
-            "deeplink": payload["deeplink"],
-            "id": payload['id']
-        }
-    }
+         "aps": {
+                    "alert":  {
+                        "title": payload['heading'],
+                        "body": payload['text'],
+                        "deeplink": payload["deeplink"],
+                        "id": payload['id']
+                    },
+                    "badge": 1,
+                    "sound": "default"
+               }
+           }
 
 
 def stats():
