@@ -365,6 +365,3 @@ def average_upvote_count(user_id):
 
     average_upvote_count = (upvote_count/question_count) if question_count else 0
     return average_upvote_count, question_count
-
-
-

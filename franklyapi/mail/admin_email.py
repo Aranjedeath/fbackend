@@ -16,5 +16,5 @@ def cron_job_update(cron_type="Cron heartbeat", message='You only die once - YOD
 
 
 def push_stats(body):
-    mail_sender.send_mail(['varun@frankly.me'],                  #,'abhishek@frankly.me','nikunj@frankly.me'],
+    mail_sender.send_mail(['varun@frankly.me', 'abhishek@frankly.me', 'nikunj@frankly.me'],
                            'Push Notification Stats', body)
