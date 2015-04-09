@@ -3003,6 +3003,7 @@ def get_trending_questions(cur_user_id, list_id, offset=0, limit=20):
 def get_list_feed(cur_user_id, list_id, offset=0, limit=20):
     try:
         parent_list = get_list_from_name_or_id(list_id)
+        '''
         users = User.query.join(ListItem, User.id==ListItem.child_user_id
                                 ).filter(ListItem.parent_list_id==parent_list.id,
                                             ListItem.deleted==False,
@@ -3013,9 +3014,11 @@ def get_list_feed(cur_user_id, list_id, offset=0, limit=20):
                                         ).offset(offset
                                         ).limit(1
                                         ).all()
+        '''
 
-        users = [{'type':'user', 'user':u} for u in guest_users_to_dict(users, cur_user_id)] if users else []
-
+        #users = [{'type':'user', 'user':u} for u in guest_users_to_dict(users, cur_user_id)] if users else []
+        users = []
+        
         questions = get_trending_questions(cur_user_id, parent_list.id, offset=offset, limit=3)['stream']
 
         posts = Post.query.filter(Post.deleted==False,
