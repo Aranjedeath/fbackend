@@ -2975,8 +2975,6 @@ def get_trending_questions(cur_user_id, list_id, offset=0, limit=20):
         if list_id:
             parent_list = get_list_from_name_or_id(list_id)
 
-            
-
             questions = Question.query.filter(Question.deleted==False,
                                             Question.is_answered==False,
                                             Question.is_ignored==False,
@@ -3010,7 +3008,7 @@ def get_trending_questions(cur_user_id, list_id, offset=0, limit=20):
         raise CustomExceptions.ObjectNotFoundException('List has been deleted or does not exit')
 
 
-def get_list_feed(cur_user_id, list_id, offset=0, limit=20):
+def get_list_feed(cur_user_id, list_id, offset=0, limit=20, list_type='featured'):
     try:
         parent_list = get_list_from_name_or_id(list_id)
         '''
@@ -3029,13 +3027,20 @@ def get_list_feed(cur_user_id, list_id, offset=0, limit=20):
         #users = [{'type':'user', 'user':u} for u in guest_users_to_dict(users, cur_user_id)] if users else []
         users = []
 
-        questions = get_trending_questions(cur_user_id, parent_list.id, offset=offset, limit=3)['stream']
+        if list_type == 'featured':
+            questions = get_featured_questions(cur_user_id, parent_list.id, offset=offset, limit=3)['stream']
 
-        posts = Post.query.filter(Post.deleted==False,
+            posts = Post.query.filter(Post.deleted==False,
                             Post.answer_author.in_(get_list_user_ids(parent_list.id))
                             ).order_by(Post.id.desc()).offset(offset).limit(limit-len(users)-len(questions)).all()
         
-        print posts
+        if list_type == 'popular':
+            questions = get_trending_questions(cur_user_id, parent_list.id, offset=offset, limit=3)['stream']
+
+            posts = Post.query.filter(Post.deleted==False,
+                            Post.answer_author.in_(get_list_user_ids(parent_list.id))
+                            ).order_by(Post.view_count.desc()).offset(offset).limit(limit-len(users)-len(questions)).all()
+
 
         posts = [{'type':'post', 'post':p} for p in posts_to_dict(posts, cur_user_id)] if posts else []
         stream = posts
@@ -3053,7 +3058,6 @@ def get_list_feed(cur_user_id, list_id, offset=0, limit=20):
 def suggest_answer_author(question_body):
     users = User.query.filter(User.username.in_(['arvindkejriwal', 'javedakhtar', 'ranveerbrar'])).all()
     return {'count':len(users), 'users':[thumb_user_to_dict(user) for user in users]}
-
 
 
 

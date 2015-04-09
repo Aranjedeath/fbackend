@@ -2236,6 +2236,8 @@ class GetListFeed(restful.Resource):
     get_parser.add_argument('list_id', type=str, location='args', required=True)
     get_parser.add_argument('offset',  type=int, location='args', default=0)
     get_parser.add_argument('limit',   type=int, location='args', default=20)
+    get_parser.add_argument('filter',   type=str, location='args', default='trending', choices=['featured', 'trending'])
+
 
     def get(self):
         """
@@ -2252,7 +2254,7 @@ class GetListFeed(restful.Resource):
             if current_user.is_authenticated():
                 current_user_id = current_user.id
 
-            return controllers.get_list_feed(current_user_id, args['list_id'], args['offset'], args['limit'])
+            return controllers.get_list_feed(current_user_id, args['list_id'], args['offset'], args['limit'], args['filter'])
         except CustomExceptions.ObjectNotFoundException as e:
             abort(404, message=e.message)
 
