@@ -1,6 +1,7 @@
 import facebook
 import requests
 import datetime
+from configs import config
 
 def get_facebook_profile_picture(facebook_id):
     try:
@@ -15,6 +16,21 @@ def get_facebook_profile_picture(facebook_id):
     except:
         return False
 
+def get_facebook_long_lived_token(short_lived_token):
+    params = {
+        'grant_type': 'fb_exchange_token',
+        'client_secret': config.FACEBOOK_APP_SECRET,
+        'client_id': config.FACEBOOK_APP_ID,
+        'fb_exchange_token': short_lived_token
+    }
+    try:
+        resp = requests.get('https://graph.facebook.com/oauth/access_token', params=params)
+        if resp.status_code==200:
+            return resp.content.split('&')[0].split('=')[1]
+        else:
+            raise Exception('Something Went wrong with the request')
+    except:
+        return get_facebook_long_lived_token(short_lived_token)
 
 def get_fb_data(access_token):
     graph = facebook.GraphAPI(access_token)
