@@ -1,7 +1,18 @@
 import facebook
 import requests
 import datetime
-from configs import config
+
+import os,sys,inspect
+
+
+#parent directory hack
+try:
+    from configs import config
+except:
+    currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+    parentdir = os.path.dirname(currentdir)
+    sys.path.insert(0,parentdir) 
+    from configs import config
 
 def get_facebook_profile_picture(facebook_id):
     try:
@@ -26,13 +37,15 @@ def get_facebook_long_lived_token(short_lived_token):
     try:
         resp = requests.get('https://graph.facebook.com/oauth/access_token', params=params)
         if resp.status_code==200:
+            # print resp.content
             return resp.content.split('&')[0].split('=')[1]
         else:
             raise Exception('Something Went wrong with the request')
     except:
-        return get_facebook_long_lived_token(short_lived_token)
+        return short_lived_token
 
 def get_fb_data(access_token):
+    access_token = get_facebook_long_lived_token(access_token)
     graph = facebook.GraphAPI(access_token)
     profile = graph.get_object("me")
     
@@ -49,3 +62,7 @@ def get_fb_data(access_token):
     user_data['profile_picture'] = get_facebook_profile_picture(user_data['social_id'])
 
     return user_data
+
+if __name__ == '__main__':    
+    short_token = 'CAALdknmm9gQBAPVOJ3ceJiEDv6pBlV49ayQcZCpVkB7ZBAXZASm9uClOYSPSI43lWNurdTMMwdssjDksE5Ld9FEBpi29jRTqgthNNR1jVXFcXfqph9q8ffaeghzZB8OUdiSErRx6IMPij1Y7phKObLQ73qUhZAGNaPOviDMH6Vfyx1VStuYTb6LmVMfiVm31u65NGX16SWDc7QmyLzjYBV2oAZBBmRYOQXZC5MtZCtU3FgZDZD'
+    print get_facebook_long_lived_token(short_token)
