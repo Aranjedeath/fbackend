@@ -932,12 +932,19 @@ def update_push_id(cur_user_id, device_id, push_id):
                              ).update({'push_id':push_id})
 
 
-def user_update_access_token(user_id, acc_type, token):
+def user_update_access_token(user_id, acc_type, token, secret=None):
     try:
         if acc_type=='facebook':
             user_data = get_data_from_external_access_token('facebook', token, external_token_secret=None)
             User.query.filter(User.id==user_id, User.facebook_id==user_data['social_id']).update({'facebook_token':token, 'facebook_write_permission':True})
-            return {'success':True}
+
+        if acc_type=='twitter':
+            if not secret:
+                raise CustomExceptions.BadRequestException('Missing access secret')
+            user_data = get_data_from_external_access_token('twitter', token, external_token_secret=secret)
+            User.query.filter(User.id==user_id, User.facebook_id==user_data['social_id']).update({'twitter_token':token, 'twitter_write_permission':True})
+        
+        return {'success':True}
     
     except CustomExceptions.InvalidTokenException:
         raise CustomExceptions.BadRequestException('invalid token')
