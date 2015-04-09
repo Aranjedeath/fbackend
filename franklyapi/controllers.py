@@ -30,7 +30,7 @@ from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
                     Question, Upvote, Comment, ForgotPasswordToken, Install, Video,\
                     UserFeed, Event, Reshare, Invitable, Invite, ContactUs, InflatedStat,\
                     IntervalCountMap, ReportAbuse, SearchCategory,\
-                    BadEmail, List, ListItem, ListFollow, DiscoverList
+                    BadEmail, List, ListItem, ListFollow, DiscoverList, DashVideo
 
 from notification import notification_decision, make_notification as notification
 
@@ -46,7 +46,8 @@ from trends import most_liked_users
 
 from mail import make_email
 
-
+from queue import SQSQueue
+sq = SQSQueue('test1')
 
 def create_event(user, action, foreign_data, event_date=datetime.date.today()):
     if not Event.query.filter(Event.user==user, Event.action==action, Event.foreign_data==foreign_data, Event.event_date==event_date).count():
@@ -511,10 +512,22 @@ def get_user_status(user_id):
 def get_video_states(video_urls={}):
     result = {}
     videos = Video.query.filter(Video.url.in_(video_urls.keys())).all()
-    for video in videos:
+    joined_query = db.session.query(Video,DashVideo).join(DashVideo).filter(Video.url.in_(video_urls.keys())).all()
+    print joined_query
+    for video, dash_video in joined_query:
+        # video = joined_query.Video
+        # dash_video = joined_query.DashVideo
         result[video.url] = {}
         result[video.url]['original'] = video.url
         result[video.url]['thumb'] = video.thumbnail
+        try:
+            dash_url = dash_video.dash_url
+            dash_ver = 0.1
+        except:
+            dash_ver = 0.0
+            dash_url = None
+        result[video.url]['dash_url'] = dash_url
+        result[video.url]['dash_ver'] = dash_ver
         if video.ultralow:
             result[video.url][0] = video.ultralow
         if video.low:
@@ -720,6 +733,7 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
                         username=user.username)
         
         async_encoder.encode_video_task.delay(profile_video_url, username=user.username)
+        sq.push({'url':profile_video_url})
     db.session.commit()
     return user_to_dict(user)
 
@@ -842,6 +856,7 @@ def user_change_username(user_id, new_username):
         User.query.filter(User.id==user_id).update({'username':new_username})
         db.session.commit()
         async_encoder.encode_video_task.delay(user.profile_video, username=new_username, profiles=['promo'], redo=True)
+        sq.push({'url':user.profile_video})
         return {'username':new_username, 'status':'success', 'id':str(user_id)}
     else:
         raise CustomExceptions.UnameUnavailableException('Username invalid or not available')
@@ -1701,7 +1716,7 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
                             object_id=post.id,
                             username=curuser.username)
             async_encoder.encode_video_task.delay(video_url, username=curuser.username)
-
+            sq.push({'url':video_url})
 
             db.session.commit()
             redis_pending_post.delete(client_id)
@@ -3047,9 +3062,8 @@ def suggest_answer_author(question_body):
     return {'count':len(users), 'users':[thumb_user_to_dict(user) for user in users]}
 
 
-
-
-
-
+if __name__ == '__main__':
+    dic = {'https://s3.amazonaws.com/franklyapp/00d5b77a7a8d49b68abcfd9009cc5406/videos/04b01dc2ad5011e4917e22000b5119ba.mp4':1,'https://s3.amazonaws.com/franklyapp/0178bd7a07e94863abbb72f69eaae288/videos/5d9c45e09a2811e4abcb22000b5119ba.mp4':2}
+    print get_video_states(dic)
 
 

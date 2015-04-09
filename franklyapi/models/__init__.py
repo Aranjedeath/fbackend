@@ -5,7 +5,7 @@ from comment import Comment
 from auth_models import AccessToken, ForgotPasswordToken
 from others import Install, ReportAbuse, Feedback, Interest, UserData,\
 				   Contact, Package, UserAccount, Video, ContactUs,\
-				   EncodeLog, Stats, MailLog
+				   EncodeLog, Stats, MailLog, DashVideo
 from feed import UserFeed, CentralQueueMobile, IntervalCountMap,\
 				 DateSortedItems, DiscoverList, UserScroll
 from event import Event
