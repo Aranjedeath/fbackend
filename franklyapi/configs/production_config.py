@@ -27,6 +27,8 @@ SENDER_EMAIL = 'hello@franklymail.com'
 TWITTER_APP_TOKEN = 'aaNDJcxdHadQTxBW8P7B42yoy'
 TWITTER_APP_SECRET = 'AAOwvDBHlci4WmJANTmgOLJg28v3HSx0SogBEfQY9TGamsF9CS'
 
+FACEBOOK_APP_ID = '806571129370116'
+FACEBOOK_APP_SECRET = 'f5c6e73cd6b2708781fbbb90a0b0489a'
 REDIS_HOST = 'redis-cache-cluster.o5tg28.0001.apse1.cache.amazonaws.com'
 
 MYSQL_HOST = 'franklyapi.ce1zyhcvu8o4.ap-southeast-1.rds.amazonaws.com:3306'
