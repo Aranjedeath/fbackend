@@ -2621,7 +2621,7 @@ def edit_list(cur_user_id, list_id, name=None, display_name=None, icon_image=Non
     if icon_image:
         tmp_path = '/tmp/request/{random_string}.jpeg'.format(random_string=uuid.uuid1().hex)
         icon_image.save(tmp_path)
-        icon_image_url = media_uploader.upload_user_image(user_id=user_id, image_file_path=tmp_path, image_type='list_icon_image')
+        icon_image_url = media_uploader.upload_user_image(user_id=cur_user_id, image_file_path=tmp_path, image_type='list_icon_image')
         try:
             os.remove(tmp_path)
         except:
@@ -2632,7 +2632,7 @@ def edit_list(cur_user_id, list_id, name=None, display_name=None, icon_image=Non
     if banner_image:
         tmp_path = '/tmp/request/{random_string}.jpeg'.format(random_string=uuid.uuid1().hex)
         banner_image.save(tmp_path)
-        banner_image_url = media_uploader.upload_user_image(user_id=user_id, image_file_path=tmp_path, image_type='list_banner_image')
+        banner_image_url = media_uploader.upload_user_image(user_id=cur_user_id, image_file_path=tmp_path, image_type='list_banner_image')
         try:
             os.remove(tmp_path)
         except:
@@ -2642,12 +2642,15 @@ def edit_list(cur_user_id, list_id, name=None, display_name=None, icon_image=Non
 
     if owner:
         list_to_edit.owner = owner
+        changed = True
 
     if show_on_remote!=None:
         list_to_edit.show_on_remote = show_on_remote
+        changed = True
 
     if score!=None:
         list_to_edit.score = score
+        changed = True
 
     if changed:
         list_to_edit.updated_at = datetime.datetime.now()
