@@ -1391,7 +1391,9 @@ def get_user_timeline(cur_user_id, user_id, offset, limit, include_reshares=Fals
     if total_count<1 and device_id=='web':
         data = question_list_public(cur_user_id, user_id, username=None, offset=offset, limit=limit, version_code=0)['questions']
     else:
-        question_data = question_list_public(cur_user_id, user_id, username=None, offset=offset, limit=2, version_code=0)['questions']
+        question_data = []
+        if device_id=='web':
+            question_data = question_list_public(cur_user_id, user_id, username=None, offset=offset, limit=2, version_code=0)['questions']
         
         posts = posts_query.offset(offset).limit(limit-len(question_data)).all()
         posts = posts_to_dict(posts, cur_user_id)
