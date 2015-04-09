@@ -996,7 +996,7 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, from_wi
 
 
     question = Question(question_author=cur_user_id, question_to=question_to,
-                body=body.capitalize(), is_anonymous=is_anonymous, public=public,
+                body=body.capitalize().replace('\n', ' ').strip(), is_anonymous=is_anonymous, public=public,
                 lat=lat, lon=lon, slug=slug, short_id=short_id,
                 id = question_id, added_by=added_by, flag=int(clean))
 
@@ -2834,6 +2834,8 @@ def get_featured_users(cur_user_id, list_id, offset=0, limit=20):
                                             ).offset(offset
                                             ).limit(limit
                                             ).all()
+            print users
+            print parent_list
         else:
             from models import DiscoverList
             users = User.query.join(DiscoverList, User.id==DiscoverList.user
@@ -3018,7 +3020,7 @@ def get_list_feed(cur_user_id, list_id, offset=0, limit=20):
 
         #users = [{'type':'user', 'user':u} for u in guest_users_to_dict(users, cur_user_id)] if users else []
         users = []
-        
+
         questions = get_trending_questions(cur_user_id, parent_list.id, offset=offset, limit=3)['stream']
 
         posts = Post.query.filter(Post.deleted==False,
