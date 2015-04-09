@@ -110,6 +110,8 @@ def guest_user_to_dict(user, current_user_id, cur_user_interest_tags=None):
     return user_dict
 
 def guest_users_to_dict(users, current_user_id, cur_user_interest_tags=None):
+    if not users:
+        return []
     from configs import config
     from controllers import get_video_states
     from util import get_users_stats
