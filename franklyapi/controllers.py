@@ -1999,18 +1999,6 @@ def query_search(cur_user_id, query, offset, limit, version_code=None):
     response['q'] = query
     return response
 
-def add_contact(name, email, organisation, message, phone):
-    from base64 import b64encode as enc
-
-    b64msg = enc(name + email + organisation + message + phone)
-    contact = ContactUs.query.filter(ContactUs.b64msg == b64msg).all()
-    if contact:
-        return {'success' : True}
-    else:
-        contact = ContactUs(name, email, organisation, message, phone, b64msg)
-        db.session.add(contact)
-        db.session.commit()
-    return {'success' : True}
 
 def return_none_feed():
     return {
@@ -2464,27 +2452,44 @@ def contact_file_upload(current_user_id, uploaded_file, device_id):
 
 def user_upload_contacts(user_id, device_id, contacts):
     from AES_Encryption import decryption
-    contacts = json.loads(decryption(contacts))
+    contacts_json = json.loads(decryption(contacts))
     empty_contacts_filter = lambda contact: contact['email'] or contact['number']
-    contacts = filter(empty_contacts_filter, contacts['contacts'])
+    contacts = filter(empty_contacts_filter, contacts_json['contacts'])
     return contacts
 
-    user_contacts = []
-    query_contacts = set()
-    query_emails = set()
+    for item in contacts:
+        for number in item['number']:
+            number = number.replace(' ', '').replace('-', '').replace('.', '')
+            contact_object = Contact(contact=number, contact_type='phone_number', contact_name=item['name'], user=user_id)
+            db.session.add(contact_object)
+            try:
+                db.session.commit()
+            except Exception as e:
+                print e
 
-    for c in contacts:
-        c['number'] = [i.replace(' ', '') for i in c['number']]
-        c['email'] = [i.replace(' ', '') for i in c['email']]
-        user_contacts.append(UserContact(name=c['name'] , phones=c['number'] , emails=c['email']))
-        
-        if c['number']:
-            query_contacts.update([i[-9:] for i in c['number']])
-        if c['email']:
-            query_emails.update(c['email'])
+        for email in item['email']:
+            email = email.strip()
+            contact_object = Contact(contact=email, contact_type='phone_email', contact_name=item['name'], user=user_id)
+            db.session.add(contact_object)
+            try:
+                db.session.commit()
+            except Exception as e:
+                print e
+    
+    return {'success':True}
 
-    query_contacts = list(query_contacts)
-    query_emails = list(query_emails)
+def add_contact(name, email, organisation, message, phone):
+    from base64 import b64encode as enc
+
+    b64msg = enc(name + email + organisation + message + phone)
+    contact = ContactUs.query.filter(ContactUs.b64msg == b64msg).all()
+    if contact:
+        return {'success' : True}
+    else:
+        contact = ContactUs(name, email, organisation, message, phone, b64msg)
+        db.session.add(contact)
+        db.session.commit()
+    return {'success' : True}
 
 
 def get_resized_image(image_url, height=262, width=262):
