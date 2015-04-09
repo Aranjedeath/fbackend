@@ -101,16 +101,19 @@ def get_device_type(device_id):
 def get_payload_apns(payload):
 
     return {
-         "aps": {
-                    "alert":  {
-                        "title": payload['heading'],
-                        "body": payload['text'],
-                        "deeplink": payload["deeplink"],
-                        "id": payload['id']
-                    },
-                    "badge": 1,
-                    "sound": "default"
-               }
+             "aps": {
+                        "alert":  payload['text'],
+                        "badge": 1,
+                        "sound": "default"
+                   },
+
+                "group_id": payload['group_id'],
+                "id": payload['id'],
+                "link": payload["deeplink"],
+                "seen": payload['seen'],
+                "timestamp":payload['timestamp'],
+                "user_to":payload['user_to']
+
            }
 
 
