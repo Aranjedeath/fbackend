@@ -3037,7 +3037,7 @@ def get_list_feed(cur_user_id, list_id, offset=0, limit=20, list_type='featured'
                             Post.answer_author.in_(get_list_user_ids(parent_list.id))
                             ).order_by(Post.id.desc()).offset(offset).limit(limit-len(users)-len(questions)).all()
         
-        if list_type == 'popular':
+        if list_type == 'trending':
             questions = get_trending_questions(cur_user_id, parent_list.id, offset=offset, limit=3)['stream']
 
             posts = Post.query.filter(Post.deleted==False,
