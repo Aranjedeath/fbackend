@@ -33,6 +33,8 @@ class EmailSent(Base):
     to            = Column(String(100), nullable=False)
     email_id      = Column(CHAR(32), nullable=False)
     sent_at       = Column(DateTime(), default=datetime.datetime.now())
+    last_open_at  = Column(DateTime())
+    open_count    = Column(Integer, default =0)
 
 
     def __init__(self, from_e, to, email_id, sent_at=datetime.datetime.now()):

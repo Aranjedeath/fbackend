@@ -26,16 +26,14 @@ class SimpleMailer(object):
             err = sys.exc_info()
             raygun.send(err[0], err[1], err[2])
 
-    def send_mail(self, recipients, message_subject, message_body, user='code'):
+    def send_mail(self, recipients, message_subject, message_body, log_id, user='code'):
         """
         Send an HTML E-Mail
         """
         if type(recipients) in [type(''), type(u'')]:
             recipients = [recipients]
 
-        email = Email(user, self.sender_id, message_subject, message_body, datetime.datetime.now())
-        db.session.add(email)
-        db.session.commit()
+        print log_id
 
         for recipient in recipients:
             try:
@@ -43,9 +41,10 @@ class SimpleMailer(object):
                     return
                 self.conn.send_email(self.sender_id, message_subject, message_body, recipient, format='html')
 
-                new_email_sent = EmailSent(self.sender_id, recipient, email.id, datetime.datetime.now())
+                new_email_sent = EmailSent(self.sender_id, recipient, log_id, datetime.datetime.now())
                 db.session.add(new_email_sent)
                 db.session.commit()
+                print new_email_sent.id
             except Exception as e:
                 err = sys.exc_info()
                 print e.message

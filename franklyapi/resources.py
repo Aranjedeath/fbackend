@@ -1894,6 +1894,34 @@ class VideoView(restful.Resource):
             print traceback.format_exc(e)
             return redirect(args['url'])
 
+class EmailPixel(restful.Resource):
+
+    get_parser = reqparse.RequestParser()
+    get_parser.add_argument('id', type=str, location='args', required=True)
+
+    def get(self):
+        """
+        Redirects to the pixel image url. Used to
+        track opens for emails
+
+        Controller Functions Used:
+            - email_tracking
+
+        Authentication: None
+        """
+
+        args = self.get_parser.parse_args()
+        try:
+            from flask import redirect
+            pixel_url = controllers.email_tracking(args['id'])
+            return redirect(pixel_url)
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            return redirect(config.PIXEL_IMAGE_URL)
+
+
 class QuestionImageCreator(restful.Resource):
     
     def get(self, question_id):

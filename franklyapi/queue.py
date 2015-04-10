@@ -65,7 +65,6 @@ class SQSQueue:
     def __str__(self):
         return str(self.q)
 
-
 if __name__ == '__main__':
     sq = SQSQueue('test1')
     print sq.peek()

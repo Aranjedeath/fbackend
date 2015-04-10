@@ -9,7 +9,7 @@ import sys
 import json
 
 from sqlalchemy.orm.exc import NoResultFound
-from sqlalchemy import or_
+from sqlalchemy import or_, and_
 from sqlalchemy.sql import func
 from sqlalchemy.sql import text
 
@@ -30,7 +30,7 @@ from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
                     Question, Upvote, Comment, ForgotPasswordToken, Install, Video,\
                     UserFeed, Event, Reshare, Invitable, Invite, ContactUs, InflatedStat,\
                     IntervalCountMap, ReportAbuse, SearchCategory,\
-                    BadEmail, List, ListItem, ListFollow, DiscoverList
+                    BadEmail, List, ListItem, ListFollow, DiscoverList, DashVideo
 
 from notification import notification_decision, make_notification as notification
 
@@ -46,7 +46,8 @@ from trends import most_liked_users
 
 from mail import make_email
 
-
+from queue import SQSQueue
+sq = SQSQueue('test1')
 
 def create_event(user, action, foreign_data, event_date=datetime.date.today()):
     if not Event.query.filter(Event.user==user, Event.action==action, Event.foreign_data==foreign_data, Event.event_date==event_date).count():
@@ -522,9 +523,12 @@ def get_video_states(video_urls={}):
     result = {}
     videos = Video.query.filter(Video.url.in_(video_urls.keys())).all()
     for video in videos:
+
         result[video.url] = {}
         result[video.url]['original'] = video.url
         result[video.url]['thumb'] = video.thumbnail
+        result[video.url]['dash'] = video.dash
+
         if video.ultralow:
             result[video.url][0] = video.ultralow
         if video.low:
@@ -600,11 +604,11 @@ def get_questions(question_ids, cur_user_id=None):
     if question_ids:
         result = db.session.execute(text("""SELECT questions.id, questions.body,
                                                    questions.is_anonymous, questions.timestamp, questions.slug,
-                                                   questions.open_question,
                                                    (SELECT count(question_upvotes.user) FROM question_upvotes
                                                     WHERE question_upvotes.question=questions.id 
                                                             AND question_upvotes.user=:cur_user_id
-                                                            AND question_upvotes.downvoted=False) as is_upvoted
+                                                            AND question_upvotes.downvoted=False) as is_upvoted,
+                                                    questions.open_question
                                             FROM questions
                                             WHERE id in :question_ids"""),
                                         params={'question_ids':list(question_ids), 'cur_user_id':cur_user_id})
@@ -615,8 +619,8 @@ def get_questions(question_ids, cur_user_id=None):
                                     'is_anonymous':row[2],
                                     'timestamp':row[3],
                                     'slug':row[4],
-                                    'open_question':row[5],
-                                    'is_upvoted':bool(row[6])
+                                    'is_upvoted':bool(row[5]),
+                                    'open_question':bool(row[6])
                                     }
                         })
     return data
@@ -734,6 +738,7 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
                         username=user.username)
         
         async_encoder.encode_video_task.delay(profile_video_url, username=user.username)
+        sq.push({'url':profile_video_url})
     db.session.commit()
     return user_to_dict(user)
 
@@ -856,6 +861,7 @@ def user_change_username(user_id, new_username):
         User.query.filter(User.id==user_id).update({'username':new_username})
         db.session.commit()
         async_encoder.encode_video_task.delay(user.profile_video, username=new_username, profiles=['promo'], redo=True)
+        sq.push({'url':user.profile_video})
         return {'username':new_username, 'status':'success', 'id':str(user_id)}
     else:
         raise CustomExceptions.UnameUnavailableException('Username invalid or not available')
@@ -1036,7 +1042,6 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, from_wi
 
 
 def question_list(user_id, offset, limit, version_code=0):
-
     questions_query = Question.query.filter(Question.question_to==user_id, 
                                             Question.deleted==False,
                                             Question.is_answered==False,
@@ -1726,7 +1731,7 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
                             object_id=post.id,
                             username=curuser.username)
             async_encoder.encode_video_task.delay(video_url, username=curuser.username)
-
+            sq.push({'url':video_url})
 
             db.session.commit()
             redis_pending_post.delete(client_id)
@@ -1993,6 +1998,19 @@ def view_video(url, count=1):
     return
     url = url.replace('http://d35wlof4jnjr70.cloudfront.net/', 'https://s3.amazonaws.com/franklymestorage/')
     redis_views.incr(url, count)
+
+
+def email_tracking(tracking_id):
+    db.session.execute(text('''Update email_sent set open_count = open_count + 1,
+                              last_open_at = :now
+                              where email_id = :id
+                           '''), params={
+                              "id": tracking_id,
+                              "now": datetime.datetime.now()
+                        })
+    db.session.commit()
+    return config.PIXEL_IMAGE_URL + "?date=" + str(datetime.datetime.now())
+
 
 def query_search(cur_user_id, query, offset, limit, version_code=None):
     results = []
@@ -3081,8 +3099,7 @@ def suggest_answer_author(question_body):
     return {'count':len(users), 'users':[thumb_user_to_dict(user) for user in users]}
 
 
-
-
-
-
+if __name__ == '__main__':
+    dic = {'https://s3.amazonaws.com/franklyapp/00d5b77a7a8d49b68abcfd9009cc5406/videos/04b01dc2ad5011e4917e22000b5119ba.mp4':1,'https://s3.amazonaws.com/franklyapp/0178bd7a07e94863abbb72f69eaae288/videos/5d9c45e09a2811e4abcb22000b5119ba.mp4':2}
+    print get_video_states(dic)
 
