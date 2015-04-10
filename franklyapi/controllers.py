@@ -600,6 +600,7 @@ def get_questions(question_ids, cur_user_id=None):
     if question_ids:
         result = db.session.execute(text("""SELECT questions.id, questions.body,
                                                    questions.is_anonymous, questions.timestamp, questions.slug,
+                                                   questions.open_question,
                                                    (SELECT count(question_upvotes.user) FROM question_upvotes
                                                     WHERE question_upvotes.question=questions.id 
                                                             AND question_upvotes.user=:cur_user_id
@@ -614,7 +615,8 @@ def get_questions(question_ids, cur_user_id=None):
                                     'is_anonymous':row[2],
                                     'timestamp':row[3],
                                     'slug':row[4],
-                                    'is_upvoted':bool(row[5])
+                                    'open_question':row[5],
+                                    'is_upvoted':bool(row[6])
                                     }
                         })
     return data
