@@ -84,6 +84,8 @@ api.add_resource(GetListTrending, '/list/trending/<object_type>')
 api.add_resource(GetListFeatured, '/list/featured/<object_type>')
 api.add_resource(EmailPixel, '/pixie')
 
+api.add_resource(AppWelcomePage, '/app/welcome/users')
+
 
 
 

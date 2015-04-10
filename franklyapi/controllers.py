@@ -2838,10 +2838,12 @@ def get_remote(cur_user_id, offset=0, limit=20):
 
     return {'count':count, 'next_index':next_index, 'stream':remote}
 
-def get_list_user_ids(list_id):
+def get_list_user_ids(list_ids):
+    if type(list_ids)!=type([]):
+        list_ids = [list_ids]
     queries = """SELECT * FROM (SELECT list_items.child_user_id, list_items.parent_list_id, list_items.score
                                 FROM list_items 
-                                WHERE list_items.parent_list_id = :parent_list_id 
+                                WHERE list_items.parent_list_id in :parent_list_ids
                                     AND list_items.deleted = False
                                     AND list_items.child_user_id is NOT null
 
@@ -2851,16 +2853,16 @@ def get_list_user_ids(list_id):
                                 FROM list_items 
                                 WHERE list_items.parent_list_id in (SELECT list_items.child_list_id 
                                                                     FROM list_items 
-                                                                    WHERE list_items.parent_list_id = :parent_list_id 
+                                                                    WHERE list_items.parent_list_id in :parent_list_ids 
                                                                         AND list_items.deleted = False
                                                                         AND list_items.child_list_id is NOT null
                                                                     )
                                     AND list_items.deleted = False
                                     AND list_items.child_user_id is NOT null
                                 ) as result
-            ORDER BY result.parent_list_id=:parent_list_id, result.score
+            ORDER BY result.parent_list_id in :parent_list_ids, result.score
         """
-    results = db.session.execute(text(queries), params={'parent_list_id':list_id})
+    results = db.session.execute(text(queries), params={'parent_list_ids':list_ids})
     
     user_ids = [row[0] for row in results]
     print user_ids

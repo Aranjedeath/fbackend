@@ -2522,6 +2522,35 @@ class ImageResizer(restful.Resource):
             abort(500, message=internal_server_error_message)
 
 
+
+class AppWelcomePage(restful.Resource):
+    @login_required
+    def post(self):
+        post_parser = reqparse.RequestParser()
+        post_parser.add_argument('list_ids', type=list, required=True, location='json')
+        post_parser.add_argument('offset', type=int, required=True, location='json')
+        post_parser.add_argument('limit', type=int, required=True, location='json')
+
+        args = post_parser.parse_args()
+        try:
+            resp = controllers.app_welcome_users(current_user.id,
+                                                args['list_ids'],
+                                                offset=args['offset'],
+                                                limit=args['limit'])
+            return resp
+        
+        except CustomExceptions.BadFileFormatException as e:
+            print traceback.format_exc(e)
+            abort(400, message='File format not allowed')
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message='upload failure')
+
+
+
+
 class UserContactsUpload(restful.Resource):
     @login_required
     def post(self):
