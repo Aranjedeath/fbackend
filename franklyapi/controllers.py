@@ -2003,7 +2003,7 @@ def view_video(url, count=1):
 def email_tracking(tracking_id):
     db.session.execute(text('''Update email_sent set open_count = open_count + 1,
                               last_open_at = :now
-                              where id = :id
+                              where email_id = :id
                            '''), params={
                               "id": tracking_id,
                               "now": datetime.datetime.now()

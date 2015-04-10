@@ -50,7 +50,7 @@ def test():
     user = User.query.filter(User.username == 'chimpspanner').first()
     log_id = log_mail('varunj.dce@gmail.com',"mail_type_test", user.id)
     mail_dict['email_text'] = "Testing testing"
-    mail_dict['pixel_image_url'] += "?id=" + log_id
+    mail_dict['pixel_image_url'] = config.PIXEL_IMAGE_ENDPOINT + "?id=" + log_id
     print mail_dict['pixel_image_url']
 
     mail(email_id=user.email, log_id=log_id, subject="Testing",
