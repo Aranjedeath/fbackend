@@ -11,6 +11,7 @@ from configs import config
 def get_discover_list(current_user_id, offset, limit=10, day_count=0,
                       add_super=False, exclude_users=[]):
     # include dirty items
+    print 'current user is : ',current_user_id 
     if not day_count:
         day_count = 0
     day_count = get_day_count(current_user_id)
@@ -30,29 +31,30 @@ def get_discover_list(current_user_id, offset, limit=10, day_count=0,
     # recycle discover feeds
     recycled_items = []
     recycled_upto = 0
+    has_threshold_crossed = False
+    have_items_added = False
+
     if offset == 0 and current_user_id:
-        print 'offset 0'
         user_scroll = UserScroll.query.filter(
             UserScroll.user == current_user_id).first()
         if user_scroll:
-            print 'scroll data found'
+            print 'user scroll data found'
             max_id = user_scroll.scrolled_upto
+            print 'max_id : ', max_id
             recycled_upto = user_scroll.recycled_upto
-            if check_not_added_discover_item(user_scroll.last_visit, max_id):
-                print 'last item added was way too puraana'
-                if check_user_last_visit_threshold_cross(user_scroll.last_visit):
-                    print 'threshold crossed'
-                    user_scroll.last_visit = datetime.datetime.now()
-                    if user_scroll:
-                        if check_recycle_upper_limit_reached(user_scroll.last_recycled_upto, limit-len(dirty_items)):
-                            user_scroll.last_recycled_upto = 0
-                            user_scroll.recycled_upto = 0
-                        else:
-                            user_scroll.last_recycled_upto = \
-                                user_scroll.recycled_upto
-                else:
-                    print 'time nhi hua jyada beta.'
+            has_threshold_crossed = check_user_last_visit_threshold_cross(user_scroll.last_visit)
+            print 'thre:', has_threshold_crossed
+            
+            have_items_added = check_added_discover_item(user_scroll.last_visit, max_id)
 
+            if not have_items_added:
+                if has_threshold_crossed:
+                    if check_recycle_upper_limit_reached(user_scroll.last_recycled_upto, limit-len(dirty_items)):
+                        user_scroll.last_recycled_upto = 0
+                        user_scroll.recycled_upto = 0
+                    else:
+                        user_scroll.last_recycled_upto = \
+                            user_scroll.recycled_upto
                 recycled_items, recycled_upto = \
                     get_recycled_items(user_scroll.last_recycled_upto, super_inclusion)
                 if len(recycled_items)>0:
@@ -61,12 +63,11 @@ def get_discover_list(current_user_id, offset, limit=10, day_count=0,
                                                          order_key='recycled_index',
                                                          reverse_sort=True)
                     user_scroll.recycled_upto = recycled_upto
-            else:
-                print 'abhi abhi to post add hua h boss'
-            
+            if has_threshold_crossed:
+                print 'changed last visit'
+                user_scroll.last_visit = datetime.datetime.now()
             db.session.commit()
         else:
-            print 'scroll data not found.. creating data'
             user_scroll = UserScroll(current_user_id)
             db.session.add(user_scroll)
             db.session.commit()
@@ -270,11 +271,20 @@ def check_user_last_visit_threshold_cross(last_visit):
     return ((datetime.datetime.now() - last_visit).total_seconds() >
             config.DISCOVER_RECYCLE_HOURS * 3600)
 
-def check_not_added_discover_item(last_visit,max_id):
-    count = DiscoverList.query.filter(DiscoverList.display_date > last_visit, DiscoverList.id > max_id).\
-            count()
+def check_added_discover_item(last_visit,max_id):
+    print 'checking for new posts...'
+    print last_visit
+
+    count = DiscoverList.query.filter(
+        DiscoverList.display_date > last_visit,
+        DiscoverList.display_date <= datetime.datetime.now(),
+        DiscoverList.id > max_id
+        ).count()
+    
     print count, last_visit
-    return count == 0
+
+    return not count == 0
+
 def check_recycle_upper_limit_reached(last_recycled_upto, margin):
     count = DiscoverList.query.filter(DiscoverList.id >= last_recycled_upto,
                                       DiscoverList.display_date <= datetime.datetime.now(),
