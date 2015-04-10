@@ -9,7 +9,7 @@ import sys
 import json
 
 from sqlalchemy.orm.exc import NoResultFound
-from sqlalchemy import or_
+from sqlalchemy import or_, and_
 from sqlalchemy.sql import func
 from sqlalchemy.sql import text
 
