@@ -48,8 +48,8 @@ def user_to_dict(user):
         'likes_count': 0,
         'location': location_dict(user.lat, user.lon, user.location_name, user.country_name, user.country_code),
         'last_updated': int(time.mktime(user.last_updated.timetuple())),
-        'fb_write_perm' : user.facebook_write_permission,
-        'fb_perm':'none',
+        'facebook_write_permission' : user.facebook_write_permission,
+        'twitter_write_permission': user.twitter_write_permission,
         'admin_level':1 if user.id in config.ADMIN_USERS else 0,
         'view_count' : user_stats[user.id]['view_count'],
         'web_link':'http://frankly.me/{username}'.format(username=user.username),
@@ -110,6 +110,8 @@ def guest_user_to_dict(user, current_user_id, cur_user_interest_tags=None):
     return user_dict
 
 def guest_users_to_dict(users, current_user_id, cur_user_interest_tags=None):
+    if not users:
+        return []
     from configs import config
     from controllers import get_video_states
     from util import get_users_stats
@@ -284,16 +286,16 @@ def questions_to_dict(questions, cur_user_id=None):
                                 'channel_id':'user_{user_id}'.format(user_id=users[question.question_author]['id'])
                                 },
             'question_to':{
-                            'id':users[question.question_to]['id'],
-                            'username': users[question.question_to]['username'],
-                            'first_name': users[question.question_to]['first_name'],
+                            'id':users[question.question_to]['id'] if not question.open_question else '00000',
+                            'username': users[question.question_to]['username'] if not question.open_question else '00000',
+                            'first_name': users[question.question_to]['first_name'] if not question.open_question else '00000',
                             'last_name': None,
-                            'profile_picture': users[question.question_to]['profile_picture'],
-                            'gender': users[question.question_to]['gender'],
-                            'user_type': users[question.question_to]['user_type'],
-                            'user_title': users[question.question_to]['user_title'],
-                            'is_following':users[question.question_to]['is_following'],
-                            'channel_id':'user_{user_id}'.format(user_id=users[question.question_to]['id'])
+                            'profile_picture': users[question.question_to]['profile_picture'] if not question.open_question else None,
+                            'gender': users[question.question_to]['gender'] if not question.open_question else None,
+                            'user_type': users[question.question_to]['user_type'] if not question.open_question else 0,
+                            'user_title': users[question.question_to]['user_title'] if not question.open_question else '00000',
+                            'is_following':users[question.question_to]['is_following'] if not question.open_question else '0000',
+                            'channel_id':'user_{user_id}'.format(user_id=users[question.question_to]['id']) if not question.open_question else '0000'
 
                             },
             'tags': [],
@@ -309,7 +311,8 @@ def questions_to_dict(questions, cur_user_id=None):
             'short_id': question.short_id,
             'is_answered':question.is_answered,
             'score':question.score,
-            'slug':question.slug
+            'slug':question.slug,
+            'open_question':question.open_question
         }
         if question.is_answered:
             ques_dict['post_id'] = get_post_id_from_question_id(question.id)
@@ -336,19 +339,19 @@ def question_to_dict(question, cur_user_id=None):
                             'channel_id':'user_{user_id}'.format(user_id=users[question.question_author]['id'])
                             
                             },
-        'question_to':{
-                        'id':users[question.question_to]['id'],
-                        'username': users[question.question_to]['username'],
-                        'first_name': users[question.question_to]['first_name'],
-                        'last_name': None,
-                        'profile_picture': users[question.question_to]['profile_picture'],
-                        'gender': users[question.question_to]['gender'],
-                        'user_type': users[question.question_to]['user_type'],
-                        'user_title': users[question.question_to]['user_title'],
-                        'is_following':users[question.question_to]['is_following'],
-                        'channel_id':'user_{user_id}'.format(user_id=users[question.question_to]['id'])
 
-                        },
+         'question_to':{
+                            'id':users[question.question_to]['id'] if not question.open_question else '00000',
+                            'username': users[question.question_to]['username'] if not question.open_question else '00000',
+                            'first_name': users[question.question_to]['first_name'] if not question.open_question else '00000',
+                            'last_name': None,
+                            'profile_picture': users[question.question_to]['profile_picture'] if not question.open_question else None,
+                            'gender': users[question.question_to]['gender'] if not question.open_question else None,
+                            'user_type': users[question.question_to]['user_type'] if not question.open_question else 0,
+                            'user_title': users[question.question_to]['user_title'] if not question.open_question else '00000',
+                            'is_following':users[question.question_to]['is_following'] if not question.open_question else '0000',
+                            'channel_id':'user_{user_id}'.format(user_id=users[question.question_to]['id']) if not question.open_question else '0000'
+                            },
         'tags': [],
         'body': question.body,        
         'timestamp': int(time.mktime(question.timestamp.timetuple())),
@@ -362,7 +365,8 @@ def question_to_dict(question, cur_user_id=None):
         'short_id': question.short_id,
         'is_answered':question.is_answered,
         'score':question.score,
-        'slug':question.slug
+        'slug':question.slug,
+        'open_question':question.open_question
     }
     if question.is_answered:
         ques_dict['post_id'] = get_post_id_from_question_id(question.id)
@@ -416,7 +420,8 @@ def post_to_dict(post, cur_user_id=None, distance=None, include_comments=3):
                 'timestamp': int(time.mktime(questions[post.question]['timestamp'].timetuple())),
                 'tags': [],
                 'is_anonymous': bool(questions[post.question]['is_anonymous']),
-                'slug':questions[post.question]['slug']
+                'slug':questions[post.question]['slug'],
+                'open_question':questions[post.question]['open_question']
         },
         'answer': {
             'body': '',
@@ -516,7 +521,8 @@ def posts_to_dict(posts, cur_user_id=None, distance=None, include_comments=3):
                 'timestamp': int(time.mktime(questions[post.question]['timestamp'].timetuple())),
                 'tags': [],
                 'is_anonymous': bool(questions[post.question]['is_anonymous']),
-                'slug':questions[post.question]['slug']
+                'slug':questions[post.question]['slug'],
+                'open_question':questions[post.question]['open_question']
             },
             'answer': {
                 'body': '',

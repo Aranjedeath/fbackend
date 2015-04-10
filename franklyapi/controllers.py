@@ -30,7 +30,7 @@ from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
                     Question, Upvote, Comment, ForgotPasswordToken, Install, Video,\
                     UserFeed, Event, Reshare, Invitable, Invite, ContactUs, InflatedStat,\
                     IntervalCountMap, ReportAbuse, SearchCategory,\
-                    BadEmail, List, ListItem, ListFollow, DiscoverList
+                    BadEmail, List, ListItem, ListFollow, DiscoverList, DashVideo
 
 from notification import notification_decision, make_notification as notification
 
@@ -46,7 +46,8 @@ from trends import most_liked_users
 
 from mail import make_email
 
-
+from queue import SQSQueue
+sq = SQSQueue('test1')
 
 def create_event(user, action, foreign_data, event_date=datetime.date.today()):
     if not Event.query.filter(Event.user==user, Event.action==action, Event.foreign_data==foreign_data, Event.event_date==event_date).count():
@@ -512,9 +513,12 @@ def get_video_states(video_urls={}):
     result = {}
     videos = Video.query.filter(Video.url.in_(video_urls.keys())).all()
     for video in videos:
+
         result[video.url] = {}
         result[video.url]['original'] = video.url
         result[video.url]['thumb'] = video.thumbnail
+        result[video.url]['dash'] = {'url':video.dash, 'version':0.0}
+
         if video.ultralow:
             result[video.url][0] = video.ultralow
         if video.low:
@@ -591,7 +595,8 @@ def get_questions(question_ids, cur_user_id=None):
                                                    (SELECT count(question_upvotes.user) FROM question_upvotes
                                                     WHERE question_upvotes.question=questions.id 
                                                             AND question_upvotes.user=:cur_user_id
-                                                            AND question_upvotes.downvoted=False) as is_upvoted
+                                                            AND question_upvotes.downvoted=False) as is_upvoted,
+                                                    questions.open_question
                                             FROM questions
                                             WHERE id in :question_ids"""),
                                         params={'question_ids':list(question_ids), 'cur_user_id':cur_user_id})
@@ -602,7 +607,8 @@ def get_questions(question_ids, cur_user_id=None):
                                     'is_anonymous':row[2],
                                     'timestamp':row[3],
                                     'slug':row[4],
-                                    'is_upvoted':bool(row[5])
+                                    'is_upvoted':bool(row[5]),
+                                    'open_question':bool(row[6])
                                     }
                         })
     return data
@@ -720,6 +726,7 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
                         username=user.username)
         
         async_encoder.encode_video_task.delay(profile_video_url, username=user.username)
+        sq.push({'url':profile_video_url})
     db.session.commit()
     return user_to_dict(user)
 
@@ -842,6 +849,7 @@ def user_change_username(user_id, new_username):
         User.query.filter(User.id==user_id).update({'username':new_username})
         db.session.commit()
         async_encoder.encode_video_task.delay(user.profile_video, username=new_username, profiles=['promo'], redo=True)
+        sq.push({'url':user.profile_video})
         return {'username':new_username, 'status':'success', 'id':str(user_id)}
     else:
         raise CustomExceptions.UnameUnavailableException('Username invalid or not available')
@@ -932,12 +940,19 @@ def update_push_id(cur_user_id, device_id, push_id):
                              ).update({'push_id':push_id})
 
 
-def user_update_access_token(user_id, acc_type, token):
+def user_update_access_token(user_id, acc_type, token, secret=None):
     try:
         if acc_type=='facebook':
             user_data = get_data_from_external_access_token('facebook', token, external_token_secret=None)
             User.query.filter(User.id==user_id, User.facebook_id==user_data['social_id']).update({'facebook_token':token, 'facebook_write_permission':True})
-            return {'success':True}
+
+        if acc_type=='twitter':
+            if not secret:
+                raise CustomExceptions.BadRequestException('Missing access secret')
+            user_data = get_data_from_external_access_token('twitter', token, external_token_secret=secret)
+            User.query.filter(User.id==user_id, User.facebook_id==user_data['social_id']).update({'twitter_token':token, 'twitter_write_permission':True})
+        
+        return {'success':True}
     
     except CustomExceptions.InvalidTokenException:
         raise CustomExceptions.BadRequestException('invalid token')
@@ -996,7 +1011,7 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, from_wi
 
 
     question = Question(question_author=cur_user_id, question_to=question_to,
-                body=body.capitalize(), is_anonymous=is_anonymous, public=public,
+                body=body.capitalize().replace('\n', ' ').strip(), is_anonymous=is_anonymous, public=public,
                 lat=lat, lon=lon, slug=slug, short_id=short_id,
                 id = question_id, added_by=added_by, flag=int(clean))
 
@@ -1015,7 +1030,6 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, from_wi
 
 
 def question_list(user_id, offset, limit, version_code=0):
-
     questions_query = Question.query.filter(Question.question_to==user_id, 
                                             Question.deleted==False,
                                             Question.is_answered==False,
@@ -1101,8 +1115,8 @@ def question_upvote(cur_user_id, question_id):
                             #Question.public==True, 
                             Question.question_to!=cur_user_id,
                             Question.deleted==False,
-                            Question.is_ignored==False,
-                            Question.is_answered==False
+                            or_(and_(Question.is_ignored==False, Question.is_answered==False),
+                                Question.open_question==True)
                             ).count():
         db.session.execute(text("""INSERT INTO question_upvotes (user, question, downvoted, timestamp) 
                                     VALUES(:cur_user_id, :question_id, false, :timestamp) 
@@ -1234,13 +1248,14 @@ def question_view(current_user_id, question_id, short_id):
                                             #    Question.question_to==current_user_id)
                                             ).one()
 
-        question_to = User.query.filter(User.id==question.question_to).one()
+        if not question.open_question:
+            question_to = User.query.filter(User.id==question.question_to).one()
 
-        if question.flag == 0 and question.question_author!=current_user_id:
-            raise CustomExceptions.ObjectNotFoundException('The question does not exist or has been deleted.')
-        if question.is_answered:
-            post = Post.query.filter(Post.question==question.id, Post.deleted==False).one()
-            return {'is_answered':question.is_answered, 'post':post_to_dict(post, current_user_id), 'question':question_to_dict(question, current_user_id)}
+            if question.flag == 0 and question.question_author!=current_user_id:
+                raise CustomExceptions.ObjectNotFoundException('The question does not exist or has been deleted.')
+            if question.is_answered:
+                post = Post.query.filter(Post.question==question.id, Post.deleted==False).one()
+                return {'is_answered':question.is_answered, 'post':post_to_dict(post, current_user_id), 'question':question_to_dict(question, current_user_id)}
         
         return {'is_answered':question.is_answered, 'question':question_to_dict(question, current_user_id)}
     except NoResultFound:
@@ -1648,16 +1663,19 @@ def get_pending_post(client_id):
 
 def add_video_post(cur_user_id, question_id, video, answer_type,
                         lat=None, lon=None, client_id=None,
-                        show_after = None):
+                        show_after = None, answer_author_id=None):
     try:
         if cur_user_id in config.ADMIN_USERS:
             question = Question.query.filter(Question.id==question_id,
                                             Question.is_ignored==False,
                                             Question.deleted==False).one()
+            
             answer_author = question.question_to
+            if question.open_question:
+                answer_author = answer_author_id
         else:
             answer_author = cur_user_id
-            question = Question.query.filter(Question.question_to==cur_user_id,
+            question = Question.query.filter(or_(Question.question_to==cur_user_id, Question.open_question==True),
                                             Question.id==question_id,
                                             Question.is_ignored==False,
                                             Question.deleted==False).one()
@@ -1701,7 +1719,7 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
                             object_id=post.id,
                             username=curuser.username)
             async_encoder.encode_video_task.delay(video_url, username=curuser.username)
-
+            sq.push({'url':video_url})
 
             db.session.commit()
             redis_pending_post.delete(client_id)
@@ -2554,7 +2572,8 @@ def lists_to_dict(lists, cur_user_id=None):
                     'banner_image':l.banner_image,
                     'is_owner'    :l.owner==cur_user_id if cur_user_id else None,
                     'followable'  :l.followable,
-                    'if_following':False
+                    'if_following':False,
+                    'show_on_remote':l.show_on_remote
                     }
         list_dicts.append(list_dict)
     return list_dicts
@@ -2626,7 +2645,7 @@ def edit_list(cur_user_id, list_id, name=None, display_name=None, icon_image=Non
     if icon_image:
         tmp_path = '/tmp/request/{random_string}.jpeg'.format(random_string=uuid.uuid1().hex)
         icon_image.save(tmp_path)
-        icon_image_url = media_uploader.upload_user_image(user_id=user_id, image_file_path=tmp_path, image_type='list_icon_image')
+        icon_image_url = media_uploader.upload_user_image(user_id=cur_user_id, image_file_path=tmp_path, image_type='list_icon_image')
         try:
             os.remove(tmp_path)
         except:
@@ -2637,7 +2656,7 @@ def edit_list(cur_user_id, list_id, name=None, display_name=None, icon_image=Non
     if banner_image:
         tmp_path = '/tmp/request/{random_string}.jpeg'.format(random_string=uuid.uuid1().hex)
         banner_image.save(tmp_path)
-        banner_image_url = media_uploader.upload_user_image(user_id=user_id, image_file_path=tmp_path, image_type='list_banner_image')
+        banner_image_url = media_uploader.upload_user_image(user_id=cur_user_id, image_file_path=tmp_path, image_type='list_banner_image')
         try:
             os.remove(tmp_path)
         except:
@@ -2647,12 +2666,15 @@ def edit_list(cur_user_id, list_id, name=None, display_name=None, icon_image=Non
 
     if owner:
         list_to_edit.owner = owner
+        changed = True
 
     if show_on_remote!=None:
         list_to_edit.show_on_remote = show_on_remote
+        changed = True
 
     if score!=None:
         list_to_edit.score = score
+        changed = True
 
     if changed:
         list_to_edit.updated_at = datetime.datetime.now()
@@ -2847,6 +2869,8 @@ def get_featured_users(cur_user_id, list_id, offset=0, limit=20):
                                             ).offset(offset
                                             ).limit(limit
                                             ).all()
+            print users
+            print parent_list
         else:
             from models import DiscoverList
             users = User.query.join(DiscoverList, User.id==DiscoverList.user
@@ -2978,8 +3002,6 @@ def get_trending_questions(cur_user_id, list_id, offset=0, limit=20):
         if list_id:
             parent_list = get_list_from_name_or_id(list_id)
 
-            
-
             questions = Question.query.filter(Question.deleted==False,
                                             Question.is_answered==False,
                                             Question.is_ignored==False,
@@ -3013,9 +3035,10 @@ def get_trending_questions(cur_user_id, list_id, offset=0, limit=20):
         raise CustomExceptions.ObjectNotFoundException('List has been deleted or does not exit')
 
 
-def get_list_feed(cur_user_id, list_id, offset=0, limit=20):
+def get_list_feed(cur_user_id, list_id, offset=0, limit=20, list_type='featured'):
     try:
         parent_list = get_list_from_name_or_id(list_id)
+        '''
         users = User.query.join(ListItem, User.id==ListItem.child_user_id
                                 ).filter(ListItem.parent_list_id==parent_list.id,
                                             ListItem.deleted==False,
@@ -3026,16 +3049,25 @@ def get_list_feed(cur_user_id, list_id, offset=0, limit=20):
                                         ).offset(offset
                                         ).limit(1
                                         ).all()
+        '''
 
-        users = [{'type':'user', 'user':u} for u in guest_users_to_dict(users, cur_user_id)] if users else []
+        #users = [{'type':'user', 'user':u} for u in guest_users_to_dict(users, cur_user_id)] if users else []
+        users = []
 
-        questions = get_trending_questions(cur_user_id, parent_list.id, offset=offset, limit=3)['stream']
+        if list_type == 'featured':
+            questions = get_featured_questions(cur_user_id, parent_list.id, offset=offset, limit=3)['stream']
 
-        posts = Post.query.filter(Post.deleted==False,
+            posts = Post.query.filter(Post.deleted==False,
                             Post.answer_author.in_(get_list_user_ids(parent_list.id))
                             ).order_by(Post.id.desc()).offset(offset).limit(limit-len(users)-len(questions)).all()
         
-        print posts
+        if list_type == 'trending':
+            questions = get_trending_questions(cur_user_id, parent_list.id, offset=offset, limit=3)['stream']
+
+            posts = Post.query.filter(Post.deleted==False,
+                            Post.answer_author.in_(get_list_user_ids(parent_list.id))
+                            ).order_by(Post.view_count.desc()).offset(offset).limit(limit-len(users)-len(questions)).all()
+
 
         posts = [{'type':'post', 'post':p} for p in posts_to_dict(posts, cur_user_id)] if posts else []
         stream = posts
@@ -3055,9 +3087,7 @@ def suggest_answer_author(question_body):
     return {'count':len(users), 'users':[thumb_user_to_dict(user) for user in users]}
 
 
-
-
-
-
-
+if __name__ == '__main__':
+    dic = {'https://s3.amazonaws.com/franklyapp/00d5b77a7a8d49b68abcfd9009cc5406/videos/04b01dc2ad5011e4917e22000b5119ba.mp4':1,'https://s3.amazonaws.com/franklyapp/0178bd7a07e94863abbb72f69eaae288/videos/5d9c45e09a2811e4abcb22000b5119ba.mp4':2}
+    print get_video_states(dic)
 

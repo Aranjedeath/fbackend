@@ -53,6 +53,13 @@ class User(Base):
     view_count                = Column(Integer(), default=0)
     total_view_count          = Column(Integer(), default=0)
     added_by                  = Column(CHAR(32), ForeignKey('users.id'))
+    
+    ip                        = Column(String(16))
+    app_id                    = Column(CHAR(32))
+    domain_name               = Column(String(200))
+    page_url                  = Column(String(500))
+    twitter_handle            = Column(String(100))
+
 
     def get_user(self,_id):
         self.id = _id
@@ -66,7 +73,9 @@ class User(Base):
                         user_since=datetime.datetime.now(), last_updated=datetime.datetime.now(),
                         last_seen=datetime.datetime.now(), allow_anonymous_question=True,
                         notify_like=True, notify_follow=True, notify_question=True, notify_comments=True,
-                        notify_mention=None, notify_answer=None, timezone=0, id=None, phone_num=None, view_count=0, total_view_count=0, added_by=None):
+                        notify_mention=None, notify_answer=None, timezone=0, id=None, phone_num=None,
+                        view_count=0, total_view_count=0, added_by=None,
+                        ip=None, app_id=None, domain_name=None, page_url=None, twitter_handle=None):
         self.id                        = get_item_id()
         self.email                     = email
         self.first_name                = first_name
@@ -112,7 +121,13 @@ class User(Base):
         self.phone_num                 = phone_num 
         self.view_count                = view_count 
         self.total_view_count          = total_view_count   
-        self.added_by                  = added_by          
+        self.added_by                  = added_by
+        
+        self.ip                             = ip
+        self.app_id                         = app_id
+        self.domain_name                    = domain_name
+        self.page_url                       = page_url
+        self.twitter_handle                 = twitter_handle
 
 
     def is_authenticated(self):

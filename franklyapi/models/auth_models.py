@@ -15,14 +15,19 @@ class AccessToken(Base):
     push_id       = Column(String(200))
     last_login    = Column(DateTime(), default=datetime.datetime.now())
 
+    last_login_ip = Column(String(16))
+    app_id        = Column(CHAR(32))
 
-    def __init__(self, device_id, user, access_token, device_type, push_id, active=True):
-        self.device_id    = device_id
-        self.user         = user
-        self.access_token = access_token
-        self.device_type  = device_type
-        self.push_id      = push_id
-        self.active       = active        
+
+    def __init__(self, device_id, user, access_token, device_type, push_id, active=True, last_login_ip=None, app_id=None):
+        self.device_id     = device_id
+        self.user          = user
+        self.access_token  = access_token
+        self.device_type   = device_type
+        self.push_id       = push_id
+        self.active        = active        
+        self.last_login_ip = last_login_ip
+        self.app_id        = app_id
 
     def __repr__(self):
         return '<AccessToken %r:%r>' % (self.access_token, self.device_id)

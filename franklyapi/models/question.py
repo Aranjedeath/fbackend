@@ -7,7 +7,7 @@ class Question(Base):
     __tablename__   = 'questions'
     id              = Column(CHAR(32), primary_key=True)
     question_author = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
-    question_to     = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
+    question_to     = Column(CHAR(32), ForeignKey('users.id'))
     body            = Column(String(300), nullable=False)
     timestamp       = Column(DateTime(), default=datetime.datetime.now())
     is_answered     = Column(Boolean(), default=False)
@@ -28,10 +28,17 @@ class Question(Base):
     country_code    = Column(String(2))
     score           = Column(Integer(), default=0)
 
+    ip              = Column(String(16))
+    domain_name     = Column(String(200))
+    page_url        = Column(String(500))
+    app_id          = Column(CHAR(32))
+    open_question   = Column(Boolean(), default=False)
+
     def __init__(self, question_author, question_to, body, short_id, slug, timestamp=datetime.datetime.now(),
                         is_answered=False, is_anonymous=False, is_ignored=False, public=False,
                         deleted=False, moderated_by=None, lat=None, lon=None, location_name=None, 
-                        country_name=None, country_code=None,id=None, score=0, added_by=None, flag=1):
+                        country_name=None, country_code=None, id=None, score=0, added_by=None, flag=1,
+                        ip=None, domain_name=None, page_url=None, app_id=None, open_question=False):
         
         self.id              = get_item_id()
         self.question_author = question_author
@@ -55,6 +62,13 @@ class Question(Base):
         self.added_by        = added_by
         self.moderated_by    = moderated_by
         self.flag            = flag
+
+        self.ip              = ip
+        self.domain_name     = domain_name
+        self.page_url        = page_url
+        self.app_id          = app_id
+        self.open_question   = open_question
+
     def __repr__(self):
         return '<Question %r:%r>' % (self.id, self.body)
 

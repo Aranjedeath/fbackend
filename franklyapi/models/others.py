@@ -39,13 +39,15 @@ class Video(Base):
     low           = Column(String(300)) # 150
     ultralow      = Column(String(300)) # 45
     promo         = Column(String(300)) # promo
+    dash          = Column(String(300)) #dash mpd
     delete        = Column(Boolean(), default=False)
     process_state = Column(Enum('pending', 'running', 'success', 'failed'), default='pending')
     created_at    = Column(DateTime(), default=datetime.datetime.now())
 
+
     def __init__(self, url, video_type, object_id, username=None, thumbnail=None, opt=None, medium=None, low=None, ultra_low=None,
                         process_state='pending' ,delete=False,
-                        created_at=datetime.datetime.now()):
+                        created_at=datetime.datetime.now(), dash=None):
         self.url           = url
         self.video_type    = video_type
         self.object_id     = object_id
@@ -55,6 +57,7 @@ class Video(Base):
         self.medium        = medium
         self.low           = low
         self.ultra_low     = ultra_low
+        self.dash          = dash
         self.delete        = delete
         self.process_state = process_state
         self.created_at    = created_at
@@ -62,6 +65,18 @@ class Video(Base):
     def __repr__(self):
         return '<Video %r:%r>' % (self.process_state, self.url)
 
+
+class DashVideo(Base):
+    __tablename__             = 'dash_videos'
+    url                       = Column(CHAR(300), ForeignKey('videos.url'), nullable = False)
+    dash_url                  = Column(CHAR(300), primary_key=True)
+
+    def __init__(self, base_url, dash_url):
+        self.url = base_url
+        self.dash_url = dash_url
+        
+    def __repr__(self):
+        return '<DashVideo %r:%r>' % (self.url, self.dash_url)
 
 class EncodeLog(Base):
     __tablename__ = 'encode_log'

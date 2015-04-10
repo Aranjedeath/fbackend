@@ -110,6 +110,23 @@ def upload_user_image(user_id, image_type, image_url=None, image_file_path=None)
             os.remove(final_image_path)
             return url
 
+        elif image_type=='list_icon_image':
+            new_image = final_image_path
+            with open(new_image) as f:
+                url = upload_to_s3(f, key_name)
+            os.remove(new_image)
+            #os.remove(final_image_path)
+            return url
+
+        elif image_type=='list_banner_image':
+            new_image = final_image_path
+            with open(new_image) as f:
+                url = upload_to_s3(f, key_name)
+            os.remove(new_image)
+            #os.remove(final_image_path)
+            return url
+
+
 
     raise CustomExceptions.BadRequestException('Video/Image type is not valid.')
 

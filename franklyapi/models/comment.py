@@ -19,9 +19,15 @@ class Comment(Base):
     country_name   = Column(String(50))
     country_code   = Column(String(2))
 
+    ip              = Column(String(16))
+    domain_name     = Column(String(200))
+    page_url        = Column(String(500))
+    app_id          = Column(CHAR(32))
+
 
     def __init__(self, on_post, comment_author, body, timestamp=datetime.datetime.now(), deleted=False,
-                    lat=None, lon=None, location_name=None, country_name=None, country_code=None, id=None):
+                    lat=None, lon=None, location_name=None, country_name=None, country_code=None, id=None,
+                    ip=None, domain_name=None, page_url=None, app_id=None):
         self.id             = get_item_id()
         self.on_post        = on_post
         self.comment_author = comment_author
@@ -33,7 +39,11 @@ class Comment(Base):
         self.lon            = lon            
         self.location_name  = location_name  
         self.country_name   = country_name   
-        self.country_code   = country_code   
+        self.country_code   = country_code 
+        self.ip             = ip
+        self.domain_name    = domain_name
+        self.page_url       = page_url
+        self.app_id         = app_id  
 
     def __repr__(self):
         return '<Comment %r:%r>' % (self.id, self.on_post)
