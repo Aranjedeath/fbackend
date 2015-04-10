@@ -27,26 +27,36 @@ def get_facebook_profile_picture(facebook_id):
     except:
         return False
 
-def get_facebook_long_lived_token(short_lived_token):
-    params = {
-        'grant_type': 'fb_exchange_token',
-        'client_secret': config.FACEBOOK_APP_SECRET,
-        'client_id': config.FACEBOOK_APP_ID,
-        'fb_exchange_token': short_lived_token
-    }
+# def get_facebook_long_lived_token(short_lived_token):
+#     params = {
+#         'grant_type': 'fb_exchange_token',
+#         'client_secret': config.FACEBOOK_APP_SECRET,
+#         'client_id': config.FACEBOOK_APP_ID,
+#         'fb_exchange_token': short_lived_token
+#     }
+#     try:
+#         resp = requests.get('https://graph.facebook.com/oauth/access_token', params=params)
+#         if resp.status_code==200:
+#             # print resp.content
+#             return resp.content.split('&')[0].split('=')[1]
+#         else:
+#             raise Exception('Something Went wrong with the request')
+#     except:
+#         return short_lived_token
+
+def get_extended_graph_token(short_access_token):
+    graph = facebook.GraphAPI(access_token)
     try:
-        resp = requests.get('https://graph.facebook.com/oauth/access_token', params=params)
-        if resp.status_code==200:
-            # print resp.content
-            return resp.content.split('&')[0].split('=')[1]
-        else:
-            raise Exception('Something Went wrong with the request')
-    except:
-        return short_lived_token
+        resp = graph.extend_access_token(config.FACEBOOK_APP_ID, config.FACEBOOK_APP_SECRET)
+        extended_token = resp.get('access_token')
+    except exception as e:
+        return short_access_token
+    return extended_token
 
 def get_fb_data(access_token):
-    access_token = get_facebook_long_lived_token(access_token)
     graph = facebook.GraphAPI(access_token)
+
+
     profile = graph.get_object("me")
     
     user_data = {}
@@ -63,6 +73,25 @@ def get_fb_data(access_token):
 
     return user_data
 
+def get_fb_permissions(access_token):
+    """
+    takes in a facebook access token
+    returns a set of all facebook access permissions.
+    """
+    permission_url = "https://graph.facebook.com/me/permissions?access_token={0}".format(access_token)
+    print "hit url", permission_url
+    resp = requests.get(permission_url, allow_redirects=False)
+    print resp.json()
+    allowed_permissions = set()
+    if resp.status_code == 200:
+        resp_data = resp.json()['data']
+        print type(resp_data)
+        for item in resp_data:
+            if item.get('status') == 'granted':
+                allowed_permissions.add(item.get('permission'))
+    return allowed_permissions
+
 if __name__ == '__main__':    
-    short_token = 'CAALdknmm9gQBAPVOJ3ceJiEDv6pBlV49ayQcZCpVkB7ZBAXZASm9uClOYSPSI43lWNurdTMMwdssjDksE5Ld9FEBpi29jRTqgthNNR1jVXFcXfqph9q8ffaeghzZB8OUdiSErRx6IMPij1Y7phKObLQ73qUhZAGNaPOviDMH6Vfyx1VStuYTb6LmVMfiVm31u65NGX16SWDc7QmyLzjYBV2oAZBBmRYOQXZC5MtZCtU3FgZDZD'
-    print get_facebook_long_lived_token(short_token)
+    short_token = 'CAACEdEose0cBABZC9k67eQo192ZCTLKKmqQw6vKiZBzswRZBHEUqxvcxkJIYYSRBNS6DmEKUNixw7t4glwqoBZBPCJb3nE2PVXwrxx0HHrlQrxgFMML9BdnvFKymyaKprezzfvvy6EXC2y28jtBu5CE8RWT3PrBfzOuXjbGZBzOAf2c9ZBhYZB3cHY6gNRqOmX72WxMhO8djBVJjeVcrI6OR'
+    # print get_fb_data(short_token)
+    print get_fb_permissions(short_token)

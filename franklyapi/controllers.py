@@ -303,7 +303,12 @@ def login_user_social(social_type, social_id, external_access_token, device_id, 
         
         if social_type == 'facebook':
             new_user.facebook_id = social_id
-            new_user.facebook_token = external_access_token
+            extended_external_token = get_extended_graph_token(external_access_token)
+            new_user.facebook_token = extended_external_token
+
+            allowed_permissions = social_helpers.get_fb_permissions(new_user.facebook_token)
+            if 'publish_actions' in allowed_permissions:
+                new_user.facebook_write_permission = 1
         elif social_type == 'twitter':
             new_user.twitter_id = social_id
             new_user.twitter_token = external_access_token
