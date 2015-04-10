@@ -66,6 +66,18 @@ class Video(Base):
         return '<Video %r:%r>' % (self.process_state, self.url)
 
 
+class DashVideo(Base):
+    __tablename__             = 'dash_videos'
+    url                       = Column(CHAR(300), ForeignKey('videos.url'), nullable = False)
+    dash_url                  = Column(CHAR(300), primary_key=True)
+
+    def __init__(self, base_url, dash_url):
+        self.url = base_url
+        self.dash_url = dash_url
+        
+    def __repr__(self):
+        return '<DashVideo %r:%r>' % (self.url, self.dash_url)
+
 class EncodeLog(Base):
     __tablename__ = 'encode_log'
     id              = Column(Integer, primary_key=True)
