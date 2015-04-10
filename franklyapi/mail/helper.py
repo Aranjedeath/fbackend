@@ -74,6 +74,7 @@ mail_dict = {
     "logo_target_url": config.WEB_URL,
     "logo_image_url": config.LOGO_URL,
     "company_name": config.COMPANY_NAME,
+    "pixel_image_url": config.PIXEL_IMAGE_ENDPOINT,
     "signature": "Pallavi, <br/> Community Manager <br/> Frankly.me",
     "team_signature": "Lots of love, <br/> Frankly.me Team"
 }

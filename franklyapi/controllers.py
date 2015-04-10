@@ -1969,6 +1969,19 @@ def view_video(url, count=1):
     url = url.replace('http://d35wlof4jnjr70.cloudfront.net/', 'https://s3.amazonaws.com/franklymestorage/')
     redis_views.incr(url, count)
 
+
+def email_tracking(tracking_id):
+    db.session.execute(text('''Update email_sent set open_count = open_count + 1,
+                              last_open_at = :now
+                              where id = :id
+                           '''), params={
+                              "id": tracking_id,
+                              "now": datetime.datetime.now()
+                        })
+    db.session.commit()
+    return config.PIXEL_IMAGE_URL + "?date=" + str(datetime.datetime.now())
+
+
 def query_search(cur_user_id, query, offset, limit, version_code=None):
     results = []
     if 'test' in query:

@@ -108,3 +108,7 @@ DISCOVER_RECYCLE_HOURS = 0.1667 # 10 minutes
 DISCOVER_RECYCLE_COUNT = 3
 
 FROM_EMAIL_ADDRESS = "Frankly@franklymail.com"
+
+PIXEL_IMAGE_URL = "https://s3-ap-southeast-1.amazonaws.com/node.static.frankly.me/pixie.png"
+
+PIXEL_IMAGE_ENDPOINT = "http://api.frankly.me/pixie"
