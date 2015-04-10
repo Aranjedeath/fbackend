@@ -21,8 +21,8 @@ mail_sender = SimpleMailer()
 # TODO Change link to un-subscribe
 # TODO Content for inactive profile
 # TODO Email content for new celeb email and for news digest - CONTENT TEAM
-def mail(email_id, object_id = None, mail_type="", subject="", body="",
-         cutoff_time=datetime.timedelta(days=1), mail_limit=1):
+def mail(email_id, log_id, object_id = None, mail_type="", subject="", body="",
+         cutoff_time=datetime.timedelta(days=1), mail_limit=100):
     '''
      For any kind of email there is a cut off time with which
      it can be sent again. The number of such mails can also
@@ -36,8 +36,8 @@ def mail(email_id, object_id = None, mail_type="", subject="", body="",
         #                         MailLog.mail_type == mail_type,
         #                         MailLog.created_at > (now - cutoff_time)).count() < mail_limit:
 
-        mail_sender.send_mail(email_id, subject, body)
-        #    log_mail(email_id=email_id, mail_type=mail_type, object_id=object_id)
+        mail_sender.send_mail(email_id, subject, body, log_id)
+
 
 
 
@@ -45,28 +45,35 @@ def log_mail(email_id, mail_type, object_id):
     log = MailLog(email_id=email_id, mail_type=mail_type, object_id=object_id)
     db.session.add(log)
     db.session.commit()
+    return log.id
 
 
 def welcome_mail(user_id, mail_type="welcome_mail"):
 
     user = User.query.filter(User.id  == user_id).first()
     cutoff_time = datetime.timedelta(days=1000)
+    log_id = log_mail(user.email, mail_type, user_id)
     mail_dict['salutation'] = "Hi %s" % user.first_name
     mail_dict['email_text'] = helper.dict[mail_type]['body'] % (user.username, user.password)
+    mail_dict['pixel_image_url'] += "?id=" + log_id
+    print log_id
 
-    mail(email_id=user.email, subject=helper.dict[mail_type]['subject'],
+    mail(email_id=user.email, log_id=log_id, subject=helper.dict[mail_type]['subject'],
          body=header_template.render(mail_dict), mail_type=mail_type, object_id=user_id,
          cutoff_time= cutoff_time, mail_limit = 1)
 
 
 def forgot_password(receiver_email, token, receiver_name, user_id, mail_type="forgot_password"):
-    url = os.path.join(config.WEB_URL, 'reset-password?token={token}'.format(token=token))
 
+    url = os.path.join(config.WEB_URL, 'reset-password?token={token}'.format(token=token))
     cutoff_time = datetime.timedelta(hours=1)
+    log_id =log_mail(receiver_email, mail_type, user_id)
+
     mail_dict['salutation'] = "Hi {receiver_name}".format(receiver_name=str(receiver_name))
     mail_dict['email_text'] = helper.dict[mail_type]['body'].format(reset_password_link=url)
+    mail_dict['pixel_image_url'] += "?id=" + log_id
 
-    mail(email_id=receiver_email, subject=helper.dict[mail_type]['subject'],
+    mail(email_id=receiver_email, log_id=log_id, subject=helper.dict[mail_type]['subject'],
          body=header_template.render(mail_dict), mail_type=mail_type, object_id=user_id,
          cutoff_time=cutoff_time, mail_limit=3)
 
@@ -89,32 +96,38 @@ def question_asked(question_to, question_from, question_id, question_body,
         then send them an email notification
         confirming that the question has been asked
     '''
-    #and not len(push.get_active_mobile_devices(asker.id))
-    if from_widget:
+
+    if from_widget and not len(push.get_active_mobile_devices(asker.id)):
 
         is_first = True if Question.query.filter(Question.question_author == asker.id).count() == 1 else False
-
         mail_type += "_by"
-        mail_dict['salutation'] = "Hi %s" % asker.first_name
         mail_dict['email_text'] = helper.dict[mail_type]['body'] % asked.first_name
 
         if is_first:
             mail_dict['email_text'] = helper.dict[mail_type]['body_first_question']
 
-        mail(email_id=asker.email, subject=helper.dict[mail_type]['subject'],
+        log_id = log_mail(asker.email, mail_type, question_id)
+
+        mail_dict['salutation'] = "Hi %s" % asker.first_name
+        mail_dict['pixel_image_url'] += "?id=" + log_id
+
+        mail(email_id=asker.email, log_id=log_id, subject=helper.dict[mail_type]['subject'],
              body=header_template.render(mail_dict), mail_type=mail_type, object_id=question_id,
              cutoff_time=cutoff_time, mail_limit=1)
         mail_type="question_asked"
 
-    #not
-    if len(push.get_active_mobile_devices(asked.id)):
+    #
+    if not len(push.get_active_mobile_devices(asked.id)):
 
         mail_type += "_to"
         subject = helper.dict[mail_type]['subject'] % asker.first_name
+        log_id = log_mail(asked.email, mail_type, question_id)
+
         mail_dict['salutation'] = "Hi %s" % asked.first_name
         mail_dict['email_text'] = helper.dict[mail_type]['body'] % (asker.first_name, question_body)
+        mail_dict['pixel_image_url'] += "?id=" + log_id
 
-        mail(email_id=asked.email, subject=subject,
+        mail(email_id=asked.email, log_id=log_id, subject=subject,
              body=header_template.render(mail_dict), mail_type=mail_type, object_id=question_id,
              cutoff_time=cutoff_time, mail_limit=1)
 
@@ -122,13 +135,15 @@ def question_asked(question_to, question_from, question_id, question_body,
 def question_answered(receiver_email, receiver_name, celebrity_name, question, web_link,
                       post_id, user_id, mail_type='post_add'):
 
-    if  len(push.get_active_mobile_devices(user_id)):
+    if len(push.get_active_mobile_devices(user_id)):
         cutoff_time = datetime.timedelta(days=10000)
 
+        log_id = log_mail(receiver_email, mail_type, post_id)
         mail_dict['salutation'] = "Hi %s" % receiver_name
         mail_dict['email_text'] = helper.dict[mail_type]['body'] % (celebrity_name, web_link, question)
+        mail_dict['pixel_image_url'] += "?id=" + log_id
 
-        mail(email_id=receiver_email, subject=helper.dict[mail_type]['subject'],
+        mail(email_id=receiver_email, log_id=log_id, subject=helper.dict[mail_type]['subject'],
              body=header_template.render(mail_dict), mail_type=mail_type, object_id=post_id,
              cutoff_time=cutoff_time, mail_limit=1)
 
@@ -137,10 +152,13 @@ def inactive_profile(user_id, mail_type="inactive_profile"):
 
     user = User.query.filter(User.id == user_id).first()
     cutoff_time = datetime.timedelta(days=30)
+    log_id = log_mail(user.email, mail_type, user.id)
+
     mail_dict['salutation'] = "Hi %s" % user.first_name
     mail_dict['email_text'] = helper.dict[mail_type]['body']
+    mail_dict['pixel_image_url'] += "?id=" + log_id
 
-    mail(email_id=user.email, subject=helper.dict[mail_type]['subject'],
+    mail(email_id=user.email, log_id=log_id, subject=helper.dict[mail_type]['subject'],
          body=header_template.render(mail_dict), mail_type=mail_type, object_id=user.id,
          cutoff_time=cutoff_time, mail_limit=1)
 
@@ -154,10 +172,12 @@ def new_celebrity_profile(for_users, celebrity_id, mail_type="new_celebrity"):
         for user in for_users:
             u = User.query.filter(User.id == user).first()
 
+            log_id = log_mail(user.email, mail_type, celebrity_id)
             mail_dict['salutation'] = "Hi %s" % u.first_name
             mail_dict['email_text'] = helper.dict[mail_type]['body']
+            mail_dict['pixel_image_url'] += "?id=" + log_id
 
-            mail(email_id=u.email, subject=helper.dict[mail_type]['subject'],
+            mail(email_id=u.email, log_id=log_id, subject=helper.dict[mail_type]['subject'],
                  body=header_template.render(mail_dict), mail_type = (mail_type + "_" + celebrity.username),
                  object_id=user, cutoff_time=cutoff_time, mail_limit=1)
 
@@ -171,11 +191,12 @@ def weekly_digest(for_users, subject, mail_type="weekly_digest"):
 
         for user in for_users:
             u = User.query.filter(User.id == user).first()
-
+            log_id = log_mail(u.email, mail_type, u.id)
             body = "TODO"
-            mail(email_id=u.email, subject=subject,
+            mail_dict['pixel_image_url'] += "?id=" + log_id
+            mail(email_id=u.email, log_id=log_id, subject=subject,
                  body=body, mail_type = mail_type,
-                 object_id=user, cutoff_time=cutoff_time, mail_limit=1)
+                 object_id=user.id, cutoff_time=cutoff_time, mail_limit=1)
 
     except ObjectNotFoundException:
         pass
