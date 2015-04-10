@@ -527,7 +527,7 @@ def get_video_states(video_urls={}):
         result[video.url] = {}
         result[video.url]['original'] = video.url
         result[video.url]['thumb'] = video.thumbnail
-        result[video.url]['dash'] = {'url':video.dash, 'version':0.0}
+        result[video.url]['dash'] = video.dash
 
         if video.ultralow:
             result[video.url][0] = video.ultralow
