@@ -512,22 +512,13 @@ def get_user_status(user_id):
 def get_video_states(video_urls={}):
     result = {}
     videos = Video.query.filter(Video.url.in_(video_urls.keys())).all()
-    joined_query = db.session.query(Video,DashVideo).join(DashVideo).filter(Video.url.in_(video_urls.keys())).all()
-    print joined_query
-    for video, dash_video in joined_query:
-        # video = joined_query.Video
-        # dash_video = joined_query.DashVideo
+    for video in videos:
+
         result[video.url] = {}
         result[video.url]['original'] = video.url
         result[video.url]['thumb'] = video.thumbnail
-        try:
-            dash_url = dash_video.dash_url
-            dash_ver = 0.1
-        except:
-            dash_ver = 0.0
-            dash_url = None
-        result[video.url]['dash_url'] = dash_url
-        result[video.url]['dash_ver'] = dash_ver
+        result[video.url]['dash'] = {'url':video.dash, 'version':0.0}
+
         if video.ultralow:
             result[video.url][0] = video.ultralow
         if video.low:
