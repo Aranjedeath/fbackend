@@ -22,7 +22,7 @@ mail_sender = SimpleMailer()
 # TODO Content for inactive profile
 # TODO Email content for new celeb email and for news digest - CONTENT TEAM
 def mail(email_id, log_id, object_id = None, mail_type="", subject="", body="",
-         cutoff_time=datetime.timedelta(days=1), mail_limit=100):
+         cutoff_time=datetime.timedelta(days=1), mail_limit=1):
     '''
      For any kind of email there is a cut off time with which
      it can be sent again. The number of such mails can also
@@ -32,11 +32,10 @@ def mail(email_id, log_id, object_id = None, mail_type="", subject="", body="",
     if object_id:
 
         now = datetime.datetime.now()
-        # if MailLog.query.filter(MailLog.email_id == email_id, MailLog.object_id == object_id,
-        #                         MailLog.mail_type == mail_type,
-        #                         MailLog.created_at > (now - cutoff_time)).count() < mail_limit:
-
-        mail_sender.send_mail(email_id, subject, body, log_id)
+        if MailLog.query.filter(MailLog.email_id == email_id, MailLog.object_id == object_id,
+                                 MailLog.mail_type == mail_type,
+                                 MailLog.created_at > (now - cutoff_time)).count() < mail_limit:
+                mail_sender.send_mail(email_id, subject, body, log_id)
 
 
 
@@ -47,6 +46,16 @@ def log_mail(email_id, mail_type, object_id):
     db.session.commit()
     return log.id
 
+def test():
+    user = User.query.filter(User.username == 'chimpspanner').first()
+    log_id = log_mail('varunj.dce@gmail.com',"mail_type_test", user.id)
+    mail_dict['email_text'] = "Testing testing"
+    mail_dict['pixel_image_url'] += "?id=" + log_id
+    print mail_dict['pixel_image_url']
+
+    mail(email_id=user.email, log_id=log_id, subject="Testing",
+         body=header_template.render(mail_dict), mail_type="mail_type_test", object_id=user.id,
+         cutoff_time= datetime.timedelta(seconds=1), mail_limit = 1000)
 
 def welcome_mail(user_id, mail_type="welcome_mail"):
 

@@ -33,7 +33,7 @@ class SimpleMailer(object):
         if type(recipients) in [type(''), type(u'')]:
             recipients = [recipients]
 
-
+        print log_id
 
         for recipient in recipients:
             try:
@@ -44,6 +44,7 @@ class SimpleMailer(object):
                 new_email_sent = EmailSent(self.sender_id, recipient, log_id, datetime.datetime.now())
                 db.session.add(new_email_sent)
                 db.session.commit()
+                print new_email_sent.id
             except Exception as e:
                 err = sys.exc_info()
                 print e.message
