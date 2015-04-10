@@ -286,16 +286,16 @@ def questions_to_dict(questions, cur_user_id=None):
                                 'channel_id':'user_{user_id}'.format(user_id=users[question.question_author]['id'])
                                 },
             'question_to':{
-                            'id':users[question.question_to]['id'],
-                            'username': users[question.question_to]['username'],
-                            'first_name': users[question.question_to]['first_name'],
+                            'id':users[question.question_to]['id'] if not question.open_question else '00000',
+                            'username': users[question.question_to]['username'] if not question.open_question else '00000',
+                            'first_name': users[question.question_to]['first_name'] if not question.open_question else '00000',
                             'last_name': None,
-                            'profile_picture': users[question.question_to]['profile_picture'],
-                            'gender': users[question.question_to]['gender'],
-                            'user_type': users[question.question_to]['user_type'],
-                            'user_title': users[question.question_to]['user_title'],
-                            'is_following':users[question.question_to]['is_following'],
-                            'channel_id':'user_{user_id}'.format(user_id=users[question.question_to]['id'])
+                            'profile_picture': users[question.question_to]['profile_picture'] if not question.open_question else None,
+                            'gender': users[question.question_to]['gender'] if not question.open_question else None,
+                            'user_type': users[question.question_to]['user_type'] if not question.open_question else 0,
+                            'user_title': users[question.question_to]['user_title'] if not question.open_question else '00000',
+                            'is_following':users[question.question_to]['is_following'] if not question.open_question else '0000',
+                            'channel_id':'user_{user_id}'.format(user_id=users[question.question_to]['id']) if not question.open_question else '0000'
 
                             },
             'tags': [],
@@ -311,7 +311,8 @@ def questions_to_dict(questions, cur_user_id=None):
             'short_id': question.short_id,
             'is_answered':question.is_answered,
             'score':question.score,
-            'slug':question.slug
+            'slug':question.slug,
+            'open_question':question.open_question
         }
         if question.is_answered:
             ques_dict['post_id'] = get_post_id_from_question_id(question.id)
@@ -338,19 +339,19 @@ def question_to_dict(question, cur_user_id=None):
                             'channel_id':'user_{user_id}'.format(user_id=users[question.question_author]['id'])
                             
                             },
-        'question_to':{
-                        'id':users[question.question_to]['id'],
-                        'username': users[question.question_to]['username'],
-                        'first_name': users[question.question_to]['first_name'],
-                        'last_name': None,
-                        'profile_picture': users[question.question_to]['profile_picture'],
-                        'gender': users[question.question_to]['gender'],
-                        'user_type': users[question.question_to]['user_type'],
-                        'user_title': users[question.question_to]['user_title'],
-                        'is_following':users[question.question_to]['is_following'],
-                        'channel_id':'user_{user_id}'.format(user_id=users[question.question_to]['id'])
 
-                        },
+         'question_to':{
+                            'id':users[question.question_to]['id'] if not question.open_question else '00000',
+                            'username': users[question.question_to]['username'] if not question.open_question else '00000',
+                            'first_name': users[question.question_to]['first_name'] if not question.open_question else '00000',
+                            'last_name': None,
+                            'profile_picture': users[question.question_to]['profile_picture'] if not question.open_question else None,
+                            'gender': users[question.question_to]['gender'] if not question.open_question else None,
+                            'user_type': users[question.question_to]['user_type'] if not question.open_question else 0,
+                            'user_title': users[question.question_to]['user_title'] if not question.open_question else '00000',
+                            'is_following':users[question.question_to]['is_following'] if not question.open_question else '0000',
+                            'channel_id':'user_{user_id}'.format(user_id=users[question.question_to]['id']) if not question.open_question else '0000'
+                            },
         'tags': [],
         'body': question.body,        
         'timestamp': int(time.mktime(question.timestamp.timetuple())),
@@ -364,7 +365,8 @@ def question_to_dict(question, cur_user_id=None):
         'short_id': question.short_id,
         'is_answered':question.is_answered,
         'score':question.score,
-        'slug':question.slug
+        'slug':question.slug,
+        'open_question':question.open_question
     }
     if question.is_answered:
         ques_dict['post_id'] = get_post_id_from_question_id(question.id)
@@ -418,7 +420,8 @@ def post_to_dict(post, cur_user_id=None, distance=None, include_comments=3):
                 'timestamp': int(time.mktime(questions[post.question]['timestamp'].timetuple())),
                 'tags': [],
                 'is_anonymous': bool(questions[post.question]['is_anonymous']),
-                'slug':questions[post.question]['slug']
+                'slug':questions[post.question]['slug'],
+                'open_question':questions[post.question]['open_question']
         },
         'answer': {
             'body': '',
@@ -518,7 +521,8 @@ def posts_to_dict(posts, cur_user_id=None, distance=None, include_comments=3):
                 'timestamp': int(time.mktime(questions[post.question]['timestamp'].timetuple())),
                 'tags': [],
                 'is_anonymous': bool(questions[post.question]['is_anonymous']),
-                'slug':questions[post.question]['slug']
+                'slug':questions[post.question]['slug'],
+                'open_question':questions[post.question]['open_question']
             },
             'answer': {
                 'body': '',

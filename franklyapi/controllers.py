@@ -1108,8 +1108,8 @@ def question_upvote(cur_user_id, question_id):
                             #Question.public==True, 
                             Question.question_to!=cur_user_id,
                             Question.deleted==False,
-                            Question.is_ignored==False,
-                            Question.is_answered==False
+                            or_(and_(Question.is_ignored==False, Question.is_answered==False),
+                                Question.open_question==True)
                             ).count():
         db.session.execute(text("""INSERT INTO question_upvotes (user, question, downvoted, timestamp) 
                                     VALUES(:cur_user_id, :question_id, false, :timestamp) 
@@ -1241,13 +1241,14 @@ def question_view(current_user_id, question_id, short_id):
                                             #    Question.question_to==current_user_id)
                                             ).one()
 
-        question_to = User.query.filter(User.id==question.question_to).one()
+        if not question.open_question:
+            question_to = User.query.filter(User.id==question.question_to).one()
 
-        if question.flag == 0 and question.question_author!=current_user_id:
-            raise CustomExceptions.ObjectNotFoundException('The question does not exist or has been deleted.')
-        if question.is_answered:
-            post = Post.query.filter(Post.question==question.id, Post.deleted==False).one()
-            return {'is_answered':question.is_answered, 'post':post_to_dict(post, current_user_id), 'question':question_to_dict(question, current_user_id)}
+            if question.flag == 0 and question.question_author!=current_user_id:
+                raise CustomExceptions.ObjectNotFoundException('The question does not exist or has been deleted.')
+            if question.is_answered:
+                post = Post.query.filter(Post.question==question.id, Post.deleted==False).one()
+                return {'is_answered':question.is_answered, 'post':post_to_dict(post, current_user_id), 'question':question_to_dict(question, current_user_id)}
         
         return {'is_answered':question.is_answered, 'question':question_to_dict(question, current_user_id)}
     except NoResultFound:
@@ -1655,16 +1656,19 @@ def get_pending_post(client_id):
 
 def add_video_post(cur_user_id, question_id, video, answer_type,
                         lat=None, lon=None, client_id=None,
-                        show_after = None):
+                        show_after = None, answer_author_id=None):
     try:
         if cur_user_id in config.ADMIN_USERS:
             question = Question.query.filter(Question.id==question_id,
                                             Question.is_ignored==False,
                                             Question.deleted==False).one()
+            
             answer_author = question.question_to
+            if question.open_question:
+                answer_author = answer_author_id
         else:
             answer_author = cur_user_id
-            question = Question.query.filter(Question.question_to==cur_user_id,
+            question = Question.query.filter(or_(Question.question_to==cur_user_id, Question.open_question==True),
                                             Question.id==question_id,
                                             Question.is_ignored==False,
                                             Question.deleted==False).one()
