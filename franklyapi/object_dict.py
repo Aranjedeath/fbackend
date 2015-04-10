@@ -196,7 +196,9 @@ def thumb_user_to_dict(user, current_user_id=None):
     return user_dict
 
 def make_celeb_questions_dict(celeb, questions, current_user_id=None):
-    from controllers import get_question_upvote_count, is_following, is_upvoted, get_upvoters, get_thumb_users
+    from controllers import get_question_upvote_count, is_following,\
+        is_upvoted, get_upvoters, get_thumb_users, is_question_remindable
+
     upvoters = []
     for question in questions:
         upvoters.extend(get_upvoters(question.id, count=5))
@@ -215,7 +217,8 @@ def make_celeb_questions_dict(celeb, questions, current_user_id=None):
                     'is_following': is_following(celeb.id, current_user_id),
                     'bio':celeb.bio,
                     'channel_id':'user_{user_id}'.format(user_id=celeb.id),
-                    'questions':[]
+                    'questions':[],
+                    'twitter_handle': celeb.twitter_handle
                 }
     for question in questions:
         ques_dict = {
@@ -239,7 +242,8 @@ def make_celeb_questions_dict(celeb, questions, current_user_id=None):
                         'user_type': celeb.user_type,
                         'user_title': celeb.user_title,
                         'is_following':celeb_dict['is_following'],
-                        'channel_id':'user_{user_id}'.format(user_id=celeb.id)
+                        'channel_id':'user_{user_id}'.format(user_id=celeb.id),
+                        'twitter_handle':users[question.question_to]['twitter_handle'] if not question.open_question else None
 
                         },
         'tags': [],
@@ -252,7 +256,8 @@ def make_celeb_questions_dict(celeb, questions, current_user_id=None):
         'background_image':"http://api.frankly.me/question/bg_image/%s"%(str(question.id)),
         'is_voted': is_upvoted(question.id, current_user_id) if current_user_id else False,
         'web_link':'http://frankly.me',
-        'slug':question.slug
+        'slug':question.slug,
+        'is_remindable':is_question_remindable(question.id,current_user_id) if current_user_id else False
         }
         celeb_dict['questions'].append(ques_dict)
     return celeb_dict
@@ -262,7 +267,9 @@ def make_celeb_questions_dict(celeb, questions, current_user_id=None):
 def questions_to_dict(questions, cur_user_id=None):
     if not questions:
         return []
-    from controllers import get_question_upvote_count, is_upvoted, get_thumb_users, get_post_id_from_question_id
+    from controllers import get_question_upvote_count, is_upvoted, get_thumb_users,\
+        get_post_id_from_question_id, is_question_remindable
+
 
     user_ids = []
     for question in questions:
@@ -295,7 +302,8 @@ def questions_to_dict(questions, cur_user_id=None):
                             'user_type': users[question.question_to]['user_type'] if not question.open_question else 0,
                             'user_title': users[question.question_to]['user_title'] if not question.open_question else '00000',
                             'is_following':users[question.question_to]['is_following'] if not question.open_question else '0000',
-                            'channel_id':'user_{user_id}'.format(user_id=users[question.question_to]['id']) if not question.open_question else '0000'
+                            'channel_id':'user_{user_id}'.format(user_id=users[question.question_to]['id']) if not question.open_question else '0000',
+                            'twitter_handle':users[question.question_to]['twitter_handle'] if not question.open_question else None
 
                             },
             'tags': [],
@@ -312,7 +320,8 @@ def questions_to_dict(questions, cur_user_id=None):
             'is_answered':question.is_answered,
             'score':question.score,
             'slug':question.slug,
-            'open_question':question.open_question
+            'open_question':question.open_question,
+            'is_remindable':is_question_remindable(question.id,cur_user_id) if cur_user_id else False
         }
         if question.is_answered:
             ques_dict['post_id'] = get_post_id_from_question_id(question.id)
@@ -322,7 +331,7 @@ def questions_to_dict(questions, cur_user_id=None):
 
 
 def question_to_dict(question, cur_user_id=None):
-    from controllers import get_question_upvote_count, is_upvoted, get_thumb_users, get_post_id_from_question_id
+    from controllers import get_question_upvote_count, is_upvoted, get_thumb_users, get_post_id_from_question_id, is_question_remindable
     
     #upvoters = get_upvoters(question.id, count=5)
     users = get_thumb_users([question.question_author, question.question_to], cur_user_id=cur_user_id)
@@ -350,7 +359,8 @@ def question_to_dict(question, cur_user_id=None):
                             'user_type': users[question.question_to]['user_type'] if not question.open_question else 0,
                             'user_title': users[question.question_to]['user_title'] if not question.open_question else '00000',
                             'is_following':users[question.question_to]['is_following'] if not question.open_question else '0000',
-                            'channel_id':'user_{user_id}'.format(user_id=users[question.question_to]['id']) if not question.open_question else '0000'
+                            'channel_id':'user_{user_id}'.format(user_id=users[question.question_to]['id']) if not question.open_question else '0000',
+                            'twitter_handle':users[question.question_to]['twitter_handle'] if not question.open_question else None
                             },
         'tags': [],
         'body': question.body,        
@@ -366,7 +376,9 @@ def question_to_dict(question, cur_user_id=None):
         'is_answered':question.is_answered,
         'score':question.score,
         'slug':question.slug,
-        'open_question':question.open_question
+        'open_question':question.open_question,
+        'is_remindable':is_question_remindable(question.id,cur_user_id) if cur_user_id else False
+
     }
     if question.is_answered:
         ques_dict['post_id'] = get_post_id_from_question_id(question.id)
