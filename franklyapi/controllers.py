@@ -1028,7 +1028,6 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, from_wi
 
 
 def question_list(user_id, offset, limit, version_code=0):
-
     questions_query = Question.query.filter(Question.question_to==user_id, 
                                             Question.deleted==False,
                                             Question.is_answered==False,
