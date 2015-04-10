@@ -595,7 +595,8 @@ def get_questions(question_ids, cur_user_id=None):
                                                    (SELECT count(question_upvotes.user) FROM question_upvotes
                                                     WHERE question_upvotes.question=questions.id 
                                                             AND question_upvotes.user=:cur_user_id
-                                                            AND question_upvotes.downvoted=False) as is_upvoted
+                                                            AND question_upvotes.downvoted=False) as is_upvoted,
+                                                    questions.open_question
                                             FROM questions
                                             WHERE id in :question_ids"""),
                                         params={'question_ids':list(question_ids), 'cur_user_id':cur_user_id})
@@ -606,7 +607,8 @@ def get_questions(question_ids, cur_user_id=None):
                                     'is_anonymous':row[2],
                                     'timestamp':row[3],
                                     'slug':row[4],
-                                    'is_upvoted':bool(row[5])
+                                    'is_upvoted':bool(row[5]),
+                                    'open_question':bool(row[6])
                                     }
                         })
     return data
