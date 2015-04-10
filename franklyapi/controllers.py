@@ -483,6 +483,16 @@ def get_question_upvote_count(question_id):
         count += inflated_stat.upvote_count
     return count
 
+def is_question_remindable(question_id, user_id):
+    return bool(Question.query.filter(
+        Question.id == question_id,
+        Question.question_author == user_id,
+        Question.is_answered == False,
+        Question.timestamp <= (datetime.datetime.now() - datetime.timedelta(hours=7)),
+        Question.is_ignored == False,
+        Question.open_question == None
+        ).count())
+
 def is_upvoted(question_id, user_id):
     return bool(Upvote.query.filter(Upvote.question==question_id, Upvote.user==user_id, Upvote.downvoted==False).count())
 
@@ -549,6 +559,7 @@ def get_thumb_users(user_ids, cur_user_id=None):
         result = db.session.execute(text("""SELECT users.id, users.username, users.first_name, users.profile_picture, users.deleted,
                                                 users.lat, users.lon, users.location_name, users.country_name, users.country_code,
                                                 users.gender, users.bio, users.allow_anonymous_question, users.user_type, users.user_title,
+                                                users.twitter_handle,
                                                 (SELECT count(user_follows.user) FROM user_follows 
                                                         WHERE user_follows.user=:cur_user_id
                                                                 AND user_follows.followed=users.id
@@ -581,7 +592,8 @@ def get_thumb_users(user_ids, cur_user_id=None):
                                     'allow_anonymous_question':bool(row[12]),
                                     'user_type':row[13],
                                     'user_title':row[14],
-                                    'is_following':bool(row[15]),
+                                    'twitter_handle':row[15],
+                                    'is_following':bool(row[16]),
                                     'channel_id':'user_{user_id}'.format(user_id=row[0])
                                     }
                         })
