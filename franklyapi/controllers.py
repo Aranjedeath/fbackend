@@ -3105,33 +3105,23 @@ def suggest_answer_author(question_body):
     return {'count':len(users), 'users':[thumb_user_to_dict(user) for user in users]}
 
 
-
-def user_update_access_token(user_id, acc_type, token, secret=None):
+def update_social_access_token(user_id, social_type, access_token, access_secret=None):
     try:
-        if acc_type=='facebook':
-            user_data = get_data_from_external_access_token('facebook', token, external_token_secret=None)
-            User.query.filter(User.id==user_id, User.facebook_id==user_data['social_id']).update({'facebook_token':token, 'facebook_write_permission':True})
-
-        if acc_type=='twitter':
-            if not secret:
-                raise CustomExceptions.BadRequestException('Missing access secret')
-            user_data = get_data_from_external_access_token('twitter', token, external_token_secret=secret)
-            User.query.filter(User.id==user_id, User.facebook_id==user_data['social_id']).update({'twitter_token':token, 'twitter_write_permission':True})
+        user_data = get_data_from_external_access_token(social_type, access_token, access_secret)
+        token_valid = str(user_data['social_id']).strip()==str(social_id).strip()
         
-        return {'success':True}
-    
+        if not token_valid:
+            raise CustomExceptions.InvalidTokenException("Could not verify %s token"%social_type)
+
+        count = 0
+        if social_type=='facebook':
+            allowed_permissions = social_helpers.get_fb_permissions(access_token)
+            if 'publish_actions' not in allowed_permissions:
+                raise CustomExceptions.InvalidTokenException("Could not verify %s token permission."%social_type)
+            else:
+                count = User.query.filter(User.id==user_id, User.facebook_id==user_data['social_id']).update({'facebook_token':fb_access_token})
+        db.session.commit()
+        return bool(count)
     except CustomExceptions.InvalidTokenException:
         raise CustomExceptions.BadRequestException('invalid token')
-
-
-def update_social_access_token(user_id, social_type, access_token, access_secret=None):
-    # check for all the validation done on registration.
-        #social_user_id matches that of access_token
-        #valid access token
-        #check permission
-
-    if social_type=='facebook':
-        count = User.query.filter(User.id==user_id).update({'facebook_token':fb_access_token})
-    db.session.commit()
-    return bool(count)
 
