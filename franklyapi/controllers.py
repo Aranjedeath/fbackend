@@ -3060,10 +3060,10 @@ def suggest_answer_author(question_body):
     users = User.query.filter(User.username.in_(['arvindkejriwal', 'javedakhtar', 'ranveerbrar'])).all()
     return {'count':len(users), 'users':[thumb_user_to_dict(user) for user in users]}
 
-
-
-
-
-
-
-
+def update_facebook_access_token(userid,fb_access_token):
+    try:
+        User.query.filter(User.id==userid).update({'facebook_token':fb_access_token})
+        db.session.commit()
+        return 0
+    except:
+        return -1
