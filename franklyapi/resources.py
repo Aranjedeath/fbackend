@@ -2629,7 +2629,7 @@ class UpdateToken(restful.Resource):
                 if ret_val != 0:
                     raise CustomExceptions.UserNotFoundException()
                 else:
-                    return 0
+                    return {'success': True}
             else:
                 raise CustomExceptions.SocialNotSupported()
         except CustomExceptions.UserNotFoundException as e:
