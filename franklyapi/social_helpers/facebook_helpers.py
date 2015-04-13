@@ -91,7 +91,34 @@ def get_fb_permissions(access_token):
                 allowed_permissions.add(item.get('permission'))
     return allowed_permissions
 
+def publish_to_facebook(message, post_name, post_link, post_caption, post_description, post_picture, access_token = None, graph_obj = None):
+    post_dict = {"name": post_name,
+             "link": post_link,
+             "caption": post_caption,
+             "description": post_description,
+             "picture": post_picture}
+
+    if not access_token and not graph_obj:
+        return -1
+    if access_token:
+        graph = facebook.GraphAPI(access_token)
+    else:
+        graph = graph_obj
+    try:
+        graph.put_wall_post(message, post_dict)
+    except Exception as e:
+        print e
+        return -1
+    print "test"
+    return 0
+
 if __name__ == '__main__':    
-    short_token = 'CAACEdEose0cBABZC9k67eQo192ZCTLKKmqQw6vKiZBzswRZBHEUqxvcxkJIYYSRBNS6DmEKUNixw7t4glwqoBZBPCJb3nE2PVXwrxx0HHrlQrxgFMML9BdnvFKymyaKprezzfvvy6EXC2y28jtBu5CE8RWT3PrBfzOuXjbGZBzOAf2c9ZBhYZB3cHY6gNRqOmX72WxMhO8djBVJjeVcrI6OR'
-    # print get_fb_data(short_token)
-    print get_fb_permissions(short_token)
+    short_token = 'CAACEdEose0cBAITYwf1QdHRaPOrxYWIAeZBYcSEZA4vZCZBIzUiXMgxTsZBNqvNwO9bjDdYoPuWL9Bl66s0DVc3AZBd8as8uXzIyVWsHbX6VEb7AUa7xF8nf0NKI7T0M8okbMz2iJZCQXgwKofkVxqUrrBCKUVLZAxnBHYZCYPFZCQNfFPrTPAk7qSgE4d9DODXkASZAunV9wZBpZBTiJE39TKrra'
+
+    post_dict = {"name": "Frankster's Post",
+             "link": "http://www.frankly.me/",
+             "caption": "Nikhil posted a new review",
+             "description": "Nikhil just posted on frankly!",
+             "picture": "http://frankly.me/img/logo.png"}
+    print publish_to_facebook("test www.google.com", access_token=short_token)
+

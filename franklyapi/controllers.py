@@ -280,6 +280,7 @@ def login_user_social(social_type, social_id, external_access_token, device_id, 
         activated_now=user.deleted
         User.query.filter(User.id==user.id).update(update_dict)
         db.session.commit()
+
         return {'access_token': access_token, 'id':user.id,
                 'username':user.username, 'activated_now': activated_now,
                 'new_user' : False, 'user_type' : user.user_type,
