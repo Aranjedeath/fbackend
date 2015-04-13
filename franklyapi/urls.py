@@ -125,6 +125,7 @@ api.add_resource(ReceiveSNSNotifications, '/email/report')
 api.add_resource(PublicDocumentation, '/documentation')
 
 api.add_resource(AnswerAuthorSuggest, '/suggest/answer_author')
+api.add_resource(ChannelNewCount, '/channel/new_count')
 
 
 '''
