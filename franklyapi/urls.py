@@ -123,6 +123,7 @@ api.add_resource(PublicDocumentation, '/documentation')
 
 api.add_resource(AnswerAuthorSuggest, '/suggest/answer_author')
 
+api.add_resource(UpdateToken, '/update_token/<social_type>')
 
 '''
 

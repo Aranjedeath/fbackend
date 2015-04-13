@@ -2605,5 +2605,42 @@ class AnswerAuthorSuggest(restful.Resource):
         return controllers.suggest_answer_author(args['question_body'])
 
 
+class UpdateToken(restful.Resource):
+    get_parser = reqparse.RequestParser()
+    get_parser.add_argument('user_id', type=str, required=True)
+    get_parser.add_argument('token', type=str, required=True)
+    
+    def get(self, social_type):
+        """
+        Update the access token for the particular social_type
+        Support for:
+            - Facebook(/update_token/facebook)
+
+
+        Controller Functions Used:
+            - update_facebook_access_token
+
+        Authentication: None
+        """
+        args = self.get_parser.parse_args()
+        try:
+            if social_type == 'facebook':
+                ret_val = controllers.update_facebook_access_token(args['user_id'],args['token'])
+                if ret_val != 0:
+                    raise CustomExceptions.UserNotFoundException()
+                else:
+                    return 0
+            else:
+                raise CustomExceptions.SocialNotSupported()
+        except CustomExceptions.UserNotFoundException as e:
+            abort(400, message=str(e))
+        except CustomExceptions.SocialNotSupported as e:
+            abort(400, message=str(e))
+        except Exception as e:
+            print "ERROR M", traceback.format_exc(e)
+            # err = sys.exc_info()
+            # raygun.send(err[0],err[1],err[2])
+            # print traceback.format_exc(e)
+            # abort(500, message=internal_server_error_message)
 
 
