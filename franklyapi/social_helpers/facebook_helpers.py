@@ -4,15 +4,7 @@ import datetime
 
 import os,sys,inspect
 
-
-#parent directory hack
-try:
-    from configs import config
-except:
-    currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-    parentdir = os.path.dirname(currentdir)
-    sys.path.insert(0,parentdir) 
-    from configs import config
+from configs import config
 
 def get_facebook_profile_picture(facebook_id):
     try:
