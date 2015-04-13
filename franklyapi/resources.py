@@ -2629,7 +2629,7 @@ class UpdateToken(restful.Resource):
                 if ret_val != 0:
                     raise CustomExceptions.UserNotFoundException()
                 else:
-                    return 0
+                    return {'success': True}
             else:
                 raise CustomExceptions.SocialNotSupported()
         except CustomExceptions.UserNotFoundException as e:
@@ -2637,10 +2637,9 @@ class UpdateToken(restful.Resource):
         except CustomExceptions.SocialNotSupported as e:
             abort(400, message=str(e))
         except Exception as e:
-            print "ERROR M", traceback.format_exc(e)
-            # err = sys.exc_info()
-            # raygun.send(err[0],err[1],err[2])
-            # print traceback.format_exc(e)
-            # abort(500, message=internal_server_error_message)
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
 
 
