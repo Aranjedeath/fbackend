@@ -769,36 +769,6 @@ class UpdatePushId(restful.Resource):
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
-class UserUpdateToken(restful.Resource):
-    post_parser = reqparse.RequestParser()
-    post_parser.add_argument('acc_type', type=str, location='json', default='facebook', choices=['facebook'])
-    post_parser.add_argument('token'   , type=str, location='json', required=True)
-    
-    @login_required
-    def post(self):
-        """
-        Updates 3rd party auth token of the current_user, e.g. Facebook auth token.
-
-        Controller Functions Used:
-            - user_update_access_token
-
-        Authentication: Required
-        """
-        args = self.post_parser.parse_args()
-        try:
-            resp = controllers.user_update_access_token(current_user.id, acc_type=args['acc_type'], token=args['token'])
-            return resp
-
-        except CustomExceptions.BadRequestException as e:
-            print traceback.format_exc(e)
-            abort(400, message=str(e))
-
-        except Exception as e:
-            err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
-            print traceback.format_exc(e)
-            abort(500, message=internal_server_error_message)
-
 
 class QuestionAsk(restful.Resource):
     
@@ -2664,5 +2634,42 @@ class AnswerAuthorSuggest(restful.Resource):
         return controllers.suggest_answer_author(args['question_body'])
 
 
+class UpdateToken(restful.Resource):
+    post_parser = reqparse.RequestParser()
+    post_parser.add_argument('access_token', type=str, location='json', required=True)
+    post_parser.add_argument('access_secret', type=str, location='json')
+
+    
+    @login_required
+    def post(self, social_type):
+        """
+        Update the access token for the particular social_type
+        Support for:
+            - Facebook(/update_token/facebook)
+
+
+        Controller Functions Used:
+            - update_facebook_access_token
+
+        Authentication: Required
+        """
+        args = self.post_parser.parse_args()
+        try:
+            if social_type in ['facebook', 'twitter']:
+                success = controllers.update_social_access_token(user_id=current_user.id,
+                                                                social_type=social_type,
+                                                                access_token=args['access_token'],
+                                                                access_secret=args.get('access_secret')
+                                                                )
+                return {'success': success}
+            else:
+                raise CustomExceptions.BadRequestException('URL Not Found.')
+        except CustomExceptions.BadRequestException as e:
+            abort(404, message=str(e))
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
 
 
