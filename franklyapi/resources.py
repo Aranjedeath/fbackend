@@ -2606,11 +2606,11 @@ class AnswerAuthorSuggest(restful.Resource):
 
 
 class UpdateToken(restful.Resource):
-    get_parser = reqparse.RequestParser()
-    get_parser.add_argument('user_id', type=str, required=True)
-    get_parser.add_argument('token', type=str, required=True)
+    post_parser = reqparse.RequestParser()
+    post_parser.add_argument('user_id', type=str, required=True)
+    post_parser.add_argument('token', type=str, required=True)
     
-    def get(self, social_type):
+    def post(self, social_type):
         """
         Update the access token for the particular social_type
         Support for:
@@ -2622,7 +2622,7 @@ class UpdateToken(restful.Resource):
 
         Authentication: None
         """
-        args = self.get_parser.parse_args()
+        args = self.post_parser.parse_args()
         try:
             if social_type == 'facebook':
                 ret_val = controllers.update_facebook_access_token(args['user_id'],args['token'])
