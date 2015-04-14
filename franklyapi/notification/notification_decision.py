@@ -84,30 +84,34 @@ e) User's overall popularity
 def decide_question_push(user_id, question_id):
     ''' Decide pushing notification on the basis
     of user's popularity'''
-
-    notifications_sent_today = count_of_notifications_sent_by_type(user_id=user_id,
-                                                                   notification_type='question-ask-self_user')
-
-    good_time = 10 < (datetime.datetime.now() + datetime.timedelta(seconds=18600)).hour < 22
-
-
-    if notifications_sent_today < 2 and good_time:
-        questions_today = Question.query.filter(Question.question_to == user_id, Question.timestamp >=
-                                            datetime.datetime.now() - datetime.timedelta(days=1)).count()
-        print 'Good time bro'
-        if questions_today > 10 or is_popular(user_id):
-
-            upvotes = notification_util.get_question_upvote_count(question_id)
-            print 'Upvotes are good'
-            if upvotes > 2:
-                return True
-            else:
-                return False
-
-        else:
-            return True
+    interval = datetime.datetime.now() - datetime.timedelta(hours=6)
+    notification_sent = count_of_notifications_sent_by_type(user_id=user_id,
+                                                                   notification_type='question-ask-self_user',
+                                                                   interval=interval)
+    if notification_sent == 0:
+        return True
     else:
         return False
+    # good_time = 10 < (datetime.datetime.now() + datetime.timedelta(seconds=18600)).hour < 22
+    #
+    #
+    # if notifications_sent_today < 2 and good_time:
+    #     questions_today = Question.query.filter(Question.question_to == user_id, Question.timestamp >=
+    #                                         datetime.datetime.now() - datetime.timedelta(days=1)).count()
+    #     print 'Good time bro'
+    #     if questions_today > 10 or is_popular(user_id):
+    #
+    #         upvotes = notification_util.get_question_upvote_count(question_id)
+    #         print 'Upvotes are good'
+    #         if upvotes > 2:
+    #             return True
+    #         else:
+    #             return False
+    #
+    #     else:
+    #         return True
+    # else:
+    #     return False
 
 
 def push_question_notification(question_id):
