@@ -2021,6 +2021,8 @@ def query_search(cur_user_id, query, offset, limit, version_code=None):
                 "results": [ ],
                 "next_index": -1
             } 
+    
+    '''
     if version_code and int(version_code) > 42 and offset == 0:
         search_filter_invitable = or_( Invitable.name.like('{query}%'.format(query = query)),
                                    Invitable.name.like('% {query}%'.format(query = query))
@@ -2029,7 +2031,7 @@ def query_search(cur_user_id, query, offset, limit, version_code=None):
         if invitable:
             results.append({'type':'invitable', 'invitable' : invitable_to_dict(invitable[0], cur_user_id)})
             limit = limit - 1
-    '''
+
     if offset == 0 and ('trending' in query.lower() or 'new on' in query.lower()):
         search_default = SearchDefault.query.filter(SearchDefault.category == query).order_by(SearchDefault.score).all()
         for s in search_default:
@@ -2814,6 +2816,7 @@ def get_remote(cur_user_id, offset=0, limit=20):
                                     'icon':None,
                                     'name':'Feed',
                                     'channel_id':'feed',
+                                    'id':'feed',
                                     'description':None
                                     }
                         }
@@ -2824,6 +2827,7 @@ def get_remote(cur_user_id, offset=0, limit=20):
                                         'name':'Discover',
                                         'icon':None,
                                         'channel_id':'discover',
+                                        'id':'discover',
                                         'description':None
                                         }
                             }
@@ -2838,10 +2842,19 @@ def get_remote(cur_user_id, offset=0, limit=20):
 
     return {'count':count, 'next_index':next_index, 'stream':remote}
 
-def get_list_user_ids(list_id):
+def app_welcome_users(cur_user_id, list_ids, offset=0, limit=20):
+    user_ids = get_list_user_ids(list_ids)
+    users = User.query.filter(User.id.in_(user_ids), User.deleted==False).offset(offset).limit(limit).all()
+    count = len(users)
+    next_index = -1 if count<limit else offset+limit
+    return {'next_index':next_index, 'count':count, 'stream':[thumb_user_to_dict(user) for user in users]}
+
+def get_list_user_ids(list_ids):
+    if type(list_ids)!=type([]):
+        list_ids = [list_ids]
     queries = """SELECT * FROM (SELECT list_items.child_user_id, list_items.parent_list_id, list_items.score
                                 FROM list_items 
-                                WHERE list_items.parent_list_id = :parent_list_id 
+                                WHERE list_items.parent_list_id in :parent_list_ids
                                     AND list_items.deleted = False
                                     AND list_items.child_user_id is NOT null
 
@@ -2851,16 +2864,16 @@ def get_list_user_ids(list_id):
                                 FROM list_items 
                                 WHERE list_items.parent_list_id in (SELECT list_items.child_list_id 
                                                                     FROM list_items 
-                                                                    WHERE list_items.parent_list_id = :parent_list_id 
+                                                                    WHERE list_items.parent_list_id in :parent_list_ids 
                                                                         AND list_items.deleted = False
                                                                         AND list_items.child_list_id is NOT null
                                                                     )
                                     AND list_items.deleted = False
                                     AND list_items.child_user_id is NOT null
                                 ) as result
-            ORDER BY result.parent_list_id=:parent_list_id, result.score
+            ORDER BY result.parent_list_id in :parent_list_ids, result.score
         """
-    results = db.session.execute(text(queries), params={'parent_list_id':list_id})
+    results = db.session.execute(text(queries), params={'parent_list_ids':list_ids})
     
     user_ids = [row[0] for row in results]
     print user_ids

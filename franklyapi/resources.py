@@ -2522,14 +2522,47 @@ class ImageResizer(restful.Resource):
             abort(500, message=internal_server_error_message)
 
 
-class UserContactsUpload(restful.Resource):
+
+class AppWelcomePage(restful.Resource):
+    post_parser = reqparse.RequestParser()
+    post_parser.add_argument('list_ids', type=list, required=True, location='json')
+    post_parser.add_argument('offset', type=int, required=True, location='json')
+    post_parser.add_argument('limit', type=int, required=True, location='json')
+    
     @login_required
     def post(self):
-        post_parser = reqparse.RequestParser()
-        post_parser.add_argument('uploaded_file', type=file, required=True, location='files')
-        post_parser.add_argument('X-Deviceid', type=str, required=True, location='headers', dest='device_id')
+        
 
-        args = post_parser.parse_args()
+        args = self.post_parser.parse_args()
+        try:
+            resp = controllers.app_welcome_users(current_user.id,
+                                                args['list_ids'],
+                                                offset=args['offset'],
+                                                limit=args['limit'])
+            return resp
+        
+        except CustomExceptions.BadFileFormatException as e:
+            print traceback.format_exc(e)
+            abort(400, message='File format not allowed')
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message='upload failure')
+
+
+
+
+class UserContactsUpload(restful.Resource):
+
+    post_parser = reqparse.RequestParser()
+    post_parser.add_argument('uploaded_file', type=file, required=True, location='files')
+    post_parser.add_argument('X-Deviceid', type=str, required=True, location='headers', dest='device_id')
+
+    @login_required
+    def post(self):
+        
+        args = self.post_parser.parse_args()
         try:
             resp = controllers.contact_file_upload(current_user.id, args['uploaded_file'], args['device_id'])
             return {'success': True, 'resp':resp}
@@ -2611,6 +2644,7 @@ class ReceiveSNSNotifications(restful.Resource):
 class PublicDocumentation(restful.Resource):
     get_parser = reqparse.RequestParser()
     get_parser.add_argument('doc_key', type=str, location='args', required=True)
+    
     def get(self):
         args = self.get_parser.parse_args()
         if args['doc_key'] == 'AFfbe394002dde':
@@ -2625,6 +2659,14 @@ class PublicDocumentation(restful.Resource):
         else:
             abort(403, message='Ra Ra Rasputin says: You are are hitting a wrong url.')
 
+class ChannelNewCount(restful.Resource):
+    get_parser = reqparse.RequestParser()
+    get_parser.add_argument('last_item_id', type=str, location='args', required=True)
+    get_parser.add_argument('channel_id', type=str, location='args', required=True)
+
+    def get(self):
+        args = self.get_parser.parse_args()
+        return {'channel_id':args['channel_id'], 'count':0}
 
 
 class AnswerAuthorSuggest(restful.Resource):
