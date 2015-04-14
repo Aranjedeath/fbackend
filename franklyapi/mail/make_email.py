@@ -38,24 +38,12 @@ def mail(email_id, log_id, object_id = None, mail_type="", subject="", body="",
                 mail_sender.send_mail(email_id, subject, body, log_id)
 
 
-
-
 def log_mail(email_id, mail_type, object_id):
     log = MailLog(email_id=email_id, mail_type=mail_type, object_id=object_id)
     db.session.add(log)
     db.session.commit()
     return log.id
 
-def test():
-    user = User.query.filter(User.username == 'chimpspanner').first()
-    log_id = log_mail('varunj.dce@gmail.com',"mail_type_test", user.id)
-    mail_dict['email_text'] = "Testing testing"
-    mail_dict['pixel_image_url'] = config.PIXEL_IMAGE_ENDPOINT + "?id=" + log_id
-    print mail_dict['pixel_image_url']
-
-    mail(email_id=user.email, log_id=log_id, subject="Testing",
-         body=header_template.render(mail_dict), mail_type="mail_type_test", object_id=user.id,
-         cutoff_time= datetime.timedelta(seconds=1), mail_limit = 1000)
 
 def welcome_mail(user_id, mail_type="welcome_mail"):
 
@@ -210,6 +198,7 @@ def weekly_digest(for_users, subject, mail_type="weekly_digest"):
     except ObjectNotFoundException:
         pass
 
+
 def inactive_users(users):
     from sqlalchemy import desc
     from models import Like, Follow, Upvote, Question
@@ -230,3 +219,15 @@ def inactive_users(users):
             pass
         else:
             inactive_profile(u.id)
+
+
+def test():
+    user = User.query.filter(User.username == 'chimpspanner').first()
+    log_id = log_mail('varunj.dce@gmail.com',"mail_type_test", user.id)
+    mail_dict['email_text'] = "Testing testing"
+    mail_dict['pixel_image_url'] = config.PIXEL_IMAGE_ENDPOINT + "?id=" + log_id
+    print mail_dict['pixel_image_url']
+
+    mail(email_id=user.email, log_id=log_id, subject="Testing",
+         body=header_template.render(mail_dict), mail_type="mail_type_test", object_id=user.id,
+         cutoff_time= datetime.timedelta(seconds=1), mail_limit = 1000)
