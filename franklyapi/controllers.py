@@ -3116,10 +3116,10 @@ def update_social_access_token(user_id, social_type, access_token, access_secret
         count = 0
         if social_type=='facebook':
             allowed_permissions = social_helpers.get_fb_permissions(access_token)
-            if 'publish_actions' not in allowed_permissions:
-                raise CustomExceptions.InvalidTokenException("Could not verify %s token permission."%social_type)
+            if 'publish_actions' in allowed_permissions:
+                count = User.query.filter(User.id==user_id, User.facebook_id==user_data['social_id']).update({'facebook_token':fb_access_token, 'facebook_write_permission':True})
             else:
-                count = User.query.filter(User.id==user_id, User.facebook_id==user_data['social_id']).update({'facebook_token':fb_access_token})
+                count = User.query.filter(User.id==user_id, User.facebook_id==user_data['social_id']).update({'facebook_token':fb_access_token, 'facebook_write_permission':False})
         db.session.commit()
         return bool(count)
     except CustomExceptions.InvalidTokenException:
