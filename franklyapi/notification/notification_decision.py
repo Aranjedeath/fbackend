@@ -265,8 +265,10 @@ def get_milestone_crossed(count, milestone_count_list):
 
 def count_of_push_notifications_sent(user_id):
 
-    result = db.session.execute(text("Select count(*) from user_push_notifications "
-                                     "where user_id = :user_id and pushed_at >= date_sub(NOW(), interval 1 day);"),
+    result = db.session.execute(text('''Select sum(x.n_count) from (
+                                        Select count(*) as n_count from user_push_notifications
+                                        where user_id = :user_id and pushed_at >= date_sub(NOW(), interval 1 day)
+                                        group by notification_id ; ) as x'''),
                                 params={'user_id': user_id})
 
     for row in result:
