@@ -8,7 +8,6 @@ import helper
 import make_notification as notification
 import push_notification as push
 import datetime
-from mail import make_email
 
 
 '''
@@ -30,6 +29,7 @@ def post_notifications(post_id):
                                          group by n.type
                                          limit 2 ;
                                          '''), params={'post_id': post_id})
+    from mail import make_email
     try:
         for row in result:
 
