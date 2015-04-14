@@ -10,13 +10,14 @@ import random
 import time
 import datetime
 import notification_decision
+import notification_util
 
 key = helper.key
 
 
 def send(notification_id, user_id, k=None, source='application'):
 
-    devices = get_active_mobile_devices(user_id)
+    devices = notification_util.get_active_mobile_devices(user_id)
 
     should_push = notification_decision.count_of_push_notifications_sent(user_id=user_id) \
                                        <= config.GLOBAL_PUSH_NOTIFICATION_DAY_LIMIT
@@ -85,11 +86,7 @@ def send(notification_id, user_id, k=None, source='application'):
                 apns.send_message([device.push_id], payload)
 
 
-def get_active_mobile_devices(user_id):
 
-    devices = AccessToken.query.filter(AccessToken.user == user_id, AccessToken.active==True,
-                             AccessToken.push_id != None).all()
-    return devices
 
 def get_device_type(device_id):
     if len(device_id) < 17:
@@ -126,7 +123,7 @@ def stats():
     pushable_devices = 0
     for row in results:
         total_in_app_notifications += row[0]
-        devices = get_active_mobile_devices(row[1])
+        devices = notification_util.get_active_mobile_devices(row[1])
         pushable_devices += 0 if devices is None else len(devices)
 
     body = 'Total in app notifications created: ' + str(total_in_app_notifications)

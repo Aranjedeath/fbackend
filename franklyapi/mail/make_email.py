@@ -1,7 +1,7 @@
 from jinja2 import Environment, PackageLoader
 from infra import SimpleMailer
 from models import MailLog, User, AccessToken, Question
-from notification import push_notification as push
+from notification import notification_util
 from app import db
 from configs import config
 
@@ -94,7 +94,7 @@ def question_asked(question_to, question_from, question_id, question_body,
         then send them an email notification
         confirming that the question has been asked
     '''
-#and not len(push.get_active_mobile_devices(asker.id))
+#and not len(notification_util.get_active_mobile_devices(asker.id))
     if from_widget :
 
         #is_first = True if Question.query.filter(Question.question_author == asker.id).count() == 1 else False
@@ -116,7 +116,7 @@ def question_asked(question_to, question_from, question_id, question_body,
         mail_type="question_asked"
 
     #
-    if not len(push.get_active_mobile_devices(asked.id)):
+    if not len(notification_util.get_active_mobile_devices(asked.id)):
 
         mail_type += "_to"
         subject = helper.dict[mail_type]['subject'] % asker.first_name
@@ -134,7 +134,7 @@ def question_asked(question_to, question_from, question_id, question_body,
 def question_answered(receiver_email, receiver_name, celebrity_name, question, web_link,
                       post_id, user_id, mail_type='post_add'):
 
-    if len(push.get_active_mobile_devices(user_id)):
+    if len(notification_util.get_active_mobile_devices(user_id)):
         cutoff_time = datetime.timedelta(days=10000)
 
         log_id = log_mail(receiver_email, mail_type, post_id)
