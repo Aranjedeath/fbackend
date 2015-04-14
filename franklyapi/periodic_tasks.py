@@ -76,7 +76,8 @@ def reassign_pending_video_tasks():
             async_encoder.encode_video_task.delay(video_url=v.url, username=v.username)
             assigned_urls.append(v.url)
     virgin_video_count = len(assigned_urls)
-
+    if not assigned_urls:
+        assigned_urls = [' ']
     other_videos = db.session.execute(text(
                                             """SELECT v.url, v.object_id, v.video_type, v.username,
                                                     v.created_at, u.user_type, v.opt, v.medium, v.low, v.ultralow, v.promo,
