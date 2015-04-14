@@ -3,7 +3,7 @@ from apns import APNs, Payload
 from models import AccessToken, Notification, UserPushNotification
 from app import db
 from sqlalchemy.sql import text
-
+from database import get_item_id
 import helper
 import gcm
 import random
@@ -34,7 +34,6 @@ def send(notification_id, user_id, k=None, source='application'):
         k = key[notification.type] if k is None else k
 
         group_id = '-'.join([str(notification.type), str(notification.object_id)])
-        from controllers import get_item_id
 
         for device in devices:
             print 'Found valid devices for push notifications'
