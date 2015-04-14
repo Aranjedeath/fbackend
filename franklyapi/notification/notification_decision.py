@@ -3,12 +3,30 @@ from sqlalchemy.sql import text
 from CustomExceptions import ObjectNotFoundException
 from models import Question, Notification, UserNotificationInfo, UserPushNotification
 
-import notification_util
+
+import util
 import helper
 import make_notification as notification
 import push_notification as push
 import datetime
 
+def make_data():
+    from models import User, Post
+    u = User.query.filter(User.username == 'chimpspanner').first()
+    s = User.query.filter(User.username == 'shashank').first()
+    p = Post.query.filter(Post.answer_author == s.id, Post.question_author == u.id).first()
+    print p.id
+    n = Notification.query.filter(Notification.object_id == p.id, Notification.type == 'post-add-self_user').first()
+    print n.id
+    try:
+        UserPushNotification.query.filter(UserPushNotification.user_id == u.id,
+                                           UserPushNotification.notification_id == n.id).delete()
+        db.session.commit()
+    except:
+        pass
+    post_notifications(p.id)
+
+    #print up.id
 
 '''
 Sends out both Push and email.
@@ -88,6 +106,7 @@ def decide_question_push(user_id, question_id):
     notification_sent = count_of_notifications_sent_by_type(user_id=user_id,
                                                                    notification_type='question-ask-self_user',
                                                                    interval=interval)
+
     if notification_sent == 0:
         return True
     else:
@@ -174,7 +193,7 @@ def prompt_sharing_popular_question():
     for row in results:
         upvote_count =row[0] + (row[1] if row[1] is not None else 0)
         if upvote_count > 10:
-           upvote_count = notification_util.get_question_upvote_count(row[4])
+           upvote_count = util.get_question_upvote_count(row[4])
            notification.share_popular_question(user_id=row[2], question_id=row[4],
                                     question_body=row[3], upvote_count=upvote_count)
 
@@ -202,7 +221,7 @@ def user_followers_milestone_notifications():
                                                         '''))
 
     for row in result:
-        check_and_make_milestone('user_followers_milestone', row[0], row[0], notification_util.get_follower_count(row[0]))
+        check_and_make_milestone('user_followers_milestone', row[0], row[0], util.get_follower_count(row[0]))
 
 
 '''
@@ -213,10 +232,10 @@ user's likes
 
 def decide_post_milestone(post_id, user_id):
 
-    check_and_make_milestone('post-likes-milestone', user_id, post_id, notification_util.get_post_like_count(post_id))
+    check_and_make_milestone('post-likes-milestone', user_id, post_id, util.get_post_like_count(post_id))
 
 def decide_follow_milestone(user_id):
-    check_and_make_milestone('user-followers-milestone', user_id, user_id, notification_util.get_follower_count(user_id))
+    check_and_make_milestone('user-followers-milestone', user_id, user_id, util.get_follower_count(user_id))
 
 def question_upvotes_milestone_notifications():
     result = db.session.execute(text('''SELECT distinct pl.question as question, questions.question_author
@@ -229,17 +248,17 @@ def question_upvotes_milestone_notifications():
                                                             inner join questions on questions.id = pl.question
                                                             where pl.timestamp >= date_sub(now(), interval 1 day)
                                                             group by pl.question;
-                                        
+
                                                         '''))
-    
+
     for row in result:
-        check_and_make_milestone('post_likes', row[1], row[0], notification_util.get_post_like_count(row[0]))
+        check_and_make_milestone('post_likes', row[1], row[0], util.get_post_like_count(row[0]))
 
 
 def check_and_make_milestone(milestone_name, user_id, associated_item_id, count):
     """
     check the latest crossed milestone and sends a notification about the same.
-    
+
     associated_item_id is the id of post of question in case of likes of upvotes of questions / posts
 
     """
