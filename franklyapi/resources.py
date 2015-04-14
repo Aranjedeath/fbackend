@@ -1841,7 +1841,8 @@ class VideoView(restful.Resource):
     
     get_parser = reqparse.RequestParser()
     get_parser.add_argument('url', type=str, location='args', required=True)
-    
+    get_parser.add_argument('redirect', type=int, location='args', default=0, help="if redirect is greater than 0, the required will be redirected tot he value in url.")
+
     def get(self):
         """
         Redirects to the url provided in the argument.
@@ -1857,7 +1858,10 @@ class VideoView(restful.Resource):
         try:
             from flask import redirect
             controllers.view_video(args['url'])
-            return redirect(args['url'])
+            if bool(args['redirect']):
+                return redirect(args['url'])
+            else:
+                return {'success':True}
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])
