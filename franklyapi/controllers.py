@@ -1751,6 +1751,7 @@ def get_notifications(cur_user_id, device_id, version_code, notification_categor
 
     # Setting the seen on notifications
     # only if it is the first fetch
+    notifications = []
     if offset == 0:
         db.session.execute(text("Update user_notifications set seen_at = :current_time where user_id = :user_id ; "),
                            params = {'user_id': cur_user_id,
@@ -1760,35 +1761,32 @@ def get_notifications(cur_user_id, device_id, version_code, notification_categor
 
 
 
-    device_type = get_device_type(device_id)
+        device_type = get_device_type(device_id)
+        
+        if device_type == 'ios':
+            app_store_link = config.IOS_APPSTORE_DEEPLINK
+        
+        if device_type == 'android':
+            app_store_link = config.ANDROID_APPSTORE_LINK
     
-    if device_type == 'ios':
-        app_store_link = config.IOS_APPSTORE_DEEPLINK
-    
-    if device_type == 'android':
-        app_store_link = config.ANDROID_APPSTORE_LINK
+        update = check_app_version_code(device_type, version_code)
+        if update['hard_update'] or update['soft_update']:
 
-    
-
-    notifications = []
-    update = check_app_version_code(device_type, version_code)
-    if update['hard_update'] or update['soft_update']:
-
-        update_notification = {
-                                    "user_to" : cur_user_id,
-                                    "type" : 1,
-                                    "id" : 'update_required_ios',
-                                    "text" : "A new version of Frankly.me is available. Click here to update.",
-                                    "styled_text":"A new version of Frankly.me is available. Click here to update.",
-                                    "icon_url" : "https://d30y9cdsu7xlg0.cloudfront.net/png/68793-84.png",
-                                    "group_id": 'update_required',
-                                    "link" : app_store_link,
-                                    "deeplink" : app_store_link,
-                                    "timestamp" : int(time.mktime(datetime.datetime.now().timetuple())),
-                                    "seen" : False
-                                }
-        notifications.append(update_notification)
-        limit -= 1    
+            update_notification = {
+                                        "user_to" : cur_user_id,
+                                        "type" : 1,
+                                        "id" : 'update_required_ios',
+                                        "text" : "A new version of Frankly.me is available. Click here to update.",
+                                        "styled_text":"A new version of Frankly.me is available. Click here to update.",
+                                        "icon_url" : "https://d30y9cdsu7xlg0.cloudfront.net/png/68793-84.png",
+                                        "group_id": 'update_required',
+                                        "link" : app_store_link,
+                                        "deeplink" : app_store_link,
+                                        "timestamp" : int(time.mktime(datetime.datetime.now().timetuple())),
+                                        "seen" : False
+                                    }
+            notifications.append(update_notification)
+            limit -= 1    
 
     results = db.session.execute(text("""SELECT notifications.id, notifications.text, 
                                                 notifications.icon, notifications.type,
