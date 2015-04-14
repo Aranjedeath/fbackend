@@ -281,6 +281,7 @@ def login_user_social(social_type, social_id, external_access_token, device_id, 
         activated_now=user.deleted
         User.query.filter(User.id==user.id).update(update_dict)
         db.session.commit()
+
         return {'access_token': access_token, 'id':user.id,
                 'username':user.username, 'activated_now': activated_now,
                 'new_user' : False, 'user_type' : user.user_type,
@@ -304,11 +305,20 @@ def login_user_social(social_type, social_id, external_access_token, device_id, 
         
         if social_type == 'facebook':
             new_user.facebook_id = social_id
-            new_user.facebook_token = external_access_token
+            extended_external_token = get_extended_graph_token(external_access_token)
+            new_user.facebook_token = extended_external_token
+
+            allowed_permissions = social_helpers.get_fb_permissions(new_user.facebook_token)
+            if 'publish_actions' in allowed_permissions:
+                new_user.facebook_write_permission = True
+        
         elif social_type == 'twitter':
             new_user.twitter_id = social_id
             new_user.twitter_token = external_access_token
             new_user.twitter_secret = external_token_secret
+            #twitter write perm check.
+
+
         elif social_type == 'google':
             new_user.google_id = social_id
             new_user.google_token = external_access_token
@@ -951,23 +961,6 @@ def update_push_id(cur_user_id, device_id, push_id):
                              AccessToken.device_id==device_id
                              ).update({'push_id':push_id})
 
-
-def user_update_access_token(user_id, acc_type, token, secret=None):
-    try:
-        if acc_type=='facebook':
-            user_data = get_data_from_external_access_token('facebook', token, external_token_secret=None)
-            User.query.filter(User.id==user_id, User.facebook_id==user_data['social_id']).update({'facebook_token':token, 'facebook_write_permission':True})
-
-        if acc_type=='twitter':
-            if not secret:
-                raise CustomExceptions.BadRequestException('Missing access secret')
-            user_data = get_data_from_external_access_token('twitter', token, external_token_secret=secret)
-            User.query.filter(User.id==user_id, User.facebook_id==user_data['social_id']).update({'twitter_token':token, 'twitter_write_permission':True})
-        
-        return {'success':True}
-    
-    except CustomExceptions.InvalidTokenException:
-        raise CustomExceptions.BadRequestException('invalid token')
 
 
 def make_question_slug(body, question_id):
@@ -3112,7 +3105,23 @@ def suggest_answer_author(question_body):
     return {'count':len(users), 'users':[thumb_user_to_dict(user) for user in users]}
 
 
-if __name__ == '__main__':
-    dic = {'https://s3.amazonaws.com/franklyapp/00d5b77a7a8d49b68abcfd9009cc5406/videos/04b01dc2ad5011e4917e22000b5119ba.mp4':1,'https://s3.amazonaws.com/franklyapp/0178bd7a07e94863abbb72f69eaae288/videos/5d9c45e09a2811e4abcb22000b5119ba.mp4':2}
-    print get_video_states(dic)
+def update_social_access_token(user_id, social_type, access_token, access_secret=None):
+    try:
+        user_data = get_data_from_external_access_token(social_type, access_token, access_secret)
+        token_valid = str(user_data['social_id']).strip()==str(social_id).strip()
+        
+        if not token_valid:
+            raise CustomExceptions.InvalidTokenException("Could not verify %s token"%social_type)
+
+        count = 0
+        if social_type=='facebook':
+            allowed_permissions = social_helpers.get_fb_permissions(access_token)
+            if 'publish_actions' in allowed_permissions:
+                count = User.query.filter(User.id==user_id, User.facebook_id==user_data['social_id']).update({'facebook_token':fb_access_token, 'facebook_write_permission':True})
+            else:
+                count = User.query.filter(User.id==user_id, User.facebook_id==user_data['social_id']).update({'facebook_token':fb_access_token, 'facebook_write_permission':False})
+        db.session.commit()
+        return bool(count)
+    except CustomExceptions.InvalidTokenException:
+        raise CustomExceptions.BadRequestException('invalid token')
 
