@@ -769,8 +769,10 @@ def user_follow(cur_user_id, user_id):
     db.session.commit()
     try:
         notification_decision.decide_follow_milestone(user_id=user_id)
-    except:
-        pass
+    except Exception as e:
+        err = sys.exc_info()
+        raygun.send(err[0],err[1],err[2])
+
     return {'user_id': user_id}
 
 
@@ -1138,7 +1140,8 @@ def question_upvote(cur_user_id, question_id):
         try:
             notification_decision.push_question_notification(question_id=question_id)
         except:
-            pass
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
     else:
         raise CustomExceptions.BadRequestException("Question is not available for upvote")
     
@@ -1201,7 +1204,8 @@ def post_like(cur_user_id, post_id):
         try:
             notification_decision.decide_post_milestone(post_id=post_id, user_id=answer_author)
         except:
-            pass
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
         return {'id': post_id, 'success':True}
 
     else:
@@ -1298,7 +1302,8 @@ def comment_add(cur_user_id, post_id, body, lat, lon):
         try:
             notification.comment_on_post(comment_id=comment.id, comment_author=cur_user_id, post_id=post_id)
         except:
-            pass
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
 
         return {'comment': comment_to_dict(comment), 'id':comment.id, 'success':True}
     else:

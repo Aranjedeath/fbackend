@@ -65,7 +65,7 @@ WEB_URL = 'http://frankly.me'
 
 COMPANY_NAME = "Frankly"
 
-LOGO_URL = "http://frankly.me/images/icons/logoTrimmedOrange.png"
+LOGO_URL = "http://frankly.me/img/logo.png"
 
 HOSTNAME = socket.gethostname()
 
