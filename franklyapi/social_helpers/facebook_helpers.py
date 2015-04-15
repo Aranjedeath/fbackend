@@ -37,7 +37,7 @@ def get_facebook_profile_picture(facebook_id):
 #         return short_lived_token
 
 def get_extended_graph_token(short_access_token):
-    graph = facebook.GraphAPI(access_token)
+    graph = facebook.GraphAPI(short_access_token)
     try:
         resp = graph.extend_access_token(config.FACEBOOK_APP_ID, config.FACEBOOK_APP_SECRET)
         extended_token = resp.get('access_token')
