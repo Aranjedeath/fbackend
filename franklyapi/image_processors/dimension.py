@@ -22,11 +22,7 @@ def toDimensions(image_file, out_file, dim_x, dim_y, allowLow=True, return_file_
             fin_y = im_y
         box = (int((im_x - fin_x)/2), int((im_y - fin_y)/2), int((im_x + fin_x)/2), int((im_y + fin_y)/2) )
         im = im.crop(box)
-        im_x = im.size[0]
-        im_y = im.size[1]
         im = im.resize((dim_x,dim_y))
-        im_x = im.size[0]
-        im_y = im.size[1]
         if return_file_object:
             from StringIO import StringIO
             out_file = StringIO()
