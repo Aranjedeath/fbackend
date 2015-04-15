@@ -35,22 +35,6 @@ def toDimensions(image_file, out_file, dim_x, dim_y, allowLow=True, return_file_
         raise Exception("Small Size")
 
 
-def get_box(im_x, im_y, dim_x, dim_y):
-    aspectRatioIn = im_x / float(im_y)
-    aspectRatioOut = dim_x / float(dim_y)
-    if(aspectRatioIn > aspectRatioOut):
-        fin_y = im_y
-        fin_x = im_y * aspectRatioOut
-    elif(aspectRatioIn < aspectRatioOut):
-        fin_y = im_x/aspectRatioOut
-        fin_x = im_x
-    else:
-        fin_x = im_x
-        fin_y = im_y
-    box = (int((im_x - fin_x)/2), int((im_y - fin_y)/2), int((im_x + fin_x)/2), int((im_y + fin_y)/2) )
-    return box
-
-
 def sanitize_profile_pic(image_file):
     path = '/tmp/{random_string}.jpeg'.format(random_string=uuid.uuid1().hex)
     toDimensions(image_file, path, 240, 240)
