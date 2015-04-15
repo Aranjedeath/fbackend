@@ -767,7 +767,10 @@ def user_follow(cur_user_id, user_id):
 
 
     db.session.commit()
-    notification_decision.decide_follow_milestone(user_id=user_id)
+    try:
+        notification_decision.decide_follow_milestone(user_id=user_id)
+    except:
+        pass
     return {'user_id': user_id}
 
 
@@ -1132,7 +1135,10 @@ def question_upvote(cur_user_id, question_id):
                                     'timestamp':datetime.datetime.now()}
                             )
         db.session.commit()
-        notification_decision.push_question_notification(question_id=question_id)
+        try:
+            notification_decision.push_question_notification(question_id=question_id)
+        except:
+            pass
     else:
         raise CustomExceptions.BadRequestException("Question is not available for upvote")
     
@@ -1192,8 +1198,10 @@ def post_like(cur_user_id, post_id):
                             )
 
         db.session.commit()
-
-        notification_decision.decide_post_milestone(post_id=post_id, user_id=answer_author)
+        try:
+            notification_decision.decide_post_milestone(post_id=post_id, user_id=answer_author)
+        except:
+            pass
         return {'id': post_id, 'success':True}
 
     else:
@@ -1213,7 +1221,7 @@ def post_view(cur_user_id, post_id, client_id=None):
     try:
         post_pending = False
         if client_id:
-            pending_post_data = get_pending_post(client_id)
+            pending_post_data = None #get_pending_post(client_id)
             if pending_post_data:
                 post_pending = True
                 question = Question.query.get(pending_post_data['question_id'])
@@ -1287,9 +1295,10 @@ def comment_add(cur_user_id, post_id, body, lat, lon):
         db.session.add(comment)
 
         db.session.commit()
-
-        notification.comment_on_post(comment_id=comment.id, comment_author=cur_user_id, post_id=post_id)
-
+        try:
+            notification.comment_on_post(comment_id=comment.id, comment_author=cur_user_id, post_id=post_id)
+        except:
+            pass
 
         return {'comment': comment_to_dict(comment), 'id':comment.id, 'success':True}
     else:
@@ -1635,6 +1644,8 @@ def install_ref(device_id, url):
     db.session.commit()
 
 
+
+
 def get_new_short_id(for_object):
     id_chars = []
     for i in range(6):
@@ -1651,19 +1662,6 @@ def get_new_short_id(for_object):
     return get_new_short_id(for_object)
 
 
-def set_pending_post(cur_user_id, question_id, client_id):
-    redis_pending_post.setex(client_id, cur_user_id+'_'+question_id, 3600*24)
-    return {'success':True, 'client_id':client_id}
-
-def get_pending_post(client_id):
-    pending_post = redis_pending_post.get(client_id)
-    if pending_post:
-        try:
-            answer_author_id, question_id = pending_post.split('_')
-            return {'answer_author_id':answer_author_id, 'question_id':question_id}
-        except:
-            pass
-    return None
 
 
 def add_video_post(cur_user_id, question_id, video, answer_type,
@@ -1727,8 +1725,10 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
             sq.push({'url':video_url})
 
             db.session.commit()
-            redis_pending_post.delete(client_id)
-            notification.new_post(post_id=post.id, question_body=question.body)
+            try:
+                notification.new_post(post_id=post.id, question_body=question.body)
+            except:
+                pass
 
 
         return {'success': True, 'id': str(post.id), 'post':post_to_dict(post, cur_user_id)}
@@ -2071,7 +2071,6 @@ def user_profile_request(current_user_id, request_for, request_type):
                                 })
     db.session.commit()
 
-   
     notification.user_profile_request(user_id=current_user_id, request_for=request_for,
                                       request_type=request_type,
                                       request_id=request_id)

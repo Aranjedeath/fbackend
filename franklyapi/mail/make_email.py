@@ -1,6 +1,9 @@
 from jinja2 import Environment, PackageLoader
 from infra import SimpleMailer
 from models import MailLog, User, AccessToken, Question
+
+#TODO:
+#Dont import notification here
 from notification import notification_util
 from app import db
 from configs import config

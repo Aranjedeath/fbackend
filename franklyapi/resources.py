@@ -2634,13 +2634,13 @@ class PublicDocumentation(restful.Resource):
             abort(403, message='Ra Ra Rasputin says: You are are hitting a wrong url.')
 
 class ChannelNewCount(restful.Resource):
-    get_parser = reqparse.RequestParser()
-    get_parser.add_argument('last_item_id', type=str, location='args', required=True)
-    get_parser.add_argument('channel_id', type=str, location='args', required=True)
+    post_parser = reqparse.RequestParser()
+    post_parser.add_argument('channel_ids', type=list, location='json', required=True, help='example: [{"channel_id":"feed", "last_item_type":"user", "last_item_id":"92374u4j4e48489494848495"}, {"channel_id":"feed", "last_item_type":"post", "last_item_id":"88374u4j4e48489494848eab4"}]')
 
-    def get(self):
-        args = self.get_parser.parse_args()
-        return {'channel_id':args['channel_id'], 'count':0}
+    def post(self):
+        args = self.post_parser.parse_args()
+        resp = [{"channel_id":item["channel_id"], "count":0} for item in args['channel_ids']]
+        return resp
 
 
 class AnswerAuthorSuggest(restful.Resource):

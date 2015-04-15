@@ -243,6 +243,8 @@ def comment_on_post(post_id, comment_id, comment_author, notification_type='comm
 
         notification_logger(nobject=nobject, for_users=[post.answer_author], push_at=datetime.datetime.now())
 
+#TODO:
+#remove this. Dont import controllers here.
 def hack():
 
     users = User.query.filter(User.monkness != -1).limit(1000).offset(0)
