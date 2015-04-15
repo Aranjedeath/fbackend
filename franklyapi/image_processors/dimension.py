@@ -5,26 +5,28 @@ def toDimensions(image_file, out_file, dim_x, dim_y, allowLow=True, return_file_
     im = Image.open(image_file)
     im_x = im.size[0]
     im_y = im.size[1]
-    print 'im_x: %s' %im_x
-    print 'im_y: %s' %im_y 
     flag = True
     if not allowLow:
         flag = (im_x >= dim_x) and (im_y >= dim_y)
-    print 'flag: %s' %flag
     if flag:
-        box = get_box(im_x=im_x, im_y=im_y, dim_x=dim_x, dim_y=dim_y)
-        print 'box: ' + str(box)
+        aspectRatioIn = im_x / float(im_y)
+        aspectRatioOut = dim_x / float(dim_y)
+        if(aspectRatioIn > aspectRatioOut):
+            fin_y = im_y
+            fin_x = im_y * aspectRatioOut
+        elif(aspectRatioIn < aspectRatioOut):
+            fin_y = im_x/aspectRatioOut
+            fin_x = im_x
+        else:
+            fin_x = im_x
+            fin_y = im_y
+        box = (int((im_x - fin_x)/2), int((im_y - fin_y)/2), int((im_x + fin_x)/2), int((im_y + fin_y)/2) )
         im = im.crop(box)
         im_x = im.size[0]
         im_y = im.size[1]
-        print 'im_x: %s' %im_x
-        print 'im_y: %s' %im_y 
         im = im.resize((dim_x,dim_y))
         im_x = im.size[0]
         im_y = im.size[1]
-        print 'im_x: ' + im_x
-        print 'im_y: ' + im_y 
-        
         if return_file_object:
             from StringIO import StringIO
             out_file = StringIO()
@@ -36,34 +38,19 @@ def toDimensions(image_file, out_file, dim_x, dim_y, allowLow=True, return_file_
     else:
         raise Exception("Small Size")
 
+
 def get_box(im_x, im_y, dim_x, dim_y):
     aspectRatioIn = im_x / float(im_y)
     aspectRatioOut = dim_x / float(dim_y)
-    print 'ari: %s' %aspectRatioIn
-    print 'aro: %s' %aspectRatioOut
     if(aspectRatioIn > aspectRatioOut):
-        if(aspectRatioOut < 1):
-            if(aspectRatioIn > 1):
-                fin_x = im_x
-                fin_y = im_x * aspectRatioOut
-            else:
-                fin_y = im_x/aspectRatioOut
-                fin_x = im_x
-        else:
-            fin_y = im_y
-            fin_x = im_y * aspectRatioOut
+        fin_y = im_y
+        fin_x = im_y * aspectRatioOut
+    elif(aspectRatioIn < aspectRatioOut):
+        fin_y = im_x/aspectRatioOut
+        fin_x = im_x
     else:
-        if(aspectRatioOut < 1):
-            if(aspectRatioIn > 1):
-                fin_x = im_x
-                fin_y = im_x * aspectRatioOut
-            else:
-                fin_y = im_x/aspectRatioOut
-                fin_x = im_x
-        else:
-            fin_x = im_x
-            fin_y = im_x * aspectRatioOut
-    print 'fin_x: %s\nfin_y: %s' %(fin_x, fin_y)
+        fin_x = im_x
+        fin_y = im_y
     box = (int((im_x - fin_x)/2), int((im_y - fin_y)/2), int((im_x + fin_x)/2), int((im_y + fin_y)/2) )
     return box
 
