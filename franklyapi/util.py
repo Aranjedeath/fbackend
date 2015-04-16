@@ -1,6 +1,7 @@
 from models import Question, Upvote, InflatedStat,\
-                   User, Follow, Like, Post, Comment
+                   User, Follow, Like, Post, Comment, AccessToken
 import time
+import datetime
 from app import db
 from sqlalchemy.sql import text
 
@@ -140,3 +141,40 @@ def get_users_stats(user_ids, cur_user_id=None):
             values['view_count'] += values['follower_count'] + 45
 
     return data
+
+
+
+
+def get_active_mobile_devices(user_id):
+
+    devices = AccessToken.query.filter(AccessToken.user == user_id, AccessToken.active==True,
+                             AccessToken.push_id != None).all()
+    return devices
+
+
+def count_of_push_notifications_sent(user_id):
+
+    result = db.session.execute(text('''Select sum(x.n_count) from (
+                                        Select count(*) as n_count from user_push_notifications
+                                        where user_id = :user_id and pushed_at >= date_sub(NOW(), interval 1 day)
+                                        group by notification_id) as x'''),
+                                params={'user_id': user_id})
+
+    for row in result:
+        return row[0]
+
+
+def count_of_notifications_sent_by_type(user_id, notification_type, interval=datetime.datetime.now() -
+                                                                             datetime.timedelta(days=1)):
+
+    result = db.session.execute(text('''Select count(*) from user_push_notifications upn
+                                        left join notifications n on n.id = upn.notification_id
+                                        where
+                                        user_id = :user_id
+                                        and n.type = :type_of_notification
+                                        and pushed_at >= :interval ;'''),
+                                params={"user_id": user_id,
+                                         "type_of_notification": notification_type,
+                                         "interval": interval})
+    for row in result:
+        return row[0]

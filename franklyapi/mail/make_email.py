@@ -1,16 +1,11 @@
 from jinja2 import Environment, PackageLoader
 from infra import SimpleMailer
-from models import MailLog, User, AccessToken, Question
-
-#TODO:
-#Dont import notification here
-from notification import notification_util
-from app import db
-from configs import config
-
-from helper import *
+from models import MailLog, User
 from CustomExceptions import ObjectNotFoundException
+from helper import *
+from app import db
 
+import util
 import datetime
 import helper
 import os
@@ -119,7 +114,7 @@ def question_asked(question_to, question_from, question_id, question_body,
         mail_type="question_asked"
 
     #
-    if not len(notification_util.get_active_mobile_devices(asked.id)):
+    if not len(util.get_active_mobile_devices(asked.id)):
 
         mail_type += "_to"
         subject = helper.dict[mail_type]['subject'] % asker.first_name
@@ -137,7 +132,7 @@ def question_asked(question_to, question_from, question_id, question_body,
 def question_answered(receiver_email, receiver_name, celebrity_name, question, web_link,
                       post_id, user_id, mail_type='post_add'):
 
-    if len(notification_util.get_active_mobile_devices(user_id)):
+    if len(util.get_active_mobile_devices(user_id)):
         cutoff_time = datetime.timedelta(days=10000)
 
         log_id = log_mail(receiver_email, mail_type, post_id)

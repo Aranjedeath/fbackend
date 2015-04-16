@@ -1,13 +1,15 @@
+import datetime
+import traceback
+
 from video_db import update_view_count_to_db, redis_views, update_total_view_count
 from app import db
 from models import User
 from analytics import stats
 from mail import admin_email
-from notification import notification_decision, push_notification
-
-import datetime
+from notification import push_notification
+from franklyapi.notification.commons import notification_decision
 import async_encoder
-import traceback
+
 
 '''
 @ 00:00 every day

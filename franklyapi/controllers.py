@@ -17,36 +17,24 @@ import CustomExceptions
 import media_uploader
 import async_encoder
 import social_helpers
-import util
-
-
-
-
-
-
 from configs import config
 from configs import flag_words
 from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
                     Question, Upvote, Comment, ForgotPasswordToken, Install, Video,\
-                    UserFeed, Event, Reshare, Invitable, Invite, ContactUs, InflatedStat,\
+                    UserFeed, Event, Reshare, Invite, ContactUs, InflatedStat,\
                     IntervalCountMap, ReportAbuse, SearchCategory,\
-                    BadEmail, List, ListItem, ListFollow, DiscoverList, DashVideo
-
-from notification import notification_decision, make_notification as notification
-
-from app import redis_client, raygun, db, redis_views, redis_pending_post
-
+                    BadEmail, List, ListItem, DiscoverList
+from notification import make_notification as notification
+from app import redis_client, raygun, db, redis_views
 from object_dict import user_to_dict, guest_user_to_dict,\
                         thumb_user_to_dict, question_to_dict,questions_to_dict, post_to_dict, comment_to_dict,\
-                        comments_to_dict, posts_to_dict, make_celeb_questions_dict, media_dict,invitable_to_dict, guest_users_to_dict
-
+                        comments_to_dict, posts_to_dict, make_celeb_questions_dict, media_dict, guest_users_to_dict
 from video_db import add_video_to_db
 from database import get_item_id
 from trends import most_liked_users
-
 from mail import make_email
-
 from queue import SQSQueue
+
 sq = SQSQueue('test1')
 
 def create_event(user, action, foreign_data, event_date=datetime.date.today()):
@@ -768,7 +756,7 @@ def user_follow(cur_user_id, user_id):
 
     db.session.commit()
     try:
-        notification_decision.decide_follow_milestone(user_id=user_id)
+        notification.follow_milestone(user_id=user_id)
     except Exception as e:
         err = sys.exc_info()
         raygun.send(err[0],err[1],err[2])
@@ -1138,7 +1126,7 @@ def question_upvote(cur_user_id, question_id):
                             )
         db.session.commit()
         try:
-            notification_decision.push_question_notification(question_id=question_id)
+            notification.question_upvote(user_id=cur_user_id, question_id=question_id)
         except:
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])
@@ -1202,7 +1190,7 @@ def post_like(cur_user_id, post_id):
 
         db.session.commit()
         try:
-            notification_decision.decide_post_milestone(post_id=post_id, user_id=answer_author)
+            notification.decide_post_milestone(post_id=post_id, user_id=answer_author)
         except:
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])
