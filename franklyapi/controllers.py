@@ -1497,7 +1497,7 @@ def home_feed(cur_user_id, offset, limit, web):
                 'next_index' : -1
             }
 
-    feeds, next_index = get_home_feed(cur_user_id, offset, limit)
+    feeds, next_index = get_home_feed(cur_user_id, offset, limit, club_questions = not web)
 
     return {'stream': feeds, 'count':len(feeds), 'next_index':next_index}
 

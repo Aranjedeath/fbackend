@@ -6,10 +6,10 @@ from sqlalchemy.sql import text
 from app import db
 
 from models import User, Post, Question, UserScroll, Upvote, Question
-from object_dict import question_to_dict, posts_to_dict, thumb_user_to_dict
+from object_dict import question_to_dict, posts_to_dict, thumb_user_to_dict, questions_to_dict
 from configs import config
 
-def get_home_feed(cur_user_id, offset, limit=10):
+def get_home_feed(cur_user_id, offset, limit=10, club_questions=True):
     from math import sqrt
     from random import randint
 
@@ -82,20 +82,30 @@ def get_home_feed(cur_user_id, offset, limit=10):
                  ]
 
     for question_page in question_pages:
-        question_user = thumb_user_to_dict(User.query.filter(User.id == question_page[0]).first(), cur_user_id)
-        question_user['questions'] = []
-        for q in question_page[1]:
-            question_user['questions'].append(question_to_dict(q, cur_user_id))
-            if len(q.body) > 150:
-                break
-            if randint(0, 9) % 2 == 0:
-                break
-        if posts:
-            idx = randint(0, len(posts)- 1)
+        if club_questions:
+            question_user = thumb_user_to_dict(User.query.filter(User.id == question_page[0]).first(), cur_user_id)
+            question_user['questions'] = []
+            for q in question_page[1]:
+                question_user['questions'].append(question_to_dict(q, cur_user_id))
+                if len(q.body) > 150:
+                    break
+                if randint(0, 9) % 2 == 0:
+                    break
+            idx = randint(0, len(feeds))
+            print 'inserting question_page at index : ', idx
+            feeds.insert(idx, {'questions': question_user, 'type': 'questions'})
         else:
-            idx = 0
-        print 'inserting question_page at index : ', idx
-        feeds.insert(idx, {'questions': question_user, 'type' : 'questions'})
+            questions = []
+            for question_page in question_pages:
+                questions.append(question_page[1])
+            questions = questions_to_dict(questions, cur_user_id)
+            for q in questions:
+                idx = randint(0, len(feeds))
+                print 'inserting question at index : ', idx
+                feeds.insert(idx, {'question': q, 'type': 'question'})
+
+
+
 
     tentative_idx = -1
     if int(len(celebs_following) * sqrt(_q_len)):

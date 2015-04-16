@@ -45,8 +45,6 @@ api.add_resource(QuestionDownvote, '/question/downvote/<question_id>')
 api.add_resource(QuestionIgnore, '/question/ignore')
 api.add_resource(SlugItem, '/slug/<username>/<slug>')
 
-
-
 api.add_resource(PostAdd, '/post/media/add', '/post/add')
 
 api.add_resource(PostLike, '/post/like')
