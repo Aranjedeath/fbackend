@@ -775,6 +775,16 @@ def user_follow(cur_user_id, user_id):
 
     return {'user_id': user_id}
 
+def users_follow(cur_user_id, user_ids):
+    for user_id in user_ids[:20]:
+        try:
+            user_follow(cur_user_id, user_id)
+        except:
+            pass
+    return {'success':True}
+
+
+
 
 def user_unfollow(cur_user_id, user_id):
     if cur_user_id == user_id:

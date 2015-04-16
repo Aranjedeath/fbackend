@@ -354,6 +354,33 @@ class SlugItem(restful.Resource):
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
+class UsersFollow(restful.Resource):
+    post_parser = reqparse.RequestParser()
+    post_parser.add_argument('user_ids', required=True, type=list, location='json', help="user_ids must be list of user_id of the users to be followed. Maximum 20.")
+
+    @login_required
+    def post(self):
+        """
+        Lets current user follow the users with user_id provided in user_ids list.
+
+        Controller Functions Used:
+            - users_follow
+
+        Authentication: Required
+        """
+        args = self.post_parser.parse_args()
+        try:
+            resp = controllers.users_follow(current_user.id, user_ids=args['user_ids'])
+            return resp
+
+        except CustomExceptions.BadRequestException as e:
+            abort(400, message=str(e))
+
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
 
 
 class UserFollow(restful.Resource):
