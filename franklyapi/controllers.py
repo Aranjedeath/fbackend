@@ -758,9 +758,9 @@ def user_follow(cur_user_id, user_id):
         raise CustomExceptions.BadRequestException("Cannot follow yourself")
 
     if user_id!=cur_user_id:
-        db.session.execute(text("""INSERT INTO user_follows (user, followed, unfollowed, timestamp) 
-                                VALUES(:cur_user_id, :user_id, false, :timestamp) 
-                                ON DUPLICATE KEY 
+        db.session.execute(text("""INSERT INTO user_follows (user, followed, unfollowed, timestamp)
+                                VALUES(:cur_user_id, :user_id, false, :timestamp)
+                                ON DUPLICATE KEY
                                 UPDATE unfollowed = false, timestamp=:timestamp"""),
                         params={'cur_user_id':cur_user_id, 'user_id':user_id, 'timestamp':datetime.datetime.now()}
                     )
@@ -775,6 +775,7 @@ def user_follow(cur_user_id, user_id):
 
     return {'user_id': user_id}
 
+
 def users_follow(cur_user_id, user_ids):
     for user_id in user_ids[:20]:
         try:
@@ -784,6 +785,13 @@ def users_follow(cur_user_id, user_ids):
     return {'success':True}
 
 
+def users_unfollow(cur_user_id, user_ids):
+    for user_id in user_ids[:20]:
+        try:
+            user_unfollow(cur_user_id, user_id)
+        except:
+            pass
+    return {'success':True}
 
 
 def user_unfollow(cur_user_id, user_id):

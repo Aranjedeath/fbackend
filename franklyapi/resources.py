@@ -438,7 +438,36 @@ class UserUnfollow(restful.Resource):
 
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
+
+
+class UsersUnfollow(restful.Resource):
+    post_parser = reqparse.RequestParser()
+    post_parser.add_argument('user_ids', required=True, type=str, location='json', help="user_ids must be list of user_id of the users to be unfollowed. Maximum 20.")
+
+    @login_required
+    def post(self):
+        """
+        Lets current user unfollow the user with user_id provided in argument.
+
+        Controller Functions Used:
+            - users_unfollow
+
+        Authentication: Required
+        """
+        args = self.post_parser.parse_args()
+        try:
+            resp = controllers.users_unfollow(current_user.id, user_id=args['user_ids'])
+            return resp
+
+        except CustomExceptions.BadRequestException as e:
+            abort(400, message=str(e))
+
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
@@ -447,7 +476,7 @@ class UserFollowers(restful.Resource):
 
     get_parser = reqparse.RequestParser()
     get_parser.add_argument('offset', default=0, type=int, location='args', help="offset must be integer >=0")
-    get_parser.add_argument('limit' , default=10, type=int, location='args', help="limit must be >=0")
+    get_parser.add_argument('limit',  default=10, type=int, location='args', help="limit must be >=0")
     
     def get(self, user_id):
         """

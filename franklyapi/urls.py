@@ -16,6 +16,8 @@ api.add_resource(UsersFollow, '/user/follow/multiple')
 api.add_resource(UserFollowers, '/user/followers/<user_id>')
 
 api.add_resource(UserUnfollow, '/user/unfollow')
+api.add_resource(UsersFollow, '/user/unfollow/multiple')
+
 api.add_resource(UserBlock, '/user/block')
 api.add_resource(UserUnblock, '/user/unblock')
 api.add_resource(UserBlockList, '/user/blocklist')
