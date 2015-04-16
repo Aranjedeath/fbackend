@@ -97,7 +97,7 @@ def get_home_feed(cur_user_id, offset, limit=10, club_questions=True):
         else:
             questions = []
             for question_page in question_pages:
-                questions.append(question_page[1])
+                questions.extend(question_page[1])
             questions = questions_to_dict(questions, cur_user_id)
             for q in questions:
                 idx = randint(0, len(feeds))
