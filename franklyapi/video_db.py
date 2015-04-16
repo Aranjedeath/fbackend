@@ -10,7 +10,6 @@ def add_video_to_db(video_url, thumbnail_url, video_type, object_id, username=No
             v.username=username
         db.session.add(v)
         db.session.commit()
-        db.session.remove()
 
 def video_already_encoded(video_url, video_quality, recent_assigned=False):
     if recent_assigned:
@@ -29,7 +28,6 @@ def add_video_encode_log_start(video_url, video_quality):
     db.session.add(log)
     db.session.commit()
     log_id = log.id
-    db.session.remove()
     return log_id
 
 def update_video_encode_log_finish(encode_log_id,result):
@@ -41,12 +39,10 @@ def update_video_encode_log_finish(encode_log_id,result):
             result = False
         EncodeLog.query.filter(EncodeLog.id==encode_log_id).update({'finish_time':datetime.datetime.now(),'success':success})
         db.session.commit()
-        db.session.remove()
         
     except Exception as e:
         print e
         db.session.rollback()
-        db.session.remove()
 
 def get_encode_statictics(count=100):
     logs = EncodeLog.query.filter().order_by(EncodeLog.start_time.desc()).limit(count).all()
@@ -85,17 +81,14 @@ def update_video_state(video_url, result={}):
             result.update({'process_state':'success'})
             Video.query.filter(Video.url==video_url).update(result)
             db.session.commit()
-            db.session.remove()
 
         else:
             Video.query.filter(Video.url==video_url).update({'process_state':'failed'})
             db.session.commit()
-            db.session.remove()
 
     except Exception as e:
         print e
         db.session.rollback()
-        db.session.remove()
 
 
 def get_post_id_from_video(video_url):
@@ -129,12 +122,10 @@ def update_view_count_to_db(url):
                                 params = {"url":url, "count":int(count)}
                             )
             db.session.commit()
-            db.session.remove()
 
         redis_views.delete(original_url)
     except:
         db.session.rollback()
-        db.session.remove()
 
 def update_total_view_count(user_ids): 
     try:   
