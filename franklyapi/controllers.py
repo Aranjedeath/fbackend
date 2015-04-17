@@ -9,7 +9,7 @@ import sys
 import json
 
 from sqlalchemy.orm.exc import NoResultFound
-from sqlalchemy import or_
+from sqlalchemy import or_, and_
 from sqlalchemy.sql import func
 from sqlalchemy.sql import text
 
@@ -17,28 +17,37 @@ import CustomExceptions
 import media_uploader
 import async_encoder
 import social_helpers
-import notification
+import util
+
+
+
+
+
 
 from configs import config
 from configs import flag_words
 from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
                     Question, Upvote, Comment, ForgotPasswordToken, Install, Video,\
                     UserFeed, Event, Reshare, Invitable, Invite, ContactUs, InflatedStat,\
-                    SearchDefault, IntervalCountMap, ReportAbuse, SearchCategory
+                    IntervalCountMap, ReportAbuse, SearchCategory,\
+                    BadEmail, List, ListItem, ListFollow, DiscoverList, DashVideo
+
+from notification import notification_decision, make_notification as notification
 
 from app import redis_client, raygun, db, redis_views, redis_pending_post
 
 from object_dict import user_to_dict, guest_user_to_dict,\
                         thumb_user_to_dict, question_to_dict,questions_to_dict, post_to_dict, comment_to_dict,\
-                        comments_to_dict, posts_to_dict, make_celeb_questions_dict, media_dict,invitable_to_dict
+                        comments_to_dict, posts_to_dict, make_celeb_questions_dict, media_dict,invitable_to_dict, guest_users_to_dict
 
 from video_db import add_video_to_db
 from database import get_item_id
 from trends import most_liked_users
 
-from mailwrapper import email_helper
+from mail import make_email
 
-
+from queue import SQSQueue
+sq = SQSQueue('test1')
 
 def create_event(user, action, foreign_data, event_date=datetime.date.today()):
     if not Event.query.filter(Event.user==user, Event.action==action, Event.foreign_data==foreign_data, Event.event_date==event_date).count():
@@ -77,10 +86,12 @@ def password_is_valid(password):
         return False
     return True
 
+
 def email_available(email):
     if email.split('@')[1].lower() in config.BLOCKED_EMAIL_DOMAINS:
         return False
     return not bool(User.query.filter(User.email==email).count())
+
 
 def username_available(username):
     if len(username)<6 or len(username)>30 or username in config.UNAVAILABLE_USERNAMES:
@@ -90,12 +101,14 @@ def username_available(username):
             return False
     return not bool(User.query.filter(User.username==username).count())
 
+
 def sanitize_username(username):
     username = username.title().replace(' ', '')
     for char in username:
         if char not in config.ALLOWED_CHARACTERS:
             username = username.replace(char, '') 
     return username 
+
 
 def make_username(email, full_name=None, social_username=None):
     username_candidates = [full_name, social_username, email.split('@')[0]]
@@ -128,9 +141,9 @@ def make_password():
     password = random.choice(suffix) + random.choice(prefix) + str(random.randint(0, 10000))
     return password
 
-
 def generate_access_token(user_id, device_id=None):
     return hashlib.sha1('%s%s' % (user_id, int(time.time()))).hexdigest()
+
 
 def set_access_token(device_id, device_type, user_id, access_token, push_id=None):
     from app import redis_client
@@ -148,9 +161,12 @@ def set_access_token(device_id, device_type, user_id, access_token, push_id=None
 
 
 def get_data_from_external_access_token(social_type, external_access_token, external_token_secret=None):
-    user_data = social_helpers.get_user_data(social_type, external_access_token, external_token_secret)
-    return user_data
-
+    from twitter import TwitterError
+    try:
+        user_data = social_helpers.get_user_data(social_type, external_access_token, external_token_secret)
+        return user_data
+    except TwitterError as e:
+        raise CustomExceptions.InvalidTokenException(str(e))
 
 
 def get_user_from_social_id(social_type, social_id):
@@ -172,9 +188,9 @@ def get_device_type(device_id):
 
 
 def send_registration_mail(user_id, mail_password=False):
-    user = User.query.filter(User.id==user_id).one()
+    user = User.query.get(user_id)
     if 'twitter' not in user.registered_with:
-        email_helper.welcome_mail(user.email, user.first_name, user.username, user.password)
+        make_email.welcome_mail(user_id=user.id)
 
 
 def new_registration_task(user_id, mail_password=True):
@@ -339,96 +355,6 @@ def has_blocked(cur_user_id, user_id):
     return bool(Block.query.filter(or_(Block.user==cur_user_id, Block.blocked_user==cur_user_id)).filter(Block.user==user_id, Block.blocked_user==user_id).limit(1).count())
 
 
-def get_follower_count(user_id):
-    from math import log, sqrt
-    from datetime import datetime, timedelta
-    user = User.query.filter(User.id==user_id).one()
-
-    d = datetime.now() - timedelta(minutes = 5)
-    count_to_pump =  Follow.query.filter(Follow.followed==user_id, Follow.unfollowed==False, Follow.timestamp <= d).count() 
-    count_as_such = Follow.query.filter(Follow.followed==user_id, Follow.unfollowed==False, Follow.timestamp > d).count() +1
-    count = count_as_such + count_to_pump
-
-    if user.user_type == 2:
-        if count_to_pump:
-            count = int(11*count_to_pump + log(count_to_pump,2) + sqrt(count_to_pump)) + count_as_such
-        else:
-            count = count_to_pump + count_as_such
-
-    return count
-
-def get_user_view_count(user_id, user_view_count=None):
-    return User.query.get(user_id).total_view_count
-
-def get_answer_count(user_id):
-    return Post.query.filter(Post.answer_author==user_id, Post.deleted==False).count()
-
-
-def get_users_stats(user_ids, cur_user_id=None):
-    from math import log, sqrt
-    from datetime import datetime, timedelta
-    trend_time = datetime.now() - timedelta(minutes = 5)
-    results = db.session.execute(text("""SELECT users.id, users.user_type, users.total_view_count,
-                                            (SELECT count(*) FROM user_follows
-                                                WHERE user_follows.followed=users.id
-                                                    AND user_follows.unfollowed=false
-                                                    AND user_follows.timestamp<=:trend_time) AS follow_count_to_pump,
-                                            
-                                            (SELECT count(*) FROM user_follows
-                                                WHERE user_follows.followed=users.id
-                                                    AND user_follows.unfollowed=false
-                                                    AND user_follows.timestamp>:trend_time) AS follow_count_as_such,
-                                            
-                                            (SELECT count(posts.id) FROM posts
-                                                WHERE posts.answer_author=users.id
-                                                    AND posts.deleted=false) AS answer_count,
-
-                                            (SELECT count(*) FROM user_follows
-                                                WHERE user_follows.user=:cur_user_id
-                                                    AND user_follows.followed=users.id
-                                                    AND user_follows.unfollowed=false) AS is_following,
-                                            
-                                            (SELECT count(questions.id) FROM questions
-                                                WHERE questions.question_to=users.id
-                                                    AND questions.deleted=false
-                                                    AND questions.is_ignored=false
-                                                    AND questions.is_answered=false) AS question_count
-                                    FROM users
-                                    WHERE users.id in :user_ids"""),
-                                params={'cur_user_id':cur_user_id, 'user_ids':list(user_ids), 'trend_time':trend_time}
-                                )
-    data = {}
-    for row in results:
-        follower_count_to_pump = row[3]
-        follower_count_as_such = row[4]
-        follower_count = follower_count_as_such + follower_count_to_pump
-        if row[1] == 2:
-            if follower_count_to_pump:
-                follower_count = int(11*follower_count_to_pump + log(follower_count_to_pump,2) + sqrt(follower_count_to_pump)) + follower_count_as_such
-            else:
-                follower_count = follower_count_to_pump + follower_count_as_such
-
-        data[row[0]] = {
-                        'following_count':0,
-                        'follower_count':follower_count,
-                        'view_count':row[2],
-                        'answer_count':row[5],
-                        'is_following':bool(row[6]),
-                        'question_count':row[7]
-                        }
-
-    inflated_stats = InflatedStat.query.filter(InflatedStat.user.in_(user_ids)).all()
-    for inflated_stat in inflated_stats:
-        data[inflated_stat.user]['follower_count'] += inflated_stat.follower_count
-        data[inflated_stat.user]['view_count'] += inflated_stat.view_count
-
-    for post_id, values in data.items():
-        if values['view_count'] < values['follower_count']:
-            values['view_count'] += values['follower_count'] + 45
-
-    return data
-
-    
 def question_count(user_id):
     question_count = Question.query.filter(Question.question_to==user_id,
                             Question.deleted==False,
@@ -438,39 +364,7 @@ def question_count(user_id):
     return {'question_count':question_count}
 
 
-def get_user_stats(user_id):
-    following_count = 0#get_following_count(user_id)
-    follower_count  = get_follower_count(user_id)
-    view_count      = get_user_view_count(user_id)
-    answer_count    = get_answer_count(user_id)
 
-    inflated_stat = InflatedStat.query.filter(InflatedStat.user==user_id).first()
-    if inflated_stat:
-        follower_count += inflated_stat.follower_count
-        view_count += inflated_stat.view_count
-
-    if view_count < follower_count:
-        view_count += follower_count + follower_count/3
-
-        
-
-    return {
-            'following_count':following_count,
-            'follower_count':follower_count,
-            'view_count':view_count,
-            'answer_count':answer_count
-            }
-
-def get_post_like_count(post_id):
-    count = Like.query.filter(Like.post==post_id, Like.unliked==False).count()
-    return count
-
-def get_post_view_count(post_id):
-    view_count = Post.query.with_entities('view_count').filter(Post.id==post_id).one().view_count
-    return view_count
-
-def get_comment_count(post_id):
-    return Comment.query.filter(Comment.on_post==post_id, Comment.deleted==False).count()
 
 def get_posts_stats(post_ids, cur_user_id=None):
     results = db.session.execute(text("""SELECT posts.id, posts.view_count,
@@ -522,28 +416,6 @@ def get_posts_stats(post_ids, cur_user_id=None):
     return data
 
 
-def get_post_stats(post_id):
-    like_count = get_post_like_count(post_id)
-    view_count = get_post_view_count(post_id)
-    comment_count = get_comment_count(post_id)
-
-    inflated_stat = InflatedStat.query.filter(InflatedStat.post==post_id).first()
-    if inflated_stat:
-        view_count += inflated_stat.view_count
-        like_count += inflated_stat.like_count
-
-    if view_count < like_count:
-        view_count += like_count + like_count/3
-
-    return {
-            'view_count':view_count,
-            'like_count':like_count,
-            'comment_count':comment_count
-            }
-
-
-
-
 def get_post_id_from_question_id(question_id):
     post = Post.query.with_entities('id').filter(Post.question==question_id).first()
     if post:
@@ -553,14 +425,12 @@ def get_post_id_from_question_id(question_id):
 
 
 
-def get_following_count(user_id):
-    return Follow.query.filter(Follow.user==user_id, Follow.unfollowed==False).count()
-
 def get_answer_count(user_id):
     return Post.query.filter(Post.answer_author==user_id, Post.deleted==False).count()
 
 def get_invite_count(invitable_id):
     return Invite.query.filter(Invite.invitable == invitable_id).count()
+
 
 def has_invited(cur_user_id, invitable_id):
     return bool(Invite.query.filter(Invite.user==cur_user_id, Invite.invitable==invitable_id).limit(1).count())
@@ -613,6 +483,16 @@ def get_question_upvote_count(question_id):
         count += inflated_stat.upvote_count
     return count
 
+def is_question_remindable(question_id, user_id):
+    return bool(Question.query.filter(
+        Question.id == question_id,
+        Question.question_author == user_id,
+        Question.is_answered == False,
+        Question.timestamp <= (datetime.datetime.now() - datetime.timedelta(hours=7)),
+        Question.is_ignored == False,
+        Question.open_question == None
+        ).count())
+
 def is_upvoted(question_id, user_id):
     return bool(Upvote.query.filter(Upvote.question==question_id, Upvote.user==user_id, Upvote.downvoted==False).count())
 
@@ -643,9 +523,12 @@ def get_video_states(video_urls={}):
     result = {}
     videos = Video.query.filter(Video.url.in_(video_urls.keys())).all()
     for video in videos:
+
         result[video.url] = {}
         result[video.url]['original'] = video.url
         result[video.url]['thumb'] = video.thumbnail
+        result[video.url]['dash'] = video.dash
+
         if video.ultralow:
             result[video.url][0] = video.ultralow
         if video.low:
@@ -676,6 +559,7 @@ def get_thumb_users(user_ids, cur_user_id=None):
         result = db.session.execute(text("""SELECT users.id, users.username, users.first_name, users.profile_picture, users.deleted,
                                                 users.lat, users.lon, users.location_name, users.country_name, users.country_code,
                                                 users.gender, users.bio, users.allow_anonymous_question, users.user_type, users.user_title,
+                                                users.twitter_handle,
                                                 (SELECT count(user_follows.user) FROM user_follows 
                                                         WHERE user_follows.user=:cur_user_id
                                                                 AND user_follows.followed=users.id
@@ -708,7 +592,8 @@ def get_thumb_users(user_ids, cur_user_id=None):
                                     'allow_anonymous_question':bool(row[12]),
                                     'user_type':row[13],
                                     'user_title':row[14],
-                                    'is_following':bool(row[15]),
+                                    'twitter_handle':row[15],
+                                    'is_following':bool(row[16]),
                                     'channel_id':'user_{user_id}'.format(user_id=row[0])
                                     }
                         })
@@ -722,7 +607,8 @@ def get_questions(question_ids, cur_user_id=None):
                                                    (SELECT count(question_upvotes.user) FROM question_upvotes
                                                     WHERE question_upvotes.question=questions.id 
                                                             AND question_upvotes.user=:cur_user_id
-                                                            AND question_upvotes.downvoted=False) as is_upvoted
+                                                            AND question_upvotes.downvoted=False) as is_upvoted,
+                                                    questions.open_question
                                             FROM questions
                                             WHERE id in :question_ids"""),
                                         params={'question_ids':list(question_ids), 'cur_user_id':cur_user_id})
@@ -733,7 +619,8 @@ def get_questions(question_ids, cur_user_id=None):
                                     'is_anonymous':row[2],
                                     'timestamp':row[3],
                                     'slug':row[4],
-                                    'is_upvoted':bool(row[5])
+                                    'is_upvoted':bool(row[5]),
+                                    'open_question':bool(row[6])
                                     }
                         })
     return data
@@ -745,8 +632,6 @@ def user_view_profile(current_user_id, user_id, username=None):
         user = None
         if username:
             user = User.query.filter(User.username==username).one()
-            print user
-            print user_to_dict(user)
         elif user_id:
             user = User.query.get(user_id)
 
@@ -853,6 +738,7 @@ def user_update_profile_form(user_id, first_name=None, bio=None, profile_picture
                         username=user.username)
         
         async_encoder.encode_video_task.delay(profile_video_url, username=user.username)
+        sq.push({'url':profile_video_url})
     db.session.commit()
     return user_to_dict(user)
 
@@ -871,7 +757,7 @@ def user_follow(cur_user_id, user_id):
 
 
     db.session.commit()
-
+    notification_decision.decide_follow_milestone(user_id=user_id)
     return {'user_id': user_id}
 
 
@@ -975,6 +861,7 @@ def user_change_username(user_id, new_username):
         User.query.filter(User.id==user_id).update({'username':new_username})
         db.session.commit()
         async_encoder.encode_video_task.delay(user.profile_video, username=new_username, profiles=['promo'], redo=True)
+        sq.push({'url':user.profile_video})
         return {'username':new_username, 'status':'success', 'id':str(user_id)}
     else:
         raise CustomExceptions.UnameUnavailableException('Username invalid or not available')
@@ -1065,12 +952,19 @@ def update_push_id(cur_user_id, device_id, push_id):
                              ).update({'push_id':push_id})
 
 
-def user_update_access_token(user_id, acc_type, token):
+def user_update_access_token(user_id, acc_type, token, secret=None):
     try:
         if acc_type=='facebook':
             user_data = get_data_from_external_access_token('facebook', token, external_token_secret=None)
             User.query.filter(User.id==user_id, User.facebook_id==user_data['social_id']).update({'facebook_token':token, 'facebook_write_permission':True})
-            return {'success':True}
+
+        if acc_type=='twitter':
+            if not secret:
+                raise CustomExceptions.BadRequestException('Missing access secret')
+            user_data = get_data_from_external_access_token('twitter', token, external_token_secret=secret)
+            User.query.filter(User.id==user_id, User.facebook_id==user_data['social_id']).update({'twitter_token':token, 'twitter_write_permission':True})
+        
+        return {'success':True}
     
     except CustomExceptions.InvalidTokenException:
         raise CustomExceptions.BadRequestException('invalid token')
@@ -1109,7 +1003,7 @@ def question_is_clean(body):
     return True
 
 
-def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_by=None):
+def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, from_widget, added_by=None):
 
     if has_blocked(cur_user_id, question_to):
         raise CustomExceptions.BlockedUserException()
@@ -1129,7 +1023,7 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_b
 
 
     question = Question(question_author=cur_user_id, question_to=question_to,
-                body=body.capitalize(), is_anonymous=is_anonymous, public=public,
+                body=body.capitalize().replace('\n', ' ').strip(), is_anonymous=is_anonymous, public=public,
                 lat=lat, lon=lon, slug=slug, short_id=short_id,
                 id = question_id, added_by=added_by, flag=int(clean))
 
@@ -1137,47 +1031,17 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, added_b
 
     db.session.commit()
 
-    ''' Push Notification for the person who was
-        asked the question
-    '''
-    if clean:
+    if question_to != cur_user_id and clean:
         notification.ask_question(question_id=question.id)
-
-    ''' Send email to user who asked the question
-    confirming that the question has been asked'''
-    is_first = False
-    if db.session.query(Question).filter(Question.question_author == cur_user_id).count() == 1:
-        is_first = True
-
-
-    if question_to != cur_user_id and question_to != '737c6f8a7ac04d7e9380f1d37c011531':
-        users = User.query.filter(User.id.in_([cur_user_id,question_to]))
-        for user in users:
-            if user.id == cur_user_id:
-                mail_reciever = user
-            if user.id == question_to:
-                question_to = user
-        email_helper.question_asked(receiver_email=mail_reciever.email,
-                                    receiver_name=mail_reciever.first_name,
-                                    question_to_name=question_to.first_name,
-                                    is_first=is_first)
-
-
-
-
-    ''' God forgive me for I maketh this hack
-        Id is that of Jatin Sapru, please delete this piece o shit code
-        asap ~ MilfHunter II '''
-    if question_to == '737c6f8a7ac04d7e9380f1d37c011531':
-        notification.idreamofsapru(cur_user_id,question.id)
-
+        make_email.question_asked(question_from=cur_user_id, question_to=question_to, question_id=question.id,
+                                  question_body = question.body,
+                                  from_widget=from_widget)
 
     resp = {'success':True, 'id':str(question.id), 'question':question_to_dict(question)}
     return resp
 
 
 def question_list(user_id, offset, limit, version_code=0):
-
     questions_query = Question.query.filter(Question.question_to==user_id, 
                                             Question.deleted==False,
                                             Question.is_answered==False,
@@ -1256,14 +1120,15 @@ def question_list_public(current_user_id, user_id, username=None, offset=0, limi
 
     return {'current_user_questions':cur_user_questions, 'questions': questions, 'count': len(questions),  'next_index' : next_index}
 
+
 def question_upvote(cur_user_id, question_id):
     if Question.query.filter(
                             Question.id==question_id, 
                             #Question.public==True, 
                             Question.question_to!=cur_user_id,
                             Question.deleted==False,
-                            Question.is_ignored==False,
-                            Question.is_answered==False
+                            or_(and_(Question.is_ignored==False, Question.is_answered==False),
+                                Question.open_question==True)
                             ).count():
         db.session.execute(text("""INSERT INTO question_upvotes (user, question, downvoted, timestamp) 
                                     VALUES(:cur_user_id, :question_id, false, :timestamp) 
@@ -1274,10 +1139,11 @@ def question_upvote(cur_user_id, question_id):
                                     'timestamp':datetime.datetime.now()}
                             )
         db.session.commit()
+        notification_decision.push_question_notification(question_id=question_id)
     else:
         raise CustomExceptions.BadRequestException("Question is not available for upvote")
     
-    return {'id':question_id, 'success':True}
+    return {'id': question_id, 'success': True}
 
 def question_downvote(cur_user_id, question_id):
     if Question.query.filter(Question.id==question_id, Question.question_author==cur_user_id).count():
@@ -1333,7 +1199,8 @@ def post_like(cur_user_id, post_id):
                             )
 
         db.session.commit()
-        #send notification
+
+        notification_decision.decide_post_milestone(post_id=post_id, user_id=answer_author)
         return {'id': post_id, 'success':True}
 
     else:
@@ -1371,7 +1238,7 @@ def post_view(cur_user_id, post_id, client_id=None):
 
         return {'post': post_to_dict(post, cur_user_id), 'pending':post_pending}
     except NoResultFound:
-        raise CustomExceptions.PostNotFoundException("No post with that id found")
+        raise CustomExceptions.PostNotFoundException("The post does not exist or has been deleted")
 
 
 def question_view(current_user_id, question_id, short_id):
@@ -1393,13 +1260,14 @@ def question_view(current_user_id, question_id, short_id):
                                             #    Question.question_to==current_user_id)
                                             ).one()
 
-        question_to = User.query.filter(User.id==question.question_to).one()
+        if not question.open_question:
+            question_to = User.query.filter(User.id==question.question_to).one()
 
-        if question.flag == 0 and question.question_author!=current_user_id:
-            raise CustomExceptions.ObjectNotFoundException('The question does not exist or has been deleted.')
-        if question.is_answered:
-            post = Post.query.filter(Post.question==question.id, Post.deleted==False).one()
-            return {'is_answered':question.is_answered, 'post':post_to_dict(post, current_user_id), 'question':question_to_dict(question, current_user_id)}
+            if question.flag == 0 and question.question_author!=current_user_id:
+                raise CustomExceptions.ObjectNotFoundException('The question does not exist or has been deleted.')
+            if question.is_answered:
+                post = Post.query.filter(Post.question==question.id, Post.deleted==False).one()
+                return {'is_answered':question.is_answered, 'post':post_to_dict(post, current_user_id), 'question':question_to_dict(question, current_user_id)}
         
         return {'is_answered':question.is_answered, 'question':question_to_dict(question, current_user_id)}
     except NoResultFound:
@@ -1421,12 +1289,14 @@ def comment_add(cur_user_id, post_id, body, lat, lon):
 
     if not (has_blocked(cur_user_id, answer_author) or has_blocked(cur_user_id, answer_author)):
         from database import get_item_id
-        comment = Comment(id=get_item_id(), on_post=post_id, body=body, comment_author=cur_user_id, lat=lat, lon=lon, timestamp=datetime.datetime.now())
+        comment = Comment(id=get_item_id(), on_post=post_id, body=body, comment_author=cur_user_id,
+                          lat=lat, lon=lon, timestamp=datetime.datetime.now())
         db.session.add(comment)
 
         db.session.commit()
-    
-        user_update_location(cur_user_id, lat, lon, country=None, country_code=None, loc_name=None)
+
+        notification.comment_on_post(comment_id=comment.id, comment_author=cur_user_id, post_id=post_id)
+
 
         return {'comment': comment_to_dict(comment), 'id':comment.id, 'success':True}
     else:
@@ -1450,6 +1320,41 @@ def comment_delete(cur_user_id, comment_id):
             raise CustomExceptions.ObjectNotFoundException('Comment Not available for action')
     except NoResultFound:
         raise CustomExceptions.ObjectNotFoundException('Comment Not available for action')
+
+def get_comments_for_posts(cur_user_id, post_ids, offset=0, limit=3):
+    single_query = """SELECT * FROM (SELECT comments.id, comments.body, comments.on_post, comments.comment_author, comments.timestamp 
+                                        FROM comments
+                                        WHERE comments.on_post=:post_id_{idx}
+                                            AND comments.comment_author NOT IN (SELECT user_blocks.blocked_user FROM user_blocks WHERE user_blocks.user=:cur_user_id AND user_blocks.unblocked=false)
+                                            AND comments.deleted=false
+                                        ORDER BY comments.timestamp DESC
+                                        LIMIT :offset,:limit
+                                    ) alias_{idx}
+
+                    """
+    params = {'cur_user_id':cur_user_id, 'offset':offset, 'limit':limit}
+    idx = 0
+    queries = []
+    response = {}
+    for post_id in post_ids:
+        queries.append(single_query.format(idx=idx))
+        params.update({'post_id_{idx}'.format(idx=idx):post_id})
+        idx +=1
+        response[post_id] = {'comments':[], 'post': post_id, 'next_index':offset+limit}
+
+    all_comments = []
+    if queries:
+        query = ' UNION ALL '.join(queries)
+        result = db.session.execute(text(query), params=params)
+        all_comments = [row for row in result]
+
+    all_comments_dict = comments_to_dict(all_comments)
+    
+    for comment in all_comments_dict:
+        response[comment['on_post']]['comments'].append(comment)
+
+    return response
+
 
 
 def comment_list(cur_user_id, post_id, offset, limit):
@@ -1490,7 +1395,7 @@ def comment_list(cur_user_id, post_id, offset, limit):
         return {'comments': comments, 'post': post_id, 'next_index':next_index}
 
 
-def get_user_timeline(cur_user_id, user_id, offset, limit, include_reshares=False):
+def get_user_timeline(cur_user_id, user_id, offset, limit, include_reshares=False, device_id=False):
     
     if cur_user_id and has_blocked(cur_user_id, user_id):
         raise CustomExceptions.UserNotFoundException('User does not exist')
@@ -1509,12 +1414,24 @@ def get_user_timeline(cur_user_id, user_id, offset, limit, include_reshares=Fals
     total_count = posts_query.count()
     if offset == -1:
         return {'stream': [], 'count':0, 'next_index':-1, 'total':total_count}
-    posts = posts_query.offset(offset).limit(limit).all()
-    posts = posts_to_dict(posts, cur_user_id)
-    posts = [{'type':'post', 'post':post} for post in posts]
-    next_index = offset+limit if posts else -1
+    data = []
+    if total_count<1 and device_id=='web':
+        data = question_list_public(cur_user_id, user_id, username=None, offset=offset, limit=limit, version_code=0)['questions']
+    else:
+        question_data = []
+        if device_id=='web':
+            question_data = question_list_public(cur_user_id, user_id, username=None, offset=offset, limit=2, version_code=0)['questions']
+        
+        posts = posts_query.offset(offset).limit(limit-len(question_data)).all()
+        posts = posts_to_dict(posts, cur_user_id)
+        data  = [{'type':'post', 'post':post} for post in posts]
+        for item in question_data:
+            idx = random.randint(0, len(data))
+            data.insert(idx, item)
+
+    next_index = offset+limit if data else -1
     
-    return {'stream': posts, 'count':len(posts), 'next_index':next_index, 'total':total_count}
+    return {'stream': data, 'count':len(data), 'next_index':next_index, 'total':total_count}
     
 
 def get_celeb_users_for_feed(offset, limit, cur_user_id=None, users=[], feed_type='home', visit=0):
@@ -1545,105 +1462,17 @@ def get_celeb_users_for_feed(offset, limit, cur_user_id=None, users=[], feed_typ
                                             ).limit(limit)
     return celeb_user_query.all()
 
-def get_question_from_followings(followings, count = 2, cur_user_id=None):
-    from random import choice
-    following = choice(followings)[0]
-    user = User.query.filter(User.id == following).first()
-    
-    questions_query = Question.query.filter(Question.question_to==following, 
-                                            Question.question_author!=cur_user_id,
-                                            Question.deleted==False,
-                                            Question.is_answered==False,
-                                            Question.is_ignored==False
-                                            ).outerjoin(Upvote
-                                            ).group_by(Question.id
-                                            ).order_by(Question.score.desc()
-                                            ).order_by(func.count(Upvote.id).desc()
-                                            ).limit(40)
-    questions = questions_query.all()
-    _q_len = len(questions)
-    if _q_len < 2:
-        return _q_len, [], following
-    else:
-        q1, q2 = choice(questions), choice(questions)
-        while q1 == q2:
-            q2 = choice(questions)
-        return _q_len, [q1, q2], following
-
 def home_feed(cur_user_id, offset, limit, web):
-    from math import sqrt
-    from random import randint
+    from manage_feed import get_home_feed
+
     if offset == -1:
         return {
                 'stream' : [],
                 'count' : 0,
                 'next_index' : -1
             }
-    #follows = Follow.query.filter(Follow.user==cur_user_id, Follow.unfollowed==False)
-    #followings = [follow.followed for follow in follows]
-    #followings = filter(lambda x:x,map(lambda x:x if x not in config.TEST_USERS else None, followings))
-    
-    celebs_following = db.session.execute(text("""SELECT followed from user_follows
-                                                    left join users on user_follows.followed = users.id 
-                                                    where user_follows.user = :cur_user_id and user_follows.unfollowed = :unfollowed and users.user_type = 2"""),
-                                            params={'cur_user_id':cur_user_id, 'unfollowed':False}
-                                        ).fetchall()
-    
 
-    #posts = Post.query.filter(or_(Post.answer_author.in_(followings),
-                                    #Post.question_author==cur_user_id)
-                    #).filter(Post.deleted==False, Post.answer_author!=cur_user_id
-                    #).order_by(Post.timestamp.desc()
-                    #).offset(offset
-                    #).limit(limit
-                    #).all()
-    
-    posts = db.session.execute(text("""SELECT posts.show_after, posts.id, posts.question_author,
-                                        posts.question, posts.answer_author, posts.media_url,
-                                        posts.thumbnail_url, posts.answer_type, posts.timestamp,
-                                        posts.deleted, posts.lat, posts.lon, posts.location_name,
-                                        posts.country_name, posts.country_code, posts.ready,
-                                        posts.popular, posts.view_count, posts.client_id
-                                        FROM posts INNER JOIN user_follows ON user_follows.followed = posts.answer_author
-                                        AND user_follows.user = :cur_user_id and user_follows.unfollowed=:unfollowed AND timestampdiff(minute, user_follows.timestamp, now()) >= posts.show_after 
-                                        WHERE deleted=false AND answer_author != :cur_user_id
-                                        ORDER BY posts.timestamp DESC,posts.show_after DESC LIMIT :offset, :limit"""),
-                                    params = {'cur_user_id':cur_user_id, 'offset':offset, 'limit':limit, 'unfollowed':False}
-                                )
-
-    posts = list(posts)
-    posts = posts_to_dict(posts, cur_user_id)
-    
-    shortner = 0
-    questions = []
-    feeds = []
-    _q_len = 0
-    if len(celebs_following) > 0:
-        _q_len, questions, following = get_question_from_followings(celebs_following, cur_user_id=cur_user_id)
-        if questions:
-            shortner = 1
-    
-    if posts:
-        feeds = [{'type':'post', 'post':post} for post in posts[:len(posts) - shortner]]
-
-    if questions:
-        question_user = thumb_user_to_dict(User.query.filter(User.id == following).first(), cur_user_id)
-        question_user['questions'] = []
-        for q in questions:
-            question_user['questions'].append(question_to_dict(q, cur_user_id))
-            if len(q.body) > 150:
-                break
-            if randint(0,9) % 2 == 0:
-                break
-        if posts:
-            idx = randint(0,len(posts)- 1)
-        else:
-            idx = 0
-        feeds.insert(idx, {'questions': question_user, 'type' : 'questions'} )
-    tentative_idx = -1
-    if int(len(celebs_following) * sqrt(_q_len)): 
-        tentative_idx = offset + limit + int(len(celebs_following) * sqrt(_q_len))
-    next_index = offset+limit-shortner if posts else tentative_idx if offset < 40 else -1
+    feeds, next_index = get_home_feed(cur_user_id, offset, limit)
 
     return {'stream': feeds, 'count':len(feeds), 'next_index':next_index}
 
@@ -1721,7 +1550,7 @@ def discover_posts(cur_user_id, offset, limit, web, lat=None, lon=None, visit=0)
 
 
 def create_forgot_password_token(username=None, email=None):
-    from mailwrapper import email_helper
+    from mail import make_email
     try:
         import hashlib
         if username:
@@ -1745,7 +1574,7 @@ def create_forgot_password_token(username=None, email=None):
 
         forgot_token = ForgotPasswordToken(user=user.id, token=token, email=user.email)
         db.session.add(forgot_token)
-        email_helper.forgot_password(user.email, token=token, reciever_name=user.first_name)
+        make_email.forgot_password(user.email, token=token, receiver_name=user.first_name, user_id=user.id)
         db.session.commit()
 
         return {'success':True}
@@ -1846,16 +1675,19 @@ def get_pending_post(client_id):
 
 def add_video_post(cur_user_id, question_id, video, answer_type,
                         lat=None, lon=None, client_id=None,
-                        show_after = None):
+                        show_after = None, answer_author_id=None):
     try:
         if cur_user_id in config.ADMIN_USERS:
             question = Question.query.filter(Question.id==question_id,
                                             Question.is_ignored==False,
                                             Question.deleted==False).one()
+            
             answer_author = question.question_to
+            if question.open_question:
+                answer_author = answer_author_id
         else:
             answer_author = cur_user_id
-            question = Question.query.filter(Question.question_to==cur_user_id,
+            question = Question.query.filter(or_(Question.question_to==cur_user_id, Question.open_question==True),
                                             Question.id==question_id,
                                             Question.is_ignored==False,
                                             Question.deleted==False).one()
@@ -1871,7 +1703,7 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
             except IOError:
                 raise CustomExceptions.BadRequestException('Couldnt read video file.')
             curuser = User.query.filter(User.id == cur_user_id).one()
-            cur_user_username = curuser.username
+
 
             if not client_id:
                 client_id = question.short_id
@@ -1897,13 +1729,14 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
                             thumbnail_url=thumbnail_url,
                             video_type='answer_video',
                             object_id=post.id,
-                            username=cur_user_username)
-            async_encoder.encode_video_task.delay(video_url, username=cur_user_username)
-
+                            username=curuser.username)
+            async_encoder.encode_video_task.delay(video_url, username=curuser.username)
+            sq.push({'url':video_url})
 
             db.session.commit()
             redis_pending_post.delete(client_id)
             notification.new_post(post_id=post.id, question_body=question.body)
+
 
         return {'success': True, 'id': str(post.id), 'post':post_to_dict(post, cur_user_id)}
 
@@ -1954,7 +1787,7 @@ def get_notifications(cur_user_id, device_id, version_code, notification_categor
                                     "id" : 'update_required_ios',
                                     "text" : "A new version of Frankly.me is available. Click here to update.",
                                     "styled_text":"A new version of Frankly.me is available. Click here to update.",
-                                    "icon" : "https://d30y9cdsu7xlg0.cloudfront.net/png/68793-84.png",
+                                    "icon_url" : "https://d30y9cdsu7xlg0.cloudfront.net/png/68793-84.png",
                                     "group_id": 'update_required',
                                     "link" : app_store_link,
                                     "deeplink" : app_store_link,
@@ -1996,7 +1829,7 @@ def get_notifications(cur_user_id, device_id, version_code, notification_categor
                         "id" : row[0],
                         "text" : row[1].replace('<b>', '').replace('</b>', ''),
                         "styled_text":row[1],
-                        "icon" : row[2],
+                        "icon_url" : row[2],
                         "group_id": '-'.join([str(row[3]),str(row[4])]),
                         "link" : row[5],
                         "deeplink" : row[5],
@@ -2008,7 +1841,6 @@ def get_notifications(cur_user_id, device_id, version_code, notification_categor
 
     count = len(notifications)
     next_index = -1 if count<original_limit else offset+limit
-    print {'notifications':notifications, 'count':count, 'next_index':next_index}
 
     return {'notifications':notifications, 'count':count, 'next_index':next_index, 'current_time':int(time.mktime(datetime.datetime.now().timetuple()))}
 
@@ -2167,6 +1999,19 @@ def view_video(url, count=1):
     url = url.replace('http://d35wlof4jnjr70.cloudfront.net/', 'https://s3.amazonaws.com/franklymestorage/')
     redis_views.incr(url, count)
 
+
+def email_tracking(tracking_id):
+    db.session.execute(text('''Update email_sent set open_count = open_count + 1,
+                              last_open_at = :now
+                              where email_id = :id
+                           '''), params={
+                              "id": tracking_id,
+                              "now": datetime.datetime.now()
+                        })
+    db.session.commit()
+    return config.PIXEL_IMAGE_URL + "?date=" + str(datetime.datetime.now())
+
+
 def query_search(cur_user_id, query, offset, limit, version_code=None):
     results = []
     if 'test' in query:
@@ -2197,18 +2042,6 @@ def query_search(cur_user_id, query, offset, limit, version_code=None):
     response['q'] = query
     return response
 
-def add_contact(name, email, organisation, message, phone):
-    from base64 import b64encode as enc
-
-    b64msg = enc(name + email + organisation + message + phone)
-    contact = ContactUs.query.filter(ContactUs.b64msg == b64msg).all()
-    if contact:
-        return {'success' : True}
-    else:
-        contact = ContactUs(name, email, organisation, message, phone, b64msg)
-        db.session.add(contact)
-        db.session.commit()
-    return {'success' : True}
 
 def return_none_feed():
     return {
@@ -2219,8 +2052,38 @@ def return_none_feed():
 
 def prompt_for_profile_video(user_id):
     time_threshold = datetime.datetime.now() - datetime.timedelta(hours=48)
-    return not bool(User.query.filter(User.id==user_id, User.user_since<time_threshold, User.profile_picture!=None).count())
+    if user_id == '481bc87c43bc4812b0e333ecd9cd4c2c':
+        return True
+    return bool(User.query.filter(User.id==user_id, User.user_since<time_threshold, User.profile_video==None).count())
 
+
+def user_profile_request(current_user_id, request_for, request_type):
+
+    request_id = get_item_id()
+    result = db.session.execute(text('''
+                                        INSERT INTO profile_requests
+                                        (id, request_for, request_by, request_type, created_at)
+                                        VALUES
+                                        (:id, :request_for, :request_by, :request_type, :created_at)
+                                        ON DUPLICATE KEY
+                                        UPDATE request_count = request_count + 1, updated_at=:updated_at
+                                     '''),
+                                params={
+                                    'id': request_id,
+                                    'request_for': request_for,
+                                    'request_by': current_user_id,
+                                    'request_type': request_type,
+                                    'created_at': datetime.datetime.now(),
+                                    'updated_at': datetime.datetime.now()
+                                })
+    db.session.commit()
+
+   
+    notification.user_profile_request(user_id=current_user_id, request_for=request_for,
+                                      request_type=request_type,
+                                      request_id=request_id)
+
+    return {'success': True}
 
 
 def get_new_discover(current_user_id, offset, limit, device_id, version_code, visit=0, append_top=''):
@@ -2230,8 +2093,10 @@ def get_new_discover(current_user_id, offset, limit, device_id, version_code, vi
     
     resp = [{'type':'user', 'user':guest_user_to_dict(current_user_id, u)} for u in users]
     
-    if offset ==0 and current_user_id and prompt_for_profile_video(current_user_id):
-        resp = [{'type':'upload_profile_video', 'upload_profile_video':{}}] + resp
+    add_profile_video_prompt = False
+
+    if offset ==0 and current_user_id:
+        add_profile_video_prompt = prompt_for_profile_video(current_user_id)
         limit -= 1
     
     day_count = 0
@@ -2241,6 +2106,8 @@ def get_new_discover(current_user_id, offset, limit, device_id, version_code, vi
     resp.extend(get_discover_list(current_user_id, offset, limit, 
                                     day_count=day_count, add_super=True, 
                                     exclude_users=[u.id for u in users]))
+    if add_profile_video_prompt:
+        resp.insert(3, {'type':'upload_profile_video', 'upload_profile_video':{}})
 
     
     next_index = offset+limit if len(resp) else -1
@@ -2480,7 +2347,6 @@ def save_feedback_response(cur_user_id, medium, message, version):
     db.session.commit()
     return {'success': True}
 
-
 def update_post_share(current_user_id, post_id, platform):
     from models import PostShare
     post_share = PostShare(user=current_user_id, post=post_id, platform=platform)
@@ -2629,27 +2495,45 @@ def contact_file_upload(current_user_id, uploaded_file, device_id):
 
 def user_upload_contacts(user_id, device_id, contacts):
     from AES_Encryption import decryption
-    contacts = json.loads(decryption(contacts))
+    contacts_json = json.loads(decryption(contacts))
     empty_contacts_filter = lambda contact: contact['email'] or contact['number']
-    contacts = filter(empty_contacts_filter, contacts['contacts'])
+    contacts = filter(empty_contacts_filter, contacts_json['contacts'])
     return contacts
 
-    user_contacts = []
-    query_contacts = set()
-    query_emails = set()
+    for item in contacts:
+        for number in item['number']:
+            number = number.replace(' ', '').replace('-', '').replace('.', '')
+            contact_object = Contact(contact=number, contact_type='phone_number', contact_name=item['name'], user=user_id)
+            db.session.add(contact_object)
+            try:
+                db.session.commit()
+            except Exception as e:
+                print e
 
-    for c in contacts:
-        c['number'] = [i.replace(' ', '') for i in c['number']]
-        c['email'] = [i.replace(' ', '') for i in c['email']]
-        user_contacts.append(UserContact(name=c['name'] , phones=c['number'] , emails=c['email']))
-        
-        if c['number']:
-            query_contacts.update([i[-9:] for i in c['number']])
-        if c['email']:
-            query_emails.update(c['email'])
+        for email in item['email']:
+            email = email.strip()
+            contact_object = Contact(contact=email, contact_type='phone_email', contact_name=item['name'], user=user_id)
+            db.session.add(contact_object)
+            try:
+                db.session.commit()
+            except Exception as e:
+                print e
+    
+    return {'success':True}
 
-    query_contacts = list(query_contacts)
-    query_emails = list(query_emails)
+def add_contact(name, email, organisation, message, phone):
+    from base64 import b64encode as enc
+
+    b64msg = enc(name + email + organisation + message + phone)
+    contact = ContactUs.query.filter(ContactUs.b64msg == b64msg).all()
+    if contact:
+        return {'success' : True}
+    else:
+        contact = ContactUs(name, email, organisation, message, phone, b64msg)
+        db.session.add(contact)
+        db.session.commit()
+    return {'success' : True}
+
 
 def get_resized_image(image_url, height=262, width=262):
     from image_processors import resize_video_thumb
@@ -2659,4 +2543,563 @@ def get_resized_image(image_url, height=262, width=262):
     if os.path.exists(image_path):
         os.remove(image_path)
     return resized_image
+
+
+def register_bad_email(email,reason_type,reason_subtype):
+    new_bad_email = BadEmail(email,reason_type,reason_subtype)
+    db.session.add(new_bad_email)
+    try:
+        db.session.commit() # TODO : handle duplicate insert in unique column
+    except Exception as e: 
+        db.session.rollback()
+        print e.message
+    return {'success':'true', 'email':email , 'reason':reason_type}
+
+
+def list_name_available(name):
+    if len(name)<2 or len(name)>30:
+        return False
+    for char in name:
+        if char not in config.ALLOWED_CHARACTERS+['-']:
+            return False
+    return not bool(List.query.filter(List.name==name).count())
+
+
+def list_display_name_available(name):
+    if len(name)<2 or len(name)>40:
+        return False
+    return True
+
+
+def lists_to_dict(lists, cur_user_id=None):
+    if type(lists) != list:
+        lists = [lists]
+    list_dicts = []
+    for l in lists:
+        list_dict = {
+                    'id'          :l.id,
+                    'name'        :l.name,
+                    'display_name':l.display_name,
+                    'icon_image'  :l.icon_image,
+                    'banner_image':l.banner_image,
+                    'is_owner'    :l.owner==cur_user_id if cur_user_id else None,
+                    'followable'  :l.followable,
+                    'if_following':False,
+                    'show_on_remote':l.show_on_remote
+                    }
+        list_dicts.append(list_dict)
+    return list_dicts
+
+
+def list_items_to_dict(list_items, cur_user_id=None):
+    if type(list_items) != list:
+        list_items = [list_items]
+    list_item_dicts = []
+
+    for item in list_items:
+        if item.child_user_id:
+            item = User.query.filter(User.id==item.child_user_id).first()
+        else:
+            item = List.query.filter(List.id==item.child_list_id).first()
+        if type(item) == User:
+
+            item_dict = {
+                                'id'             : item.id,
+                                'username'       : item.username,
+                                'first_name'     : item.first_name,
+                                'profile_picture': item.profile_picture,
+                                'gender'         : item.gender,
+                                'user_type'      : item.user_type,
+                                'bio'            : item.bio,
+                                'user_title'     : item.user_title,
+                                'is_following'   : False
+                            }
+            item_dict = {'type':'user', 'user':item_dict} 
+        
+        elif type(item) == List:
+            item_dict = lists_to_dict([item], cur_user_id)[0]
+            item_dict = {'type':'list', 'list':item_dict} 
+        list_item_dicts.append(item_dict)
+    return list_item_dicts
+
+
+def create_list(cur_user_id, name, display_name, icon_image=None, banner_image=None, owner=None, show_on_remote=False, score=0):
+    if not list_name_available(name):
+        raise CustomExceptions.UserAlreadyExistsException('That list name is already taken')
+    if not list_display_name_available(name):
+        raise CustomExceptions.UserAlreadyExistsException('That list display name is not valid')
+
+    new_list = List(id=get_item_id(), name=name, display_name=display_name, created_by=cur_user_id, owner=owner or cur_user_id, show_on_remote=show_on_remote, score=score)
+    db.session.add(new_list)
+    db.session.commit()
+    return {'success':True, 'list':lists_to_dict(new_list, cur_user_id)[0]}
+
+
+def edit_list(cur_user_id, list_id, name=None, display_name=None, icon_image=None, banner_image=None, owner=None, show_on_remote=None, score=None):
+    try:
+        list_to_edit = List.query.filter(List.id==list_id, List.owner==cur_user_id, List.deleted==False).one()
+    except NoResultFound:
+        raise CustomExceptions.ObjectNotFoundException('Either the list is deleted or you dont have permission to edit it.')
+    changed = False
+
+    if name:
+        if not list_name_available(name):
+            raise CustomExceptions.UserAlreadyExistsException('That list name is already taken')
+        list_to_edit.name = name
+        changed = True
+
+    if display_name:
+        if not list_display_name_available(name):
+            raise CustomExceptions.UserAlreadyExistsException('That list display name is not valid')
+        list_to_edit.display_name = display_name
+        changed = True
+
+    if icon_image:
+        tmp_path = '/tmp/request/{random_string}.jpeg'.format(random_string=uuid.uuid1().hex)
+        icon_image.save(tmp_path)
+        icon_image_url = media_uploader.upload_user_image(user_id=cur_user_id, image_file_path=tmp_path, image_type='list_icon_image')
+        try:
+            os.remove(tmp_path)
+        except:
+            pass
+        list_to_edit.icon_image = icon_image_url
+        changed = True
+
+    if banner_image:
+        tmp_path = '/tmp/request/{random_string}.jpeg'.format(random_string=uuid.uuid1().hex)
+        banner_image.save(tmp_path)
+        banner_image_url = media_uploader.upload_user_image(user_id=cur_user_id, image_file_path=tmp_path, image_type='list_banner_image')
+        try:
+            os.remove(tmp_path)
+        except:
+            pass
+        list_to_edit.banner_image = banner_image_url
+        changed = True
+
+    if owner:
+        list_to_edit.owner = owner
+        changed = True
+
+    if show_on_remote!=None:
+        list_to_edit.show_on_remote = show_on_remote
+        changed = True
+
+    if score!=None:
+        list_to_edit.score = score
+        changed = True
+
+    if changed:
+        list_to_edit.updated_at = datetime.datetime.now()
+        list_to_edit.updated_by = cur_user_id
+        db.session.add(list_to_edit)
+        db.session.commit()
+
+    return {'success':True, 'list':lists_to_dict([list_to_edit], cur_user_id)[0]}
+
+
+def delete_list(cur_user_id, list_id):
+    success = List.query.filter(List.id==list_id, List.owner==cur_user_id).update({'deleted':True})
+    db.session.commit()
+    return {'success':True, 'list_id':list_id}
+
+
+def add_child_to_list(cur_user_id, parent_list_id, child_user_id=None, child_list_id=None, show_on_list=False, score=0, featured=False):
+    if (not child_user_id and not child_list_id) or (child_list_id and child_user_id):
+        raise CustomExceptions.BadRequestException('Either child_user_id or child_list_id must be provided.')
+    try:
+        parent_list = List.query.filter(List.id==parent_list_id, List.owner==cur_user_id, List.deleted==False).one()
+    except NoResultFound:
+        raise CustomExceptions.ObjectNotFoundException('Either the list is deleted or you dont have permission to edit it.')
+    if ListItem.query.filter(ListItem.parent_list_id==parent_list_id,
+                            ListItem.child_list_id==child_list_id,
+                            ListItem.child_user_id==child_user_id
+                        ).first():
+        raise CustomExceptions.BadRequestException('child_user_id or child_list_id is already a child of the parent list.')
+
+
+    list_item = ListItem(parent_list_id=parent_list_id, created_by=cur_user_id, child_user_id=child_user_id,
+                child_list_id=child_list_id, show_on_list=show_on_list, score=score, is_featured=featured)
+
+    db.session.add(list_item)
+    db.session.commit()
+    return {'success':True, 'list_item':list_items_to_dict([list_item], cur_user_id)[0]}
+
+
+def edit_list_child(cur_user_id, parent_list_id, child_user_id, child_list_id, show_on_list=None, score=None, deleted=False, featured=None):
+    if (not child_user_id and not child_list_id) or (child_list_id and child_user_id):
+        raise CustomExceptions.BadRequestException('Either child_user_id or child_list_id must be provided.')
+    try:
+        parent_list = List.query.filter(List.id==list_id, List.owner==cur_user_id, List.deleted==False).one()
+    except NoResultFound:
+        raise CustomExceptions.ObjectNotFoundException('Either the list is deleted or you dont have permission to edit it.')
+
+    try:
+        list_item = ListItem.query.filter(ListItem.parent_list_id==parent_list_id,
+                            ListItem.child_list_id==child_list_id,
+                            ListItem.child_user_id==child_user_id
+                        ).one()
+    except NoResultFound:
+        raise CustomExceptions.ObjectNotFoundException('The given user_id or list_id is not a child of the parent list.')
+
+
+    if show_on_list != None:
+        list_item.show_on_list = show_on_list
+    if score != None:
+        list_item.score = score
+    if deleted != None:
+        list_item.deleted = deleted
+    if featured != None:
+        list_item.is_featured = is_featured
+
+    db.session.add(list_item)
+    db.session.commit()
+    return {'success':True, 'list_item':list_items_to_dict(list_item, cur_user_id)[0]}
+
+def get_list_from_name_or_id(list_id):
+    if len(list_id)>30:
+        list_object = List.query.filter(List.id==list_id, List.deleted==False).one()
+    else:
+        list_object = List.query.filter(List.name==list_id, List.deleted==False).one()
+    return list_object
+
+
+def get_list_items(cur_user_id, list_id, offset=0, limit=20):
+    try:
+        print list_id
+        if not list_id:
+            list_dicts = [{'type':'list', 'list':l} for l in lists_to_dict(get_top_level_lists(offset=offset, limit=limit), cur_user_id)]
+        else:
+            parent_list = get_list_from_name_or_id(list_id)
+
+            list_items = ListItem.query.filter(ListItem.parent_list_id==parent_list.id,
+                                                    ListItem.deleted==False,
+                                                    ListItem.show_on_list==True
+                                                ).order_by(ListItem.score
+                                                ).offset(offset
+                                                ).limit(limit
+                                                ).all()
+            print list_items
+            list_dicts = list_items_to_dict(list_items, cur_user_id)
+            print list_dicts
+
+        count = len(list_dicts)
+        next_index = -1 if count<limit else offset+limit
+
+        return {'list_items':list_dicts, 
+                'list_id':list_id,
+                'count':count,
+                'next_index':next_index}
+    except NoResultFound:
+        raise CustomExceptions.ObjectNotFoundException('The list does not exist or has been deleted')
+
+
+def get_top_level_lists(offset=0, limit=20):
+    lists = List.query.filter(List.show_on_remote==True,
+                                List.deleted==False
+                            ).order_by(List.score
+                            ).offset(offset
+                            ).limit(limit
+                            ).all()
+
+    return lists
+
+
+def get_remote(cur_user_id, offset=0, limit=20):
+    remote = []
+    if offset == 0:
+        feed_banner = {'type':'banner',
+                        'content_type':'channel',
+                        'channel':{
+                                    'bg_image':None,
+                                    'icon':None,
+                                    'name':'Feed',
+                                    'channel_id':'feed',
+                                    'description':None
+                                    }
+                        }
+        discover_banner = {'type':'banner',
+                            'content_type':'channel',
+                            'channel':{
+                                        'bg_image':None,
+                                        'name':'Discover',
+                                        'icon':None,
+                                        'channel_id':'discover',
+                                        'description':None
+                                        }
+                            }
+        remote.extend([feed_banner, discover_banner])
+        limit -=2
+
+    list_dicts = lists_to_dict(get_top_level_lists(offset=offset, limit=limit), cur_user_id)
+    remote.extend([{'type':'banner', 'content_type':'list', 'list':list_dict} for list_dict in list_dicts])
+
+    count = len(remote)
+    next_index = -1 if count<limit else offset+limit
+
+    return {'count':count, 'next_index':next_index, 'stream':remote}
+
+def get_list_user_ids(list_id):
+    queries = """SELECT * FROM (SELECT list_items.child_user_id, list_items.parent_list_id, list_items.score
+                                FROM list_items 
+                                WHERE list_items.parent_list_id = :parent_list_id 
+                                    AND list_items.deleted = False
+                                    AND list_items.child_user_id is NOT null
+
+                                UNION
+
+                                SELECT list_items.child_user_id, list_items.parent_list_id, list_items.score
+                                FROM list_items 
+                                WHERE list_items.parent_list_id in (SELECT list_items.child_list_id 
+                                                                    FROM list_items 
+                                                                    WHERE list_items.parent_list_id = :parent_list_id 
+                                                                        AND list_items.deleted = False
+                                                                        AND list_items.child_list_id is NOT null
+                                                                    )
+                                    AND list_items.deleted = False
+                                    AND list_items.child_user_id is NOT null
+                                ) as result
+            ORDER BY result.parent_list_id=:parent_list_id, result.score
+        """
+    results = db.session.execute(text(queries), params={'parent_list_id':list_id})
+    
+    user_ids = [row[0] for row in results]
+    print user_ids
+    return user_ids
+
+    
+def get_featured_users(cur_user_id, list_id, offset=0, limit=20):
+    try:
+        if list_id:
+            parent_list = get_list_from_name_or_id(list_id)
+            users = User.query.join(ListItem, User.id==ListItem.child_user_id
+                                    ).filter(ListItem.parent_list_id==parent_list.id,
+                                                ListItem.deleted==False,
+                                                ListItem.child_user_id!=None,
+                                                ListItem.show_on_list==True,
+                                                User.deleted==False
+                                            ).order_by(ListItem.score
+                                            ).offset(offset
+                                            ).limit(limit
+                                            ).all()
+            print users
+            print parent_list
+        else:
+            from models import DiscoverList
+            users = User.query.join(DiscoverList, User.id==DiscoverList.user
+                                ).order_by(DiscoverList.is_super.desc(), DiscoverList.id.desc()).offset(offset).limit(limit).all()
+        print users
+        user_dicts = guest_users_to_dict(users, cur_user_id)
+        user_dicts = [{'type':'user', 'user':user_dict} for user_dict in user_dicts]
+        
+        count = len(user_dicts)
+        next_index = -1 if count<limit else offset+limit
+        return {'count':count, 'next_index':next_index, 'stream':user_dicts}
+    except NoResultFound:
+        raise CustomExceptions.ObjectNotFoundException('List has been deleted or does not exit')
+
+
+
+def get_trending_users(cur_user_id, list_id, offset=0, limit=20):
+    try:
+        if list_id:
+            parent_list = get_list_from_name_or_id(list_id)
+        if list_id:
+            user_ids = get_list_user_ids(parent_list.id)
+            users = User.query.filter(User.id.in_(user_ids)).offset(offset).limit(limit).all()
+        else:
+            users = User.query.join(DiscoverList, User.id==DiscoverList.user
+                                ).filter(User.deleted==False
+                                ).order_by(User.id
+                                ).offset(offset).limit(limit).all()
+
+        user_dicts = guest_users_to_dict(users, cur_user_id)
+        user_dicts = [{'type':'user', 'user':user_dict} for user_dict in user_dicts]
+        
+        count = len(user_dicts)
+        next_index = -1 if count<limit else offset+limit
+        return {'count':count, 'next_index':next_index, 'stream':user_dicts}
+    except NoResultFound:
+        raise CustomExceptions.ObjectNotFoundException('List has been deleted or does not exit')
+
+
+
+def get_featured_posts(cur_user_id, list_id, offset=0, limit=20):
+    try:
+        if list_id:
+            parent_list = get_list_from_name_or_id(list_id)
+            posts = Post.query.filter(Post.deleted==False,
+                                Post.answer_author.in_(get_list_user_ids(parent_list.id))
+                                ).order_by(Post.id.desc()).offset(offset).limit(limit).all()
+        else:
+            posts = Post.query.join(DiscoverList, Post.id==DiscoverList.post
+                                ).filter(Post.deleted==False
+                                ).order_by(DiscoverList.id.desc()
+                                ).offset(offset
+                                ).limit(limit
+                                ).all()
+
+
+        post_dicts = posts_to_dict(posts, cur_user_id)
+        post_dicts = [{'type':'post', 'post':post_dict} for post_dict in post_dicts]
+        
+        count = len(post_dicts)
+        next_index = -1 if count<limit else offset+limit
+        return {'count':count, 'next_index':next_index, 'stream':post_dicts}
+    except NoResultFound:
+        raise CustomExceptions.ObjectNotFoundException('List has been deleted or does not exit')
+
+
+def get_trending_posts(cur_user_id, list_id, offset=0, limit=20):
+    try:
+        if list_id:
+            parent_list = get_list_from_name_or_id(list_id)
+            posts = Post.query.filter(Post.deleted==False,
+                                Post.answer_author.in_(get_list_user_ids(parent_list.id))
+                                ).order_by(Post.id).offset(offset).limit(limit).all()
+
+        else:
+            posts = Post.query.join(DiscoverList, Post.id==DiscoverList.post
+                                ).filter(Post.deleted==False
+                                ).order_by(Post.id.desc()
+                                ).offset(offset
+                                ).limit(limit
+                                ).all()
+
+        post_dicts = posts_to_dict(posts, cur_user_id)
+        post_dicts = [{'type':'post', 'post':post_dict} for post_dict in post_dicts]
+        
+        count = len(post_dicts)
+        next_index = -1 if count<limit else offset+limit
+        return {'count':count, 'next_index':next_index, 'stream':post_dicts}
+    except NoResultFound:
+        raise CustomExceptions.ObjectNotFoundException('List has been deleted or does not exit')
+
+
+def get_featured_questions(cur_user_id, list_id, offset=0, limit=20):
+    try:
+        if list_id:
+            parent_list = get_list_from_name_or_id(list_id)
+            questions = Question.query.filter(Question.deleted==False,
+                                            Question.is_answered==False,
+                                            Question.is_ignored==False,
+                                            Question.flag.in_([1, 2]),
+                                            Question.question_to.in_(get_list_user_ids(parent_list.id))
+                                        ).order_by(Question.score.desc()
+                                        ).offset(offset
+                                        ).limit(limit
+                                        ).all()
+        else:
+            questions = Question.query.filter(Question.deleted==False,
+                                            Question.is_answered==False,
+                                            Question.is_ignored==False,
+                                            Question.flag.in_([1, 2]),
+                                            Question.question_to.in_([item.user for item in DiscoverList.query.filter(DiscoverList.user!=None).all()])
+                                        ).order_by(Question.score.desc()
+                                        ).offset(offset
+                                        ).limit(limit
+                                        ).all()
+
+        question_dicts = questions_to_dict(questions, cur_user_id)
+        question_dicts = [{'type':'question', 'question':question_dict} for question_dict in question_dicts]
+        
+        count = len(question_dicts)
+        next_index = -1 if count<limit else offset+limit
+        return {'count':count, 'next_index':next_index, 'stream':question_dicts}
+    except NoResultFound:
+        raise CustomExceptions.ObjectNotFoundException('List has been deleted or does not exit')
+
+
+def get_trending_questions(cur_user_id, list_id, offset=0, limit=20):
+    try:
+        if list_id:
+            parent_list = get_list_from_name_or_id(list_id)
+
+            questions = Question.query.filter(Question.deleted==False,
+                                            Question.is_answered==False,
+                                            Question.is_ignored==False,
+                                            Question.flag.in_([1, 2]),
+                                            Question.question_to.in_(get_list_user_ids(parent_list.id))
+                                            ).outerjoin(Upvote
+                                            ).group_by(Question.id
+                                            ).order_by(func.count(Upvote.id).desc(), Question.score.desc()
+                                            ).offset(offset
+                                            ).limit(limit
+                                            ).all()
+        else:
+            questions = Question.query.filter(Question.deleted==False,
+                                            Question.is_answered==False,
+                                            Question.is_ignored==False,
+                                            Question.flag.in_([1, 2]),
+                                            Question.question_to.in_([item.user for item in DiscoverList.query.filter(DiscoverList.user!=None).all()])
+                                            ).outerjoin(Upvote
+                                            ).group_by(Question.id
+                                            ).order_by(func.count(Upvote.id).desc(), Question.score.desc()
+                                            ).offset(offset
+                                            ).limit(limit
+                                            ).all()
+        question_dicts = questions_to_dict(questions, cur_user_id)
+        question_dicts = [{'type':'question', 'question':question_dict} for question_dict in question_dicts]
+        
+        count = len(question_dicts)
+        next_index = -1 if count<limit else offset+limit
+        return {'count':count, 'next_index':next_index, 'stream':question_dicts}
+    except NoResultFound:
+        raise CustomExceptions.ObjectNotFoundException('List has been deleted or does not exit')
+
+
+def get_list_feed(cur_user_id, list_id, offset=0, limit=20, list_type='featured'):
+    try:
+        parent_list = get_list_from_name_or_id(list_id)
+        '''
+        users = User.query.join(ListItem, User.id==ListItem.child_user_id
+                                ).filter(ListItem.parent_list_id==parent_list.id,
+                                            ListItem.deleted==False,
+                                            ListItem.child_user_id!=None,
+                                            ListItem.show_on_list==True,
+                                            User.deleted==False
+                                        ).order_by(ListItem.score
+                                        ).offset(offset
+                                        ).limit(1
+                                        ).all()
+        '''
+
+        #users = [{'type':'user', 'user':u} for u in guest_users_to_dict(users, cur_user_id)] if users else []
+        users = []
+
+        if list_type == 'featured':
+            questions = get_featured_questions(cur_user_id, parent_list.id, offset=offset, limit=3)['stream']
+
+            posts = Post.query.filter(Post.deleted==False,
+                            Post.answer_author.in_(get_list_user_ids(parent_list.id))
+                            ).order_by(Post.id.desc()).offset(offset).limit(limit-len(users)-len(questions)).all()
+        
+        if list_type == 'trending':
+            questions = get_trending_questions(cur_user_id, parent_list.id, offset=offset, limit=3)['stream']
+
+            posts = Post.query.filter(Post.deleted==False,
+                            Post.answer_author.in_(get_list_user_ids(parent_list.id))
+                            ).order_by(Post.view_count.desc()).offset(offset).limit(limit-len(users)-len(questions)).all()
+
+
+        posts = [{'type':'post', 'post':p} for p in posts_to_dict(posts, cur_user_id)] if posts else []
+        stream = posts
+        for item in users+questions:
+            idx = random.randint(0, len(stream))
+            stream.insert(idx, item)
+
+        next_index = -1 if len(stream)<limit else offset+limit
+        return {'stream':stream, 'count':len(stream), 'next_index':next_index}
+
+    except NoResultFound:
+        raise CustomExceptions.ObjectNotFoundException('List has been deleted or does not exit')
+
+
+def suggest_answer_author(question_body):
+    users = User.query.filter(User.username.in_(['arvindkejriwal', 'javedakhtar', 'ranveerbrar'])).all()
+    return {'count':len(users), 'users':[thumb_user_to_dict(user) for user in users]}
+
+
+if __name__ == '__main__':
+    dic = {'https://s3.amazonaws.com/franklyapp/00d5b77a7a8d49b68abcfd9009cc5406/videos/04b01dc2ad5011e4917e22000b5119ba.mp4':1,'https://s3.amazonaws.com/franklyapp/0178bd7a07e94863abbb72f69eaae288/videos/5d9c45e09a2811e4abcb22000b5119ba.mp4':2}
+    print get_video_states(dic)
 

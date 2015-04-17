@@ -8,6 +8,7 @@ api.add_resource(LoginEmail, '/login/email')
 
 api.add_resource(UserProfile, '/user/profile/<user_id>')
 api.add_resource(UserUpdateForm, '/user/update_profile/<user_id>')
+api.add_resource(UserProfileRequest, '/user/profile/request')
 
 api.add_resource(UserFollow, '/user/follow')
 api.add_resource(UserFollowers, '/user/followers/<user_id>')
@@ -76,6 +77,18 @@ api.add_resource(BadUsernames, '/utils/badusernames')
 api.add_resource(BucketName, '/utils/bucket_name')
 
 
+api.add_resource(GetListItems, '/list/items')
+api.add_resource(GetRemote, '/remote/get')
+api.add_resource(GetListFeed, '/list/feed')
+api.add_resource(GetListTrending, '/list/trending/<object_type>')
+api.add_resource(GetListFeatured, '/list/featured/<object_type>')
+api.add_resource(EmailPixel, '/pixie')
+
+
+
+
+#api.add_resource(ListFollow, '/list/follow')
+
 api.add_resource(Logout, '/logout')
 api.add_resource(VideoView, '/videoview')
 
@@ -106,9 +119,11 @@ api.add_resource(ArrowDirection, '/one_direction')
 
 api.add_resource(ImageResizer, '/image_resize')
 
+api.add_resource(ReceiveSNSNotifications, '/email/report')
+api.add_resource(PublicDocumentation, '/documentation')
 
+api.add_resource(AnswerAuthorSuggest, '/suggest/answer_author')
 
-#api.add_resource(PostLikeUsers, '/post/like/users')
 
 '''
 

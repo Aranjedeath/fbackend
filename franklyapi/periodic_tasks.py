@@ -2,12 +2,18 @@ from video_db import update_view_count_to_db, redis_views, update_total_view_cou
 from app import db
 from models import User
 from analytics import stats
-from mailwrapper import email_helper
-from notification import notification_decision
+from mail import admin_email
+from notification import notification_decision, push_notification
 
 import datetime
 import async_encoder
 import traceback
+
+'''
+@ 00:00 every day
+'''
+def log_video_count():
+    stats.video_view_count_logger()
 
 '''
 @ 00:30 every day
@@ -16,10 +22,10 @@ def decide_popular_users_based_on_questions_asked():
     notification_decision.decide_popular_users()
 
 '''
-@ 7 PM Every day
+@ 10 AM Every day
 '''
-def notification_question_asked():
-    notification_decision.question_asked_notifications()
+def push_stats():
+    push_notification.stats()
 
 '''
 @ Every 5 minutes
@@ -98,18 +104,14 @@ def reassign_pending_video_tasks():
             for profile in profiles:
                 if not getattr(v, profile):
                     profiles_to_encode.append(profile)
-            async_encoder.encode_video_task.delay(video_url=v.url, username=v.username, profiles=profiles_to_encode, queues=dict(low=low_priority_queue, ultralow=retry_queue, medium=retry_queue, opt=retry_queue))
-            print profiles_to_encode, v.url
-            other_video_count +=1
+            #async_encoder.encode_video_task.delay(video_url=v.url, username=v.username, profiles=profiles_to_encode, queues=dict(low=low_priority_queue, ultralow=retry_queue, medium=retry_queue, opt=retry_queue))
+            #print profiles_to_encode, v.url
+            #other_video_count +=1
     print 'Virgin Videos Assigned:', virgin_video_count
     print 'Other Videos Assigned:', other_video_count
 
 
-'''
-@ 00:00 every day
-'''
-def log_video_count():
-    stats.video_view_count_logger()
+
 
 '''
 @ 11:00 AM Monday
@@ -124,19 +126,19 @@ def daily_report():
     stats.daily_content_report()
 
 '''
-@ 9:00 AM and 6:00 PM Every day
+@ 11:00 AM and 5:00 PM Every day
 '''
 def twice_a_day_report():
-    # interval = 15 if 9 am
-    # interval = 9  if 6 pm
-    stats.intra_day_content_report(interval=15 if datetime.datetime.now().hour > 12 else 9)
+    # interval = 18 if 11 am
+    # interval = 6  if 5 pm
+    stats.intra_day_content_report(interval=18 if datetime.datetime.now().hour < 12 else 6)
 
 
 '''
 @ Every 6 hours
 '''
 def heartbeat():
-    email_helper.cron_job_update()
+    admin_email.cron_job_update()
 
 
 
@@ -163,12 +165,12 @@ if __name__ == '__main__':
 
     'decide_popular': decide_popular_users_based_on_questions_asked,
 
-    'notification_question_asked': notification_question_asked
+    'push_stats': push_stats
         }
     try:
         method_dict[args[0]]()
     except Exception as e:
-        email_helper.cron_job_update(args[0], traceback.format_exc(e))
+        admin_email.cron_job_update(args[0], traceback.format_exc(e))
 
 
 

@@ -15,11 +15,13 @@ class DiscoverList(Base):
     #show_order     = Column(Integer())
     removed        = Column(Boolean(), default=False)
     dirty_index    = Column(Integer())
+    display_date   = Column(DateTime(), nullable=False)
+
 
     def __init__(self, post=None, question=None, user=None,
                                     is_super=False, display_on_day=0,
                                     added_at=datetime.datetime.now(),
-                                    show_order=None, removed=False, dirty_index=None):            
+                                    show_order=None, removed=False, dirty_index=None, display_date=datetime.datetime.now()):            
         if post:
             self.post = post
         elif question:
@@ -34,6 +36,7 @@ class DiscoverList(Base):
         self.show_order     = show_order
         self.id             = id
         self.removed        = removed
+        self.display_date   = display_date
 
 
     def __repr__(self):
@@ -119,3 +122,22 @@ class DateSortedItems(Base):
             return '<DateSortedItems: %r -- User: %r >' %(self.id, self.user)
         elif self.post:
             return '<DateSortedItems: %r -- Post: %r >' %(self.id, self.post)
+
+class UserScroll(Base):
+    __tablename__      = 'user_scrolls'
+    user               = Column(CHAR(32), ForeignKey('users.id'), primary_key=True)
+    recycled_upto      = Column(Integer, default=0)
+    last_recycled_upto = Column(Integer, default=0)
+    scrolled_upto      = Column(Integer, default=0)
+    feed_update_count  = Column(Integer, default=0)
+    fed_upto           = Column(CHAR(32), ForeignKey('posts.id'))
+    last_visit         = Column(DateTime, default=datetime.datetime.now())
+    last_fed           = Column(DateTime, default=datetime.datetime.now())
+
+    def __init__(self, user):
+        self.user = user
+        self.last_visit = datetime.datetime.now()
+
+
+    def __repr__(self):
+        return '<UserScroll: %r --scrolled: %r --recycled: %r >' %(self.user, self.scrolled_upto, self.recycled_upto)

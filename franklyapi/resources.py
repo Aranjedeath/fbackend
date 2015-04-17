@@ -1,6 +1,7 @@
 import sys
 import traceback
 import flask
+from flask import request
 from flask.ext import restful
 from flask.ext.restful import abort
 from flask.ext.restful import reqparse
@@ -9,7 +10,7 @@ from raygun4py import raygunprovider
 
 import controllers
 import CustomExceptions
-
+import json
 from configs import config
 
 raygun = raygunprovider.RaygunSender(config.RAYGUN_KEY)
@@ -282,6 +283,40 @@ class UserUpdateForm(restful.Resource):
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])
             abort(500, message=internal_server_error_message)
+
+
+class UserProfileRequest(restful.Resource):
+
+    post_parser = reqparse.RequestParser()
+    post_parser.add_argument('request_for', type=str, default='', location = 'json')
+    post_parser.add_argument('request_type', type=str, required=True, location = 'json', choices=config.REQUEST_TYPE)
+
+    @login_required
+    def post(self):
+        """
+        Requests the user for a profile update
+
+        Controller Functions Used:
+            - user_profile_request
+
+        Authentication: Required
+        """
+        args = self.post_parser.parse_args()
+
+        try:
+            resp = controllers.user_profile_request(current_user_id=current_user.id, request_for=args['request_for'],
+                                                    request_type=args['request_type'])
+            return resp
+
+        except CustomExceptions.BadRequestException as e:
+            abort(400, message=str(e))
+
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
+
 
 class SlugItem(restful.Resource):
 
@@ -768,10 +803,13 @@ class UserUpdateToken(restful.Resource):
 class QuestionAsk(restful.Resource):
     
     post_parser = reqparse.RequestParser()
-    post_parser.add_argument('question_to'     , type=str, required=True, location='json', help="question_to must be user_id of the user to whom the question is being asked.")
+    post_parser.add_argument('question_to', type=str, required=True,
+                             location='json',
+                             help="question_to must be user_id of the user to whom the question is being asked.")
     post_parser.add_argument('body'            , type=str, required=True, location='json')
     post_parser.add_argument('coordinate_point', type=list, default=[None, None], location='json')
     post_parser.add_argument('is_anonymous'    , type=bool, required=True, location='json')
+    post_parser.add_argument('X-widget-id', type=str, location='headers', default='')
 
     @login_required
     def post(self):
@@ -791,7 +829,8 @@ class QuestionAsk(restful.Resource):
                                             body=args['body'], 
                                             lat=args['coordinate_point'][1], 
                                             lon=args['coordinate_point'][0], 
-                                            is_anonymous=args['is_anonymous'], 
+                                            is_anonymous=args['is_anonymous'],
+                                            from_widget = len(args['X-widget-id']) > 0
                                             )
             
             return resp
@@ -1237,9 +1276,9 @@ class PostView(restful.Resource):
             return resp
         
         except CustomExceptions.BlockedUserException as e:
-            abort(404, message=str(e))
+            abort(404, message=e)
         except CustomExceptions.PostNotFoundException as e:
-            abort(404, message=str(e))
+            abort(404, message=e)
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])
@@ -1358,6 +1397,7 @@ class TimelineUser(restful.Resource):
     get_parser = reqparse.RequestParser()
     get_parser.add_argument('offset', type=int, default=0, location='args')
     get_parser.add_argument('limit' , type=int, default=10, location='args')
+    get_parser.add_argument('X-Deviceid', type=str, location='headers')
     
     def get(self, user_id):
         """
@@ -1384,7 +1424,8 @@ class TimelineUser(restful.Resource):
             resp = controllers.get_user_timeline(cur_user_id, 
                                                 user_id=user_id,
                                                 offset=args['offset'],
-                                                limit=args['limit'])
+                                                limit=args['limit'],
+                                                device_id=args['X-Deviceid'])
             return resp
         except CustomExceptions.UserNotFoundException, e:
             abort(404, message=str(e))
@@ -1853,6 +1894,34 @@ class VideoView(restful.Resource):
             print traceback.format_exc(e)
             return redirect(args['url'])
 
+class EmailPixel(restful.Resource):
+
+    get_parser = reqparse.RequestParser()
+    get_parser.add_argument('id', type=str, location='args', required=True)
+
+    def get(self):
+        """
+        Redirects to the pixel image url. Used to
+        track opens for emails
+
+        Controller Functions Used:
+            - email_tracking
+
+        Authentication: None
+        """
+
+        args = self.get_parser.parse_args()
+        try:
+            from flask import redirect
+            pixel_url = controllers.email_tracking(args['id'])
+            return redirect(pixel_url)
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            return redirect(config.PIXEL_IMAGE_URL)
+
+
 class QuestionImageCreator(restful.Resource):
     
     def get(self, question_id):
@@ -2165,6 +2234,185 @@ class ReportAbuse(restful.Resource):
             abort(500, message=internal_server_error_message)
 
 
+class GetRemote(restful.Resource):
+    get_parser = reqparse.RequestParser()
+    get_parser.add_argument('offset',  type=int, location='args', default=0)
+    get_parser.add_argument('limit',   type=int, location='args', default=20)
+
+    @login_required
+    def get(self):
+        """
+        Returns the data for remote screen
+
+        Controller Functions Used:
+            - get_remote
+
+        Authentication: Required
+        """
+        args = self.get_parser.parse_args()
+        try:
+            return controllers.get_remote(current_user.id, args['offset'], args['limit'])
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0], err[1], err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
+
+
+class GetListFeed(restful.Resource):
+    get_parser = reqparse.RequestParser()
+    get_parser.add_argument('list_id', type=str, location='args', required=True)
+    get_parser.add_argument('offset',  type=int, location='args', default=0)
+    get_parser.add_argument('limit',   type=int, location='args', default=20)
+    get_parser.add_argument('filter',   type=str, location='args', default='trending', choices=['featured', 'trending'])
+
+
+    def get(self):
+        """
+        Returns feed for the given list
+
+        Controller Functions Used:
+            - get_trending_users
+
+        Authentication: Optional
+        """
+        args = self.get_parser.parse_args()
+        try:
+            current_user_id = None
+            if current_user.is_authenticated():
+                current_user_id = current_user.id
+
+            return controllers.get_list_feed(current_user_id, args['list_id'], args['offset'], args['limit'], args['filter'])
+        except CustomExceptions.ObjectNotFoundException as e:
+            abort(404, message=e.message)
+
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0], err[1], err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
+
+
+class GetListFeatured(restful.Resource):
+    get_parser = reqparse.RequestParser()
+    get_parser.add_argument('list_id', type=str, location='args')
+    get_parser.add_argument('offset',  type=int, location='args', default=0)
+    get_parser.add_argument('limit',   type=int, location='args', default=20)
+
+    def get(self, object_type):
+        """
+        Returns featured objects for the given list
+
+        object_type can one of ['users', 'posts', 'questions']
+
+        Controller Functions Used:
+            - get_featured_users
+            - get_featured_posts
+            - get_featured_questions
+
+        Authentication: Optional
+        """
+        args = self.get_parser.parse_args()
+        try:
+            current_user_id = None
+            if current_user.is_authenticated():
+                current_user_id = current_user.id
+
+            if object_type=='users':
+                return controllers.get_featured_users(current_user_id, args['list_id'], args['offset'], args['limit'])
+            elif object_type=='posts':
+                return controllers.get_featured_posts(current_user_id, args['list_id'], args['offset'], args['limit'])
+            elif object_type=='questions':
+                return controllers.get_featured_questions(current_user_id, args['list_id'], args['offset'], args['limit'])
+            else:
+                raise CustomExceptions.ObjectNotFoundException('{object_type} is not an object'.format(object_type=object_type))
+        except CustomExceptions.ObjectNotFoundException as e:
+            abort(404, message=e.message)
+
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0], err[1], err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
+
+class GetListTrending(restful.Resource):
+    get_parser = reqparse.RequestParser()
+    get_parser.add_argument('list_id', type=str, location='args')
+    get_parser.add_argument('offset',  type=int, location='args', default=0)
+    get_parser.add_argument('limit',   type=int, location='args', default=20)
+
+    def get(self, object_type):
+        """
+        Returns trending objects for the given list
+
+        object_type can one of ['users', 'posts', 'questions']
+
+        Controller Functions Used:
+            - get_trending_users
+            - get_trending_posts
+            - get_trending_questions
+
+        Authentication: Optional
+        """
+        args = self.get_parser.parse_args()
+        try:
+            current_user_id = None
+            if current_user.is_authenticated():
+                current_user_id = current_user.id
+
+            if object_type=='users':
+                return controllers.get_trending_users(current_user_id, args['list_id'], args['offset'], args['limit'])
+            elif object_type=='posts':
+                return controllers.get_trending_posts(current_user_id, args['list_id'], args['offset'], args['limit'])
+            elif object_type=='questions':
+                return controllers.get_trending_questions(current_user_id, args['list_id'], args['offset'], args['limit'])
+            else:
+                raise CustomExceptions.ObjectNotFoundException('shashank')
+        except CustomExceptions.ObjectNotFoundException as e:
+            print e.message
+            abort(404, message=str(e))
+
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0], err[1], err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
+
+
+class GetListItems(restful.Resource):
+    get_parser = reqparse.RequestParser()
+    get_parser.add_argument('list_id', type=str, location='args', help="list_id of the parent list. If not provided, top level lists will be given.")
+    get_parser.add_argument('offset',  type=int, location='args', default=0)
+    get_parser.add_argument('limit',   type=int, location='args', default=20)
+
+    def get(self):
+        """
+        Returns the list_items of a list
+
+        Controller Functions Used:
+            - get_list_items
+
+        Authentication: Optional
+        """
+        args = self.get_parser.parse_args()
+        try:
+
+            current_user_id = None
+            if current_user.is_authenticated():
+                current_user_id = current_user.id
+            
+            return controllers.get_list_items(current_user_id, args['list_id'], args['offset'])
+        
+        except CustomExceptions.ObjectNotFoundException as e:
+            abort(404, message=e.message)
+
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0], err[1], err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
+
+
 class EncodeStatistics(restful.Resource):
 
     get_parser = reqparse.RequestParser()
@@ -2294,3 +2542,98 @@ class UserContactsUpload(restful.Resource):
             raygun.send(err[0],err[1],err[2])
             print traceback.format_exc(e)
             abort(500, message='upload failure')
+
+class RegisterBadEmail(restful.Resource):
+
+    post_parser = reqparse.RequestParser()
+    
+    post_parser.add_argument('email'         , type=str, required=True, location='json')
+    post_parser.add_argument('reason_type'   , type=str, required=True, location='json')
+    post_parser.add_argument('reason_subtype', type=str, required=True, location='json')
+
+    def post(self):
+        """
+        Registers an email in bad_emails table.
+
+        Controller Functions Used:
+            -register_bad_email
+
+        Authentication: None
+        """
+        args = self.post_parser.parse_args()
+        try:
+            return controllers.register_bad_email(email         = args['email'],
+                                            reason_type = args['reason_type'],
+                                            reason_subtype = args['reason_subtype']
+                                            )
+        except Exception as e:
+            print traceback.format_exc(e)
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            abort(500, message=internal_server_error_message)            
+
+class ReceiveSNSNotifications(restful.Resource):
+
+    
+    def post(self):
+        """
+        Receives notifications from aws SNS.
+
+        Controller Functions Used:
+            -register_bad_email
+
+        Authentication: None
+        """
+        try:
+            notification = json.loads(request.data)
+            message = json.loads(notification['Message'])
+            email = message['mail']['destination'][0]
+            notification_type = message['notificationType']
+
+            if notification_type == 'Bounce':
+                if message['bounce']['bounceType'] in ['Permanent', 'Transient']:
+                    bounce_sub_type = message['bounce']['bounceSubType']
+                    return controllers.register_bad_email(email=email, reason_type=notification_type, reason_subtype=bounce_sub_type)
+            if notification_type == 'Complaint':
+                complaint_feedback_type = message['complaint']['complaintFeedbackType']
+                return controllers.register_bad_email(email=email, reason_type=notification_type, reason_subtype=complaint_feedback_type)
+            return {'success':'false', 'email':email, 'reason':'Not a bad email'}
+
+        except Exception as e:
+            print traceback.format_exc(e)
+            err = sys.exc_info()
+            raygun.send(err[0], err[1], err[2])
+            with open('data.txt', 'w') as outfile:
+                json.dump(request.data, outfile)
+            abort(500, message=internal_server_error_message)
+
+
+class PublicDocumentation(restful.Resource):
+    get_parser = reqparse.RequestParser()
+    get_parser.add_argument('doc_key', type=str, location='args', required=True)
+    def get(self):
+        args = self.get_parser.parse_args()
+        if args['doc_key'] == 'AFfbe394002dde':
+            from flask import render_template
+            import json
+            with open("newcontextdict") as infile :
+                newcontext = json.load(infile)  
+            #return Response(json.dumps(doc_gen(app, resources)), content_type='application/json')
+            resp = flask.make_response(render_template('api_docnew.html', endpoints=newcontext))
+            resp.headers['content-type'] = 'text/html'
+            return resp
+        else:
+            abort(403, message='Ra Ra Rasputin says: You are are hitting a wrong url.')
+
+
+
+class AnswerAuthorSuggest(restful.Resource):
+    get_parser = reqparse.RequestParser()
+    get_parser.add_argument('question_body', type=str, location='args', required=True)
+    def get(self):
+        args = self.get_parser.parse_args()
+        return controllers.suggest_answer_author(args['question_body'])
+
+
+
+

@@ -22,18 +22,23 @@ if not os.path.exists(temp_path):
         os.mkdir(temp_path)
 
 
-def download_file(url):
+def download_file(url, check_cache=True):
     try:
-        res = requests.get(url)
         if not os.path.exists(temp_path):
             os.mkdir(temp_path)
-        path= '%s/%s'%(temp_path, uuid.uuid4().hex)
+        file_name = url.lstrip('http://').lstrip('https://').replace('/', '_').replace('.', '-')
+        path= os.path.join(temp_path, file_name)
+
+        if check_cache and os.path.exists(path):
+            return path
+
+        res = requests.get(url)
         if res.status_code == 200:
             with open(path, 'wb') as f:
                 f.write(res.content)
             return path
     except requests.ConnectionError, requests.SSLError:
-        return download_file(url)
+        return download_file(url, check_cache=False)
 
 def save_file_from_request(file_to_save):
     import uuid
@@ -104,6 +109,23 @@ def upload_user_image(user_id, image_type, image_url=None, image_file_path=None)
             os.remove(new_image)
             os.remove(final_image_path)
             return url
+
+        elif image_type=='list_icon_image':
+            new_image = final_image_path
+            with open(new_image) as f:
+                url = upload_to_s3(f, key_name)
+            os.remove(new_image)
+            #os.remove(final_image_path)
+            return url
+
+        elif image_type=='list_banner_image':
+            new_image = final_image_path
+            with open(new_image) as f:
+                url = upload_to_s3(f, key_name)
+            os.remove(new_image)
+            #os.remove(final_image_path)
+            return url
+
 
 
     raise CustomExceptions.BadRequestException('Video/Image type is not valid.')

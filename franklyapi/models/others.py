@@ -39,13 +39,15 @@ class Video(Base):
     low           = Column(String(300)) # 150
     ultralow      = Column(String(300)) # 45
     promo         = Column(String(300)) # promo
+    dash          = Column(String(300)) #dash mpd
     delete        = Column(Boolean(), default=False)
     process_state = Column(Enum('pending', 'running', 'success', 'failed'), default='pending')
     created_at    = Column(DateTime(), default=datetime.datetime.now())
 
+
     def __init__(self, url, video_type, object_id, username=None, thumbnail=None, opt=None, medium=None, low=None, ultra_low=None,
                         process_state='pending' ,delete=False,
-                        created_at=datetime.datetime.now()):
+                        created_at=datetime.datetime.now(), dash=None):
         self.url           = url
         self.video_type    = video_type
         self.object_id     = object_id
@@ -55,6 +57,7 @@ class Video(Base):
         self.medium        = medium
         self.low           = low
         self.ultra_low     = ultra_low
+        self.dash          = dash
         self.delete        = delete
         self.process_state = process_state
         self.created_at    = created_at
@@ -62,6 +65,18 @@ class Video(Base):
     def __repr__(self):
         return '<Video %r:%r>' % (self.process_state, self.url)
 
+
+class DashVideo(Base):
+    __tablename__             = 'dash_videos'
+    url                       = Column(CHAR(300), ForeignKey('videos.url'), nullable = False)
+    dash_url                  = Column(CHAR(300), primary_key=True)
+
+    def __init__(self, base_url, dash_url):
+        self.url = base_url
+        self.dash_url = dash_url
+        
+    def __repr__(self):
+        return '<DashVideo %r:%r>' % (self.url, self.dash_url)
 
 class EncodeLog(Base):
     __tablename__ = 'encode_log'
@@ -101,22 +116,6 @@ class ReportAbuse(Base):
     def __repr__(self):
         return '<ReportAbuse %r:%r>' % (self.entity_type, self.entity_id)
 
-
-class Email(Base):
-    __tablename__ = 'emails'
-    id            = Column(Integer, primary_key=True)
-    email         = Column(String(120), nullable=False, unique=True)
-    email_status  = Column(Enum("invalid","bounce","complaint","unsubscribe"), nullable=False)
-    message       = Column(String(200))
-    timestamp     = Column(DateTime(), onupdate=datetime.datetime.now(), default=datetime.datetime.now())
-
-    def __init__(self, email, email_status, message=None):
-        self.email        = email
-        self.email_status = email_status
-        self.message      = message
-
-    def __repr__(self):
-        return '<Email %r:%r>' % (self.email, self.email_status)
 
 class Feedback(Base):
     __tablename__ = 'feedbacks'
@@ -300,3 +299,40 @@ class Tester(Base):
 
     def __repr__(self):
         return '<Tester %r:%r>' % (self.id, self.username)
+
+class ProfileRequest(Base):
+    __tablename__ = 'profile_requests'
+    id = Column(CHAR(32), primary_key=True)
+    request_for = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
+    request_by = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
+    request_type = Column(String(45), nullable=False)
+    request_count = Column(Integer, default = 1)
+    created_at = Column(DateTime(), default=datetime.datetime.now())
+    updated_at = Column(DateTime())
+
+    def __init__ (self):
+        self.id = get_item_id()
+
+    def __repr__(self):
+        return '<ProfileRequests %r:%r>' %(self.request_by, self.request_for)
+
+
+class MailLog(Base):
+    __tablename__ = 'mail_log'
+
+    id= Column(CHAR(32), primary_key=True)
+    email_id = Column(CHAR(100))
+    mail_type = Column(CHAR(45))
+    object_id = Column(CHAR(100))
+    created_at = Column(DateTime(), default=datetime.datetime.now())
+    updated_at = Column(DateTime(), default=datetime.datetime.now())
+
+    def __init__ (self, email_id, mail_type, object_id):
+        self.id = get_item_id()
+        self.email_id = email_id
+        self.mail_type = mail_type
+        self.object_id = object_id
+
+    def __repr__(self):
+        return '<MailLog %r:%r>' %(self.id, self.email_id, self.mail_type, self.object_id, self.created_at)
+    

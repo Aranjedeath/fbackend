@@ -6,7 +6,7 @@ from database import get_item_id
 class Post(Base):
     __tablename__       = 'posts'
     id                  = Column(CHAR(32), primary_key=True)
-    question            = Column(CHAR(32), ForeignKey('questions.id'), nullable=False, unique=True)
+    question            = Column(CHAR(32), ForeignKey('questions.id'), nullable=False)
     question_author     = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
     answer_author       = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
     media_url           = Column(String(300), nullable=False)
@@ -29,11 +29,14 @@ class Post(Base):
 
     added_by            = Column(CHAR(32), ForeignKey('users.id'))
     moderated_by        = Column(CHAR(32), ForeignKey('users.id'))
+    ip                  = Column(String(16))
+    app_id              = Column(CHAR(32))
+
 
     def __init__(self, question, question_author, answer_author, media_url, thumbnail_url, client_id,
                     timestamp=datetime.datetime.now(), answer_type='video', score=0, deleted=False, ready=True,
                     popular=False, lat=None, lon=None, location_name=None, country_name=None, country_code=None,
-                    id=None, view_count=0, show_after = 0, added_by=None, moderated_by=None):
+                    id=None, view_count=0, show_after = 0, added_by=None, moderated_by=None, ip=None, app_id=None):
         self.id              = get_item_id()
         self.question        = question
         self.question_author = question_author
@@ -59,6 +62,9 @@ class Post(Base):
 
         self.added_by        = added_by
         self.moderated_by    = moderated_by
+        
+        self.ip              = ip
+        self.app_id          = app_id
 
     def __repr__(self):
         return '<Post %r>' % (self.id)

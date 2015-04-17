@@ -1,100 +1,37 @@
-import datetime
-import time
 from models import User, Question, Notification, Post, Upvote, \
-                    UserNotification, UserPushNotification, UserNotificationInfo,\
-                    AccessToken, Follow
-from configs import config
+                   Follow, UserNotificationInfo, Comment
 from database import get_item_id
 from app import db
-from notification import helper, notification_decision
+from configs import config
+from notification import helper, user_notification as un, notification_decision
 from sqlalchemy.orm.exc import NoResultFound
+
+import datetime
 
 key = helper.key
 
 
-def add_notification_for_user(notification_id, user_ids, list_type, push_at=datetime.datetime.now()):
+def notification_logger(nobject, for_users, manual=False, created_at=datetime.datetime.now(),
+                        list_type='me', push_at=None,k=None):
 
-    for user_id in user_ids:
-        user_notification = UserNotification(notification_id=notification_id, user_id=user_id,
-                                             list_type=list_type, push_at=push_at,
-                                             seen_at=None, seen_type=None,
-                                             added_at=datetime.datetime.now(),
-                                             show_on='all',
-                                             id=get_item_id()
-                                            )
-        db.session.add(user_notification)
-        db.session.commit()
+    notification = Notification(type=nobject['notification_type'], text=nobject['text'],
+                                link=nobject['link'], object_id=nobject['object_id'],
+                                icon=nobject['icon'], created_at=created_at,
+                                manual=manual, id=get_item_id())
+    db.session.add(notification)
+    db.session.commit()
 
+    un.add_notification_for_user(notification_id=notification.id, for_users=for_users,
+                                 list_type=list_type,
+                                 push_at=push_at,k=k)
+    return notification
 
-
-        if push_at:
-            push_notification(notification_id, user_id)
-
-def get_device_type(device_id):
-    if len(device_id)<17:
-        if 'web' in device_id:
-            return 'web'
-        return 'android'
-    return 'ios'
+'''Creates an in-app notification
+for a new question that has been
+asked to the user'''
 
 
-def push_notification(notification_id, user_id, source='application'):
-
-    if notification_decision.\
-            count_of_push_notifications_sent(user_id = user_id) <= config.GLOBAL_PUSH_NOTIFICATION_DAY_LIMIT:
-
-        notification = Notification.query.get(notification_id)
-
-        group_id = '-'.join([str(notification.type), str(notification.object_id)])
-        for device in AccessToken.query.filter(AccessToken.user==user_id,
-                                                AccessToken.active==True,
-                                                AccessToken.push_id!=None).all():
-
-            user_push_notification = UserPushNotification(
-                                                          notification_id=notification_id,
-                                                          user_id=user_id,
-                                                          device_id=device.device_id,
-                                                          push_id=device.push_id,
-                                                          added_at=datetime.datetime.now(),
-                                                          pushed_at=datetime.datetime.now(),
-                                                          clicked_at=None,
-                                                          source=source,
-                                                          cancelled=False,
-                                                          result=None,
-                                                          id=get_item_id()
-                                                         )
-            db.session.add(user_push_notification)
-            db.session.commit()
-            payload = {
-                        "user_to" : user_id,
-                        "type" : 1,
-                        "id" : user_push_notification.id,
-                        "notification_id": notification.id,
-                        "text" : notification.text.replace('<b>', '').replace('</b>', ''),
-                        "styled_text":notification.text,
-                        "icon" : notification.icon,
-                        "cover_image":None,
-                        "is_actionable":False,
-                        "group_id": group_id,
-                        "link" : notification.link,
-                        "deeplink" : notification.link,
-                        "timestamp" : int(time.mktime(user_push_notification.added_at.timetuple())),
-                        "seen" : False,
-                        "heading":"Frankly.me"
-                    }
-            if get_device_type(device.device_id)=='android':
-                from GCM_notification import GCM
-                gcm_sender = GCM()
-                gcm_sender.send_message([device.push_id], payload)
-
-            if get_device_type(device.device_id)=='ios':
-                from APN_notification import  APN
-                apns = APN()
-                apns.send_message([device.push_id],payload)
-
-
-
-def ask_question(question_id, notification_type = 'question-ask-self_user'):
+def ask_question(question_id, notification_type='question-ask-self_user'):
 
     k = key[notification_type]
     question = Question.query.get(question_id)
@@ -106,80 +43,38 @@ def ask_question(question_id, notification_type = 'question-ask-self_user'):
         if u.id == question.question_to:
             question_to = u
 
-    text = helper.question_asked_text(question=question, question_author=question_author, question_to=question_to)
+    nobject = {
+        'notification_type': notification_type,
+        'text': helper.question_asked_text(question=question, question_author=question_author.first_name,
+                                           question_to=question_to.first_name),
+        'icon': question_author.profile_picture,
+        'link': k['url'] % question.short_id,
+        'object_id': question_id
+    }
 
-    icon = question_author.profile_picture
-
-    link = k['url'] % question.short_id
-
-    notification = Notification(type=notification_type, text=text,
-                                link=link, object_id=question_id,
-                                icon=icon, created_at=datetime.datetime.now(),
-                                manual=False, id=get_item_id())
-    db.session.add(notification)
-    db.session.commit()
-
-    ''' Decide pushing notification on the basis
-    of user's popularity'''
-    try:
-        delay_push = UserNotificationInfo.query.filter(UserNotificationInfo.user_id ==
-                                                       question_to.id).one().is_popular
-    except NoResultFound:
-        ''' In case of celeb user delay_push would always be true
-        '''
-        delay_push = 1 if question_to.user_type == 2 else 0
-
-
-
-    add_notification_for_user(notification_id=notification.id,
-                                user_ids=[question_to.id],
-                                list_type='me',
-                                push_at= None if delay_push else datetime.datetime.now()
-                            )
-    
+    push_now = notification_decision.decide_question_push(question_to.id, question_id)
+    notification = notification_logger(nobject=nobject, for_users=[question_to.id],
+                                       push_at=datetime.datetime.now() if push_now else None)
 
     return notification
 
 
-def new_celebrity_user(users=[], notification_id=None, celebrity_id=None):
-    '''Either create a new notification or fetch a pre-existing one.
-    Users would be a list that can be empty as well'''
+
+''' Creates a new in-app
+notification whenever a new answer is added.
+The push is done later when the video is ready.
+Notification is created for:
+a) Question Author
+b) Upvoters
+c) Followers of answer author
+'''
 
 
-    for user in users:
-        notification.new_celebrity_user(users=[user.id], notification_id=notification_id, celebrity_id=object_id)
-    if notification_id is None and celebrity_id is not None:
-        celebrity = User.query.filter(User.id == celebrity_id).first()
-
-        notification_type = "new-celeb-user"
-        text = "%s just joined frankly. Be the first one to ask a question." % celebrity.first_name
-        icon = celebrity.profile_picture
-        link = "http://frankly.me/%s" % celebrity.username
-
-        notification = Notification(type=notification_type, text=text,
-                                    link=link, object_id=celebrity.id,
-                                    icon=icon, created_at=datetime.datetime.now(),
-                                    manual=False, id=get_item_id())
-        db.session.add(notification)
-        db.session.commit()
-    else:
-        notification = Notification.query.filter(Notification.id == notification_id).first()
-
-    for user in users:
-        add_notification_for_user(notification_id=notification.id,
-                                user_ids=[user],
-                                list_type='me',
-                                push_at=datetime.datetime.now()
-                            )
-
-def new_post(post_id, question_body="", notification_type = 'post-add-self_user',
-             delay_push=True):
-
+def new_post(post_id, question_body="", notification_type='post-add-self_user'):
 
     k = key[notification_type]
     post = Post.query.get(post_id)
     users = User.query.filter(User.id.in_([post.answer_author, post.question_author])).all()
-
 
     for u in users:
         if u.id == post.question_author:
@@ -187,70 +82,181 @@ def new_post(post_id, question_body="", notification_type = 'post-add-self_user'
         if u.id == post.answer_author:
             answer_author = u
 
-
-    text = helper.post_add(answer_author=answer_author, question_body=question_body)
-
-    icon = answer_author.profile_picture
-
-    link = k['url'] % post.client_id
-    
-    notification = Notification(type=notification_type, text=text,
-                                link=link, object_id=post_id,
-                                icon=icon, created_at=datetime.datetime.now(),
-                                manual=False, id=get_item_id())
-    db.session.add(notification)
-    db.session.commit()
+    nobject = {
+        'object_id': post_id,
+        'text':  helper.post_add(answer_author=answer_author.first_name, question_body=question_body),
+        'notification_type': notification_type,
+        'icon': answer_author.profile_picture,
+        'link': k['url'] % post.client_id,
+    }
 
 
-    upvoters = [upvote.user for upvote in Upvote.query.filter(Upvote.question==post.question, Upvote.downvoted==False).all()]
-    upvoters = set([question_author.id]+upvoters)
+    upvoters = [upvote.user for upvote in Upvote.query.filter(Upvote.question==post.question,
+                                                              Upvote.downvoted==False).all()]
 
+    upvoters = list(set([question_author.id]+upvoters))
 
-    add_notification_for_user(notification_id=notification.id,
-                                user_ids=list(upvoters),
-                                list_type='me',
-                                push_at=None if delay_push else datetime.datetime.now()
-                            )
-    
+    print 'Number of upvoters: ', len(upvoters)
 
+    notification = notification_logger(nobject=nobject, for_users=upvoters)
+
+    following_answered_question(question_body=question_body,
+                                author_id=answer_author.id, nobject=nobject, upvoters=upvoters)
     return notification
 
-def new_comment(post_id):
-    pass
 
-def notification_user_follow(follow_id):
-    follow = Follow.query.filter(Follow.id==follow_id, Follow.deleted==False)
-    users = User.query.filter(User.id.in_([follow.user, follow.followed])).all()
+''' Create in-app notifications for users who are
+    following another user who has
+    answered a question
+'''
+
+
+def following_answered_question(author_id, question_body, nobject, upvoters, notification_type='post-add-following_user'):
+
+    author = User.query.filter(User.id == author_id).one()
+
+    nobject['text'] = helper.following_answered_question(question_body=question_body, author_name=author.first_name)
+    nobject['notification_type'] = notification_type
+
+
+    try:
+        following = Follow.query.with_entities(Follow.user).filter(Follow.followed == author_id).all()
+        followers = [f[0] for f in following if f[0] != author_id]
+        followers = list(set(followers) - set(upvoters))
+        print 'Number of followers who have not upovted or asked the question: ', len(followers)
+        notification = notification_logger(nobject=nobject, for_users=followers)
+        return notification
+    except NoResultFound:
+        return None
+
+
+
+
+# ''' Sent if the user's question is becoming popular
+# on count of number of upvotes received
+# '''
+# def share_popular_question(user_id, question_id, upvote_count, question_body,
+#                            notification_type='post-add-following_user'):
+#
+#     text = helper.popular_question_text(question_body=question_body, upvote_count=upvote_count)
+#     k = key[notification_type]
+#     link = k['url'] % question_id
+#
+#     notification = Notification(type=notification_type, text=text,
+#                                 link=link, object_id=question_id,
+#                                 icon=None, created_at=datetime.datetime.now(),
+#                                 manual=False, id=get_item_id())
+#     db.session.add(notification)
+#     db.session.commit()
+#
+#     add_notification_for_user(notification_id=notification.id,
+#                                 user_ids=[user_id],
+#                                 list_type='me',
+#                                 push_at=datetime.datetime.now()
+#                             )
+#
+#
+#     return notification
+
+''' Sends out a
+notification for a new celebrity that has joined the paltform.
+Typically to be sent out to users who interact with a similar list
+'''
+
+
+def new_celebrity_user(celebrity_id=None, users=[], notification_type='new-celebrity-followed_category'):
+
+    k = key[notification_type]
+
+    celebrity = User.query.filter(User.id == celebrity_id).first()
+
+    nobject = {
+        'notification_type': notification_type,
+        'text': k['text'].replace('<celebrity_name>', celebrity.first_name),
+        'icon': celebrity.profile_picture,
+        'link': k['url'] % celebrity.username,
+        'object_id': celebrity_id
+    }
+
+    notification_logger(nobject=nobject, for_users=users, push_at=datetime.datetime.now())
+
+
+'''Generic method for sending all sorts of milestone
+notifications'''
+def send_milestone_notification(milestone_name, milestone_crossed, object_id, user_id):
+
+    nobject = {
+        'notification_type': (milestone_name+ '_' + milestone_crossed),
+        'text': helper.milestone_text(milestone_name, milestone_crossed),
+        'icon': None,
+        'link': key[milestone_name]['url'] % object_id,
+        'object_id': object_id
+    }
+
+    notification_logger(nobject=nobject, for_users=[user_id], push_at=datetime.datetime.now(), k=key[milestone_name])
+
+''' Notification for requests to
+update the profile'''
+
+
+def user_profile_request(user_id, request_for, request_id, request_type=config.REQUEST_TYPE):
+
+
+    users = User.query.filter(User.id.in_([user_id, request_for])).all()
 
     for u in users:
-        if u.id == follow.followed:
-            followed_user = u
-        if u.id == follow.user:
-            follower = u
+        if u.id == user_id:
+            request_by = u
+        if u.id == request_for:
+            requested = u
 
-    notification_type = 'user-follow-self_user'
-    text = "<b><follower_name></b> started following you"
-    text = text.replace('<follower_name>', follower.first_name)
-    icon = None
-    link = config.WEB_URL + '/p/{client_id}'.format(client_id=post.client_id)
-    
-    notification = Notification(type=notification_type, text=text,
-                                link=link, object_id=post_id,
-                                icon=icon, created_at=datetime.datetime.now(),
-                                manual=False, id=get_item_id())
-    db.session.add(notification)
-    db.session.commit()
+    k = key[request_type]
+
+    nobject = {
+        'notification_type': request_type,
+        'text': helper.user_profile_request(requester_name=request_by.first_name),
+        'icon': request_by.profile_picture,
+        'link': k['url'] % request_for,
+        'object_id': request_id
+    }
 
 
-    upvoters = [upvote.user for upvote in Upvote.query.filter(Upvote.question==post.question, Upvote.downvoted==False).all()]
-
-    add_notification_for_user(notification_id=notification.id,
-                                user_ids=list(set([question_author.id]+upvoters)),
-                                list_type='me',
-                                push_at=datetime.datetime.now()
-                            )
-    
-
-    return notification
+    notification_logger(nobject=nobject, for_users=[requested.id], push_at=datetime.datetime.now())
 
 
+
+def comment_on_post(post_id, comment_id, comment_author, notification_type='comment-add-self_post'):
+
+    post = Post.query.filter(Post.id == post_id).one()
+    if (comment_author != post.answer_author):
+        comment_author = User.query.filter(User.id == comment_author).one()
+
+        k = key[notification_type]
+
+        nobject = {
+            'notification_type': notification_type,
+            'text': ("%s just commented on your answer." % comment_author.first_name),
+            'icon': comment_author.profile_picture,
+            'link': k['url'] % post_id,
+            'object_id': comment_id
+        }
+
+        notification_logger(nobject=nobject, for_users=[post.answer_author], push_at=datetime.datetime.now())
+
+def hack():
+
+    users = User.query.filter(User.monkness != -1).limit(1000).offset(0)
+    print 'Here'
+
+    import controllers
+
+    for user in users:
+        print user.first_name
+        controllers.user_follow(user.id, 'cab4132c53e4940ddf31032f794967c6')
+
+    # text = "Your followers want to know more about you! Answer the best ones from more than 500 questions asked to you."
+    # link = "http://frankly.me/answer"
+    # icon = None
+    # notification_logger(notification_type='pending-question-self_user',text=text,link=link,
+    #                     object_id = user.id,
+    #                     icon=icon,pushed_for=[user.id], push_at=datetime.datetime.now())

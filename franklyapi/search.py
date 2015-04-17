@@ -18,6 +18,7 @@ reverse_index['television']   = ['masterchef', 'actor', 'actress', 'stylist', 'm
 reverse_index['tv']           = ['masterchefs', 'actor', 'actress', 'media', 'dancer', 'anchor', 'makeup', 'tattoo', 'models']
 reverse_index['stars']        = ['actor', 'actress', 'media', 'dancer', 'anchor', 'makeup', 'tattoo', 'models']
 reverse_index['authors']      = ['author']
+reverse_index['fashion']      = ['lifestyle']
 
 keyword_map = {
                 'aap'           :[
@@ -133,17 +134,19 @@ def search(cur_user_id, q, offset, limit):
                                     username LIKE :query_start OR first_name LIKE :query_start AS name_start_match,
                                     first_name LIKE :query_word_start AS name_word_start_match,
                                     user_title LIKE :query_contained AS exact_title_match,
+                                    bio LIKE :query_contained AS bio_match,
+                                    profile_video IS NOT NULL as profile_video_exists,
                                     (SELECT count(1) FROM questions WHERE questions.question_to=users.id) AS question_count,
                                     (SELECT count(1) FROM user_follows WHERE user_follows.followed=users.id AND user_follows.unfollowed=false) AS followed_count,
                                     (SELECT count(1) FROM user_follows WHERE user_follows.followed=users.id AND user_follows.user=:cur_user_id AND user_follows.unfollowed=false) AS is_following,
-                                    (SELECT 4*CAST(search_defaults.show_always AS UNSIGNED)+CAST(search_defaults.score AS UNSIGNED) FROM search_defaults WHERE search_defaults.user=users.id AND search_defaults.category LIKE :query_start) AS search_default,
+                                    (SELECT 4*CAST(search_defaults.show_always AS UNSIGNED)+CAST(search_defaults.score AS UNSIGNED) FROM search_defaults WHERE search_defaults.user=users.id AND search_defaults.category in (SELECT search_categories.id FROM search_categories WHERE search_categories.name LIKE :query_start)) AS search_default,
                                     {select_query}
                                     username IN :top_users AS top_user_score
 
                                     FROM users WHERE 
                                         (   users.username LIKE :query_start OR users.first_name LIKE :query_start OR users.first_name LIKE :query_word_start
-                                            OR users.user_title LIKE :query_contained 
-                                            OR users.id IN (SELECT search_defaults.user FROM search_defaults WHERE search_defaults.category LIKE :query_start)
+                                            OR users.user_title LIKE :query_contained OR users.bio LIKE :query_contained
+                                            OR users.id IN (SELECT search_defaults.user FROM search_defaults WHERE search_defaults.category in (SELECT search_categories.id FROM search_categories WHERE search_categories.name LIKE :query_start))
                                             {where_clause}
                                         )
                                         and monkness=-1
@@ -154,6 +157,7 @@ def search(cur_user_id, q, offset, limit):
                                             user_type DESC,
                                             name_start_match DESC,
                                             name_word_start_match DESC,
+                                            profile_video_exists DESC,
                                             is_following DESC,
                                             question_count DESC,
                                             top_user_score DESC,
