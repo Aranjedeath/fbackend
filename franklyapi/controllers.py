@@ -250,7 +250,7 @@ def get_twitter_email(twitter_id):
 
 
 def login_user_social(social_type, social_id, external_access_token, device_id, push_id=None, 
-                        external_token_secret=None, user_type=0, user_title=None, current_user_id=None):
+                    external_token_secret=None, user_type=0, user_title=None, current_user_id=None):
     user_data = get_data_from_external_access_token(social_type, external_access_token, external_token_secret)
     token_valid = str(user_data['social_id']).strip()==str(social_id).strip()
     
@@ -264,10 +264,10 @@ def login_user_social(social_type, social_id, external_access_token, device_id, 
         return login_user_social_with_user_context(current_user_id=current_user_id, social_user=user,
                                                     social_type=social_type, social_id=social_id, 
                                                     external_access_token=external_access_token,
-                                                    external_token_secret=external_token_secret,
-                                                    push_id=push_id)
+                                                    external_token_secret=external_token_secret)
         
-    update_dict = {'deleted':False, '%s_token'%(social_type):external_access_token, '%s_id'%(social_type):social_id}
+    update_dict = {'deleted':False, '%s_token'%(social_type):external_access_token, 
+                    '%s_id'%(social_type):social_id}
 
     if social_type == 'twitter':
         update_dict.update({'twitter_secret':external_token_secret})
@@ -345,11 +345,46 @@ def login_user_social(social_type, social_id, external_access_token, device_id, 
 def login_user_social_with_context(current_user_id, social_user, social_type, social_id, 
                                     external_access_token, external_token_secret):
     context_user = User.query.filter(User.id==current_user_id).one()
+
+    update_dict = {'%s_token'%(social_type): external_access_token, 
+                    '%s_id'%(social_type): social_id}
+
+    if token_type == 'twitter':
+        update_dict['twitter_secret'] = external_token_secret
+
     if social_user:
-        if social_user.id == context_user.id:
-            refresh_token()
-        elif social_user.id != context_user.id:
-            raise CustomExceptions.BadRequestException('Social account belongs to other user')
+        if social_user.id != context_user.id:
+            raise CustomExceptions.BadRequestException('Social account belongs to other email')
+    else:
+        User.query.filter(User.id==context_user.id).update(update_dict)
+        db.session.commit()
+        return {'access_token': access_token, 'id': context_user.id,
+                'username': context_user.username, 'activated_now': activated_now,
+                'new_user': False, 'user_type': context_user.user_type,
+                'user': user_to_dict(context_user)}
+
+
+def merge_accounts(base_account, merge_account):
+    if not base_account.first_name:
+        base_account.first_name = 
+
+# def refresh_social_access_token(user_id, social_type, social_id, external_access_token,
+#                                 external_token_secret=None):
+#     update_dict = {'deleted':False, '%s_token'%(social_type):external_access_token, 
+#                     '%s_id'%(social_type):social_id}
+#     if social_type == 'twitter':
+#         user = User.query.filter(User.id==user_id, User.twitter_id==social_id).first()
+#         update_dict['twitter_secret'] = external_token_secret
+#     elif social_type == 'facebook':
+#         user = User.query.filter(User.id==user_id, User.facebook_id==social_id).first()
+#     elif social_type == 'google':
+#         user = User.query.filter(User.id==user_id, User.google_id==social_id).first()
+#     if not user:
+#         CustomExceptions.BadRequestException('Unable to refresh access token')
+#     return bool(User.query.filter(User.id==user.id).update(update_dict))
+
+
+
 
 
 def login_email_new(user_id, id_type, password, device_id, push_id=None):
