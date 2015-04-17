@@ -434,7 +434,6 @@ def get_post_id_from_question_id(question_id):
         return None
 
 
-
 def get_answer_count(user_id):
     return Post.query.filter(Post.answer_author==user_id, Post.deleted==False).count()
 
@@ -2034,8 +2033,7 @@ def query_search(cur_user_id, query, offset, limit, version_code=None):
                 "count": 0,
                 "results": [ ],
                 "next_index": -1
-            } 
-    
+            }
     '''
     if version_code and int(version_code) > 42 and offset == 0:
         search_filter_invitable = or_( Invitable.name.like('{query}%'.format(query = query)),
@@ -2593,19 +2591,9 @@ def list_items_to_dict(list_items, cur_user_id=None):
             item = List.query.filter(List.id==item.child_list_id).first()
         if type(item) == User:
 
-            item_dict = {
-                                'id'             : item.id,
-                                'username'       : item.username,
-                                'first_name'     : item.first_name,
-                                'profile_picture': item.profile_picture,
-                                'gender'         : item.gender,
-                                'user_type'      : item.user_type,
-                                'bio'            : item.bio,
-                                'user_title'     : item.user_title,
-                                'is_following'   : False
-                            }
+            item_dict = thumb_user_to_dict(item, cur_user_id)
             item_dict = {'type':'user', 'user':item_dict} 
-        
+
         elif type(item) == List:
             item_dict = lists_to_dict([item], cur_user_id)[0]
             item_dict = {'type':'list', 'list':item_dict} 
