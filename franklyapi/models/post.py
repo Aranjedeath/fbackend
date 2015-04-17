@@ -70,6 +70,23 @@ class Post(Base):
         return '<Post %r>' % (self.id)
 
 
+class PendingPost(Base):
+    __tablename__  = 'pending_post'
+    __table_args__ = ( UniqueConstraint('user_id', 'question_id'), )
+    short_id       = Column(String(15), nullable=False, unique=True, primary_key=True)
+    user_id        = Column(CHAR(32), ForeignKey('users.id'), nullable=False)
+    question_id    = Column(CHAR(32), ForeignKey('questions.id'), nullable=False)
+    created_at     = Column(DateTime(), onupdate=datetime.datetime.now(), default=datetime.datetime.now)
+
+    def __init__(self, short_id, user_id, question_id, created_at=None):
+        self.short_id    = short_id
+        self.user_id     = user_id
+        self.question_id = question_id
+        self.created_at  = created_at or datetime.datetime.now()
+
+    def __repr__(self):
+        return '<PendingPost %r:%r>' % (self.user, self.post)
+
 class Like(Base):
     __tablename__  = 'post_likes'
     __table_args__ = ( UniqueConstraint('user', 'post'), )

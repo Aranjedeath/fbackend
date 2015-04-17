@@ -30,7 +30,7 @@ from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
                     Question, Upvote, Comment, ForgotPasswordToken, Install, Video,\
                     UserFeed, Event, Reshare, Invitable, Invite, ContactUs, InflatedStat,\
                     IntervalCountMap, ReportAbuse, SearchCategory,\
-                    BadEmail, List, ListItem, ListFollow, DiscoverList, DashVideo
+                    BadEmail, List, ListItem, ListFollow, DiscoverList, DashVideo, Contact
 
 from notification import notification_decision, make_notification as notification
 
@@ -281,6 +281,7 @@ def login_user_social(social_type, social_id, external_access_token, device_id, 
         activated_now=user.deleted
         User.query.filter(User.id==user.id).update(update_dict)
         db.session.commit()
+
         return {'access_token': access_token, 'id':user.id,
                 'username':user.username, 'activated_now': activated_now,
                 'new_user' : False, 'user_type' : user.user_type,
@@ -304,11 +305,20 @@ def login_user_social(social_type, social_id, external_access_token, device_id, 
         
         if social_type == 'facebook':
             new_user.facebook_id = social_id
-            new_user.facebook_token = external_access_token
+            extended_external_token = social_helpers.get_extended_graph_token(external_access_token)
+            new_user.facebook_token = extended_external_token
+
+            allowed_permissions = social_helpers.get_fb_permissions(new_user.facebook_token)
+            if 'publish_actions' in allowed_permissions:
+                new_user.facebook_write_permission = True
+        
         elif social_type == 'twitter':
             new_user.twitter_id = social_id
             new_user.twitter_token = external_access_token
             new_user.twitter_secret = external_token_secret
+            #twitter write perm check.
+
+
         elif social_type == 'google':
             new_user.google_id = social_id
             new_user.google_token = external_access_token
@@ -748,17 +758,40 @@ def user_follow(cur_user_id, user_id):
         raise CustomExceptions.BadRequestException("Cannot follow yourself")
 
     if user_id!=cur_user_id:
-        db.session.execute(text("""INSERT INTO user_follows (user, followed, unfollowed, timestamp) 
-                                VALUES(:cur_user_id, :user_id, false, :timestamp) 
-                                ON DUPLICATE KEY 
+        db.session.execute(text("""INSERT INTO user_follows (user, followed, unfollowed, timestamp)
+                                VALUES(:cur_user_id, :user_id, false, :timestamp)
+                                ON DUPLICATE KEY
                                 UPDATE unfollowed = false, timestamp=:timestamp"""),
                         params={'cur_user_id':cur_user_id, 'user_id':user_id, 'timestamp':datetime.datetime.now()}
                     )
 
 
     db.session.commit()
-    notification_decision.decide_follow_milestone(user_id=user_id)
+    try:
+        notification_decision.decide_follow_milestone(user_id=user_id)
+    except Exception as e:
+        err = sys.exc_info()
+        raygun.send(err[0],err[1],err[2])
+
     return {'user_id': user_id}
+
+
+def users_follow(cur_user_id, user_ids):
+    for user_id in user_ids[:20]:
+        try:
+            user_follow(cur_user_id, user_id)
+        except:
+            pass
+    return {'success':True}
+
+
+def users_unfollow(cur_user_id, user_ids):
+    for user_id in user_ids[:20]:
+        try:
+            user_unfollow(cur_user_id, user_id)
+        except:
+            pass
+    return {'success':True}
 
 
 def user_unfollow(cur_user_id, user_id):
@@ -952,23 +985,6 @@ def update_push_id(cur_user_id, device_id, push_id):
                              ).update({'push_id':push_id})
 
 
-def user_update_access_token(user_id, acc_type, token, secret=None):
-    try:
-        if acc_type=='facebook':
-            user_data = get_data_from_external_access_token('facebook', token, external_token_secret=None)
-            User.query.filter(User.id==user_id, User.facebook_id==user_data['social_id']).update({'facebook_token':token, 'facebook_write_permission':True})
-
-        if acc_type=='twitter':
-            if not secret:
-                raise CustomExceptions.BadRequestException('Missing access secret')
-            user_data = get_data_from_external_access_token('twitter', token, external_token_secret=secret)
-            User.query.filter(User.id==user_id, User.facebook_id==user_data['social_id']).update({'twitter_token':token, 'twitter_write_permission':True})
-        
-        return {'success':True}
-    
-    except CustomExceptions.InvalidTokenException:
-        raise CustomExceptions.BadRequestException('invalid token')
-
 
 def make_question_slug(body, question_id):
     import slugify
@@ -1139,7 +1155,11 @@ def question_upvote(cur_user_id, question_id):
                                     'timestamp':datetime.datetime.now()}
                             )
         db.session.commit()
-        notification_decision.push_question_notification(question_id=question_id)
+        try:
+            notification_decision.push_question_notification(question_id=question_id)
+        except:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
     else:
         raise CustomExceptions.BadRequestException("Question is not available for upvote")
     
@@ -1199,8 +1219,11 @@ def post_like(cur_user_id, post_id):
                             )
 
         db.session.commit()
-
-        notification_decision.decide_post_milestone(post_id=post_id, user_id=answer_author)
+        try:
+            notification_decision.decide_post_milestone(post_id=post_id, user_id=answer_author)
+        except:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
         return {'id': post_id, 'success':True}
 
     else:
@@ -1220,7 +1243,7 @@ def post_view(cur_user_id, post_id, client_id=None):
     try:
         post_pending = False
         if client_id:
-            pending_post_data = get_pending_post(client_id)
+            pending_post_data = None #get_pending_post(client_id)
             if pending_post_data:
                 post_pending = True
                 question = Question.query.get(pending_post_data['question_id'])
@@ -1294,9 +1317,11 @@ def comment_add(cur_user_id, post_id, body, lat, lon):
         db.session.add(comment)
 
         db.session.commit()
-
-        notification.comment_on_post(comment_id=comment.id, comment_author=cur_user_id, post_id=post_id)
-
+        try:
+            notification.comment_on_post(comment_id=comment.id, comment_author=cur_user_id, post_id=post_id)
+        except:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
 
         return {'comment': comment_to_dict(comment), 'id':comment.id, 'success':True}
     else:
@@ -1472,7 +1497,7 @@ def home_feed(cur_user_id, offset, limit, web):
                 'next_index' : -1
             }
 
-    feeds, next_index = get_home_feed(cur_user_id, offset, limit)
+    feeds, next_index = get_home_feed(cur_user_id, offset, limit, club_questions = not web)
 
     return {'stream': feeds, 'count':len(feeds), 'next_index':next_index}
 
@@ -1642,6 +1667,8 @@ def install_ref(device_id, url):
     db.session.commit()
 
 
+
+
 def get_new_short_id(for_object):
     id_chars = []
     for i in range(6):
@@ -1658,19 +1685,6 @@ def get_new_short_id(for_object):
     return get_new_short_id(for_object)
 
 
-def set_pending_post(cur_user_id, question_id, client_id):
-    redis_pending_post.setex(client_id, cur_user_id+'_'+question_id, 3600*24)
-    return {'success':True, 'client_id':client_id}
-
-def get_pending_post(client_id):
-    pending_post = redis_pending_post.get(client_id)
-    if pending_post:
-        try:
-            answer_author_id, question_id = pending_post.split('_')
-            return {'answer_author_id':answer_author_id, 'question_id':question_id}
-        except:
-            pass
-    return None
 
 
 def add_video_post(cur_user_id, question_id, video, answer_type,
@@ -1734,8 +1748,10 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
             sq.push({'url':video_url})
 
             db.session.commit()
-            redis_pending_post.delete(client_id)
-            notification.new_post(post_id=post.id, question_body=question.body)
+            try:
+                notification.new_post(post_id=post.id, question_body=question.body)
+            except:
+                pass
 
 
         return {'success': True, 'id': str(post.id), 'post':post_to_dict(post, cur_user_id)}
@@ -1758,6 +1774,7 @@ def get_notifications(cur_user_id, device_id, version_code, notification_categor
 
     # Setting the seen on notifications
     # only if it is the first fetch
+    notifications = []
     if offset == 0:
         db.session.execute(text("Update user_notifications set seen_at = :current_time where user_id = :user_id ; "),
                            params = {'user_id': cur_user_id,
@@ -1767,35 +1784,32 @@ def get_notifications(cur_user_id, device_id, version_code, notification_categor
 
 
 
-    device_type = get_device_type(device_id)
+        device_type = get_device_type(device_id)
+        
+        if device_type == 'ios':
+            app_store_link = config.IOS_APPSTORE_DEEPLINK
+        
+        if device_type == 'android':
+            app_store_link = config.ANDROID_APPSTORE_LINK
     
-    if device_type == 'ios':
-        app_store_link = config.IOS_APPSTORE_DEEPLINK
-    
-    if device_type == 'android':
-        app_store_link = config.ANDROID_APPSTORE_LINK
+        update = check_app_version_code(device_type, version_code)
+        if update['hard_update'] or update['soft_update']:
 
-    
-
-    notifications = []
-    update = check_app_version_code(device_type, version_code)
-    if update['hard_update'] or update['soft_update']:
-
-        update_notification = {
-                                    "user_to" : cur_user_id,
-                                    "type" : 1,
-                                    "id" : 'update_required_ios',
-                                    "text" : "A new version of Frankly.me is available. Click here to update.",
-                                    "styled_text":"A new version of Frankly.me is available. Click here to update.",
-                                    "icon_url" : "https://d30y9cdsu7xlg0.cloudfront.net/png/68793-84.png",
-                                    "group_id": 'update_required',
-                                    "link" : app_store_link,
-                                    "deeplink" : app_store_link,
-                                    "timestamp" : int(time.mktime(datetime.datetime.now().timetuple())),
-                                    "seen" : False
-                                }
-        notifications.append(update_notification)
-        limit -= 1    
+            update_notification = {
+                                        "user_to" : cur_user_id,
+                                        "type" : 1,
+                                        "id" : 'update_required_ios',
+                                        "text" : "A new version of Frankly.me is available. Click here to update.",
+                                        "styled_text":"A new version of Frankly.me is available. Click here to update.",
+                                        "icon_url" : "https://d30y9cdsu7xlg0.cloudfront.net/png/68793-84.png",
+                                        "group_id": 'update_required',
+                                        "link" : app_store_link,
+                                        "deeplink" : app_store_link,
+                                        "timestamp" : int(time.mktime(datetime.datetime.now().timetuple())),
+                                        "seen" : False
+                                    }
+            notifications.append(update_notification)
+            limit -= 1    
 
     results = db.session.execute(text("""SELECT notifications.id, notifications.text, 
                                                 notifications.icon, notifications.type,
@@ -2021,6 +2035,8 @@ def query_search(cur_user_id, query, offset, limit, version_code=None):
                 "results": [ ],
                 "next_index": -1
             } 
+    
+    '''
     if version_code and int(version_code) > 42 and offset == 0:
         search_filter_invitable = or_( Invitable.name.like('{query}%'.format(query = query)),
                                    Invitable.name.like('% {query}%'.format(query = query))
@@ -2029,7 +2045,7 @@ def query_search(cur_user_id, query, offset, limit, version_code=None):
         if invitable:
             results.append({'type':'invitable', 'invitable' : invitable_to_dict(invitable[0], cur_user_id)})
             limit = limit - 1
-    '''
+
     if offset == 0 and ('trending' in query.lower() or 'new on' in query.lower()):
         search_default = SearchDefault.query.filter(SearchDefault.category == query).order_by(SearchDefault.score).all()
         for s in search_default:
@@ -2078,7 +2094,6 @@ def user_profile_request(current_user_id, request_for, request_type):
                                 })
     db.session.commit()
 
-   
     notification.user_profile_request(user_id=current_user_id, request_for=request_for,
                                       request_type=request_type,
                                       request_id=request_id)
@@ -2418,7 +2433,7 @@ def get_channel_list(cur_user_id, device_id, version_code):
 
 def get_item_from_slug(current_user_id, username, slug):
     try:
-        question = Question.query.filter(Question.slug==slug, 
+        question = Question.query.filter(Question.slug==slug,
                                             Question.deleted==False,
                                             Question.is_ignored==False,
                                             or_(Question.is_answered==True,
@@ -2427,21 +2442,20 @@ def get_item_from_slug(current_user_id, username, slug):
                                             ).one()
         question_to = User.query.filter(User.id==question.question_to).one()
         if question_to.username.lower() != username.lower():
-            
-            return {'redirect':True, 'username':question_to.username, 'slug':question.slug}
+            return {'redirect': True, 'username': question_to.username, 'slug': question.slug}
         
         if question.is_answered:
             post = Post.query.filter(Post.question==question.id, Post.deleted==False).one()
-            return {'redirect':False, 'is_answered':question.is_answered, 'post':post_to_dict(post, current_user_id)}
+            return {'redirect': False, 'is_answered': question.is_answered, 'post': post_to_dict(post, current_user_id)}
         
-        return {'redirect':False, 'is_answered':question.is_answered, 'question':question_to_dict(question, current_user_id)}
+        return {'redirect': False, 'is_answered': question.is_answered, 'question': question_to_dict(question, current_user_id)}
     except NoResultFound:
         raise CustomExceptions.ObjectNotFoundException('The question does not exist or has been deleted.')
 
 
-def check_app_version_code(device_type,device_version_code):
+def check_app_version_code(device_type, device_version_code):
     hard_update = False
-    soft_update= False
+    soft_update = False
     if device_type == 'android':
         hard_update = device_version_code < config.ANDROID_NECESSARY_VERSION_CODE
         soft_update = device_version_code < config.ANDROID_LATEST_VERSION_CODE
@@ -2450,43 +2464,23 @@ def check_app_version_code(device_type,device_version_code):
         hard_update = device_version_code < config.IOS_NECESSARY_VERSION_CODE
         soft_update = device_version_code < config.IOS_LATEST_VERSION_CODE
 
-    return {'hard_update':hard_update, 'soft_update':soft_update}
-
-
-def check_app_version_code(device_type,device_version_code):
-    hard_update_resp = {'hard_update':True,'soft_update':False}
-    soft_update_resp = {'hard_update':False,'soft_update':True}
-    no_update_resp = {'hard_update':False,'soft_update':False}
-    
-    if device_type == 'android':
-        if device_version_code < config.ANDROID_NECESSARY_VERSION_CODE :
-            resp = hard_update_resp
-        elif device_version_code < config.ANDROID_LATEST_VERSION_CODE :
-            resp = soft_update_resp
-        else:
-            resp = no_update_resp  
-    elif device_type == 'ios':
-        if device_version_code < config.IOS_NECESSARY_VERSION_CODE :
-            resp = hard_update_resp
-        elif device_version_code < config.IOS_LATEST_VERSION_CODE :
-            resp = soft_update_resp
-        else:
-            resp = no_update_resp
-    return resp
+    return {'hard_update': hard_update, 'soft_update': soft_update}
 
 
 def report_abuse(current_user_id, object_type, object_id, reason):
     report_abuse = ReportAbuse(user_by=current_user_id, entity_type=object_type, entity_id=object_id, reason=reason)
     db.session.add(report_abuse)
     db.session.commit()
-    return {'success':True, 'object_type':object_type, 'object_id':object_id}
+    return {'success': True, 'object_type': object_type, 'object_id': object_id}
+
 
 def get_rss():
     import rss_manager
     rss_manager.generate_answers_rss()
-    with open('/tmp/franklymeanswers.xml','r') as f:
+    with open('/tmp/franklymeanswers.xml', 'r') as f:
         s = f.read()
     return s
+
 
 def contact_file_upload(current_user_id, uploaded_file, device_id):
     contacts = uploaded_file.read()
@@ -2498,7 +2492,6 @@ def user_upload_contacts(user_id, device_id, contacts):
     contacts_json = json.loads(decryption(contacts))
     empty_contacts_filter = lambda contact: contact['email'] or contact['number']
     contacts = filter(empty_contacts_filter, contacts_json['contacts'])
-    return contacts
 
     for item in contacts:
         for number in item['number']:
@@ -2518,8 +2511,8 @@ def user_upload_contacts(user_id, device_id, contacts):
                 db.session.commit()
             except Exception as e:
                 print e
-    
-    return {'success':True}
+    return {'success': True}
+
 
 def add_contact(name, email, organisation, message, phone):
     from base64 import b64encode as enc
@@ -2527,12 +2520,12 @@ def add_contact(name, email, organisation, message, phone):
     b64msg = enc(name + email + organisation + message + phone)
     contact = ContactUs.query.filter(ContactUs.b64msg == b64msg).all()
     if contact:
-        return {'success' : True}
+        return {'success': True}
     else:
         contact = ContactUs(name, email, organisation, message, phone, b64msg)
         db.session.add(contact)
         db.session.commit()
-    return {'success' : True}
+    return {'success': True}
 
 
 def get_resized_image(image_url, height=262, width=262):
@@ -2814,6 +2807,7 @@ def get_remote(cur_user_id, offset=0, limit=20):
                                     'icon':None,
                                     'name':'Feed',
                                     'channel_id':'feed',
+                                    'id':'feed',
                                     'description':None
                                     }
                         }
@@ -2824,6 +2818,7 @@ def get_remote(cur_user_id, offset=0, limit=20):
                                         'name':'Discover',
                                         'icon':None,
                                         'channel_id':'discover',
+                                        'id':'discover',
                                         'description':None
                                         }
                             }
@@ -2838,10 +2833,19 @@ def get_remote(cur_user_id, offset=0, limit=20):
 
     return {'count':count, 'next_index':next_index, 'stream':remote}
 
-def get_list_user_ids(list_id):
+def app_welcome_users(cur_user_id, list_ids, offset=0, limit=20):
+    user_ids = get_list_user_ids(list_ids)
+    users = User.query.filter(User.id.in_(user_ids), User.deleted==False).offset(offset).limit(limit).all()
+    count = len(users)
+    next_index = -1 if count<limit else offset+limit
+    return {'next_index':next_index, 'count':count, 'stream':[thumb_user_to_dict(user) for user in users]}
+
+def get_list_user_ids(list_ids):
+    if type(list_ids)!=type([]):
+        list_ids = [list_ids]
     queries = """SELECT * FROM (SELECT list_items.child_user_id, list_items.parent_list_id, list_items.score
                                 FROM list_items 
-                                WHERE list_items.parent_list_id = :parent_list_id 
+                                WHERE list_items.parent_list_id in :parent_list_ids
                                     AND list_items.deleted = False
                                     AND list_items.child_user_id is NOT null
 
@@ -2851,16 +2855,16 @@ def get_list_user_ids(list_id):
                                 FROM list_items 
                                 WHERE list_items.parent_list_id in (SELECT list_items.child_list_id 
                                                                     FROM list_items 
-                                                                    WHERE list_items.parent_list_id = :parent_list_id 
+                                                                    WHERE list_items.parent_list_id in :parent_list_ids 
                                                                         AND list_items.deleted = False
                                                                         AND list_items.child_list_id is NOT null
                                                                     )
                                     AND list_items.deleted = False
                                     AND list_items.child_user_id is NOT null
                                 ) as result
-            ORDER BY result.parent_list_id=:parent_list_id, result.score
+            ORDER BY result.parent_list_id in :parent_list_ids, result.score
         """
-    results = db.session.execute(text(queries), params={'parent_list_id':list_id})
+    results = db.session.execute(text(queries), params={'parent_list_ids':list_ids})
     
     user_ids = [row[0] for row in results]
     print user_ids
@@ -3099,7 +3103,23 @@ def suggest_answer_author(question_body):
     return {'count':len(users), 'users':[thumb_user_to_dict(user) for user in users]}
 
 
-if __name__ == '__main__':
-    dic = {'https://s3.amazonaws.com/franklyapp/00d5b77a7a8d49b68abcfd9009cc5406/videos/04b01dc2ad5011e4917e22000b5119ba.mp4':1,'https://s3.amazonaws.com/franklyapp/0178bd7a07e94863abbb72f69eaae288/videos/5d9c45e09a2811e4abcb22000b5119ba.mp4':2}
-    print get_video_states(dic)
+def update_social_access_token(user_id, social_type, access_token, access_secret=None):
+    try:
+        user_data = get_data_from_external_access_token(social_type, access_token, access_secret)
+        token_valid = str(user_data['social_id']).strip()==str(social_id).strip()
+        
+        if not token_valid:
+            raise CustomExceptions.InvalidTokenException("Could not verify %s token"%social_type)
+
+        count = 0
+        if social_type=='facebook':
+            allowed_permissions = social_helpers.get_fb_permissions(access_token)
+            if 'publish_actions' in allowed_permissions:
+                count = User.query.filter(User.id==user_id, User.facebook_id==user_data['social_id']).update({'facebook_token':fb_access_token, 'facebook_write_permission':True})
+            else:
+                count = User.query.filter(User.id==user_id, User.facebook_id==user_data['social_id']).update({'facebook_token':fb_access_token, 'facebook_write_permission':False})
+        db.session.commit()
+        return bool(count)
+    except CustomExceptions.InvalidTokenException:
+        raise CustomExceptions.BadRequestException('invalid token')
 

@@ -354,6 +354,33 @@ class SlugItem(restful.Resource):
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
+class UsersFollow(restful.Resource):
+    post_parser = reqparse.RequestParser()
+    post_parser.add_argument('user_ids', required=True, type=list, location='json', help="user_ids must be list of user_id of the users to be followed. Maximum 20.")
+
+    @login_required
+    def post(self):
+        """
+        Lets current user follow the users with user_id provided in user_ids list.
+
+        Controller Functions Used:
+            - users_follow
+
+        Authentication: Required
+        """
+        args = self.post_parser.parse_args()
+        try:
+            resp = controllers.users_follow(current_user.id, user_ids=args['user_ids'])
+            return resp
+
+        except CustomExceptions.BadRequestException as e:
+            abort(400, message=str(e))
+
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
 
 
 class UserFollow(restful.Resource):
@@ -411,7 +438,36 @@ class UserUnfollow(restful.Resource):
 
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
+
+
+class UsersUnfollow(restful.Resource):
+    post_parser = reqparse.RequestParser()
+    post_parser.add_argument('user_ids', required=True, type=str, location='json', help="user_ids must be list of user_id of the users to be unfollowed. Maximum 20.")
+
+    @login_required
+    def post(self):
+        """
+        Lets current user unfollow the user with user_id provided in argument.
+
+        Controller Functions Used:
+            - users_unfollow
+
+        Authentication: Required
+        """
+        args = self.post_parser.parse_args()
+        try:
+            resp = controllers.users_unfollow(current_user.id, user_id=args['user_ids'])
+            return resp
+
+        except CustomExceptions.BadRequestException as e:
+            abort(400, message=str(e))
+
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
@@ -420,7 +476,7 @@ class UserFollowers(restful.Resource):
 
     get_parser = reqparse.RequestParser()
     get_parser.add_argument('offset', default=0, type=int, location='args', help="offset must be integer >=0")
-    get_parser.add_argument('limit' , default=10, type=int, location='args', help="limit must be >=0")
+    get_parser.add_argument('limit',  default=10, type=int, location='args', help="limit must be >=0")
     
     def get(self, user_id):
         """
@@ -763,36 +819,6 @@ class UpdatePushId(restful.Resource):
         try:
             controllers.update_push_id(current_user.id, device_id=args['device_id'], push_id=args['push_id'])
             return {'success' : True}
-        except Exception as e:
-            err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
-            print traceback.format_exc(e)
-            abort(500, message=internal_server_error_message)
-
-class UserUpdateToken(restful.Resource):
-    post_parser = reqparse.RequestParser()
-    post_parser.add_argument('acc_type', type=str, location='json', default='facebook', choices=['facebook'])
-    post_parser.add_argument('token'   , type=str, location='json', required=True)
-    
-    @login_required
-    def post(self):
-        """
-        Updates 3rd party auth token of the current_user, e.g. Facebook auth token.
-
-        Controller Functions Used:
-            - user_update_access_token
-
-        Authentication: Required
-        """
-        args = self.post_parser.parse_args()
-        try:
-            resp = controllers.user_update_access_token(current_user.id, acc_type=args['acc_type'], token=args['token'])
-            return resp
-
-        except CustomExceptions.BadRequestException as e:
-            print traceback.format_exc(e)
-            abort(400, message=str(e))
-
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])
@@ -1871,7 +1897,8 @@ class VideoView(restful.Resource):
     
     get_parser = reqparse.RequestParser()
     get_parser.add_argument('url', type=str, location='args', required=True)
-    
+    get_parser.add_argument('redirect', type=int, location='args', default=0, help="if redirect is greater than 0, the required will be redirected tot he value in url.")
+
     def get(self):
         """
         Redirects to the url provided in the argument.
@@ -1887,7 +1914,10 @@ class VideoView(restful.Resource):
         try:
             from flask import redirect
             controllers.view_video(args['url'])
-            return redirect(args['url'])
+            if bool(args['redirect']):
+                return redirect(args['url'])
+            else:
+                return {'success':True}
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])
@@ -2522,17 +2552,50 @@ class ImageResizer(restful.Resource):
             abort(500, message=internal_server_error_message)
 
 
-class UserContactsUpload(restful.Resource):
+
+class AppWelcomePage(restful.Resource):
+    post_parser = reqparse.RequestParser()
+    post_parser.add_argument('list_ids', type=list, required=True, location='json')
+    post_parser.add_argument('offset', type=int, required=True, location='json')
+    post_parser.add_argument('limit', type=int, required=True, location='json')
+    
     @login_required
     def post(self):
-        post_parser = reqparse.RequestParser()
-        post_parser.add_argument('uploaded_file', type=file, required=True, location='files')
-        post_parser.add_argument('X-Deviceid', type=str, required=True, location='headers', dest='device_id')
+        
 
-        args = post_parser.parse_args()
+        args = self.post_parser.parse_args()
+        try:
+            resp = controllers.app_welcome_users(current_user.id,
+                                                args['list_ids'],
+                                                offset=args['offset'],
+                                                limit=args['limit'])
+            return resp
+        
+        except CustomExceptions.BadFileFormatException as e:
+            print traceback.format_exc(e)
+            abort(400, message='File format not allowed')
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message='upload failure')
+
+
+
+
+class UserContactsUpload(restful.Resource):
+
+    post_parser = reqparse.RequestParser()
+    post_parser.add_argument('uploaded_file', type=file, required=True, location='files')
+    post_parser.add_argument('X-Deviceid', type=str, required=True, location='headers', dest='device_id')
+
+    @login_required
+    def post(self):
+        
+        args = self.post_parser.parse_args()
         try:
             resp = controllers.contact_file_upload(current_user.id, args['uploaded_file'], args['device_id'])
-            return {'success': True, 'resp':resp}
+            return resp
         
         except CustomExceptions.BadFileFormatException as e:
             print traceback.format_exc(e)
@@ -2611,6 +2674,7 @@ class ReceiveSNSNotifications(restful.Resource):
 class PublicDocumentation(restful.Resource):
     get_parser = reqparse.RequestParser()
     get_parser.add_argument('doc_key', type=str, location='args', required=True)
+    
     def get(self):
         args = self.get_parser.parse_args()
         if args['doc_key'] == 'AFfbe394002dde':
@@ -2625,6 +2689,14 @@ class PublicDocumentation(restful.Resource):
         else:
             abort(403, message='Ra Ra Rasputin says: You are are hitting a wrong url.')
 
+class ChannelNewCount(restful.Resource):
+    post_parser = reqparse.RequestParser()
+    post_parser.add_argument('channel_ids', type=list, location='json', required=True, help='example: [{"channel_id":"feed", "last_item_type":"user", "last_item_id":"92374u4j4e48489494848495"}, {"channel_id":"feed", "last_item_type":"post", "last_item_id":"88374u4j4e48489494848eab4"}]')
+
+    def post(self):
+        args = self.post_parser.parse_args()
+        resp = [{"channel_id":item["channel_id"], "count":0} for item in args['channel_ids']]
+        return resp
 
 
 class AnswerAuthorSuggest(restful.Resource):
@@ -2635,5 +2707,42 @@ class AnswerAuthorSuggest(restful.Resource):
         return controllers.suggest_answer_author(args['question_body'])
 
 
+class UpdateToken(restful.Resource):
+    post_parser = reqparse.RequestParser()
+    post_parser.add_argument('access_token', type=str, location='json', required=True)
+    post_parser.add_argument('access_secret', type=str, location='json')
+
+    
+    @login_required
+    def post(self, social_type):
+        """
+        Update the access token for the particular social_type
+        Support for:
+            - Facebook(/update_token/facebook)
+
+
+        Controller Functions Used:
+            - update_facebook_access_token
+
+        Authentication: Required
+        """
+        args = self.post_parser.parse_args()
+        try:
+            if social_type in ['facebook', 'twitter']:
+                success = controllers.update_social_access_token(user_id=current_user.id,
+                                                                social_type=social_type,
+                                                                access_token=args['access_token'],
+                                                                access_secret=args.get('access_secret')
+                                                                )
+                return {'success': success}
+            else:
+                raise CustomExceptions.BadRequestException('URL Not Found.')
+        except CustomExceptions.BadRequestException as e:
+            abort(404, message=str(e))
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0],err[1],err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
 
 

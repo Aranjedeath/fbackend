@@ -3,12 +3,30 @@ from sqlalchemy.sql import text
 from CustomExceptions import ObjectNotFoundException
 from models import Question, Notification, UserNotificationInfo, UserPushNotification
 
+
 import util
 import helper
 import make_notification as notification
 import push_notification as push
 import datetime
 
+def make_data():
+    from models import User, Post
+    u = User.query.filter(User.username == 'chimpspanner').first()
+    s = User.query.filter(User.username == 'shashank').first()
+    p = Post.query.filter(Post.answer_author == s.id, Post.question_author == u.id).first()
+    print p.id
+    n = Notification.query.filter(Notification.object_id == p.id, Notification.type == 'post-add-self_user').first()
+    print n.id
+    try:
+        UserPushNotification.query.filter(UserPushNotification.user_id == u.id,
+                                           UserPushNotification.notification_id == n.id).delete()
+        db.session.commit()
+    except:
+        pass
+    post_notifications(p.id)
+
+    #print up.id
 
 '''
 Sends out both Push and email.
@@ -84,30 +102,35 @@ e) User's overall popularity
 def decide_question_push(user_id, question_id):
     ''' Decide pushing notification on the basis
     of user's popularity'''
+    interval = datetime.datetime.now() - datetime.timedelta(hours=6)
+    notification_sent = count_of_notifications_sent_by_type(user_id=user_id,
+                                                                   notification_type='question-ask-self_user',
+                                                                   interval=interval)
 
-    notifications_sent_today = count_of_notifications_sent_by_type(user_id=user_id,
-                                                                   notification_type='question-ask-self_user')
-
-    good_time = 10 < (datetime.datetime.now() + datetime.timedelta(seconds=18600)).hour < 22
-
-
-    if notifications_sent_today < 2 and good_time:
-        questions_today = Question.query.filter(Question.question_to == user_id, Question.timestamp >=
-                                            datetime.datetime.now() - datetime.timedelta(days=1)).count()
-        print 'Good time bro'
-        if questions_today > 10 or is_popular(user_id):
-
-            upvotes = util.get_question_upvote_count(question_id)
-            print 'Upvotes are good'
-            if upvotes > 2:
-                return True
-            else:
-                return False
-
-        else:
-            return True
+    if notification_sent == 0:
+        return True
     else:
         return False
+    # good_time = 10 < (datetime.datetime.now() + datetime.timedelta(seconds=18600)).hour < 22
+    #
+    #
+    # if notifications_sent_today < 2 and good_time:
+    #     questions_today = Question.query.filter(Question.question_to == user_id, Question.timestamp >=
+    #                                         datetime.datetime.now() - datetime.timedelta(days=1)).count()
+    #     print 'Good time bro'
+    #     if questions_today > 10 or is_popular(user_id):
+    #
+    #         upvotes = notification_util.get_question_upvote_count(question_id)
+    #         print 'Upvotes are good'
+    #         if upvotes > 2:
+    #             return True
+    #         else:
+    #             return False
+    #
+    #     else:
+    #         return True
+    # else:
+    #     return False
 
 
 def push_question_notification(question_id):
@@ -225,9 +248,9 @@ def question_upvotes_milestone_notifications():
                                                             inner join questions on questions.id = pl.question
                                                             where pl.timestamp >= date_sub(now(), interval 1 day)
                                                             group by pl.question;
-                                        
+
                                                         '''))
-    
+
     for row in result:
         check_and_make_milestone('post_likes', row[1], row[0], util.get_post_like_count(row[0]))
 
@@ -235,7 +258,7 @@ def question_upvotes_milestone_notifications():
 def check_and_make_milestone(milestone_name, user_id, associated_item_id, count):
     """
     check the latest crossed milestone and sends a notification about the same.
-    
+
     associated_item_id is the id of post of question in case of likes of upvotes of questions / posts
 
     """
@@ -265,8 +288,10 @@ def get_milestone_crossed(count, milestone_count_list):
 
 def count_of_push_notifications_sent(user_id):
 
-    result = db.session.execute(text("Select count(*) from user_push_notifications "
-                                     "where user_id = :user_id and pushed_at >= date_sub(NOW(), interval 1 day);"),
+    result = db.session.execute(text('''Select sum(x.n_count) from (
+                                        Select count(*) as n_count from user_push_notifications
+                                        where user_id = :user_id and pushed_at >= date_sub(NOW(), interval 1 day)
+                                        group by notification_id) as x'''),
                                 params={'user_id': user_id})
 
     for row in result:

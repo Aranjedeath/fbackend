@@ -17,21 +17,21 @@ dict = {
                         },
     "welcome_mail":   {
                           "subject" : "Welcome to Frankly.me!",
-                          "body": '''Welcome to Frankly.me where Arvind Kejriwal, Javed Akhtar, Gurdaas Maan, Yogendra Yadav and \n
-                                      many more are waiting for you. <br/><br/>Frankly.me is now here to help you reach the\n
-                                      most important people of your life. Just log in, ask frank questions and get\n
-                                      answered in form of video selfie. <br/><br/> Just in case you forget,
-                                      your credentials are as follows: <br/>\n
-                                      Username: %s <br/> Password: %s <br/><br/>\n
-                                      Have a rocking stay at Frankly.me!''',
+                          "body": '''Welcome to Frankly.me where public figures from all walks and forms of
+                                    life give frank answers to your questions. <br/><br/>
+                                    Also, we've just created your profile. You can use it to ask anybody anything or even
+                                    answer questions of your friends and followers.<br/><br/> http://frankly.me/{0}
+                                    <br/><br/>
+                                    Have beautiful conversations at frankly.me
+                                    '''
                         },
     "question_asked_by": {
                           "subject" : "Your question has been asked",
 
-                          "body": '''Congratulations!<br/><br/>Your question has been successfully posted. We will make
-                                     sure it gets answered and till then, you can ask more questions to
-                                     %s. <br/><br/> Also, don't forget to answer the questions that you are asked by your
-                                     fans and friends. They might be waiting for you to respond.''',
+                          "body": '''Congratulations {0}, <br/><br/> Your question to {1} has been successfully posted.
+                                     <br/><br/>You can view {2}'s complete profile and see his previous replies. <br/><br/>
+                                     Also you can meet and start frank conversations with many other interesting people
+                                     at frankly.me/discover''',
 
                           "body_first_question": '''Your first question has been asked. We will try our best to get it
                                                     answered.<br/><br/> Go ahead and ask more questions to your favorite
