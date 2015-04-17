@@ -2695,7 +2695,7 @@ class ChannelNewCount(restful.Resource):
 
     def post(self):
         args = self.post_parser.parse_args()
-        resp = {'data': [{"channel_id":item["channel_id"], "count":0} for item in args['channel_ids']]}
+        resp = {'counts': [{"channel_id":item["channel_id"], "count":0} for item in args['channel_ids']]}
         return resp
 
 
