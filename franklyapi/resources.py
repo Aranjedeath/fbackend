@@ -110,6 +110,9 @@ class LoginSocial(restful.Resource):
 
         Authentication: None
         """
+        current_user_id = None
+        if current_user.is_authenticated():
+            current_user_id = current_user.id
         args = self.post_parser.parse_args()
         try:
             if login_type not in ['google', 'facebook', 'twitter']:
@@ -124,7 +127,8 @@ class LoginSocial(restful.Resource):
                                                  push_id              =args.get('push_id'),
                                                  external_token_secret=args.get('external_token_secret'),
                                                  user_type            =args.get('user_type'),
-                                                 user_title           =args.get('user_title')
+                                                 user_title           =args.get('user_title'),
+                                                 current_user         =current_user_id
                                                  )
         
         except CustomExceptions.InvalidTokenException as e:

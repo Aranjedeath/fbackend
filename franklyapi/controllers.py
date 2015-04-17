@@ -250,7 +250,7 @@ def get_twitter_email(twitter_id):
 
 
 def login_user_social(social_type, social_id, external_access_token, device_id, push_id=None, 
-                        external_token_secret = None, user_type=0, user_title=None):
+                        external_token_secret=None, user_type=0, user_title=None, current_user_id=None):
     user_data = get_data_from_external_access_token(social_type, external_access_token, external_token_secret)
     token_valid = str(user_data['social_id']).strip()==str(social_id).strip()
     
@@ -260,6 +260,13 @@ def login_user_social(social_type, social_id, external_access_token, device_id, 
     user = get_user_from_social_id(social_type, social_id)
     device_type = get_device_type(device_id)
 
+    if current_user_id:
+        return login_user_social_with_user_context(current_user_id=current_user_id, social_user=user,
+                                                    social_type=social_type, social_id=social_id, 
+                                                    external_access_token=external_access_token,
+                                                    external_token_secret=external_token_secret,
+                                                    push_id=push_id)
+        
     update_dict = {'deleted':False, '%s_token'%(social_type):external_access_token, '%s_id'%(social_type):social_id}
 
     if social_type == 'twitter':
@@ -334,6 +341,16 @@ def login_user_social(social_type, social_id, external_access_token, device_id, 
                 'new_user' : True, 'user_type': new_user.user_type,
                 'user':user_to_dict(new_user)
                 } 
+
+def login_user_social_with_context(current_user_id, social_user, social_type, social_id, 
+                                    external_access_token, external_token_secret):
+    context_user = User.query.filter(User.id==current_user_id).one()
+    if social_user:
+        if social_user.id == context_user.id:
+            refresh_token()
+        elif social_user.id != context_user.id:
+            raise CustomExceptions.BadRequestException('Social account belongs to other user')
+
 
 def login_email_new(user_id, id_type, password, device_id, push_id=None):
     try:
