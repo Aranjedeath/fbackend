@@ -2435,10 +2435,7 @@ def get_item_from_slug(current_user_id, username, slug):
     try:
         question = Question.query.filter(Question.slug==slug,
                                             Question.deleted==False,
-                                            Question.is_ignored==False,
-                                            or_(Question.is_answered==True,
-                                                Question.public==True,
-                                                Question.question_to==current_user_id)
+                                            Question.is_ignored==False
                                             ).one()
         question_to = User.query.filter(User.id==question.question_to).one()
         if question_to.username.lower() != username.lower():
