@@ -250,7 +250,7 @@ def get_twitter_email(twitter_id):
 
 
 def login_user_social(social_type, social_id, external_access_token, device_id, push_id=None, 
-                    external_token_secret=None, user_type=0, user_title=None, current_user_id=None):
+                    external_token_secret=None, user_type=0, user_title=None):
     user_data = get_data_from_external_access_token(social_type, external_access_token, external_token_secret)
     token_valid = str(user_data['social_id']).strip()==str(social_id).strip()
     
@@ -259,12 +259,6 @@ def login_user_social(social_type, social_id, external_access_token, device_id, 
 
     user = get_user_from_social_id(social_type, social_id)
     device_type = get_device_type(device_id)
-
-    if current_user_id:
-        return login_user_social_with_user_context(current_user_id=current_user_id, social_user=user,
-                                                    social_type=social_type, social_id=social_id, 
-                                                    external_access_token=external_access_token,
-                                                    external_token_secret=external_token_secret)
         
     update_dict = {'deleted':False, '%s_token'%(social_type):external_access_token, 
                     '%s_id'%(social_type):social_id}
@@ -341,50 +335,6 @@ def login_user_social(social_type, social_id, external_access_token, device_id, 
                 'new_user' : True, 'user_type': new_user.user_type,
                 'user':user_to_dict(new_user)
                 } 
-
-def login_user_social_with_context(current_user_id, social_user, social_type, social_id, 
-                                    external_access_token, external_token_secret):
-    context_user = User.query.filter(User.id==current_user_id).one()
-
-    update_dict = {'%s_token'%(social_type): external_access_token, 
-                    '%s_id'%(social_type): social_id}
-
-    if token_type == 'twitter':
-        update_dict['twitter_secret'] = external_token_secret
-
-    if social_user:
-        if social_user.id != context_user.id:
-            raise CustomExceptions.BadRequestException('Social account belongs to other email')
-    else:
-        User.query.filter(User.id==context_user.id).update(update_dict)
-        db.session.commit()
-        return {'access_token': access_token, 'id': context_user.id,
-                'username': context_user.username, 'activated_now': activated_now,
-                'new_user': False, 'user_type': context_user.user_type,
-                'user': user_to_dict(context_user)}
-
-
-def merge_accounts(base_account, merge_account):
-    if not base_account.first_name:
-        base_account.first_name = 
-
-# def refresh_social_access_token(user_id, social_type, social_id, external_access_token,
-#                                 external_token_secret=None):
-#     update_dict = {'deleted':False, '%s_token'%(social_type):external_access_token, 
-#                     '%s_id'%(social_type):social_id}
-#     if social_type == 'twitter':
-#         user = User.query.filter(User.id==user_id, User.twitter_id==social_id).first()
-#         update_dict['twitter_secret'] = external_token_secret
-#     elif social_type == 'facebook':
-#         user = User.query.filter(User.id==user_id, User.facebook_id==social_id).first()
-#     elif social_type == 'google':
-#         user = User.query.filter(User.id==user_id, User.google_id==social_id).first()
-#     if not user:
-#         CustomExceptions.BadRequestException('Unable to refresh access token')
-#     return bool(User.query.filter(User.id==user.id).update(update_dict))
-
-
-
 
 
 def login_email_new(user_id, id_type, password, device_id, push_id=None):
@@ -3183,17 +3133,150 @@ def update_social_access_token(user_id, social_type, access_token, access_secret
         token_valid = str(user_data['social_id']).strip()==str(social_id).strip()
         
         if not token_valid:
-            raise CustomExceptions.InvalidTokenException("Could not verify %s token"%social_type)
+            raise CustomExceptions.InvalidTokenException("Could not verify %s token" %social_type)
+
+        context_user = User.query.filter(User.id==user_id).one()
+        social_user = get_user_from_social_id(social_type, social_id)
 
         count = 0
+
+        update_dict = {'%s_token'%(social_type): external_access_token, 
+                        '%s_id'%(social_type): social_id}
+        if token_type == 'twitter':
+            if not access_secret:
+                raise CustomExceptions.BadRequestException('Twitter token secret required.')
+            update_dict['twitter_secret'] = access_secret
+
+        if social_user:
+            if social_user.id != context_user.id:
+                raise CustomExceptions.BadRequestException('Social account belongs to other email')
+            else:
+                count = User.query.filter(User.id==context_user.id).update(update_dict)
+        else:
+
         if social_type=='facebook':
             allowed_permissions = social_helpers.get_fb_permissions(access_token)
-            if 'publish_actions' in allowed_permissions:
-                count = User.query.filter(User.id==user_id, User.facebook_id==user_data['social_id']).update({'facebook_token':fb_access_token, 'facebook_write_permission':True})
-            else:
-                count = User.query.filter(User.id==user_id, User.facebook_id==user_data['social_id']).update({'facebook_token':fb_access_token, 'facebook_write_permission':False})
+            write_permission = 'publish_actions' in allowed_permissions
+            count = User.query.filter(User.id==user_id, User.facebook_id==user_data['social_id'])
+                                .update({'facebook_token': fb_access_token, 
+                                        'facebook_write_permission': write_permission})
         db.session.commit()
         return bool(count)
     except CustomExceptions.InvalidTokenException:
         raise CustomExceptions.BadRequestException('invalid token')
+
+def login_user_social_with_context(current_user_id, social_user, social_type, social_id, 
+                                    external_access_token, external_token_secret):
+    context_user = User.query.filter(User.id==current_user_id).one()
+
+    update_dict = {'%s_token'%(social_type): external_access_token, 
+                    '%s_id'%(social_type): social_id}
+
+    if token_type == 'twitter':
+        update_dict['twitter_secret'] = external_token_secret
+
+    if social_user:
+        if social_user.id != context_user.id:
+            raise CustomExceptions.BadRequestException('Social account belongs to other email')
+    else:
+        User.query.filter(User.id==context_user.id).update(update_dict)
+        db.session.commit()
+        return {'access_token': access_token, 'id': context_user.id,
+                'username': context_user.username, 'activated_now': activated_now,
+                'new_user': False, 'user_type': context_user.user_type,
+                'user': user_to_dict(context_user)}
+
+def login_user_social(social_type, social_id, external_access_token, device_id, push_id=None, 
+                    external_token_secret=None, user_type=0, user_title=None):
+    user_data = get_data_from_external_access_token(social_type, external_access_token, external_token_secret)
+    token_valid = str(user_data['social_id']).strip()==str(social_id).strip()
+    
+    if not token_valid:    
+        raise CustomExceptions.InvalidTokenException("Could not verify %s token"%social_type)
+
+    user = get_user_from_social_id(social_type, social_id)
+    device_type = get_device_type(device_id)
+        
+    update_dict = {'deleted':False, '%s_token'%(social_type):external_access_token, 
+                    '%s_id'%(social_type):social_id}
+
+    if social_type == 'twitter':
+        update_dict.update({'twitter_secret':external_token_secret})
+        user_data['email'] = get_twitter_email(user_data['social_id'])
+        user_data['social_id'] = str(user_data['social_id']).strip()
+        user = User.query.filter(User.twitter_id==user_data['social_id']).first()
+
+    existing_user = None
+    if social_type in ['facebook', 'google']:
+        existing_user = User.query.filter(User.email==user_data['email']).first()
+
+    if existing_user and not user:
+        user = existing_user
+
+    if user:
+        access_token = generate_access_token(user.id, device_id)
+        set_access_token(device_id, device_type, user.id, access_token, push_id)
+        activated_now=user.deleted
+        User.query.filter(User.id==user.id).update(update_dict)
+        db.session.commit()
+
+        return {'access_token': access_token, 'id':user.id,
+                'username':user.username, 'activated_now': activated_now,
+                'new_user' : False, 'user_type' : user.user_type,
+                'user':user_to_dict(user)
+                }
+    
+    else:
+        username = make_username(user_data['email'], user_data.get('full_name'), user_data.get('social_username'))
+        
+        registered_with = '%s_%s'%(device_type, social_type)
+
+        new_user = User(email=user_data['email'], username=username, first_name=user_data['full_name'], 
+                        registered_with=registered_with, user_type=user_type, gender=user_data.get('gender'), user_title=user_title,
+                        location_name=user_data.get('location_name'), country_name=user_data.get('country_name'),
+                        country_code=user_data.get('country_code'))
+        
+        if user_data.get('profile_picture'):
+            new_user.profile_picture = media_uploader.upload_user_image(user_id=new_user.id, 
+                                                        image_url=user_data['profile_picture'], 
+                                                        image_type='profile_picture')
+        
+        if social_type == 'facebook':
+            new_user.facebook_id = social_id
+            extended_external_token = social_helpers.get_extended_graph_token(external_access_token)
+            new_user.facebook_token = extended_external_token
+
+            allowed_permissions = social_helpers.get_fb_permissions(new_user.facebook_token)
+            if 'publish_actions' in allowed_permissions:
+                new_user.facebook_write_permission = True
+        
+        elif social_type == 'twitter':
+            new_user.twitter_id = social_id
+            new_user.twitter_token = external_access_token
+            new_user.twitter_secret = external_token_secret
+            #twitter write perm check.
+
+
+        elif social_type == 'google':
+            new_user.google_id = social_id
+            new_user.google_token = external_access_token
+
+        db.session.add(new_user)
+        db.session.commit()
+        access_token = generate_access_token(new_user.id, device_id)
+        set_access_token(device_id, device_type, new_user.id, access_token, push_id)
+        new_registration_task(new_user.id)
+
+        return {'access_token': access_token, 'id':new_user.id,
+                'username':new_user.username, 'activated_now':False,
+                'new_user' : True, 'user_type': new_user.user_type,
+                'user':user_to_dict(new_user)
+                } 
+
+
+
+
+def merge_accounts(base_account, merge_account):
+    if not base_account.first_name:
+        base_account.first_name = 
 
