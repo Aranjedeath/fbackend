@@ -3135,13 +3135,17 @@ def update_social_access_token(user_id, social_type, access_token, access_secret
         if not token_valid:
             raise CustomExceptions.InvalidTokenException("Could not verify %s token" %social_type)
 
-        context_user = User.query.filter(User.id==user_id).one()
+        context_user = User.query.filter(User.id==user_id).first()
+        if not context_user:
+            raise CustomExceptions.BadRequestException('not a valid user')
+
         social_user = get_user_from_social_id(social_type, social_id)
 
         count = 0
 
         update_dict = {'%s_token'%(social_type): external_access_token, 
                         '%s_id'%(social_type): social_id}
+
         if token_type == 'twitter':
             if not access_secret:
                 raise CustomExceptions.BadRequestException('Twitter token secret required.')
@@ -3154,7 +3158,7 @@ def update_social_access_token(user_id, social_type, access_token, access_secret
                 count = User.query.filter(User.id==context_user.id).update(update_dict)
         else:
 
-        if social_type=='facebook':
+        if social_type == 'facebook':
             allowed_permissions = social_helpers.get_fb_permissions(access_token)
             write_permission = 'publish_actions' in allowed_permissions
             count = User.query.filter(User.id==user_id, User.facebook_id==user_data['social_id'])
