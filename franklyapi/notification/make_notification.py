@@ -1,12 +1,16 @@
-from models import User, Question, Notification, Post, Upvote, \
-                   Follow, UserNotificationInfo, Comment
-from database import get_item_id
-from app import db
-from configs import config
-from notification import helper, user_notification as un, notification_decision
-from sqlalchemy.orm.exc import NoResultFound
-
 import datetime
+
+from sqlalchemy.orm.exc import NoResultFound
+from models import User, Question, Notification, Post,\
+                   Upvote, Follow, UserPushNotification
+from app import db
+from CustomExceptions import ObjectNotFoundException
+from database import get_item_id
+from configs import config
+from notification.commons import helper
+from notification.commons import notification_decision
+from notification import user_notification, push_notification as push
+
 
 key = helper.key
 
@@ -21,17 +25,17 @@ def notification_logger(nobject, for_users, manual=False, created_at=datetime.da
     db.session.add(notification)
     db.session.commit()
 
-    un.add_notification_for_user(notification_id=notification.id, for_users=for_users,
+    user_notification.add_notification_for_user(notification_id=notification.id, for_users=for_users,
                                  list_type=list_type,
                                  push_at=push_at,k=k)
     return notification
 
-'''Creates an in-app notification
-for a new question that has been
-asked to the user'''
-
 
 def ask_question(question_id, notification_type='question-ask-self_user'):
+
+    '''Creates an in-app notification
+        for a new question that has been
+        asked to the user'''
 
     k = key[notification_type]
     question = Question.query.get(question_id)
@@ -59,18 +63,16 @@ def ask_question(question_id, notification_type='question-ask-self_user'):
     return notification
 
 
-
-''' Creates a new in-app
-notification whenever a new answer is added.
-The push is done later when the video is ready.
-Notification is created for:
-a) Question Author
-b) Upvoters
-c) Followers of answer author
-'''
-
-
 def new_post(post_id, question_body="", notification_type='post-add-self_user'):
+    ''' Creates a new in-app
+        notification whenever a new answer is added.
+        The push is done later when the video is ready.
+        Notification is created for:
+        a) Question Author
+        b) Upvoters
+        c) Followers of answer author
+        '''
+
 
     k = key[notification_type]
     post = Post.query.get(post_id)
@@ -105,13 +107,13 @@ def new_post(post_id, question_body="", notification_type='post-add-self_user'):
     return notification
 
 
-''' Create in-app notifications for users who are
+def following_answered_question(author_id, question_body, nobject, upvoters,
+                                notification_type='post-add-following_user'):
+
+    ''' Create in-app notifications for users who are
     following another user who has
     answered a question
-'''
-
-
-def following_answered_question(author_id, question_body, nobject, upvoters, notification_type='post-add-following_user'):
+    '''
 
     author = User.query.filter(User.id == author_id).one()
 
@@ -181,9 +183,43 @@ def new_celebrity_user(celebrity_id=None, users=[], notification_type='new-celeb
     notification_logger(nobject=nobject, for_users=users, push_at=datetime.datetime.now())
 
 
-'''Generic method for sending all sorts of milestone
-notifications'''
+def follow_milestone(user_id):
+
+    mobject = notification_decision.decide_follow_milestone(user_id)
+    if mobject:
+       send_milestone_notification(mobject['milestone_name'], mobject['milestone_crossed'], mobject['object_id'],
+                                   mobject['user_id'])
+
+
+def question_upvote(user_id, question_id):
+    try:
+
+        should_be_pushed = notification_decision.decide_question_push(user_id=user_id, question_id=question_id)
+        if should_be_pushed:
+
+            n = Notification.query.filter(Notification.object_id == question_id,
+                                          Notification.type == 'question-ask-self_user').first()
+            if n is not None:
+                pushed = UserPushNotification.query.filter(UserPushNotification.notification_id == n.id,
+                                                           UserPushNotification.user_id == user_id).count()
+
+                if not pushed:
+                    push.send(notification_id=n.id, user_id=user_id)
+    except ObjectNotFoundException:
+        pass
+
+def post_milestone(post_id, user_id):
+
+    mobject = notification_decision.decide_post_milestone(post_id, user_id)
+    if mobject:
+       send_milestone_notification(mobject['milestone_name'], mobject['milestone_crossed'], mobject['object_id'],
+                                   mobject['user_id'])
+
+
 def send_milestone_notification(milestone_name, milestone_crossed, object_id, user_id):
+
+    ''' Generic method for sending all sorts of milestone
+        notifications'''
 
     nobject = {
         'notification_type': (milestone_name+ '_' + milestone_crossed),
@@ -242,21 +278,3 @@ def comment_on_post(post_id, comment_id, comment_author, notification_type='comm
         }
 
         notification_logger(nobject=nobject, for_users=[post.answer_author], push_at=datetime.datetime.now())
-
-def hack():
-
-    users = User.query.filter(User.monkness != -1).limit(1000).offset(0)
-    print 'Here'
-
-    import controllers
-
-    for user in users:
-        print user.first_name
-        controllers.user_follow(user.id, 'cab4132c53e4940ddf31032f794967c6')
-
-    # text = "Your followers want to know more about you! Answer the best ones from more than 500 questions asked to you."
-    # link = "http://frankly.me/answer"
-    # icon = None
-    # notification_logger(notification_type='pending-question-self_user',text=text,link=link,
-    #                     object_id = user.id,
-    #                     icon=icon,pushed_for=[user.id], push_at=datetime.datetime.now())

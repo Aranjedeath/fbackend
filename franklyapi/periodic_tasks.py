@@ -1,13 +1,15 @@
+import datetime
+import traceback
+
 from video_db import update_view_count_to_db, redis_views, update_total_view_count
 from app import db
 from models import User
 from analytics import stats
 from mail import admin_email
-from notification import notification_decision, push_notification
-
-import datetime
+from notification import push_notification
+from franklyapi.notification.commons import notification_decision
 import async_encoder
-import traceback
+
 
 '''
 @ 00:00 every day
@@ -76,7 +78,8 @@ def reassign_pending_video_tasks():
             async_encoder.encode_video_task.delay(video_url=v.url, username=v.username)
             assigned_urls.append(v.url)
     virgin_video_count = len(assigned_urls)
-
+    if not assigned_urls:
+        assigned_urls = [' ']
     other_videos = db.session.execute(text(
                                             """SELECT v.url, v.object_id, v.video_type, v.username,
                                                     v.created_at, u.user_type, v.opt, v.medium, v.low, v.ultralow, v.promo,

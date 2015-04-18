@@ -4,7 +4,7 @@ import media_uploader
 import video_encoder
 from configs import config
 from celery import Celery
-import notification
+from notification.commons import notification_decision
 import video_db
 from app import db, raygun
 
@@ -22,7 +22,7 @@ for item, data in video_encoder.VIDEO_ENCODING_PROFILES.items():
 @cel.task(queue='encoding')
 def encode_video_task(video_url, username='', profiles=video_encoder.VIDEO_ENCODING_PROFILES.keys(), queues={}, redo=False):
     default_queue = default_queues.copy()
-    for profile, queue  in queues.items():
+    for profile, queue in queues.items():
         default_queue['item'] = queue
 
     file_path = None
@@ -33,19 +33,19 @@ def encode_video_task(video_url, username='', profiles=video_encoder.VIDEO_ENCOD
             log_id = video_db.add_video_encode_log_start(video_url=video_url, video_quality=profile_name)
             if redo:
                 _try_video_again(video_url, username, profiles)
-            
 
-            _encode_video_to_profile.apply_async(kwargs={'file_path':file_path, 
-                                                        'video_url':video_url, 
-                                                        'profile':profile_name,
-                                                        'log_id':log_id,
-                                                        'username':username
-                                                        },
-                                                queue=default_queue[profile_name]
-                                                )
+            _encode_video_to_profile.apply_async(kwargs={'file_path': file_path,
+                                                         'video_url': video_url,
+                                                         'profile': profile_name,
+                                                         'log_id': log_id,
+                                                         'username': username
+                                                         },
+                                                 queue=default_queue[profile_name]
+                                                 )
         else:
             print 'Already Done'
     db.engine.dispose()
+
 
 @cel.task(queue='encoding_low_priority')
 def _encode_video_to_profile(file_path, video_url, profile, log_id, username=''):
@@ -53,11 +53,11 @@ def _encode_video_to_profile(file_path, video_url, profile, log_id, username='')
         print 'Not Retrying now.'
         return
     result = video_encoder.encode_video_to_profile(file_path, video_url, profile, username)
-    video_db.update_video_encode_log_finish(log_id,result)
+    video_db.update_video_encode_log_finish(log_id, result)
     video_db.update_video_state(video_url, result)
-    
+
     #if low was not made make try for medium
-    if profile=='low' and not result:
+    if profile == 'low' and not result:
         log_id = video_db.add_video_encode_log_start(video_url=video_url, video_quality='medium')
         _encode_video_to_profile(file_path, video_url, 'medium', log_id, username=username)
 
@@ -93,6 +93,7 @@ def _encode_video_to_profile(file_path, video_url, profile, log_id, username='')
         print traceback.format_exc(e)
 
     db.engine.dispose()
+
 
 @cel.task(queue='encoding_retry')
 def _try_video_again(video_url, username='', profiles=video_encoder.VIDEO_ENCODING_PROFILES.keys()):

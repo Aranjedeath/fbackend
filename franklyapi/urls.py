@@ -11,9 +11,13 @@ api.add_resource(UserUpdateForm, '/user/update_profile/<user_id>')
 api.add_resource(UserProfileRequest, '/user/profile/request')
 
 api.add_resource(UserFollow, '/user/follow')
+api.add_resource(UsersFollow, '/user/follow/multiple')
+
 api.add_resource(UserFollowers, '/user/followers/<user_id>')
 
 api.add_resource(UserUnfollow, '/user/unfollow')
+api.add_resource(UsersUnfollow, '/user/unfollow/multiple')
+
 api.add_resource(UserBlock, '/user/block')
 api.add_resource(UserUnblock, '/user/unblock')
 api.add_resource(UserBlockList, '/user/blocklist')
@@ -40,8 +44,6 @@ api.add_resource(QuestionUpvote, '/question/upvote/<question_id>')
 api.add_resource(QuestionDownvote, '/question/downvote/<question_id>')
 api.add_resource(QuestionIgnore, '/question/ignore')
 api.add_resource(SlugItem, '/slug/<username>/<slug>')
-
-
 
 api.add_resource(PostAdd, '/post/media/add', '/post/add')
 
@@ -124,6 +126,7 @@ api.add_resource(ReceiveSNSNotifications, '/email/report')
 api.add_resource(PublicDocumentation, '/documentation')
 
 api.add_resource(AnswerAuthorSuggest, '/suggest/answer_author')
+api.add_resource(ChannelNewCount, '/channel/new_count')
 
 api.add_resource(UpdateToken, '/user/update_token/<social_type>')
 
