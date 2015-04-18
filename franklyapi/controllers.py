@@ -2027,7 +2027,7 @@ def query_search(cur_user_id, query, offset, limit, version_code=None):
                 "results": [ ],
                 "next_index": -1
             }
-    '''
+
     if version_code and int(version_code) > 42 and offset == 0:
         search_filter_invitable = or_( Invitable.name.like('{query}%'.format(query = query)),
                                    Invitable.name.like('% {query}%'.format(query = query))
@@ -2036,7 +2036,7 @@ def query_search(cur_user_id, query, offset, limit, version_code=None):
         if invitable:
             results.append({'type':'invitable', 'invitable' : invitable_to_dict(invitable[0], cur_user_id)})
             limit = limit - 1
-
+    '''
     if offset == 0 and ('trending' in query.lower() or 'new on' in query.lower()):
         search_default = SearchDefault.query.filter(SearchDefault.category == query).order_by(SearchDefault.score).all()
         for s in search_default:
