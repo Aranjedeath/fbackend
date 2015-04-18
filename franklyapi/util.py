@@ -1,18 +1,17 @@
 import urlparse
 
-from models import Question, Upvote, InflatedStat,\
-                   User, Follow, Like, Post, Comment, AccessToken
+from models import Question, Upvote, InflatedStat, User, Follow, Like, Post, Comment, AccessToken
 import time
 import datetime
 from app import db
 from sqlalchemy.sql import text
+
 
 def url_type(data):
     parts = urlparse.urlsplit(data)
     if not parts.scheme or not parts.netloc:
         raise ValueError('Not a valid url')
     return data
-
 
 
 def get_post_like_count(post_id):
@@ -28,18 +27,24 @@ def get_post_view_count(post_id):
 def get_question_upvote_count(question_id):
     from math import sqrt, log
     from datetime import datetime, timedelta
-    d = datetime.now() - timedelta(minutes = 5)
+    d = datetime.now() - timedelta(minutes=5)
     question = Question.query.filter(Question.id == question_id).first()
     t = question.timestamp
     time_factor = 0
     if t:
         time_factor = int(time.mktime(t.timetuple())) % 7
-    count_to_pump = Upvote.query.filter(Upvote.question == question_id, Upvote.downvoted == False,
-                                        Upvote.timestamp <= d).count()
-    count_as_such = Upvote.query.filter(Upvote.question == question_id, Upvote.downvoted == False,
-                                        Upvote.timestamp > d).count()
+    count_to_pump = Upvote.query.filter(Upvote.question == question_id,
+                                        Upvote.downvoted == False,
+                                        Upvote.timestamp <= d
+                                        ).count()
+
+    count_as_such = Upvote.query.filter(Upvote.question == question_id,
+                                        Upvote.downvoted == False,
+                                        Upvote.timestamp > d
+                                        ).count()
+
     if count_to_pump:
-        count = int(11*count_to_pump+ log(count_to_pump, 2) + sqrt(count_to_pump)) + count_as_such
+        count = int(11*count_to_pump + log(count_to_pump, 2) + sqrt(count_to_pump)) + count_as_such
         count += time_factor
     else:
         count = count_to_pump + count_as_such
@@ -50,7 +55,9 @@ def get_question_upvote_count(question_id):
 
 
 def get_comment_count(post_id):
-    return Comment.query.filter(Comment.on_post==post_id, Comment.deleted==False).count()
+    return Comment.query.filter(Comment.on_post == post_id,
+                                Comment.deleted == False
+                                ).count()
 
 
 def get_follower_count(user_id):
@@ -59,15 +66,21 @@ def get_follower_count(user_id):
     user = User.query.filter(User.id == user_id).one()
 
     d = datetime.now() - timedelta(minutes=5)
-    count_to_pump =  Follow.query.filter(Follow.followed == user_id, Follow.unfollowed == False,
-                                         Follow.timestamp <= d).count()
-    count_as_such = Follow.query.filter(Follow.followed == user_id, Follow.unfollowed == False,
-                                        Follow.timestamp > d).count() +1
+    count_to_pump = Follow.query.filter(Follow.followed == user_id,
+                                        Follow.unfollowed == False,
+                                        Follow.timestamp <= d
+                                        ).count()
+
+    count_as_such = Follow.query.filter(Follow.followed == user_id,
+                                        Follow.unfollowed == False,
+                                        Follow.timestamp > d
+                                        ).count() + 1
+
     count = count_as_such + count_to_pump
 
     if user.user_type == 2:
         if count_to_pump:
-            count = int(11*count_to_pump + log(count_to_pump,2) + sqrt(count_to_pump)) + count_as_such
+            count = int(11*count_to_pump + log(count_to_pump, 2) + sqrt(count_to_pump)) + count_as_such
         else:
             count = count_to_pump + count_as_such
 
@@ -75,17 +88,22 @@ def get_follower_count(user_id):
 
 
 def get_answer_count(user_id):
-    return Post.query.filter(Post.answer_author == user_id, Post.deleted == False).count()
+    return Post.query.filter(Post.answer_author == user_id,
+                             Post.deleted == False
+                             ).count()
 
 
 def get_following_count(user_id):
-    return Follow.query.filter(Follow.user == user_id, Follow.unfollowed == False).count()
+    return Follow.query.filter(Follow.user == user_id,
+                               Follow.unfollowed == False
+                               ).count()
+
 
 def get_users_stats(user_ids, cur_user_id=None):
     print user_ids
     from math import log, sqrt
     from datetime import datetime, timedelta
-    trend_time = datetime.now() - timedelta(minutes = 5)
+    trend_time = datetime.now() - timedelta(minutes=5)
     results = db.session.execute(text("""SELECT users.id, users.user_type, users.total_view_count,
                                             (SELECT count(*) FROM user_follows
                                                 WHERE user_follows.followed=users.id
@@ -153,12 +171,12 @@ def get_users_stats(user_ids, cur_user_id=None):
     return data
 
 
-
-
 def get_active_mobile_devices(user_id):
 
-    devices = AccessToken.query.filter(AccessToken.user == user_id, AccessToken.active==True,
-                             AccessToken.push_id != None).all()
+    devices = AccessToken.query.filter(AccessToken.user == user_id,
+                                       AccessToken.active == True,
+                                       AccessToken.push_id != None
+                                       ).all()
     return devices
 
 
@@ -174,8 +192,8 @@ def count_of_push_notifications_sent(user_id):
         return row[0]
 
 
-def count_of_notifications_sent_by_type(user_id, notification_type, interval=datetime.datetime.now() -
-                                                                             datetime.timedelta(days=1)):
+def count_of_notifications_sent_by_type(user_id, notification_type,
+                                        interval=datetime.datetime.now() - datetime.timedelta(days=1)):
 
     result = db.session.execute(text('''Select count(*) from user_push_notifications upn
                                         left join notifications n on n.id = upn.notification_id

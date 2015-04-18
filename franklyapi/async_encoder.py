@@ -4,7 +4,7 @@ import media_uploader
 import video_encoder
 from configs import config
 from celery import Celery
-from notification import notification_decision
+from notification.commons import notification_decision
 import video_db
 from app import db, raygun
 
