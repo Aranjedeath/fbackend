@@ -2743,3 +2743,29 @@ class UpdateToken(restful.Resource):
             raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
+
+class PostPermissions(restful.Resource):
+
+    post_parser = reqparse.RequestParser()
+    post_parser.add_argument('question_id', type=str, location='json', required=True)
+    post_parser.add_argument('facebook_post', type=bool, location='json', required=False, default=False)
+    post_parser.add_argument('twitter_post', type=bool, location='json', required=False, default=False)
+
+    @login_required
+    def post(self):
+        """
+        Pushes the post permissions (y/n)
+
+        Controller Functions Used:
+            - none
+
+        Authentication: Required
+        """
+        args = self.post_parser.parse_args()
+        try:
+            controllers.push_post_perm_settings(current_user.id, question_id, post_to_facebook = False, post_to_twitter = False)
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0], err[1], err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)

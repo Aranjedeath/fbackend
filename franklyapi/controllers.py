@@ -26,7 +26,7 @@ from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
                     BadEmail, List, ListItem, ListFollow, DiscoverList, DashVideo, Contact
 
 from notification import make_notification as notification
-from app import redis_client, raygun, db, redis_views, redis_pending_post
+from app import redis_client, raygun, db, redis_views, redis_pending_post, redis_post_perms
 
 
 from object_dict import user_to_dict, guest_user_to_dict,\
@@ -3101,3 +3101,12 @@ def update_social_access_token(user_id, social_type, access_token, access_secret
     except CustomExceptions.InvalidTokenException:
         raise CustomExceptions.BadRequestException('invalid token')
 
+def push_post_perm_settings(userid, question_id, post_to_facebook = False, post_to_twitter = False):
+    import json
+
+    key= str(user_id)+str(question_id)
+    value = {'post_facebook':post_to_facebook,'post_twitter':post_to_twitter}
+    json_value = json.dumps(value)
+    print "setting ",key,'to',json_value
+    redis_post_perms.set(key, json_value)
+    

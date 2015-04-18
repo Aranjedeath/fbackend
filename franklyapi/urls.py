@@ -130,6 +130,8 @@ api.add_resource(ChannelNewCount, '/channel/new_count')
 
 api.add_resource(UpdateToken, '/user/update_token/<social_type>')
 
+api.add_resource(PostPermissions, '/user/post_permission/')
+
 '''
 
 
