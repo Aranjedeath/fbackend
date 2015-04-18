@@ -2754,16 +2754,20 @@ class PostPermissions(restful.Resource):
     @login_required
     def post(self):
         """
-        Pushes the post permissions (y/n)
+        Pushes the post (y/n)
 
         Controller Functions Used:
             - none
 
         Authentication: Required
         """
+        from flask import request
+        print request.json
+
         args = self.post_parser.parse_args()
         try:
-            controllers.push_post_perm_settings(current_user.id, question_id, post_to_facebook = False, post_to_twitter = False)
+            controllers.push_post_perm_settings(current_user.id, args['question_id'], post_to_facebook = args['facebook_post'], post_to_twitter = args['twitter_post'])
+            return 0
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0], err[1], err[2])
