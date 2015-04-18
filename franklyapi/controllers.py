@@ -31,7 +31,7 @@ from app import redis_client, raygun, db, redis_views, redis_pending_post
 
 from object_dict import user_to_dict, guest_user_to_dict,\
                         thumb_user_to_dict, question_to_dict,questions_to_dict, post_to_dict, comment_to_dict,\
-                        comments_to_dict, posts_to_dict, make_celeb_questions_dict, media_dict, guest_users_to_dict
+                        comments_to_dict, posts_to_dict, make_celeb_questions_dict, media_dict, guest_users_to_dict, invitable_to_dict
 from video_db import add_video_to_db
 from database import get_item_id
 from trends import most_liked_users
@@ -769,7 +769,7 @@ def user_follow(cur_user_id, user_id):
 
 
 def users_follow(cur_user_id, user_ids):
-    for user_id in user_ids[:20]:
+    for user_id in user_ids[:200]:
         try:
             user_follow(cur_user_id, user_id)
         except:
