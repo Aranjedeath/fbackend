@@ -103,7 +103,8 @@ def guest_user_to_dict(user, current_user_id, cur_user_interest_tags=None):
         'web_link':'http://frankly.me/{username}'.format(username=user.username),
         'channel_id':'user_{user_id}'.format(user_id=user.id),
         'profile_video_requested':user_stats[user.id]['is_requested'],
-        'twitter_handle':user.twitter_handle
+        'twitter_handle':user.twitter_handle,
+        'twitter_invite_text':"Hey @{twitter_handle}, I have a question for you. Can you please reply Frankly? @franklymeapp".format(twitter_handle=user.twitter_handle or '')
     }
     if user_dict['profile_video']:
         user_dict['answer_count'] = user_dict['answer_count']+1
@@ -147,7 +148,9 @@ def guest_users_to_dict(users, current_user_id, cur_user_interest_tags=None):
             'profile_videos':get_video_states({user.profile_video:user.cover_picture})[user.profile_video] if user.profile_video else {},
             'web_link':'http://frankly.me/{username}'.format(username=user.username),
             'channel_id':'user_{user_id}'.format(user_id=user.id),
-            'profile_video_requested':user_stats[user.id]['is_requested']
+            'profile_video_requested':user_stats[user.id]['is_requested'],
+            'twitter_handle':user.twitter_handle,
+            'twitter_invite_text':"Hey @{twitter_handle}, I have a question for you. Can you please reply Frankly? @franklymeapp".format(twitter_handle=user.twitter_handle or '')
         }
         if user_dict['profile_video']:
             user_dict['answer_count'] = user_dict['answer_count']+1
