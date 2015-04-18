@@ -17,12 +17,12 @@ from notification.commons import helper
 key = helper.key
 
 
-def send(notification_id, user_id, k=None, source='application'):
+def send(notification_id, user_id, k=None, source='application', notification_limit=config.GLOBAL_PUSH_NOTIFICATION_DAY_LIMIT):
 
     devices = util.get_active_mobile_devices(user_id)
 
     should_push = util.count_of_push_notifications_sent(user_id=user_id) \
-                                       <= config.GLOBAL_PUSH_NOTIFICATION_DAY_LIMIT
+                                       <= notification_limit
 
     notification = Notification.query.get(notification_id)
 

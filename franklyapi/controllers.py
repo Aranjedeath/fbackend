@@ -1041,8 +1041,7 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, from_wi
 
     if question_to != cur_user_id and clean:
         notification.ask_question(question_id=question.id)
-        make_email.question_asked(question_from=cur_user_id, question_to=question_to, question_id=question.id,
-                                  question_body = question.body,
+        make_email.question_asked(question_id=question.id,
                                   from_widget=from_widget)
 
     resp = {'success':True, 'id':str(question.id), 'question':question_to_dict(question)}

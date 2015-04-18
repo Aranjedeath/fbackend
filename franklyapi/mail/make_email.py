@@ -1,6 +1,6 @@
 from jinja2 import Environment, PackageLoader
 from infra import SimpleMailer
-from models import MailLog, User
+from models import MailLog, User, Question
 from CustomExceptions import ObjectNotFoundException
 from helper import *
 from app import db
@@ -74,15 +74,16 @@ def forgot_password(receiver_email, token, receiver_name, user_id, mail_type="fo
          cutoff_time=cutoff_time, mail_limit=3)
 
 
-def question_asked(question_to, question_from, question_id, question_body,
+def question_asked(question_id,
                    from_widget=False, mail_type="question_asked"):
 
-    users = User.query.filter(User.id.in_([question_from,question_to]))
+    question = Question.query.filter(Question.id == question_id).first()
+    users = User.query.filter(User.id.in_([question.question_author, question.question_to]))
 
     for user in users:
-        if user.id == question_from:
+        if user.id == question.question_author:
             asker = user
-        if user.id == question_to:
+        if user.id == question.question_to:
             asked = user
 
     cutoff_time = datetime.timedelta(days=3)
@@ -111,17 +112,19 @@ def question_asked(question_to, question_from, question_id, question_body,
         mail(email_id=asker.email, log_id=log_id, subject=helper.dict[mail_type]['subject'],
              body=header_template.render(mail_dict), mail_type=mail_type, object_id=question_id,
              cutoff_time=cutoff_time, mail_limit=1)
-        mail_type="question_asked"
+        mail_type = "question_asked"
 
-    #
-    if not len(util.get_active_mobile_devices(asked.id)):
+
+    if 1: # not len(util.get_active_mobile_devices(asked.id)):
 
         mail_type += "_to"
         subject = helper.dict[mail_type]['subject'] % asker.first_name
         log_id = log_mail(asked.email, mail_type, question_id)
 
+        print question.slug
+        question_url = (config.WEB_URL + "/{0}/{1}").format(asked.username, question.slug)
         mail_dict['salutation'] = "Hi %s" % asked.first_name
-        mail_dict['email_text'] = helper.dict[mail_type]['body'] % (asker.first_name, question_body)
+        mail_dict['email_text'] = helper.dict[mail_type]['body'].format(asker.first_name, question_url, question.body)
         mail_dict['pixel_image_url'] += "?id=" + log_id
 
         mail(email_id=asked.email, log_id=log_id, subject=subject,
