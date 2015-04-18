@@ -31,7 +31,7 @@ key = {
     },
     'comment-add-self_post':{
          'title': 'New comment',
-         'text': '<commentator>',
+         'text': '<b><commentator></b>',
          'url': config.WEB_URL + '/p/%s/comments',
          'day-limit': 1,
          'label_one':'',
