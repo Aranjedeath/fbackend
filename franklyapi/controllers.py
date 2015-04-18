@@ -3113,4 +3113,5 @@ def push_post_perm_settings(user_id, question_id, post_to_facebook = False, post
     value = {'post_facebook':post_to_facebook,'post_twitter':post_to_twitter}
     json_value = json.dumps(value)
     print "setting ",key,'to',json_value
+    return {'success':True}
     # redis_post_perms.set(key, json_value)

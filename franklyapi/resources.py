@@ -2790,8 +2790,8 @@ class PostPermissions(restful.Resource):
 
         args = self.post_parser.parse_args()
         try:
-            controllers.push_post_perm_settings(current_user.id, args['question_id'], post_to_facebook = args['facebook_post'], post_to_twitter = args['twitter_post'])
-            return 0
+            resp = controllers.push_post_perm_settings(current_user.id, args['question_id'], post_to_facebook = args['facebook_post'], post_to_twitter = args['twitter_post'])
+            return resp
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0], err[1], err[2])
