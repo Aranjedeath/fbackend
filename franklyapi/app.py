@@ -38,7 +38,7 @@ redis_views = redis.Redis(config.REDIS_HOST, db=7)
 redis_search = redis.Redis(config.REDIS_HOST, db=4)
 redis_pending_post = redis.Redis(config.REDIS_HOST, db=2)
 redis_rate_limit = redis.Redis(config.REDIS_HOST, db=3)
-
+redis_post_perms = redis.Redis(config.REDIS_HOST, db=6)
 login_manager.login_view = '/login/email'
 
 time_log_file_name = "/tmp/flask-timelog.txt"
