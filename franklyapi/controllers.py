@@ -1210,7 +1210,7 @@ def post_like(cur_user_id, post_id):
 
         db.session.commit()
         try:
-            notification.decide_post_milestone(post_id=post_id, user_id=answer_author)
+            notification.post_milestone(post_id=post_id, user_id=answer_author)
         except:
             err = sys.exc_info()
             raygun.send(err[0],err[1],err[2])
