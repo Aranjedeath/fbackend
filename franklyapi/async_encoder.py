@@ -8,6 +8,10 @@ import notification
 import video_db
 from app import db, raygun
 
+from models import Post, User, Question
+
+from social_helpers import publish_to_facebook
+
 cel = Celery(broker=config.ASYNC_ENCODER_BROKER_URL, backend=config.ASYNC_ENCODER_BACKEND_URL)
 
 default_queues = {}
@@ -56,6 +60,7 @@ def _encode_video_to_profile(file_path, video_url, profile, log_id, username='')
     if profile=='low' and not result:
         log_id = video_db.add_video_encode_log_start(video_url=video_url, video_quality='medium')
         _encode_video_to_profile(file_path, video_url, 'medium', log_id, username=username)
+
     try:
         post_id = video_db.get_post_id_from_video(video_url)
         if post_id:
@@ -64,6 +69,29 @@ def _encode_video_to_profile(file_path, video_url, profile, log_id, username='')
         err = sys.exc_info()
         raygun.send(err[0], err[1], err[2])
         print traceback.format_exc(e)
+
+    #Post to facebook hook
+    try:
+        post_id = video_db.get_post_id_from_video(video_url)
+        if post_id:
+            post = Post.query.filter(Post.id==post_id).one()
+            question = Question.query.filter(Question.id==post.question)
+            user = User.query.filter(User.id == post.answer_author)
+            if user.facebook_write_permission:
+                message = "I just answered a question on FranklyMe"
+                post_name = "Frankster's Answer"
+                post_link = 'www.frankly.me/p/{0}'.format(question.short_id)
+                post_caption = "Question Answered by {0}".format(user.first_name)
+                post_description = "Question : {0}".format(question.body)
+                post_picture = post.thumbnail_url
+                access_token = user.facebook_token
+                publish_to_facebook(message, post_name, post_link, post_caption, post_description, post_picture, access_token = access_token)
+            #post response to facebook
+    except Exception as e:
+        err = sys.exc_info()
+        raygun.send(err[0], err[1], err[2])
+        print traceback.format_exc(e)
+
     db.engine.dispose()
 
 @cel.task(queue='encoding_retry')

@@ -1,4 +1,4 @@
-from facebook_helpers import get_fb_data, get_extended_graph_token, get_fb_permissions
+from facebook_helpers import get_fb_data, get_extended_graph_token, get_fb_permissions, publish_to_facebook
 from twitter_helpers import get_twitter_data
 from gplus_helpers import get_gplus_data
 
