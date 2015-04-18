@@ -14,13 +14,15 @@ def toDimensions(image_file, out_file, dim_x, dim_y, allowLow=True, return_file_
         if(aspectRatioIn > aspectRatioOut):
             fin_y = im_y
             fin_x = im_y * aspectRatioOut
+        elif(aspectRatioIn < aspectRatioOut):
+            fin_y = im_x/aspectRatioOut
+            fin_x = im_x
         else:
             fin_x = im_x
-            fin_y = im_x * aspectRatioOut
+            fin_y = im_y
         box = (int((im_x - fin_x)/2), int((im_y - fin_y)/2), int((im_x + fin_x)/2), int((im_y + fin_y)/2) )
         im = im.crop(box)
         im = im.resize((dim_x,dim_y))
-        
         if return_file_object:
             from StringIO import StringIO
             out_file = StringIO()
