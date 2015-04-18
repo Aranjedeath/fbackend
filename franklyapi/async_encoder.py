@@ -4,7 +4,7 @@ import media_uploader
 import video_encoder
 from configs import config
 from celery import Celery
-import notification
+from notification import notification_decision
 import video_db
 from app import db, raygun
 
@@ -61,7 +61,7 @@ def _encode_video_to_profile(file_path, video_url, profile, log_id, username='')
         try:
             post_id = video_db.get_post_id_from_video(video_url)
             if post_id:
-                notification.notification_decision.post_notifications(post_id)
+                notification_decision.post_notifications(post_id)
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0], err[1], err[2])

@@ -14,9 +14,9 @@ p = Post.query.filter(Post.answer_author == v.id, Post.deleted == False).all()
 q = Question.query.filter(Question.question_to == v.id)
 
 
-def cleanup():
+def cleanup(user=v):
 
-    UserPushNotification.query.filter(UserPushNotification.user_id == v.id,
+    UserPushNotification.query.filter(UserPushNotification.user_id == user.id,
                                       UserPushNotification.added_at <
                                       (datetime.datetime.now() - datetime.timedelta(days=1))).delete()
     db.session.commit()
@@ -52,9 +52,9 @@ def comment_add(comment_by=s.id, post_id=p[random.randint(0, len(p) - 1)].id, co
     print 'Comment post passed'
 
 
-def new_post(post_id):
+def new_post(post_id, user_id):
 
-    cleanup()
+    cleanup(user_id)
     n = Notification.query.filter(Notification.object_id == post_id, Notification.type == 'post-add-self_user').first()
     UserPushNotification.query.filter(UserPushNotification.notification_id == n.id).delete()
     db.session.commit()
