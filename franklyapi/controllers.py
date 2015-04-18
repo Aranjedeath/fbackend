@@ -23,9 +23,12 @@ from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
                     Question, Upvote, Comment, ForgotPasswordToken, Install, Video,\
                     UserFeed, Event, Reshare, Invite, ContactUs, InflatedStat,\
                     IntervalCountMap, ReportAbuse, SearchCategory,\
-                    BadEmail, List, ListItem, DiscoverList
+                    BadEmail, List, ListItem, ListFollow, DiscoverList, DashVideo, Contact
+
 from notification import make_notification as notification
-from app import redis_client, raygun, db, redis_views
+from app import redis_client, raygun, db, redis_views, redis_pending_post
+
+
 from object_dict import user_to_dict, guest_user_to_dict,\
                         thumb_user_to_dict, question_to_dict,questions_to_dict, post_to_dict, comment_to_dict,\
                         comments_to_dict, posts_to_dict, make_celeb_questions_dict, media_dict, guest_users_to_dict
@@ -422,7 +425,6 @@ def get_post_id_from_question_id(question_id):
         return None
 
 
-
 def get_answer_count(user_id):
     return Post.query.filter(Post.answer_author==user_id, Post.deleted==False).count()
 
@@ -746,9 +748,9 @@ def user_follow(cur_user_id, user_id):
         raise CustomExceptions.BadRequestException("Cannot follow yourself")
 
     if user_id!=cur_user_id:
-        db.session.execute(text("""INSERT INTO user_follows (user, followed, unfollowed, timestamp) 
-                                VALUES(:cur_user_id, :user_id, false, :timestamp) 
-                                ON DUPLICATE KEY 
+        db.session.execute(text("""INSERT INTO user_follows (user, followed, unfollowed, timestamp)
+                                VALUES(:cur_user_id, :user_id, false, :timestamp)
+                                ON DUPLICATE KEY
                                 UPDATE unfollowed = false, timestamp=:timestamp"""),
                         params={'cur_user_id':cur_user_id, 'user_id':user_id, 'timestamp':datetime.datetime.now()}
                     )
@@ -763,6 +765,7 @@ def user_follow(cur_user_id, user_id):
 
     return {'user_id': user_id}
 
+
 def users_follow(cur_user_id, user_ids):
     for user_id in user_ids[:20]:
         try:
@@ -772,6 +775,13 @@ def users_follow(cur_user_id, user_ids):
     return {'success':True}
 
 
+def users_unfollow(cur_user_id, user_ids):
+    for user_id in user_ids[:20]:
+        try:
+            user_unfollow(cur_user_id, user_id)
+        except:
+            pass
+    return {'success':True}
 
 
 def user_unfollow(cur_user_id, user_id):
@@ -1477,7 +1487,7 @@ def home_feed(cur_user_id, offset, limit, web):
                 'next_index' : -1
             }
 
-    feeds, next_index = get_home_feed(cur_user_id, offset, limit)
+    feeds, next_index = get_home_feed(cur_user_id, offset, limit, club_questions = not web)
 
     return {'stream': feeds, 'count':len(feeds), 'next_index':next_index}
 
@@ -2014,8 +2024,7 @@ def query_search(cur_user_id, query, offset, limit, version_code=None):
                 "count": 0,
                 "results": [ ],
                 "next_index": -1
-            } 
-    
+            }
     '''
     if version_code and int(version_code) > 42 and offset == 0:
         search_filter_invitable = or_( Invitable.name.like('{query}%'.format(query = query)),
@@ -2413,30 +2422,26 @@ def get_channel_list(cur_user_id, device_id, version_code):
 
 def get_item_from_slug(current_user_id, username, slug):
     try:
-        question = Question.query.filter(Question.slug==slug, 
+        question = Question.query.filter(Question.slug==slug,
                                             Question.deleted==False,
-                                            Question.is_ignored==False,
-                                            or_(Question.is_answered==True,
-                                                Question.public==True,
-                                                Question.question_to==current_user_id)
+                                            Question.is_ignored==False
                                             ).one()
         question_to = User.query.filter(User.id==question.question_to).one()
         if question_to.username.lower() != username.lower():
-            
-            return {'redirect':True, 'username':question_to.username, 'slug':question.slug}
+            return {'redirect': True, 'username': question_to.username, 'slug': question.slug}
         
         if question.is_answered:
             post = Post.query.filter(Post.question==question.id, Post.deleted==False).one()
-            return {'redirect':False, 'is_answered':question.is_answered, 'post':post_to_dict(post, current_user_id)}
+            return {'redirect': False, 'is_answered': question.is_answered, 'post': post_to_dict(post, current_user_id)}
         
-        return {'redirect':False, 'is_answered':question.is_answered, 'question':question_to_dict(question, current_user_id)}
+        return {'redirect': False, 'is_answered': question.is_answered, 'question': question_to_dict(question, current_user_id)}
     except NoResultFound:
         raise CustomExceptions.ObjectNotFoundException('The question does not exist or has been deleted.')
 
 
-def check_app_version_code(device_type,device_version_code):
+def check_app_version_code(device_type, device_version_code):
     hard_update = False
-    soft_update= False
+    soft_update = False
     if device_type == 'android':
         hard_update = device_version_code < config.ANDROID_NECESSARY_VERSION_CODE
         soft_update = device_version_code < config.ANDROID_LATEST_VERSION_CODE
@@ -2445,43 +2450,23 @@ def check_app_version_code(device_type,device_version_code):
         hard_update = device_version_code < config.IOS_NECESSARY_VERSION_CODE
         soft_update = device_version_code < config.IOS_LATEST_VERSION_CODE
 
-    return {'hard_update':hard_update, 'soft_update':soft_update}
-
-
-def check_app_version_code(device_type,device_version_code):
-    hard_update_resp = {'hard_update':True,'soft_update':False}
-    soft_update_resp = {'hard_update':False,'soft_update':True}
-    no_update_resp = {'hard_update':False,'soft_update':False}
-    
-    if device_type == 'android':
-        if device_version_code < config.ANDROID_NECESSARY_VERSION_CODE :
-            resp = hard_update_resp
-        elif device_version_code < config.ANDROID_LATEST_VERSION_CODE :
-            resp = soft_update_resp
-        else:
-            resp = no_update_resp  
-    elif device_type == 'ios':
-        if device_version_code < config.IOS_NECESSARY_VERSION_CODE :
-            resp = hard_update_resp
-        elif device_version_code < config.IOS_LATEST_VERSION_CODE :
-            resp = soft_update_resp
-        else:
-            resp = no_update_resp
-    return resp
+    return {'hard_update': hard_update, 'soft_update': soft_update}
 
 
 def report_abuse(current_user_id, object_type, object_id, reason):
     report_abuse = ReportAbuse(user_by=current_user_id, entity_type=object_type, entity_id=object_id, reason=reason)
     db.session.add(report_abuse)
     db.session.commit()
-    return {'success':True, 'object_type':object_type, 'object_id':object_id}
+    return {'success': True, 'object_type': object_type, 'object_id': object_id}
+
 
 def get_rss():
     import rss_manager
     rss_manager.generate_answers_rss()
-    with open('/tmp/franklymeanswers.xml','r') as f:
+    with open('/tmp/franklymeanswers.xml', 'r') as f:
         s = f.read()
     return s
+
 
 def contact_file_upload(current_user_id, uploaded_file, device_id):
     contacts = uploaded_file.read()
@@ -2493,7 +2478,6 @@ def user_upload_contacts(user_id, device_id, contacts):
     contacts_json = json.loads(decryption(contacts))
     empty_contacts_filter = lambda contact: contact['email'] or contact['number']
     contacts = filter(empty_contacts_filter, contacts_json['contacts'])
-    return contacts
 
     for item in contacts:
         for number in item['number']:
@@ -2513,8 +2497,8 @@ def user_upload_contacts(user_id, device_id, contacts):
                 db.session.commit()
             except Exception as e:
                 print e
-    
-    return {'success':True}
+    return {'success': True}
+
 
 def add_contact(name, email, organisation, message, phone):
     from base64 import b64encode as enc
@@ -2522,12 +2506,12 @@ def add_contact(name, email, organisation, message, phone):
     b64msg = enc(name + email + organisation + message + phone)
     contact = ContactUs.query.filter(ContactUs.b64msg == b64msg).all()
     if contact:
-        return {'success' : True}
+        return {'success': True}
     else:
         contact = ContactUs(name, email, organisation, message, phone, b64msg)
         db.session.add(contact)
         db.session.commit()
-    return {'success' : True}
+    return {'success': True}
 
 
 def get_resized_image(image_url, height=262, width=262):
@@ -2598,19 +2582,9 @@ def list_items_to_dict(list_items, cur_user_id=None):
             item = List.query.filter(List.id==item.child_list_id).first()
         if type(item) == User:
 
-            item_dict = {
-                                'id'             : item.id,
-                                'username'       : item.username,
-                                'first_name'     : item.first_name,
-                                'profile_picture': item.profile_picture,
-                                'gender'         : item.gender,
-                                'user_type'      : item.user_type,
-                                'bio'            : item.bio,
-                                'user_title'     : item.user_title,
-                                'is_following'   : False
-                            }
+            item_dict = thumb_user_to_dict(item, cur_user_id)
             item_dict = {'type':'user', 'user':item_dict} 
-        
+
         elif type(item) == List:
             item_dict = lists_to_dict([item], cur_user_id)[0]
             item_dict = {'type':'list', 'list':item_dict} 
