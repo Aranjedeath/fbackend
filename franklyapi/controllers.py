@@ -2019,6 +2019,7 @@ def email_tracking(tracking_id):
 
 
 def query_search(cur_user_id, query, offset, limit, version_code=None):
+    from models import Invitable
     results = []
     if 'test' in query:
         return {
