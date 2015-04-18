@@ -271,7 +271,7 @@ def comment_on_post(post_id, comment_id, comment_author, notification_type='comm
 
         nobject = {
             'notification_type': notification_type,
-            'text': ("%s just commented on your answer." % comment_author.first_name),
+            'text': ("<b>%s</b> just commented on your answer." % comment_author.first_name),
             'icon': comment_author.profile_picture,
             'link': k['url'] % post_id,
             'object_id': comment_id

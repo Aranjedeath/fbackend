@@ -23,7 +23,8 @@ from models import User, Block, Follow, Like, Post, UserArchive, AccessToken,\
                     Question, Upvote, Comment, ForgotPasswordToken, Install, Video,\
                     UserFeed, Event, Reshare, Invite, ContactUs, InflatedStat,\
                     IntervalCountMap, ReportAbuse, SearchCategory,\
-                    BadEmail, List, ListItem, ListFollow, DiscoverList, DashVideo, Contact
+                    BadEmail, List, ListItem, ListFollow, DiscoverList, DashVideo, Contact, \
+                    UserPushNotification, UserNotification
 
 from notification import make_notification as notification
 from app import redis_client, raygun, db, redis_views, redis_pending_post
@@ -1041,8 +1042,7 @@ def question_ask(cur_user_id, question_to, body, lat, lon, is_anonymous, from_wi
 
     if question_to != cur_user_id and clean:
         notification.ask_question(question_id=question.id)
-        make_email.question_asked(question_from=cur_user_id, question_to=question_to, question_id=question.id,
-                                  question_body = question.body,
+        make_email.question_asked(question_id=question.id,
                                   from_widget=from_widget)
 
     resp = {'success':True, 'id':str(question.id), 'question':question_to_dict(question)}
@@ -1768,11 +1768,7 @@ def get_notifications(cur_user_id, device_id, version_code, notification_categor
     # only if it is the first fetch
     notifications = []
     if offset == 0:
-        db.session.execute(text("Update user_notifications set seen_at = :current_time where user_id = :user_id ; "),
-                           params = {'user_id': cur_user_id,
-                                     'current_time':datetime.datetime.now(),
-                                    })
-        db.session.commit()
+
 
 
 
@@ -1887,8 +1883,16 @@ def get_notification_count(cur_user_id, device_id, version_code):
     return count
 
 
+def notification_seen(notification_id, cur_user_id):
+
+    UserNotification.query.filter(UserNotification.notification_id == notification_id,
+                                  UserNotification.user_id == cur_user_id).\
+        update({'seen_at': datetime.datetime.now()})
+
+    db.session.commit()
+
+
 def push_notification_seen(push_notification_id):
-    from models import UserPushNotification
 
     UserPushNotification.query.filter(UserPushNotification.id == push_notification_id).update(
         {'clicked_at':datetime.datetime.now()})
