@@ -1,9 +1,19 @@
+import urlparse
+
 from models import Question, Upvote, InflatedStat,\
                    User, Follow, Like, Post, Comment, AccessToken
 import time
 import datetime
 from app import db
 from sqlalchemy.sql import text
+
+def url_type(data):
+    parts = urlparse.urlsplit(data)
+    if not parts.scheme or not parts.netloc:
+        raise ValueError('Not a valid url')
+    return data
+
+
 
 def get_post_like_count(post_id):
     count = Like.query.filter(Like.post == post_id, Like.unliked == False).count()

@@ -38,6 +38,8 @@ from trends import most_liked_users
 from mail import make_email
 from queue import SQSQueue
 
+from arg_types import url_type
+
 sq = SQSQueue('test1')
 
 def create_event(user, action, foreign_data, event_date=datetime.date.today()):
