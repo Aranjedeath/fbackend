@@ -113,6 +113,7 @@ def users_being_asked_questions_more_than_or_equal_to(count=3):
                 inner join questions q on u.id = q.question_to
                 left join testers t on u.username = t.username
                 where q.timestamp > now() - interval 1 day
+                and q.added_by IS NULL
                 and t.id IS NULL
                 and u.monkness = -1
                 group by u.id having count(1) >= :count

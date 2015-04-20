@@ -22,28 +22,30 @@ device_id_argument_help = "device_id should be str(16) for android, str(32) for 
 push_id_argument_help = "push_id will be GCM id for Android and APN id for iOS"
 internal_server_error_message = "Something went wrong. Please try again in a few seconds"
 
+from arg_types import url_type
+
 
 class RegisterEmail(restful.Resource):
 
     #==POST==#
     post_parser = reqparse.RequestParser()
-    post_parser.add_argument('email'        , type=str, required=True, location='json')
-    post_parser.add_argument('device_id'    , type=str, required=True, location='json', help=device_id_argument_help)
-    post_parser.add_argument('full_name'    , type=str, required=True, location='json')
-    post_parser.add_argument('password'     , type=str, default=None, location='json')
-    post_parser.add_argument('username'     , type=str, required=False, location='json', default = None, help="username should be 6 to 24 characters and can only contain A-Z, a-z, 0-9 and _ ")
-    
-    post_parser.add_argument('gender'       , type=str, default='M', location='json', choices=['M', 'F'])
-    post_parser.add_argument('user_type'    , type=int, location='json', default = 0)
-    
-    post_parser.add_argument('lat'          , type=str, default=None, location='json')
-    post_parser.add_argument('lon'          , type=str, default=None, location='json')
+    post_parser.add_argument('email',         type=str, required=True, location='json')
+    post_parser.add_argument('device_id',     type=str, required=True, location='json', help=device_id_argument_help)
+    post_parser.add_argument('full_name',     type=str, required=True, location='json')
+    post_parser.add_argument('password',      type=str, default=None, location='json')
+    post_parser.add_argument('username',      type=str, required=False, location='json', default=None, help="username should be 6 to 24 characters and can only contain A-Z, a-z, 0-9 and _ ")
+
+    post_parser.add_argument('gender',        type=str, default='M', location='json', choices=['M', 'F'])
+    post_parser.add_argument('user_type',     type=int, location='json', default=0)
+
+    post_parser.add_argument('lat',           type=str, default=None, location='json')
+    post_parser.add_argument('lon',           type=str, default=None, location='json')
     post_parser.add_argument('location_name', type=str, default=None, location='json')
-    post_parser.add_argument('country_name' , type=str, default=None, location='json')
-    post_parser.add_argument('country_code' , type=str, default=None, location='json')
-    
-    post_parser.add_argument('phone_num'    , type=str, location='json')
-    post_parser.add_argument('push_id'      , type=str, location='json', help=push_id_argument_help)
+    post_parser.add_argument('country_name',  type=str, default=None, location='json')
+    post_parser.add_argument('country_code',  type=str, default=None, location='json')
+
+    post_parser.add_argument('phone_num',     type=str, location='json')
+    post_parser.add_argument('push_id',       type=str, location='json', help=push_id_argument_help)
 
     def post(self):
         """
@@ -56,47 +58,46 @@ class RegisterEmail(restful.Resource):
         """
         args = self.post_parser.parse_args()
         try:
-            return controllers.register_email_user( email         = args['email'],
-                                                    password      = args['password'],
-                                                    full_name     = args['full_name'],
-                                                    device_id     = args.get('device_id'),
-                                                    push_id       = args.get('push_id'),
-                                                    phone_num     = args.get('phone_num'),
-                                                    username      = args.get('username'),
-                                                    gender        = args.get('gender'),
-                                                    user_type     = args['user_type'],
-                                                    user_title    = args.get('user_title'),
-                                                    lat           = args['lat'],
-                                                    lon           = args['lon'],
-                                                    location_name = args['location_name'],
-                                                    country_name  = args['country_name'],
-                                                    country_code  = args['country_code']
-                                                )
+            return controllers.register_email_user(email=args['email'],
+                                                   password=args['password'],
+                                                   full_name=args['full_name'],
+                                                   device_id=args.get('device_id'),
+                                                   push_id=args.get('push_id'),
+                                                   phone_num=args.get('phone_num'),
+                                                   username=args.get('username'),
+                                                   gender=args.get('gender'),
+                                                   user_type=args['user_type'],
+                                                   user_title=args.get('user_title'),
+                                                   lat=args['lat'],
+                                                   lon=args['lon'],
+                                                   location_name=args['location_name'],
+                                                   country_name=args['country_name'],
+                                                   country_code=args['country_code']
+                                                   )
         except CustomExceptions.UserAlreadyExistsException as e:
             abort(409, message=str(e))
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
-
 
 
 class LoginSocial(restful.Resource):
 
     post_parser = reqparse.RequestParser()
-    post_parser.add_argument('device_id'            , type=str, required=True, location='json', help=device_id_argument_help)
+    post_parser.add_argument('device_id', type=str, required=True, location='json', help=device_id_argument_help)
     post_parser.add_argument('external_access_token', type=str, location='json', required=True)
     post_parser.add_argument('external_token_secret', type=str, location='json', help="external_token_secret is only required for services with access_token and access_secret auth, e.g. Twitter")
-    post_parser.add_argument('social_user_id'       , type=str, location='json', required=True)
-    post_parser.add_argument('push_id'              , type=str, location='json', help=push_id_argument_help)
-    post_parser.add_argument('user_type'            , type=int, location='json', default=0, choices=[0, 2], help="user_type 0 for normal users, 2 for celebrities.")
-    post_parser.add_argument('user_title'           , type=str, location='json', default=None, help="user_title is used only when user_type is 2.")
-    
+    post_parser.add_argument('social_user_id', type=str, location='json', required=True)
+    post_parser.add_argument('push_id', type=str, location='json', help=push_id_argument_help)
+    post_parser.add_argument('user_type', type=int, location='json', default=0, choices=[0, 2], help="user_type 0 for normal users, 2 for celebrities.")
+    post_parser.add_argument('user_title', type=str, location='json', default=None, help="user_title is used only when user_type is 2.")
+
     def post(self, login_type):
         """
         Login/Register user with 3rd Party Login.
-        
+
         If user exists, they will be logged in. Else new user profile will be created.
 
         Support for:
@@ -116,28 +117,28 @@ class LoginSocial(restful.Resource):
                 abort(404, message='Not Found')
             if login_type == 'twitter' and not args.get('external_token_secret'):
                 abort(400, message='external_token_secret is a required Field')
-            
-            return controllers.login_user_social(social_type          =login_type,
-                                                 social_id            =args['social_user_id'],
+
+            return controllers.login_user_social(social_type=login_type,
+                                                 social_id=args['social_user_id'],
                                                  external_access_token=args['external_access_token'],
-                                                 device_id            =args['device_id'],
-                                                 push_id              =args.get('push_id'),
+                                                 device_id=args['device_id'],
+                                                 push_id=args.get('push_id'),
                                                  external_token_secret=args.get('external_token_secret'),
-                                                 user_type            =args.get('user_type'),
-                                                 user_title           =args.get('user_title')
+                                                 user_type=args.get('user_type'),
+                                                 user_title=args.get('user_title')
                                                  )
-        
+
         except CustomExceptions.InvalidTokenException as e:
             abort(400, message=str(e))
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
 
 class LoginEmail(restful.Resource):
-    
+
     def get(self):
         """
         Used internally by the api. Users trying to access endpoints without valid authentication
@@ -145,13 +146,12 @@ class LoginEmail(restful.Resource):
         """
         abort(403, message='Your Accesstoken has expired, Please login again')
 
-
     post_parser = reqparse.RequestParser()
-    post_parser.add_argument('username' , type=str, required=True, location='json', help='username argument should contain either username or email.')
-    post_parser.add_argument('password' , type=str, required=True, location='json')
+    post_parser.add_argument('username', type=str, required=True, location='json', help='username argument should contain either username or email.')
+    post_parser.add_argument('password', type=str, required=True, location='json')
     post_parser.add_argument('device_id', type=str, required=True, location='json', help=device_id_argument_help)
-    post_parser.add_argument('push_id'  , type=str, location='json', default=None, help=push_id_argument_help)
-    
+    post_parser.add_argument('push_id', type=str, location='json', default=None, help=push_id_argument_help)
+
     def post(self):
         """
         Login user with email/username and password.
@@ -168,12 +168,12 @@ class LoginEmail(restful.Resource):
                 id_type = 'email'
             else:
                 id_type = 'username'
-            return controllers.login_email_new( user_id = args['username'],
-                                                id_type = id_type, 
-                                                password = args['password'],
-                                                device_id = args['device_id'],
-                                                push_id = args['push_id']
-                                                )
+            return controllers.login_email_new(user_id=args['username'],
+                                               id_type=id_type,
+                                               password=args['password'],
+                                               device_id=args['device_id'],
+                                               push_id=args['push_id']
+                                               )
         except CustomExceptions.UserNotFoundException as e:
             print traceback.format_exc(e)
             abort(403, message='Wrong username/email or password')
@@ -182,10 +182,9 @@ class LoginEmail(restful.Resource):
             abort(403, message='Wrong username/email or password')
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
-
 
 
 class UserProfile(restful.Resource):
@@ -203,7 +202,7 @@ class UserProfile(restful.Resource):
         """
         try:
             username = None
-            if len(user_id)<32 and not user_id == 'me':
+            if len(user_id) < 32 and not user_id == 'me':
                 username = user_id
                 user_id = None
 
@@ -226,20 +225,20 @@ class UserProfile(restful.Resource):
             abort(404, message="User Not found")
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
 
 class UserUpdateForm(restful.Resource):
-    
+
     post_parser = reqparse.RequestParser()
-    post_parser.add_argument('first_name'     , type=str, location='form')
-    post_parser.add_argument('bio'            , type=str, location='form', help="bio should be str(200)")
-    post_parser.add_argument('user_title'     , type=str, location='form')
+    post_parser.add_argument('first_name', type=str, location='form')
+    post_parser.add_argument('bio', type=str, location='form', help="bio should be str(200)")
+    post_parser.add_argument('user_title', type=str, location='form')
     post_parser.add_argument('profile_picture', type=file, location='files', help="profile_picture should be an jpg/jpeg file")
-    post_parser.add_argument('profile_video'  , type=file, location='files', help="profile_video should be a .mp4 file")
-    
+    post_parser.add_argument('profile_video', type=file, location='files', help="profile_video should be a .mp4 file")
+
     @login_required
     def post(self, user_id):
         """
@@ -253,25 +252,23 @@ class UserUpdateForm(restful.Resource):
 
         Authentication: Required
         """
-        from flask import request
         #print '****', request.form, request.files
         args = self.post_parser.parse_args()
-        print args
-               
         try:
             if user_id == 'me':
                 user_id = current_user.id
-            
+
             if (current_user.id not in config.ADMIN_USERS) and user_id != current_user.id:
                 raise CustomExceptions.BadRequestException()
             if current_user.id not in config.ADMIN_USERS:
                 args['user_title'] = None
             new_profile = controllers.user_update_profile_form(user_id,
-                                                                first_name=args['first_name'],
-                                                                bio=args['bio'],
-                                                                user_title=args['user_title'],
-                                                                profile_picture=args['profile_picture'],
-                                                                profile_video=args['profile_video'])
+                                                               first_name=args['first_name'],
+                                                               bio=args['bio'],
+                                                               user_title=args['user_title'],
+                                                               profile_picture=args['profile_picture'],
+                                                               profile_video=args['profile_video']
+                                                               )
             return new_profile
 
         except CustomExceptions.BadRequestException, e:
@@ -281,15 +278,15 @@ class UserUpdateForm(restful.Resource):
         except Exception as e:
             print traceback.format_exc(e)
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             abort(500, message=internal_server_error_message)
 
 
 class UserProfileRequest(restful.Resource):
 
     post_parser = reqparse.RequestParser()
-    post_parser.add_argument('request_for', type=str, default='', location = 'json')
-    post_parser.add_argument('request_type', type=str, required=True, location = 'json', choices=config.REQUEST_TYPE)
+    post_parser.add_argument('request_for', type=str, default='', location='json')
+    post_parser.add_argument('request_type', type=str, required=True, location='json', choices=config.REQUEST_TYPE)
 
     @login_required
     def post(self):
@@ -313,7 +310,7 @@ class UserProfileRequest(restful.Resource):
 
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
@@ -338,11 +335,11 @@ class SlugItem(restful.Resource):
 
         current_user_id = None
         if current_user.is_authenticated():
-            current_user_id = current_user.id        
+            current_user_id = current_user.id
         try:
             resp = controllers.get_item_from_slug(current_user_id, username, slug)
             if resp['redirect']:
-                return {'redirect':True, 'location':api.url_for(SlugItem, username=resp['username'], slug=slug), 'code':301}
+                return {'redirect': True, 'location': api.url_for(SlugItem, username=resp['username'], slug=slug), 'code': 301}
             return resp
 
         except CustomExceptions.ObjectNotFoundException as e:
@@ -350,9 +347,10 @@ class SlugItem(restful.Resource):
 
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
+
 
 class UsersFollow(restful.Resource):
     post_parser = reqparse.RequestParser()
@@ -378,13 +376,13 @@ class UsersFollow(restful.Resource):
 
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
 
 class UserFollow(restful.Resource):
-    
+
     post_parser = reqparse.RequestParser()
     post_parser.add_argument('user_id', required=True, type=str, location='json', help="user_id must be user_id of the user to be followed")
 
@@ -399,7 +397,7 @@ class UserFollow(restful.Resource):
         Authentication: Required
         """
         args = self.post_parser.parse_args()
-        
+
         try:
             resp = controllers.user_follow(current_user.id, user_id=args['user_id'])
             return resp
@@ -409,7 +407,7 @@ class UserFollow(restful.Resource):
 
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
@@ -477,7 +475,7 @@ class UserFollowers(restful.Resource):
     get_parser = reqparse.RequestParser()
     get_parser.add_argument('offset', default=0, type=int, location='args', help="offset must be integer >=0")
     get_parser.add_argument('limit',  default=10, type=int, location='args', help="limit must be >=0")
-    
+
     def get(self, user_id):
         """
         Returns list of followers of a user.
@@ -488,8 +486,8 @@ class UserFollowers(restful.Resource):
 
         Authentication: Optional
         """
-        
-        username=None
+
+        username = None
 
         if current_user.is_authenticated():
             current_user_id = current_user.id
@@ -502,15 +500,16 @@ class UserFollowers(restful.Resource):
             username = user_id
 
         args = self.get_parser.parse_args()
-        
+
         try:
             if not user_id:
                 raise CustomExceptions.UserNotFoundException('You need to login to view this.')
             resp = controllers.user_followers(current_user_id,
-                                                user_id=user_id, 
-                                                username=username,
-                                                offset=args['offset'],
-                                                limit=args['limit'])
+                                              user_id=user_id,
+                                              username=username,
+                                              offset=args['offset'],
+                                              limit=args['limit']
+                                              )
             return resp
 
         except CustomExceptions.UserNotFoundException as e:
@@ -518,13 +517,13 @@ class UserFollowers(restful.Resource):
 
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
 
 class UserBlock(restful.Resource):
-    
+
     post_parser = reqparse.RequestParser()
     post_parser.add_argument('user_id', required=True, type=str, location='json', help="user_id must be user_id of the user to be blocked")
 
@@ -539,14 +538,14 @@ class UserBlock(restful.Resource):
         Authentication: Required
         """
         args = self.post_parser.parse_args()
-        
+
         try:
             resp = controllers.user_block(current_user.id, user_id=args['user_id'])
             return resp
 
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
@@ -554,7 +553,7 @@ class UserBlock(restful.Resource):
 class UserUnblock(restful.Resource):
     post_parser = reqparse.RequestParser()
     post_parser.add_argument('user_id', required=True, type=str, location='json', help="user_id must be user_id of the user to be unblocked")
-    
+
     @login_required
     def post(self):
         """
@@ -566,14 +565,14 @@ class UserUnblock(restful.Resource):
         Authentication: Required
         """
         args = self.post_parser.parse_args()
-        
+
         try:
             resp = controllers.user_unblock(current_user.id, user_id=args['user_id'])
             return resp
 
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
@@ -593,13 +592,13 @@ class UserBlockList(restful.Resource):
         try:
             resp = controllers.user_block_list(current_user.id)
             return resp
-        
+
         except CustomExceptions.BadRequestException as e:
             print traceback.format_exc(e)
             abort(400, message=str(e))
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
@@ -607,7 +606,7 @@ class UserBlockList(restful.Resource):
 class ChangeUsername(restful.Resource):
     post_parser = reqparse.RequestParser()
     post_parser.add_argument('username', required=True, type=str, location='json', help="username should be the new username.")
-    post_parser.add_argument('id'      , type=str, location='json', help="id is required only for admin purposes. id of the user whose username is to be changed.")
+    post_parser.add_argument('id',       type=str, location='json', help="id is required only for admin purposes. id of the user whose username is to be changed.")
 
     @login_required
     def post(self):
@@ -621,7 +620,7 @@ class ChangeUsername(restful.Resource):
         Authentication: Required
         """
         args = self.post_parser.parse_args()
-        
+
         try:
             if current_user.id in config.ADMIN_USERS:
                 user_id = args['id']
@@ -634,7 +633,7 @@ class ChangeUsername(restful.Resource):
             abort(409, message=str(e))
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
@@ -664,15 +663,15 @@ class ChangePassword(restful.Resource):
 
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
 
 class UserExists(restful.Resource):
     post_parser = reqparse.RequestParser()
-    post_parser.add_argument('username'    , type=str, location='json', default=None)
-    post_parser.add_argument('email'       , type=str, location='json', default=None)
+    post_parser.add_argument('username',     type=str, location='json', default=None)
+    post_parser.add_argument('email',        type=str, location='json', default=None)
     post_parser.add_argument('phone_number', type=str, location='json', default=None)
 
     def post(self):
@@ -693,14 +692,23 @@ class UserExists(restful.Resource):
             abort(400, message=str(e))
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
 
-
 class UserSettings(restful.Resource):
-    
+
+    post_parser = reqparse.RequestParser()
+    post_parser.add_argument('allow_anonymous_question', type=bool, location='json', required=True)
+    post_parser.add_argument('notify_like',              type=bool, location='json', required=True)
+    post_parser.add_argument('notify_follow',            type=bool, location='json', required=True)
+    post_parser.add_argument('notify_question',          type=bool, location='json', required=True)
+    post_parser.add_argument('notify_comments',          type=bool, location='json', required=True)
+    post_parser.add_argument('notify_mention',           type=bool, location='json', required=True)
+    post_parser.add_argument('notify_answer',            type=bool, location='json', required=True)
+    post_parser.add_argument('timezone',                 type=int, location='json', default=0, help="timezone should be the offset of user's timezone from UTC in seconds")
+
     @login_required
     def get(self):
         """
@@ -716,20 +724,9 @@ class UserSettings(restful.Resource):
             return resp
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
-
-
-    post_parser = reqparse.RequestParser()
-    post_parser.add_argument('allow_anonymous_question', type=bool, location='json', required=True)
-    post_parser.add_argument('notify_like'             , type=bool, location='json', required=True)
-    post_parser.add_argument('notify_follow'           , type=bool, location='json', required=True)
-    post_parser.add_argument('notify_question'         , type=bool, location='json', required=True)
-    post_parser.add_argument('notify_comments'         , type=bool, location='json', required=True)
-    post_parser.add_argument('notify_mention'          , type=bool, location='json', required=True)
-    post_parser.add_argument('notify_answer'           , type=bool, location='json', required=True)
-    post_parser.add_argument('timezone'                , type=int, location='json', default=0, help="timezone should be the offset of user's timezone from UTC in seconds")
 
     @login_required
     def post(self):
@@ -741,24 +738,24 @@ class UserSettings(restful.Resource):
 
         Authentication: Required
         """
-        
+
         args = self.post_parser.parse_args()
-        
+
         try:
-            controllers.user_update_settings(current_user.id, 
-                                            allow_anonymous_question=args['allow_anonymous_question'],
-                                            notify_like=args['notify_like'],
-                                            notify_follow=args['notify_follow'],
-                                            notify_question=args['notify_question'],
-                                            notify_comments=args['notify_comments'],
-                                            notify_mention=args['notify_mention'],
-                                            notify_answer=args['notify_answer'],
-                                            timezone=args['timezone']
-                                                    )
+            controllers.user_update_settings(current_user.id,
+                                             allow_anonymous_question=args['allow_anonymous_question'],
+                                             notify_like=args['notify_like'],
+                                             notify_follow=args['notify_follow'],
+                                             notify_question=args['notify_question'],
+                                             notify_comments=args['notify_comments'],
+                                             notify_mention=args['notify_mention'],
+                                             notify_answer=args['notify_answer'],
+                                             timezone=args['timezone']
+                                             )
             return args
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
@@ -767,9 +764,9 @@ class UserLocation(restful.Resource):
 
     post_parser = reqparse.RequestParser()
     post_parser.add_argument('coordinate_point', required=True, location='json', type=list, help='coordinate_point should be of format [longitude, latitude] where both of them are float.')
-    post_parser.add_argument('country'         , location='json', type=str, default=None)
-    post_parser.add_argument('country_code'    , location='json', type=str, default=None, help='country_code should be two letter country code.')
-    post_parser.add_argument('loc_name'        , location='json', type=str, default=None)
+    post_parser.add_argument('country',          location='json', type=str, default=None)
+    post_parser.add_argument('country_code',     location='json', type=str, default=None, help='country_code should be two letter country code.')
+    post_parser.add_argument('loc_name',         location='json', type=str, default=None)
 
     def post(self):
         """
@@ -781,30 +778,30 @@ class UserLocation(restful.Resource):
         Authentication: Required
         """
         args = self.post_parser.parse_args()
-        
+
         try:
-            return {'success' : True}
-            controllers.user_update_location(user_id = current_user.id,
-                                            lon = args['coordinate_point'][0],
-                                            lat = args['coordinate_point'][1],
-                                            country = args['country'],
-                                            country_code = args['country_code'],
-                                            loc_name = args['loc_name']
-                                            )
-            return {'success' : True}
+            return {'success': True}
+            controllers.user_update_location(user_id=current_user.id,
+                                             lon=args['coordinate_point'][0],
+                                             lat=args['coordinate_point'][1],
+                                             country=args['country'],
+                                             country_code=args['country_code'],
+                                             loc_name=args['loc_name']
+                                             )
+            return {'success': True}
 
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
 
 class UpdatePushId(restful.Resource):
     post_parser = reqparse.RequestParser()
-    post_parser.add_argument('X-Deviceid', type=str, required=True, location = 'headers', dest='device_id', help="device_id will be the device_id of the user whose push_id is to be updated.")
-    post_parser.add_argument('push_id'   , type=str, location='json', required=True, help=push_id_argument_help)
-    
+    post_parser.add_argument('X-Deviceid', type=str, required=True, location='headers', dest='device_id', help="device_id will be the device_id of the user whose push_id is to be updated.")
+    post_parser.add_argument('push_id',    type=str, location='json', required=True, help=push_id_argument_help)
+
     @login_required
     def post(self):
         """
@@ -818,24 +815,24 @@ class UpdatePushId(restful.Resource):
         args = self.post_parser.parse_args()
         try:
             controllers.update_push_id(current_user.id, device_id=args['device_id'], push_id=args['push_id'])
-            return {'success' : True}
+            return {'success': True}
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
 
 class QuestionAsk(restful.Resource):
-    
+
     post_parser = reqparse.RequestParser()
     post_parser.add_argument('question_to', type=str, required=True,
                              location='json',
                              help="question_to must be user_id of the user to whom the question is being asked.")
-    post_parser.add_argument('body'            , type=str, required=True, location='json')
+    post_parser.add_argument('body',             type=str, required=True, location='json')
     post_parser.add_argument('coordinate_point', type=list, default=[None, None], location='json')
-    post_parser.add_argument('is_anonymous'    , type=bool, required=True, location='json')
-    post_parser.add_argument('X-widget-id', type=str, location='headers', default='')
+    post_parser.add_argument('is_anonymous',     type=bool, required=True, location='json')
+    post_parser.add_argument('X-widget-id',      type=str, location='headers', default='')
 
     @login_required
     def post(self):
@@ -848,31 +845,32 @@ class QuestionAsk(restful.Resource):
         Authentication: Required
         """
         args = self.post_parser.parse_args()
-        
+
         try:
-            resp = controllers.question_ask(current_user.id, 
-                                            question_to=args['question_to'], 
-                                            body=args['body'], 
-                                            lat=args['coordinate_point'][1], 
-                                            lon=args['coordinate_point'][0], 
+            resp = controllers.question_ask(current_user.id,
+                                            question_to=args['question_to'],
+                                            body=args['body'],
+                                            lat=args['coordinate_point'][1],
+                                            lon=args['coordinate_point'][0],
                                             is_anonymous=args['is_anonymous'],
-                                            from_widget = len(args['X-widget-id']) > 0
+                                            from_widget=len(args['X-widget-id']) > 0
                                             )
-            
+
             return resp
-        
+
         except CustomExceptions.BlockedUserException as e:
             abort(404, message=str(e))
         except CustomExceptions.NoPermissionException as e:
             abort(400, message=str(e))
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
+
 class QuestionView(restful.Resource):
-    
+
     def get(self, question_id):
         """
         Returns a single question.
@@ -884,38 +882,35 @@ class QuestionView(restful.Resource):
         Authentication: Optional
         """
         try:
-            short_id =  None
-            if len(question_id)<32:
+            short_id = None
+            if len(question_id) < 32:
                 short_id = question_id
 
             if current_user.is_authenticated():
                 current_user_id = current_user.id
             else:
                 current_user_id = None
-            
+
             resp = controllers.question_view(current_user_id=current_user_id, question_id=question_id, short_id=short_id)
             return resp
-        
+
         except CustomExceptions.BlockedUserException as e:
             abort(404, message=str(e))
         except CustomExceptions.ObjectNotFoundException as e:
             abort(404, message=str(e))
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
 
-
 class QuestionList(restful.Resource):
-    
+
     get_parser = reqparse.RequestParser()
     get_parser.add_argument('since', dest='offset', type=int, default=0, location='args')
     get_parser.add_argument('limit', type=int, default=10, location='args')
     get_parser.add_argument('X-Version-Code', type=float, location='headers', default=0)
-
-
 
     @login_required
     def get(self):
@@ -930,25 +925,25 @@ class QuestionList(restful.Resource):
         args = self.get_parser.parse_args()
         try:
             resp = controllers.question_list(current_user.id,
-                                                offset=args['offset'],
-                                                limit=args['limit'],
-                                                version_code=args['X-Version-Code']
-                                                )
+                                             offset=args['offset'],
+                                             limit=args['limit'],
+                                             version_code=args['X-Version-Code']
+                                             )
             return resp
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
+
 class QuestionListPublic(restful.Resource):
-    
+
     get_parser = reqparse.RequestParser()
-    get_parser.add_argument('since', dest='offset', type=int, default=0, location='args')
-    get_parser.add_argument('limit', type=int, default=10, location='args')
+    get_parser.add_argument('since',          dest='offset', type=int, default=0, location='args')
+    get_parser.add_argument('limit',          type=int, default=10, location='args')
     get_parser.add_argument('X-Version-Code', type=float, location='headers', default=None)
 
-    
     def get(self, user_id):
         """
         Returns list of public questions asked to the user with user_id.
@@ -964,13 +959,17 @@ class QuestionListPublic(restful.Resource):
             current_user_id = None
             if current_user.is_authenticated():
                 current_user_id = current_user.id
-            
+
             username = None
-            if len(user_id)<32:
+            if len(user_id) < 32:
                 username = user_id
-            resp = controllers.question_list_public(current_user_id, user_id=user_id,
-                                                    username=username, offset=args['offset'],
-                                                    limit=args['limit'], version_code=args['X-Version-Code'])
+            resp = controllers.question_list_public(current_user_id,
+                                                    user_id=user_id,
+                                                    username=username,
+                                                    offset=args['offset'],
+                                                    limit=args['limit'],
+                                                    version_code=args['X-Version-Code']
+                                                    )
             return resp
 
         except CustomExceptions.BlockedUserException as e:
@@ -981,7 +980,7 @@ class QuestionListPublic(restful.Resource):
 
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
@@ -1004,11 +1003,13 @@ class QuestionUpvote(restful.Resource):
             abort(400, message=str(e))
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
+
 class QuestionDownvote(restful.Resource):
+    
     @login_required
     def post(self, question_id):
         """
@@ -1026,14 +1027,15 @@ class QuestionDownvote(restful.Resource):
             abort(400, message=str(e))
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
+
 
 class QuestionIgnore(restful.Resource):
     post_parser = reqparse.RequestParser()
     post_parser.add_argument('question_id', type=str, required=True, location='json')
-    
+
     @login_required
     def post(self):
         """
@@ -1050,22 +1052,22 @@ class QuestionIgnore(restful.Resource):
             return resp
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
 
 class PostAdd(restful.Resource):
-    
+
     post_parser = reqparse.RequestParser()
     post_parser.add_argument('question_id', type=str, required=True, location='form', help="question_id should be the id of the question to be answered")
     post_parser.add_argument('video_media', required=True, type=file, location='files', help="video_media should be a .mp4 file")
     post_parser.add_argument('answer_type', type=str, default='video', location='form', choices=['picture', 'video', 'text'])
-    post_parser.add_argument('tags'       , type=list, default=[], location='form')
-    post_parser.add_argument('lat'        , type=float, default=0.0, location='form')
-    post_parser.add_argument('lon'        , type=float, default=0.0, location='form')
-    post_parser.add_argument('client_id'  , type=str, location='form', default = None, help="client_id is the short id of the answer to be post. Ideally it should be generated and sent by the client")
-    
+    post_parser.add_argument('tags',        type=list, default=[], location='form')
+    post_parser.add_argument('lat',         type=float, default=0.0, location='form')
+    post_parser.add_argument('lon',         type=float, default=0.0, location='form')
+    post_parser.add_argument('client_id',   type=str, location='form', default=None, help="client_id is the short id of the answer to be post. Ideally it should be generated and sent by the client")
+
     @login_required
     def post(self):
         """
@@ -1077,17 +1079,17 @@ class PostAdd(restful.Resource):
         Authentication: Required
         """
         args = self.post_parser.parse_args()
-        print args  
-        
+        print args
+
         try:
-            resp = controllers.add_video_post(current_user.id, 
-                                                question_id=args['question_id'],
-                                                video=args['video_media'],
-                                                answer_type=args['answer_type'],
-                                                lat=args['lat'],
-                                                lon=args['lon'],
-                                                client_id=args['client_id']
-                                                )
+            resp = controllers.add_video_post(current_user.id,
+                                              question_id=args['question_id'],
+                                              video=args['video_media'],
+                                              answer_type=args['answer_type'],
+                                              lat=args['lat'],
+                                              lon=args['lon'],
+                                              client_id=args['client_id']
+                                              )
             return resp
         except CustomExceptions.BadRequestException as e:
             abort(400, message=str(e))
@@ -1097,18 +1099,16 @@ class PostAdd(restful.Resource):
             abort(404, message=str(e))
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
 
-
-
 class PostLike(restful.Resource):
-    
+
     post_parser = reqparse.RequestParser()
     post_parser.add_argument('post_id', type=str, required=True, location='json')
-    
+
     @login_required
     def post(self):
         """
@@ -1123,12 +1123,12 @@ class PostLike(restful.Resource):
         try:
             resp = controllers.post_like(current_user.id, post_id=args['post_id'])
             return resp
-        
+
         except CustomExceptions.PostNotFoundException as e:
             abort(404, message=str(e))
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
@@ -1137,7 +1137,7 @@ class PostUnLike(restful.Resource):
 
     post_parser = reqparse.RequestParser()
     post_parser.add_argument('post_id', type=str, required=True, location='json')
-    
+
     @login_required
     def post(self):
         """
@@ -1154,19 +1154,17 @@ class PostUnLike(restful.Resource):
             return resp
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
 
-
-
 class PostShared(restful.Resource):
-    
+
     post_parser = reqparse.RequestParser()
     post_parser.add_argument('post_id', type=str, required=True, location='json')
     post_parser.add_argument('platform', type=str, required=True, location='json', choices=['whatsapp', 'facebook', 'hike', 'twitter', 'other'], help='platform is the lowercase name of the plaform the post is being shared on.')
-    
+
     @login_required
     def post(self):
         """
@@ -1177,7 +1175,7 @@ class PostShared(restful.Resource):
 
         Authentication: Required
         """
-    
+
         args = self.post_parser.parse_args()
         try:
             resp = controllers.update_post_share(current_user.id, post_id=args['post_id'], platform=args['platform'].lower())
@@ -1185,17 +1183,16 @@ class PostShared(restful.Resource):
 
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
 
-
 class PostReshare(restful.Resource):
-    
+
     post_parser = reqparse.RequestParser()
     post_parser.add_argument('post_id', type=str, required=True, location='json')
-    
+
     @login_required
     def post(self):
         """
@@ -1206,7 +1203,7 @@ class PostReshare(restful.Resource):
 
         Authentication: Required
         """
-    
+
         args = self.post_parser.parse_args()
         try:
             resp = controllers.post_reshare(current_user.id, post_id=args['post_id'])
@@ -1214,7 +1211,7 @@ class PostReshare(restful.Resource):
 
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
@@ -1223,7 +1220,7 @@ class PostReshareDelete(restful.Resource):
 
     post_parser = reqparse.RequestParser()
     post_parser.add_argument('post_id', type=str, required=True, location='json')
-    
+
     @login_required
     def post(self):
         """
@@ -1242,15 +1239,16 @@ class PostReshareDelete(restful.Resource):
 
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
+
 class PostDelete(restful.Resource):
-    
+
     post_parser = reqparse.RequestParser()
     post_parser.add_argument('post_id', type=str, required=True, location='json')
-    
+
     @login_required
     def post(self):
         """
@@ -1261,23 +1259,23 @@ class PostDelete(restful.Resource):
 
         Authentication: Required
         """
-        
+
         args = self.post_parser.parse_args()
         try:
             resp = controllers.post_delete(current_user.id, post_id=args['post_id'])
             return resp
-        
+
         except CustomExceptions.PostNotFoundException as e:
             abort(404, message=str(e))
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
 
 class PostView(restful.Resource):
-    
+
     def get(self, post_id):
         """
         Returns a single post.
@@ -1289,25 +1287,25 @@ class PostView(restful.Resource):
         Authentication: Optional
         """
         try:
-            client_id =  None
-            if len(post_id)<32:
+            client_id = None
+            if len(post_id) < 32:
                 client_id = post_id
 
             if current_user.is_authenticated():
                 current_user_id = current_user.id
             else:
                 current_user_id = None
-            
-            resp = controllers.post_view(cur_user_id=current_user_id, post_id=post_id, client_id=client_id)                
+
+            resp = controllers.post_view(cur_user_id=current_user_id, post_id=post_id, client_id=client_id)
             return resp
-        
+
         except CustomExceptions.BlockedUserException as e:
             abort(404, message=e)
         except CustomExceptions.PostNotFoundException as e:
             abort(404, message=e)
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
@@ -1315,10 +1313,10 @@ class PostView(restful.Resource):
 class CommentAdd(restful.Resource):
 
     post_parser = reqparse.RequestParser()
-    post_parser.add_argument('post_id'         , required=True, type=str, location='json')
-    post_parser.add_argument('body'            , required=True, type=str, location='json')
+    post_parser.add_argument('post_id',          required=True, type=str, location='json')
+    post_parser.add_argument('body',             required=True, type=str, location='json')
     post_parser.add_argument('coordinate_point', type=list, default=[None, None], location='json')
-    
+
     @login_required
     def post(self):
         """
@@ -1329,29 +1327,30 @@ class CommentAdd(restful.Resource):
 
         Authentication: Required
         """
-        
+
         args = self.post_parser.parse_args()
         try:
             resp = controllers.comment_add(current_user.id,
-                                            post_id=args['post_id'],
-                                            body=args['body'],
-                                            lat=args['coordinate_point'][1],
-                                            lon=args['coordinate_point'][0])
+                                           post_id=args['post_id'],
+                                           body=args['body'],
+                                           lat=args['coordinate_point'][1],
+                                           lon=args['coordinate_point'][0]
+                                           )
             return resp
         except CustomExceptions.PostNotFoundException as e:
             abort(404, message=str(e))
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
 
 class CommentDelete(restful.Resource):
-    
+
     post_parser = reqparse.RequestParser()
     post_parser.add_argument('comment_id', required=True, type=str, location='json')
-    
+
     @login_required
     def post(self):
         """
@@ -1362,7 +1361,7 @@ class CommentDelete(restful.Resource):
 
         Authentication: Required
         """
-        
+
         args = self.post_parser.parse_args()
         try:
             resp = controllers.comment_delete(current_user.id, comment_id=args['comment_id'])
@@ -1372,17 +1371,18 @@ class CommentDelete(restful.Resource):
             abort(404, message=str(e))
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
+
 class CommentList(restful.Resource):
-    
+
     get_parser = reqparse.RequestParser()
     get_parser.add_argument('post_id', type=str, required=True, location='args')
-    get_parser.add_argument('since'  , dest='offset', default=0, type=int, location='args')
-    get_parser.add_argument('limit'  , type=int, location='args', default=10)
-    
+    get_parser.add_argument('since',   dest='offset', default=0, type=int, location='args')
+    get_parser.add_argument('limit',   type=int, location='args', default=10)
+
     def get(self):
         """
         Returns a list of comment on a post.
@@ -1395,7 +1395,6 @@ class CommentList(restful.Resource):
         args = self.get_parser.parse_args()
         try:
             if current_user.is_authenticated():
-                user_id = current_user.id
                 comments = controllers.comment_list(current_user.id,
                                                     post_id=args['post_id'],
                                                     offset=args['offset'],
@@ -1406,25 +1405,25 @@ class CommentList(restful.Resource):
                                                     offset=args['offset'],
                                                     limit=args['limit'])
             return comments
-        
+
         except CustomExceptions.BlockedUserException as e:
             abort(404, message=str(e))
         except CustomExceptions.PostNotFoundException as e:
             abort(404, message=str(e))
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
 
 class TimelineUser(restful.Resource):
-    
+
     get_parser = reqparse.RequestParser()
-    get_parser.add_argument('offset', type=int, default=0, location='args')
-    get_parser.add_argument('limit' , type=int, default=10, location='args')
+    get_parser.add_argument('offset',     type=int, default=0, location='args')
+    get_parser.add_argument('limit',      type=int, default=10, location='args')
     get_parser.add_argument('X-Deviceid', type=str, location='headers')
-    
+
     def get(self, user_id):
         """
         Returns the profile timeline of the user.
@@ -1435,29 +1434,30 @@ class TimelineUser(restful.Resource):
 
         Authentication: Optional
         """
-        
+
         args = self.get_parser.parse_args()
         try:
             if current_user.is_authenticated():
-                if user_id =='me':
+                if user_id == 'me':
                     user_id = current_user.id
                 cur_user_id = current_user.id
             else:
-                if user_id =='me':
+                if user_id == 'me':
                     raise CustomExceptions.NoPermissionException()
                 cur_user_id = None
-            
-            resp = controllers.get_user_timeline(cur_user_id, 
-                                                user_id=user_id,
-                                                offset=args['offset'],
-                                                limit=args['limit'],
-                                                device_id=args['X-Deviceid'])
+
+            resp = controllers.get_user_timeline(cur_user_id,
+                                                 user_id=user_id,
+                                                 offset=args['offset'],
+                                                 limit=args['limit'],
+                                                 device_id=args['X-Deviceid']
+                                                 )
             return resp
         except CustomExceptions.UserNotFoundException, e:
             abort(404, message=str(e))
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
@@ -1465,10 +1465,10 @@ class TimelineUser(restful.Resource):
 class TimelineHome(restful.Resource):
 
     get_parser = reqparse.RequestParser()
-    get_parser.add_argument('offset'    , type=int, default=0, location='args')
-    get_parser.add_argument('limit'     , type=int, default=10, location='args')
+    get_parser.add_argument('offset',     type=int, default=0, location='args')
+    get_parser.add_argument('limit',      type=int, default=10, location='args')
     get_parser.add_argument('X-Deviceid', type=str, required=True, location='headers')
-    
+
     @login_required
     def get(self):
         """
@@ -1480,14 +1480,15 @@ class TimelineHome(restful.Resource):
         Authentication: Required
         """
         args = self.get_parser.parse_args()
-        
+
         if 'web' in args['X-Deviceid']:
             args['web'] = True
         try:
             resp = controllers.home_feed(current_user.id,
-                                        offset=args['offset'],
-                                        limit=args['limit'],
-                                        web=args.get('web'))
+                                         offset=args['offset'],
+                                         limit=args['limit'],
+                                         web=args.get('web')
+                                         )
             return resp
 
         except CustomExceptions.UserNotFoundException, e:
@@ -1495,23 +1496,22 @@ class TimelineHome(restful.Resource):
 
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
-
 
 
 class DiscoverPost(restful.Resource):
 
     get_parser = reqparse.RequestParser()
-    get_parser.add_argument('offset'        , type=int, default=0, location='args')
-    get_parser.add_argument('limit'         , type=int, default=10, location='args')
-    get_parser.add_argument('lat'           , type=float, location='args')
-    get_parser.add_argument('lon'           , type=float, location='args')
-    get_parser.add_argument('X-Deviceid'    , type=str, required=True, location='headers')
-    get_parser.add_argument('visit'         , type=int, default=0, location='args', help="visit should be the time difference of the current time and user's first visit in seconds for unauthorised requests")
-    get_parser.add_argument('append_top'    , type=str, default='', location='args', help="append_top should be username or comma separayed username. These users will be appended on top of the feed. Only valid when offset=0")
-    get_parser.add_argument('X-Deviceid'    , type=str, dest='device_id', required=True, location='headers', help=device_id_argument_help)
+    get_parser.add_argument('offset',         type=int, default=0, location='args')
+    get_parser.add_argument('limit',          type=int, default=10, location='args')
+    get_parser.add_argument('lat',            type=float, location='args')
+    get_parser.add_argument('lon',            type=float, location='args')
+    get_parser.add_argument('X-Deviceid',     type=str, required=True, location='headers')
+    get_parser.add_argument('visit',          type=int, default=0, location='args', help="visit should be the time difference of the current time and user's first visit in seconds for unauthorised requests")
+    get_parser.add_argument('append_top',     type=str, default='', location='args', help="append_top should be username or comma separayed username. These users will be appended on top of the feed. Only valid when offset=0")
+    get_parser.add_argument('X-Deviceid',     type=str, dest='device_id', required=True, location='headers', help=device_id_argument_help)
     get_parser.add_argument('X-Version-Code', type=float, dest='version_code', default=0, location='headers', help="version_code of the app.")
 
     def get(self):
@@ -1523,41 +1523,41 @@ class DiscoverPost(restful.Resource):
 
         Authentication: Optional
         """
-    
+
         args = self.get_parser.parse_args()
 
         if 'web' in args['X-Deviceid']:
             args['web'] = True
-        
+
         try:
             if current_user.is_authenticated():
                 current_user_id = current_user.id
-                
+
             else:
                 current_user_id = None
 
             resp = controllers.get_new_discover(current_user_id=current_user_id,
-                                    offset=args['offset'],
-                                    limit=args['limit'],
-                                    device_id=args['device_id'],
-                                    version_code=args['version_code'],
-                                    visit=args['visit'],
-                                    append_top=args['append_top'])
+                                                offset=args['offset'],
+                                                limit=args['limit'],
+                                                device_id=args['device_id'],
+                                                version_code=args['version_code'],
+                                                visit=args['visit'],
+                                                append_top=args['append_top']
+                                                )
             return resp
 
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
 
-
 class ForgotPassword(restful.Resource):
-    
+
     post_parser = reqparse.RequestParser()
     post_parser.add_argument('username', type=str, required=True, location='json', help="username should be either username or email of the user")
-    
+
     def post(self):
         """
         Sends a password reset mail to the user whose username or email is provided.
@@ -1577,22 +1577,22 @@ class ForgotPassword(restful.Resource):
                 email = username
                 username = None
             return controllers.create_forgot_password_token(username, email)
-        
+
         except CustomExceptions.UserNotFoundException as e:
             abort(404, message=str(e))
         except CustomExceptions.BadRequestException as e:
             abort(400, message=str(e))
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
+
 class CheckForgotPasswordToken(restful.Resource):
-    
     post_parser = reqparse.RequestParser()
-    post_parser.add_argument('token', type=str, required = True, location='json')
-    
+    post_parser.add_argument('token', type=str, required=True, location='json')
+
     def post(self):
         """
         Used to check validity of a reset password token.
@@ -1609,14 +1609,15 @@ class CheckForgotPasswordToken(restful.Resource):
             abort(404, message=str(e))
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
+
 class ResetPassword(restful.Resource):
-    
+
     post_parser = reqparse.RequestParser()
-    post_parser.add_argument('password', type=str, required = True, location='json')
+    post_parser.add_argument('password', type=str, required=True, location='json')
 
     def post(self, token):
         """
@@ -1638,21 +1639,20 @@ class ResetPassword(restful.Resource):
             abort(400, message=str(e))
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
 
 class Notifications(restful.Resource):
-    
+
     get_parser = reqparse.RequestParser()
-    get_parser.add_argument('offset', type=int, default=0, location='args')
-    get_parser.add_argument('limit' , type=int, default=10, location='args')
-    get_parser.add_argument('type'  , type=str, default='me', location='args', choices=['me', 'news'])
-    get_parser.add_argument('X-deviceid', type=str, required=True, location='headers')
+    get_parser.add_argument('offset',         type=int, default=0, location='args')
+    get_parser.add_argument('limit',          type=int, default=10, location='args')
+    get_parser.add_argument('type',           type=str, default='me', location='args', choices=['me', 'news'])
+    get_parser.add_argument('X-deviceid',     type=str, required=True, location='headers')
     get_parser.add_argument('X-Version-Code', type=float, default=0, location='headers')
 
-    
     @login_required
     def get(self):
         """
@@ -1666,15 +1666,16 @@ class Notifications(restful.Resource):
         args = self.get_parser.parse_args()
         try:
             resp = controllers.get_notifications(cur_user_id=current_user.id,
-                                                device_id=args['X-deviceid'],
-                                                version_code=args['X-Version-Code'],
-                                                notification_category=args['type'],
-                                                offset=args['offset'],
-                                                limit=args['limit'])
+                                                 device_id=args['X-deviceid'],
+                                                 version_code=args['X-Version-Code'],
+                                                 notification_category=args['type'],
+                                                 offset=args['offset'],
+                                                 limit=args['limit']
+                                                 )
             return resp
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
@@ -1684,7 +1685,6 @@ class NotificationCount(restful.Resource):
     get_parser.add_argument('X-deviceid', type=str, required=True, location='headers')
     get_parser.add_argument('X-Version-Code', type=float, default=0, location='headers')
 
-    
     @login_required
     def get(self):
         """
@@ -1701,15 +1701,38 @@ class NotificationCount(restful.Resource):
             return {'count': count}
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
 
+class NotificationSeen(restful.Resource):
+    post_parser = reqparse.RequestParser()
+    post_parser.add_argument('notification_id', type=str, default='', location='json')
+
+    @login_required
+    def post(self):
+        """
+        Used to mark a notification as 'seen'
+        
+        """
+        args = self.post_parser.parse_args()
+
+        try:
+            controllers.notification_seen(notification_id=args['notification_id'], cur_user_id=current_user.id)
+
+            return {'success': True}
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0], err[1], err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)
+
+
+
 class PushNotificationSeen(restful.Resource):
     post_parser = reqparse.RequestParser()
-    post_parser.add_argument('push_notification_id', type=str, default='',location = 'json')
-
+    post_parser.add_argument('push_notification_id', type=str, default='', location='json')
 
     @login_required
     def post(self):
@@ -1726,12 +1749,13 @@ class PushNotificationSeen(restful.Resource):
             return {'success': True}
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
+
 class QuestionCount(restful.Resource):
-    
+
     @login_required
     def get(self):
         """
@@ -1747,22 +1771,23 @@ class QuestionCount(restful.Resource):
             return resp
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
+
 class Search(restful.Resource):
-    
+
     get_parser = reqparse.RequestParser()
-    get_parser.add_argument('q'             , type=str, location='args', required = True, help="q should be the query string")
-    get_parser.add_argument('offset'        , type=int, location='args', default = 0)
-    get_parser.add_argument('limit'         , type=int, location='args', default = 10)
+    get_parser.add_argument('q',              type=str, location='args', required=True, help="q should be the query string")
+    get_parser.add_argument('offset',         type=int, location='args', default=0)
+    get_parser.add_argument('limit',          type=int, location='args', default=10)
     get_parser.add_argument('X-Version-Code', type=float, location='headers', default=None)
-    
+
     def get(self):
         """
         Returns search results for the query string provided in the arguments
-        
+
         Controller Functions Used:
             - get_parser
 
@@ -1774,25 +1799,25 @@ class Search(restful.Resource):
                 current_user_id = current_user.id
             else:
                 current_user_id = None
-            
+
             return controllers.query_search(cur_user_id=current_user_id,
-                                        query=args['q'],
-                                        offset=args['offset'],
-                                        limit=args['limit'],
-                                        version_code = args['X-Version-Code'])
+                                            query=args['q'],
+                                            offset=args['offset'],
+                                            limit=args['limit'],
+                                            version_code=args['X-Version-Code'])
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
 
 class SearchDefault(restful.Resource):
-    
+
     def get(self):
         """
         Returns the results for the default search page.
-        
+
         Controller Functions Used:
             - search_default
 
@@ -1806,17 +1831,17 @@ class SearchDefault(restful.Resource):
             return controllers.search_default(cur_user_id=current_user_id)
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
 
 class Logout(restful.Resource):
-    
+
     post_parser = reqparse.RequestParser()
     post_parser.add_argument('X-Deviceid', dest='device_id', type=str, required=True, location='headers', help=device_id_argument_help)
-    post_parser.add_argument('X-Token'   , dest='access_token', type=str, required=True, location='headers')
-    
+    post_parser.add_argument('X-Token',    dest='access_token', type=str, required=True, location='headers')
+
     @login_required
     def post(self):
         """
@@ -1828,24 +1853,24 @@ class Logout(restful.Resource):
         Authentication: Required
         """
         args = self.post_parser.parse_args()
-        
+
         try:
             success = controllers.logout(access_token=args['access_token'], device_id=args['device_id'])
             return {'success': success}
 
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             return {'success': False}
 
 
 class InstallRef(restful.Resource):
-    
+
     post_parser = reqparse.RequestParser()
     post_parser.add_argument('device_id', type=str, location='json', required=True, help=device_id_argument_help)
-    post_parser.add_argument('url'      , type=str, location='json', required=True, help="url should be the refferal url")
-    
+    post_parser.add_argument('url',       type=str, location='json', required=True, help="url should be the refferal url")
+
     def post(self):
         """
         Install callback for logging a new install.
@@ -1858,19 +1883,19 @@ class InstallRef(restful.Resource):
         args = self.post_parser.parse_args()
         try:
             controllers.install_ref(args['device_id'], args['url'])
-            return {'success':True}
+            return {'success': True}
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
 
 class BadUsernames(restful.Resource):
-    
+
     get_parser = reqparse.RequestParser()
     get_parser.add_argument('timestamp', type=int, location='args', default=0, help="timestamp should be the UTC timestamp of the last time list of bad usernames was fetched.")
-    
+
     def get(self):
         """
         Returns a list of bad usernames if the list has changed since provided timestamp or returns {"changed":false}
@@ -1884,19 +1909,19 @@ class BadUsernames(restful.Resource):
         args = self.get_parser.parse_args()
         try:
             if args['timestamp'] < config.UNAVAILABLE_USERNAMES_LAST_UPDATED:
-                return {'ulist':config.UNAVAILABLE_USERNAMES, 'changed':True}
-            return {'ulist':[], 'changed':False}
+                return {'ulist': config.UNAVAILABLE_USERNAMES, 'changed': True}
+            return {'ulist': [], 'changed': False}
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
 
 class VideoView(restful.Resource):
-    
+
     get_parser = reqparse.RequestParser()
-    get_parser.add_argument('url', type=str, location='args', required=True)
+    get_parser.add_argument('url', type=url_type, location='args', required=True)
     get_parser.add_argument('redirect', type=int, location='args', default=0, help="if redirect is greater than 0, the required will be redirected tot he value in url.")
 
     def get(self):
@@ -1909,7 +1934,7 @@ class VideoView(restful.Resource):
 
         Authentication: None
         """
-        
+
         args = self.get_parser.parse_args()
         try:
             from flask import redirect
@@ -1917,12 +1942,13 @@ class VideoView(restful.Resource):
             if bool(args['redirect']):
                 return redirect(args['url'])
             else:
-                return {'success':True}
+                return {'success': True}
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             return redirect(args['url'])
+
 
 class EmailPixel(restful.Resource):
 
@@ -1947,13 +1973,13 @@ class EmailPixel(restful.Resource):
             return redirect(pixel_url)
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             return redirect(config.PIXEL_IMAGE_URL)
 
 
 class QuestionImageCreator(restful.Resource):
-    
+
     def get(self, question_id):
         """
         Returns background image for a question.
@@ -1967,31 +1993,32 @@ class QuestionImageCreator(restful.Resource):
             from flask import send_file
             question_image = controllers.get_question_authors_image(question_id)
 
-            return send_file(question_image, as_attachment=True, attachment_filename='%s.jpg'%(question_id))
-        
+            return send_file(question_image, as_attachment=True, attachment_filename='%s.jpg' % (question_id))
+
         except CustomExceptions.ObjectNotFoundException as e:
             abort(404, message=str(e))
 
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
+
 class ContactUs(restful.Resource):
-    
+
     post_parser = reqparse.RequestParser()
-    post_parser.add_argument('name', type=str, location ='json', required = True )
-    post_parser.add_argument('email', type=str, location ='json', required = True )
-    post_parser.add_argument('organisation', type=str, location ='json', required = True )
-    post_parser.add_argument('message', type=str, location ='json', required = True )
-    post_parser.add_argument('phone', type=str, location ='json', default = '000-000-0000')
-    
+    post_parser.add_argument('name',         type=str, location='json', required=True)
+    post_parser.add_argument('email',        type=str, location='json', required=True)
+    post_parser.add_argument('organisation', type=str, location='json', required=True)
+    post_parser.add_argument('message',      type=str, location='json', required=True)
+    post_parser.add_argument('phone',        type=str, location='json', default='000-000-0000')
+
     def post(self):
         """
         Lets user contact the frankly team.
         Stores message sent in the arguments.
-        
+
         Controller Functions Used:
             - add_contact
 
@@ -2002,18 +2029,19 @@ class ContactUs(restful.Resource):
             return controllers.add_contact(args['name'], args['email'], args['organisation'], args['message'], args['phone'])
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
-            abort(500, message=internal_server_error_message)      
+            abort(500, message=internal_server_error_message)
+
 
 class WebHiringForm(restful.Resource):
-    
+
     post_parser = reqparse.RequestParser()
-    post_parser.add_argument('name' , type=str, location='form', required=True)
+    post_parser.add_argument('name',  type=str, location='form', required=True)
     post_parser.add_argument('email', type=str, location='form', required=True)
     post_parser.add_argument('phone', type=str, location='form', default=None)
-    post_parser.add_argument('role' , type=str, location='form', default=None)
-    
+    post_parser.add_argument('role',  type=str, location='form', default=None)
+
     def post(self):
         """
         Updates a Google Sheet with the information provided.
@@ -2030,17 +2058,17 @@ class WebHiringForm(restful.Resource):
             return controllers.web_hiring_form(args['name'], args['email'], args['phone'], args['role'])
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
 
 class InterviewVideoResource(restful.Resource):
-    
+
     get_parser = reqparse.RequestParser()
-    get_parser.add_argument('offset', type=int, location = 'args', default = 0)
-    get_parser.add_argument('limit' , type=int, location = 'args', default = 10)
-    
+    get_parser.add_argument('offset', type=int, location='args', default=0)
+    get_parser.add_argument('limit',  type=int, location='args', default=10)
+
     def get(self):
         """
         Returns a list of media objects with video and their thumb urls.
@@ -2056,15 +2084,16 @@ class InterviewVideoResource(restful.Resource):
             return controllers.interview_media_controller(args['offset'], args['limit'])
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
-            abort(500, message=internal_server_error_message)  
+            abort(500, message=internal_server_error_message)
+
 
 class InviteCeleb(restful.Resource):
-    
+
     invite_parser = reqparse.RequestParser()
-    invite_parser.add_argument('invitable_id', type=str, location='json', required = True)
-    
+    invite_parser.add_argument('invitable_id', type=str, location='json', required=True)
+
     @login_required
     def post(self):
         """
@@ -2074,7 +2103,7 @@ class InviteCeleb(restful.Resource):
             - invite_celeb
 
         Authentication: Required
-        """    
+        """
         args = self.invite_parser.parse_args()
         try:
             return controllers.invite_celeb(current_user.id, args['invitable_id'])
@@ -2109,6 +2138,7 @@ class TopLikedUsers(restful.Resource):
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
+
 class FeedBackResponse(restful.Resource):
 
     post_parser = reqparse.RequestParser()
@@ -2136,16 +2166,15 @@ class FeedBackResponse(restful.Resource):
             abort(500, message=internal_server_error_message)
 
 
-
 class ChannelFeed(restful.Resource):
 
     get_parser = reqparse.RequestParser()
-    get_parser.add_argument('offset', type=int, location='args', default=0)
-    get_parser.add_argument('limit', type=int, location='args', default=10)
-    get_parser.add_argument('X-deviceid', type=str, location='headers')
-    get_parser.add_argument('visit'  , type=int, default=0, location='args', help="visit should be the time difference of the current time and user's first visit in seconds for unauthorised requests")
+    get_parser.add_argument('offset',         type=int, location='args', default=0)
+    get_parser.add_argument('limit',          type=int, location='args', default=10)
+    get_parser.add_argument('X-deviceid',     type=str, location='headers')
+    get_parser.add_argument('visit',          type=int, default=0, location='args', help="visit should be the time difference of the current time and user's first visit in seconds for unauthorised requests")
     get_parser.add_argument('X-Version-Code', type=float, location='headers', default=0)
-    get_parser.add_argument('append_top', type=str, location='args', default='')
+    get_parser.add_argument('append_top',     type=str, location='args', default='')
 
     def get(self, channel_id):
         """
@@ -2160,12 +2189,12 @@ class ChannelFeed(restful.Resource):
         try:
 
             current_user_id = None
-            
+
             if current_user.is_authenticated():
                 current_user_id = current_user.id                
 
             return controllers.get_channel_feed(current_user_id, channel_id, args['offset'], args['limit'], args['X-deviceid'], args['X-Version-Code'], args['append_top'], args['visit'])
-        
+
         except CustomExceptions.BadRequestException as e:
             abort(404, message=str(e))
         except CustomExceptions.UserNotFoundException, e:
@@ -2175,8 +2204,6 @@ class ChannelFeed(restful.Resource):
             raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
-
-
 
 
 class ChannelList(restful.Resource):
@@ -2198,7 +2225,7 @@ class ChannelList(restful.Resource):
         args = self.get_parser.parse_args()
         try:
             return controllers.get_channel_list(current_user.id, args['X-deviceid'], args['X-Version-Code'])
-        
+
         except CustomExceptions.BadRequestException as e:
             abort(404, message=str(e))
         except CustomExceptions.UserNotFoundException, e:
@@ -2213,7 +2240,7 @@ class ChannelList(restful.Resource):
 class AppVersion(restful.Resource):
 
     get_parser = reqparse.RequestParser()
-    get_parser.add_argument('device_type', type=str, location='args', choices=['android','ios'], required=True)
+    get_parser.add_argument('device_type', type=str, location='args', choices=['android', 'ios'], required=True)
     get_parser.add_argument('device_version_code', type=int, location='args', required=True)
 
     def get(self):
@@ -2227,8 +2254,8 @@ class AppVersion(restful.Resource):
         """
         args = self.get_parser.parse_args()
         try:
-            return controllers.check_app_version_code(args['device_type'],args['device_version_code'])
-        
+            return controllers.check_app_version_code(args['device_type'], args['device_version_code'])
+
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0], err[1], err[2])
@@ -2256,7 +2283,7 @@ class ReportAbuse(restful.Resource):
         args = self.post_parser.parse_args()
         try:
             return controllers.report_abuse(current_user.id, args['object_type'], args['object_id'], args['reason'])
-        
+
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0], err[1], err[2])
@@ -2295,7 +2322,6 @@ class GetListFeed(restful.Resource):
     get_parser.add_argument('offset',  type=int, location='args', default=0)
     get_parser.add_argument('limit',   type=int, location='args', default=20)
     get_parser.add_argument('filter',   type=str, location='args', default='trending', choices=['featured', 'trending'])
-
 
     def get(self):
         """
@@ -2348,11 +2374,11 @@ class GetListFeatured(restful.Resource):
             if current_user.is_authenticated():
                 current_user_id = current_user.id
 
-            if object_type=='users':
+            if object_type == 'users':
                 return controllers.get_featured_users(current_user_id, args['list_id'], args['offset'], args['limit'])
-            elif object_type=='posts':
+            elif object_type == 'posts':
                 return controllers.get_featured_posts(current_user_id, args['list_id'], args['offset'], args['limit'])
-            elif object_type=='questions':
+            elif object_type == 'questions':
                 return controllers.get_featured_questions(current_user_id, args['list_id'], args['offset'], args['limit'])
             else:
                 raise CustomExceptions.ObjectNotFoundException('{object_type} is not an object'.format(object_type=object_type))
@@ -2364,6 +2390,7 @@ class GetListFeatured(restful.Resource):
             raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
+
 
 class GetListTrending(restful.Resource):
     get_parser = reqparse.RequestParser()
@@ -2390,11 +2417,11 @@ class GetListTrending(restful.Resource):
             if current_user.is_authenticated():
                 current_user_id = current_user.id
 
-            if object_type=='users':
+            if object_type == 'users':
                 return controllers.get_trending_users(current_user_id, args['list_id'], args['offset'], args['limit'])
-            elif object_type=='posts':
+            elif object_type == 'posts':
                 return controllers.get_trending_posts(current_user_id, args['list_id'], args['offset'], args['limit'])
-            elif object_type=='questions':
+            elif object_type == 'questions':
                 return controllers.get_trending_questions(current_user_id, args['list_id'], args['offset'], args['limit'])
             else:
                 raise CustomExceptions.ObjectNotFoundException('shashank')
@@ -2430,9 +2457,9 @@ class GetListItems(restful.Resource):
             current_user_id = None
             if current_user.is_authenticated():
                 current_user_id = current_user.id
-            
+
             return controllers.get_list_items(current_user_id, args['list_id'], args['offset'])
-        
+
         except CustomExceptions.ObjectNotFoundException as e:
             abort(404, message=e.message)
 
@@ -2447,7 +2474,7 @@ class EncodeStatistics(restful.Resource):
 
     get_parser = reqparse.RequestParser()
     get_parser.add_argument('count', type=int, location='args', default=20)
-    
+
     def get(self):
         """
         Returns dictionary of latest app versions
@@ -2461,7 +2488,7 @@ class EncodeStatistics(restful.Resource):
         try:
             import video_db
             return video_db.get_encode_statictics(args['count'])
-        
+
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0], err[1], err[2])
@@ -2482,9 +2509,9 @@ class ArrowDirection(restful.Resource):
         args = self.get_parser.parse_args()
 
         if args['screen'] in ['profile', 'notifications', 'settings']:
-            return {'direction':'left'}
+            return {'direction': 'left'}
         else:
-            return {'direction':'right'}
+            return {'direction': 'right'}
 
 
 class BucketName(restful.Resource):
@@ -2495,8 +2522,7 @@ class BucketName(restful.Resource):
 
         Authentication: Not Required
         """
-        return {'bucket_name':config.CURRENT_S3_BUCKET_NAME}
-
+        return {'bucket_name': config.CURRENT_S3_BUCKET_NAME}
 
 
 class RSS(restful.Resource):
@@ -2514,19 +2540,19 @@ class RSS(restful.Resource):
             resp = flask.make_response(controllers.get_rss())
             resp.headers['content-type'] = 'application/xml'
             return resp
-        
+
         except Exception as e:
             err = sys.exc_info()
             raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
-class ImageResizer(restful.Resource):
 
+class ImageResizer(restful.Resource):
     get_parser = reqparse.RequestParser()
     get_parser.add_argument('h', type=int, location='args', default=262)
     get_parser.add_argument('w', type=int, location='args', default=262)
-    get_parser.add_argument('image_url', type=str, required=True, location='args')
+    get_parser.add_argument('image_url', type=url_type, required=True, location='args')
 
     def get(self):
         """
@@ -2538,7 +2564,7 @@ class ImageResizer(restful.Resource):
         Authentication: None
         """
         args = self.get_parser.parse_args()
-        
+
         try:
             from flask import send_file
             resized_image = controllers.get_resized_image(args['image_url'], args['h'], args['w'])
@@ -2547,10 +2573,9 @@ class ImageResizer(restful.Resource):
 
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
-
 
 
 class AppWelcomePage(restful.Resource):
@@ -2558,29 +2583,26 @@ class AppWelcomePage(restful.Resource):
     post_parser.add_argument('list_ids', type=list, required=True, location='json')
     post_parser.add_argument('offset', type=int, required=True, location='json')
     post_parser.add_argument('limit', type=int, required=True, location='json')
-    
+
     @login_required
     def post(self):
-        
-
         args = self.post_parser.parse_args()
         try:
             resp = controllers.app_welcome_users(current_user.id,
-                                                args['list_ids'],
-                                                offset=args['offset'],
-                                                limit=args['limit'])
+                                                 args['list_ids'],
+                                                 offset=args['offset'],
+                                                 limit=args['limit']
+                                                 )
             return resp
-        
+
         except CustomExceptions.BadFileFormatException as e:
             print traceback.format_exc(e)
             abort(400, message='File format not allowed')
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message='upload failure')
-
-
 
 
 class UserContactsUpload(restful.Resource):
@@ -2591,27 +2613,27 @@ class UserContactsUpload(restful.Resource):
 
     @login_required
     def post(self):
-        
+
         args = self.post_parser.parse_args()
         try:
             resp = controllers.contact_file_upload(current_user.id, args['uploaded_file'], args['device_id'])
-            return {'success': True, 'resp':resp}
-        
+            return resp
+
         except CustomExceptions.BadFileFormatException as e:
             print traceback.format_exc(e)
             abort(400, message='File format not allowed')
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message='upload failure')
+
 
 class RegisterBadEmail(restful.Resource):
 
     post_parser = reqparse.RequestParser()
-    
-    post_parser.add_argument('email'         , type=str, required=True, location='json')
-    post_parser.add_argument('reason_type'   , type=str, required=True, location='json')
+    post_parser.add_argument('email',          type=str, required=True, location='json')
+    post_parser.add_argument('reason_type',    type=str, required=True, location='json')
     post_parser.add_argument('reason_subtype', type=str, required=True, location='json')
 
     def post(self):
@@ -2625,19 +2647,19 @@ class RegisterBadEmail(restful.Resource):
         """
         args = self.post_parser.parse_args()
         try:
-            return controllers.register_bad_email(email         = args['email'],
-                                            reason_type = args['reason_type'],
-                                            reason_subtype = args['reason_subtype']
-                                            )
+            return controllers.register_bad_email(email=args['email'],
+                                                  reason_type=args['reason_type'],
+                                                  reason_subtype=args['reason_subtype']
+                                                  )
         except Exception as e:
             print traceback.format_exc(e)
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
-            abort(500, message=internal_server_error_message)            
+            raygun.send(err[0], err[1], err[2])
+            abort(500, message=internal_server_error_message)
+
 
 class ReceiveSNSNotifications(restful.Resource):
 
-    
     def post(self):
         """
         Receives notifications from aws SNS.
@@ -2660,7 +2682,7 @@ class ReceiveSNSNotifications(restful.Resource):
             if notification_type == 'Complaint':
                 complaint_feedback_type = message['complaint']['complaintFeedbackType']
                 return controllers.register_bad_email(email=email, reason_type=notification_type, reason_subtype=complaint_feedback_type)
-            return {'success':'false', 'email':email, 'reason':'Not a bad email'}
+            return {'success': 'false', 'email': email, 'reason': 'Not a bad email'}
 
         except Exception as e:
             print traceback.format_exc(e)
@@ -2674,14 +2696,14 @@ class ReceiveSNSNotifications(restful.Resource):
 class PublicDocumentation(restful.Resource):
     get_parser = reqparse.RequestParser()
     get_parser.add_argument('doc_key', type=str, location='args', required=True)
-    
+
     def get(self):
         args = self.get_parser.parse_args()
         if args['doc_key'] == 'AFfbe394002dde':
             from flask import render_template
             import json
-            with open("newcontextdict") as infile :
-                newcontext = json.load(infile)  
+            with open("newcontextdict") as infile:
+                newcontext = json.load(infile)
             #return Response(json.dumps(doc_gen(app, resources)), content_type='application/json')
             resp = flask.make_response(render_template('api_docnew.html', endpoints=newcontext))
             resp.headers['content-type'] = 'text/html'
@@ -2689,19 +2711,21 @@ class PublicDocumentation(restful.Resource):
         else:
             abort(403, message='Ra Ra Rasputin says: You are are hitting a wrong url.')
 
+
 class ChannelNewCount(restful.Resource):
     post_parser = reqparse.RequestParser()
     post_parser.add_argument('channel_ids', type=list, location='json', required=True, help='example: [{"channel_id":"feed", "last_item_type":"user", "last_item_id":"92374u4j4e48489494848495"}, {"channel_id":"feed", "last_item_type":"post", "last_item_id":"88374u4j4e48489494848eab4"}]')
 
     def post(self):
         args = self.post_parser.parse_args()
-        resp = [{"channel_id":item["channel_id"], "count":0} for item in args['channel_ids']]
+        resp = {'counts': [{"channel_id": item["channel_id"], "count": 0} for item in args['channel_ids']]}
         return resp
 
 
 class AnswerAuthorSuggest(restful.Resource):
     get_parser = reqparse.RequestParser()
     get_parser.add_argument('question_body', type=str, location='args', required=True)
+
     def get(self):
         args = self.get_parser.parse_args()
         return controllers.suggest_answer_author(args['question_body'])
@@ -2713,7 +2737,6 @@ class UpdateToken(restful.Resource):
     post_parser.add_argument('social_id', type=str, location='json', required=True)
     post_parser.add_argument('access_secret', type=str, location='json')
 
-    
     @login_required
     def post(self, social_type):
         """
@@ -2742,8 +2765,36 @@ class UpdateToken(restful.Resource):
             abort(404, message=str(e))
         except Exception as e:
             err = sys.exc_info()
-            raygun.send(err[0],err[1],err[2])
+            raygun.send(err[0], err[1], err[2])
             print traceback.format_exc(e)
             abort(500, message=internal_server_error_message)
 
+class PostPermissions(restful.Resource):
 
+    post_parser = reqparse.RequestParser()
+    post_parser.add_argument('question_id', type=str, location='json', required=True)
+    post_parser.add_argument('facebook_post', type=bool, location='json', required=False, default=False)
+    post_parser.add_argument('twitter_post', type=bool, location='json', required=False, default=False)
+
+    @login_required
+    def post(self):
+        """
+        Pushes the post (y/n)
+
+        Controller Functions Used:
+            - none
+
+        Authentication: Required
+        """
+        from flask import request
+        print request.json
+
+        args = self.post_parser.parse_args()
+        try:
+            resp = controllers.push_post_perm_settings(current_user.id, args['question_id'], post_to_facebook = args['facebook_post'], post_to_twitter = args['twitter_post'])
+            return resp
+        except Exception as e:
+            err = sys.exc_info()
+            raygun.send(err[0], err[1], err[2])
+            print traceback.format_exc(e)
+            abort(500, message=internal_server_error_message)

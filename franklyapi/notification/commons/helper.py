@@ -1,4 +1,8 @@
 from configs import config
+
+
+import datetime
+
 key = {
     'question-ask-self_user' : {
         'title': 'Somebody asked you a question',
@@ -27,7 +31,7 @@ key = {
     },
     'comment-add-self_post':{
          'title': 'New comment',
-         'text': '<commentator>',
+         'text': '<b><commentator></b>',
          'url': config.WEB_URL + '/p/%s/comments',
          'day-limit': 1,
          'label_one':'',
@@ -118,4 +122,3 @@ milestones = {
     'post_views':[100, 200, 500, 1000, 5000, 10000, 20000, 50000, 1000000, 10000000]
 
 }
-

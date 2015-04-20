@@ -71,7 +71,8 @@ api.add_resource(ResetPassword, '/forgotpassword/reset/<token>')
 
 api.add_resource(Notifications, '/getnotifications')
 api.add_resource(NotificationCount, '/notifications/count')
-api.add_resource(PushNotificationSeen, '/notification/seen')
+api.add_resource(NotificationSeen, '/notification/seen')
+api.add_resource(PushNotificationSeen, '/notification/push/seen')
 
 api.add_resource(InstallRef, '/utils/install_ref')
 api.add_resource(BadUsernames, '/utils/badusernames')
@@ -129,6 +130,9 @@ api.add_resource(AnswerAuthorSuggest, '/suggest/answer_author')
 api.add_resource(ChannelNewCount, '/channel/new_count')
 
 api.add_resource(UpdateToken, '/user/update_token/<social_type>')
+
+api.add_resource(PostPermissions, '/user/post_permission')
+
 
 '''
 

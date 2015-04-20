@@ -41,7 +41,7 @@ dict = {
                         },
     "question_asked_to": {
                           "subject": "%s just asked you a question!",
-                          "body": '''%s has just asked you "%s". <br/><br/> Answer this and other interesting questions
+                          "body": '''{0} has just asked you <a href="{1}">"{2}"</a>. <br/><br/> Answer this and other interesting questions
                                       on video through the Frankly android or iOS apps.'''
 
                          },

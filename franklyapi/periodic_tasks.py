@@ -1,13 +1,15 @@
+import datetime
+import traceback
+
 from video_db import update_view_count_to_db, redis_views, update_total_view_count
 from app import db
 from models import User
 from analytics import stats
 from mail import admin_email
-from notification import notification_decision, push_notification
-
-import datetime
+from notification import push_notification
+from franklyapi.notification.commons import notification_decision
 import async_encoder
-import traceback
+
 
 '''
 @ 00:00 every day
@@ -127,12 +129,12 @@ def daily_report():
     stats.daily_content_report()
 
 '''
-@ 9:00 AM and 6:00 PM Every day
+@ 11:00 AM and 5:00 PM Every day
 '''
 def twice_a_day_report():
-    # interval = 15 if 9 am
-    # interval = 9  if 6 pm
-    stats.intra_day_content_report(interval=15 if datetime.datetime.now().hour > 12 else 9)
+    # interval = 18 if 11 am
+    # interval = 6  if 5 pm
+    stats.intra_day_content_report(interval=18 if datetime.datetime.now().hour < 12 else 6)
 
 
 '''

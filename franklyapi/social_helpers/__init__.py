@@ -1,6 +1,7 @@
-from facebook_helpers import get_fb_data, get_extended_graph_token, get_fb_permissions, check_publish_permission
+from facebook_helpers import get_fb_data, get_extended_graph_token, get_fb_permissions, check_publish_permission, publish_to_facebook
 from twitter_helpers import get_twitter_data, check_twitter_write_permission
 from gplus_helpers import get_gplus_data, check_gplus_write_permission
+
 
 
 def get_user_data(social_type, access_token, access_secret=None):

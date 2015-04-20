@@ -1,26 +1,28 @@
-from configs import config
-from apns import APNs, Payload
-from models import AccessToken, Notification, UserPushNotification
-from app import db
-from sqlalchemy.sql import text
-from database import get_item_id
-import helper
-import gcm
 import random
 import time
 import datetime
-import notification_decision
-import notification_util
+import gcm
+import util
+
+from apns import APNs, Payload
+from sqlalchemy.sql import text
+from models import Notification, UserPushNotification
+from app import db
+from configs import config
+from database import get_item_id
+from notification.commons import helper
+
+
 
 key = helper.key
 
 
-def send(notification_id, user_id, k=None, source='application'):
+def send(notification_id, user_id, k=None, source='application', notification_limit=config.GLOBAL_PUSH_NOTIFICATION_DAY_LIMIT):
 
-    devices = notification_util.get_active_mobile_devices(user_id)
+    devices = util.get_active_mobile_devices(user_id)
 
-    should_push = notification_decision.count_of_push_notifications_sent(user_id=user_id) \
-                                       <= config.GLOBAL_PUSH_NOTIFICATION_DAY_LIMIT
+    should_push = util.count_of_push_notifications_sent(user_id=user_id) \
+                                       <= notification_limit
 
     notification = Notification.query.get(notification_id)
 
@@ -122,7 +124,7 @@ def stats():
     pushable_devices = 0
     for row in results:
         total_in_app_notifications += row[0]
-        devices = notification_util.get_active_mobile_devices(row[1])
+        devices = helper.get_active_mobile_devices(row[1])
         pushable_devices += 0 if devices is None else len(devices)
 
     body = 'Total in app notifications created: ' + str(total_in_app_notifications)
@@ -182,8 +184,9 @@ def stats():
 
     body += '</tbody></table>'
 
-    from mail import admin_email
+    from franklyapi.mail import admin_email
     admin_email.push_stats(body)
+
 
 class GCM():
 
