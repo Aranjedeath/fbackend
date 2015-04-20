@@ -3108,10 +3108,9 @@ def update_social_access_token(user_id, social_type, access_token, access_secret
 
 def push_post_perm_settings(user_id, question_id, post_to_facebook = False, post_to_twitter = False):
     import json
-
     key= str(user_id)+'_'+str(question_id)
     value = {'post_facebook':post_to_facebook,'post_twitter':post_to_twitter}
     json_value = json.dumps(value)
     print "setting ",key,'to',json_value
+    redis_post_perms.set(key, json_value)
     return {'success':True}
-    # redis_post_perms.set(key, json_value)
