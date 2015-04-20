@@ -115,7 +115,7 @@ def question_asked(question_id,
         mail_type = "question_asked"
 
 
-    if 1: # not len(util.get_active_mobile_devices(asked.id)):
+    if not len(util.get_active_mobile_devices(asked.id)):
 
         mail_type += "_to"
         subject = helper.dict[mail_type]['subject'] % asker.first_name
