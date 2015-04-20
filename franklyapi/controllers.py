@@ -3113,7 +3113,7 @@ def update_social_access_token(user_id, social_id, social_type, access_token, ac
 
     update_dict = {'%s_token' %(social_type): access_token, 
                     '%s_id' %(social_type): social_id, 
-                    '%s_write_permissions' %(social_type): write_permission}
+                    '%s_write_permission' %(social_type): write_permission}
 
 
     if social_type == 'twitter':
