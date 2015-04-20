@@ -3116,7 +3116,7 @@ def update_social_access_token(user_id, social_id, social_type, access_token, ac
                     '%s_write_permissions' %(social_type): write_permission}
 
 
-    if token_type == 'twitter':
+    if social_type == 'twitter':
         if not access_secret:
             raise CustomExceptions.BadRequestException('Twitter token secret required.')
         update_dict['twitter_secret'] = access_secret
