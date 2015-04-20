@@ -130,7 +130,8 @@ def search(cur_user_id, q, offset, limit):
         remove_current_user = "and id!=:cur_user_id"
 
 
-    query = text("""SELECT id, username, first_name, profile_picture, user_type, user_title, bio,
+    query = text("""SELECT id, username, first_name, profile_picture, user_type, user_title, bio, cover_picture,
+                            (SELECT count(1) FROM user_follows WHERE user_follows.followed=users.id AND user_follows.user=:cur_user_id AND user_follows.unfollowed=false) AS is_following,
                                     username LIKE :query_start OR first_name LIKE :query_start AS name_start_match,
                                     first_name LIKE :query_word_start AS name_word_start_match,
                                     user_title LIKE :query_contained AS exact_title_match,
@@ -138,7 +139,6 @@ def search(cur_user_id, q, offset, limit):
                                     profile_video IS NOT NULL as profile_video_exists,
                                     (SELECT count(1) FROM questions WHERE questions.question_to=users.id) AS question_count,
                                     (SELECT count(1) FROM user_follows WHERE user_follows.followed=users.id AND user_follows.unfollowed=false) AS followed_count,
-                                    (SELECT count(1) FROM user_follows WHERE user_follows.followed=users.id AND user_follows.user=:cur_user_id AND user_follows.unfollowed=false) AS is_following,
                                     (SELECT 4*CAST(search_defaults.show_always AS UNSIGNED)+CAST(search_defaults.score AS UNSIGNED) FROM search_defaults WHERE search_defaults.user=users.id AND search_defaults.category in (SELECT search_categories.id FROM search_categories WHERE search_categories.name LIKE :query_start)) AS search_default,
                                     {select_query}
                                     username IN :top_users AS top_user_score
@@ -184,11 +184,8 @@ def search(cur_user_id, q, offset, limit):
         print ''
         results.append(item)
 
-
-    from controllers import is_following
-
-    results = [{'type':'user',
-                'user':{'id':row[0],
+    results = [{'type': 'user',
+                'user': {'id': row[0],
                         'username':row[1],
                         'first_name':row[2],
                         'last_name':None,
@@ -196,7 +193,8 @@ def search(cur_user_id, q, offset, limit):
                         'user_type':row[4],
                         'user_title':row[5],
                         'bio':row[6],
-                        'is_following':is_following(row[0], cur_user_id) if cur_user_id else False,
+                        'profile_videos':{'thumb': row[7]},
+                        'is_following':row[8],
                         'channel_id':'user_{user_id}'.format(user_id=row[0])
                         }
                 } for row in results]
