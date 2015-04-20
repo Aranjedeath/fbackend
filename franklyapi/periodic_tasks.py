@@ -129,12 +129,12 @@ def daily_report():
     stats.daily_content_report()
 
 '''
-@ 9:00 AM and 6:00 PM Every day
+@ 11:00 AM and 5:00 PM Every day
 '''
 def twice_a_day_report():
-    # interval = 15 if 9 am
-    # interval = 9  if 6 pm
-    stats.intra_day_content_report(interval=15 if datetime.datetime.now().hour > 12 else 9)
+    # interval = 18 if 11 am
+    # interval = 6  if 5 pm
+    stats.intra_day_content_report(interval=18 if datetime.datetime.now().hour < 12 else 6)
 
 
 '''
