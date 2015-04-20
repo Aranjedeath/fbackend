@@ -31,4 +31,21 @@ def get_gplus_data(access_token):
         user_data['gender'] = 'M' if data.get('gender') == 'male' else 'F' if data.get('gender') == 'female' else None
         return user_data
     else:
-        raise Exception("Google Plus status_code :"+res.status_code)
+        raise Exception("Google Plus status_code :%s\nServer resp: %s" %(res.status_code, res.json()))
+
+def get_gplus_permissions(access_token):
+    url = 'https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=%s'%access_token
+    resp = requests.get(url)
+    if resp.status_code != 200:
+        raise Exception('GPlus status code: %s' %resp.status_code)
+    permissions = resp.json()['scope'].split()
+    permissions = map(lambda x: x.replace('https://www.googleapis.com/auth/', ''), permissions)
+    return permissions
+
+def check_gplus_write_permission(access_token):
+    try:
+        permissions = get_gplus_permissions(access_token)
+        return 'plus.login' in permissions
+    except:
+        return False
+    

@@ -2734,6 +2734,7 @@ class AnswerAuthorSuggest(restful.Resource):
 class UpdateToken(restful.Resource):
     post_parser = reqparse.RequestParser()
     post_parser.add_argument('access_token', type=str, location='json', required=True)
+    post_parser.add_argument('social_id', type=str, location='json', required=True)
     post_parser.add_argument('access_secret', type=str, location='json')
 
     @login_required
@@ -2752,12 +2753,12 @@ class UpdateToken(restful.Resource):
         args = self.post_parser.parse_args()
         try:
             if social_type in ['facebook', 'twitter']:
-                success = controllers.update_social_access_token(user_id=current_user.id,
-                                                                 social_type=social_type,
-                                                                 access_token=args['access_token'],
-                                                                 access_secret=args.get('access_secret')
-                                                                 )
-                return {'success': success}
+                resp = controllers.update_social_access_token(user_id=current_user.id,
+                                                                social_id=social_id,
+                                                                social_type=social_type,
+                                                                access_token=args['access_token'],
+                                                                access_secret=args.get('access_secret'))
+                return resp
             else:
                 raise CustomExceptions.BadRequestException('URL Not Found.')
         except CustomExceptions.BadRequestException as e:

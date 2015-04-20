@@ -83,7 +83,8 @@ def get_fb_permissions(access_token):
                 allowed_permissions.add(item.get('permission'))
     return allowed_permissions
 
-def publish_to_facebook(message, post_name, post_link, post_caption, post_description, post_picture, access_token = None, graph_obj = None):
+def publish_to_facebook(message, post_name, post_link, post_caption, post_description, post_picture,
+                        access_token=None, graph_obj=None):
     post_dict = {"name": post_name,
              "link": post_link,
              "caption": post_caption,

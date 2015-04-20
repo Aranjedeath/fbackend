@@ -23,3 +23,29 @@ def get_twitter_data(access_token, access_secret, app_token=app_token,app_secret
 	except Exception as e:
 		print traceback.format_exc(e)
 		raise e
+
+def get_twitter_permissions(token, secret):
+	from requests_oauthlib import OAuth1Session
+	url = 'https://api.twitter.com/1.1/account/settings.json'
+	twitter_oauth = OAuth1Session(app_token, client_secret=app_secret,
+                            	resource_owner_key=token,
+                            	resource_owner_secret=secret)
+	r = twitter_oauth.get(url)
+	print r.status_code
+	if r.status_code != 200:
+		raise Exception('twitter api status code: %s' %r.status_code)
+	permissions_list = r.headers['x-access-level'].split('-')
+	return permissions_list
+
+def check_twitter_write_permission(token, secret):
+	try:
+		permissions_list = get_twitter_permissions(token, secret)
+		return 'write' in permissions_list
+	except:
+		return False
+
+def publish_to_twitter(token, secret, link):
+	api = twitter.Api(app_token,app_secret,access_token,access_secret)
+	api.PostUpdate('I just answered a question on frankly! %s' %link)
+
+

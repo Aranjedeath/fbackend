@@ -244,7 +244,7 @@ def get_twitter_email(twitter_id):
 
 
 def login_user_social(social_type, social_id, external_access_token, device_id, push_id=None, 
-                        external_token_secret = None, user_type=0, user_title=None):
+                    external_token_secret=None, user_type=0, user_title=None):
     user_data = get_data_from_external_access_token(social_type, external_access_token, external_token_secret)
     token_valid = str(user_data['social_id']).strip()==str(social_id).strip()
     
@@ -253,8 +253,9 @@ def login_user_social(social_type, social_id, external_access_token, device_id, 
 
     user = get_user_from_social_id(social_type, social_id)
     device_type = get_device_type(device_id)
-
-    update_dict = {'deleted':False, '%s_token'%(social_type):external_access_token, '%s_id'%(social_type):social_id}
+        
+    update_dict = {'deleted':False, '%s_token'%(social_type):external_access_token, 
+                    '%s_id'%(social_type):social_id}
 
     if social_type == 'twitter':
         update_dict.update({'twitter_secret':external_token_secret})
@@ -328,6 +329,7 @@ def login_user_social(social_type, social_id, external_access_token, device_id, 
                 'new_user' : True, 'user_type': new_user.user_type,
                 'user':user_to_dict(new_user)
                 } 
+
 
 def login_email_new(user_id, id_type, password, device_id, push_id=None):
     try:
@@ -1779,8 +1781,7 @@ def get_notifications(cur_user_id, device_id, version_code, notification_categor
                                 'id': get_item_id(),
                                 'user_id': cur_user_id,
                                 'device_type': device_type,
-                                'last_fetch_time': datetime.datetime.now()
-                            })
+                                'last_fetch_time': datetime.datetime.now()})
         db.session.commit()
         if device_type == 'ios':
             app_store_link = config.IOS_APPSTORE_DEEPLINK
@@ -3094,25 +3095,50 @@ def suggest_answer_author(question_body):
     return {'count':len(users), 'users':[thumb_user_to_dict(user) for user in users]}
 
 
-def update_social_access_token(user_id, social_type, access_token, access_secret=None):
-    try:
-        user_data = get_data_from_external_access_token(social_type, access_token, access_secret)
-        token_valid = str(user_data['social_id']).strip()==str(social_id).strip()
-        
-        if not token_valid:
-            raise CustomExceptions.InvalidTokenException("Could not verify %s token"%social_type)
+def update_social_access_token(user_id, social_id, social_type, access_token, access_secret=None):
+    user_data = get_data_from_external_access_token(social_type, access_token, access_secret)
+    token_valid = str(user_data['social_id']).strip()==str(social_id).strip()
+    
+    if not token_valid:
+        raise CustomExceptions.InvalidTokenException("Could not verify %s token" %social_type)
 
-        count = 0
-        if social_type=='facebook':
-            allowed_permissions = social_helpers.get_fb_permissions(access_token)
-            if 'publish_actions' in allowed_permissions:
-                count = User.query.filter(User.id==user_id, User.facebook_id==user_data['social_id']).update({'facebook_token':fb_access_token, 'facebook_write_permission':True})
-            else:
-                count = User.query.filter(User.id==user_id, User.facebook_id==user_data['social_id']).update({'facebook_token':fb_access_token, 'facebook_write_permission':False})
-        db.session.commit()
-        return bool(count)
-    except CustomExceptions.InvalidTokenException:
-        raise CustomExceptions.BadRequestException('invalid token')
+    social_user = get_user_from_social_id(social_type, social_id)
+
+    write_permission = social_helpers.check_for_write_permission(social_type, access_token, access_secret)
+
+    if social_type == 'facebook':
+        access_token = social_helpers.facebook_helpers.get_extended_graph_token(access_token)
+
+    update_dict = {'%s_token' %(social_type): access_token, 
+                    '%s_id' %(social_type): social_id, 
+                    '%s_write_permissions' %(social_type): write_permission}
+
+
+    if token_type == 'twitter':
+        if not access_secret:
+            raise CustomExceptions.BadRequestException('Twitter token secret required.')
+        update_dict['twitter_secret'] = access_secret
+
+    if social_user and (social_user.id != user_id):
+        del update_dict['%s_id' %(social_type)]
+        count = User.query.filter(User.id==user_id).update(update_dict)
+        count = User.query.filter(User.id==social_user.id).update(update_dict)
+    else:
+        count = User.query.filter(User.id==user_id).update(update_dict)
+    db.session.commit()
+    return {'success': bool(count)}
+
+def share_social(user_id, question_id, post_to_facebook, post_to_twitter):
+    post = Post.query.filter(Post.answer_author==user_id, Post.question==question_id).first()
+    if post:
+        social_helpers.share_post(post_id=post_id, user_id=user_id,
+                                post_to_facebook=post_to_facebook,
+                                post_to_twitter=post_to_twitter)
+    else:
+        push_post_perm_settings(user_id=user_id, question_id=question_id, 
+                                post_to_facebook=post_to_facebook,
+                                post_to_twitter=post_to_twitter)
+
 
 def push_post_perm_settings(user_id, question_id, post_to_facebook = False, post_to_twitter = False):
     import json
@@ -3121,4 +3147,4 @@ def push_post_perm_settings(user_id, question_id, post_to_facebook = False, post
     json_value = json.dumps(value)
     print "setting ",key,'to',json_value
     redis_post_perms.set(key, json_value)
-    return {'success':True}
+    return {'success': True}
