@@ -1769,11 +1769,18 @@ def get_notifications(cur_user_id, device_id, version_code, notification_categor
     notifications = []
     if offset == 0:
 
-
-
-
         device_type = get_device_type(device_id)
-        
+
+        db.session.execute(text(''' INSERT INTO user_notification_info (id, user_id, device_type,
+                                     last_notification_fetch_time) VALUES
+                                     (:id, :user_id, :device_type, :last_fetch_time)
+                                     ON DUPLICATE KEY UPDATE last_fetch_time=:last_fetch_time;'''),
+                            params={
+                                'id': get_item_id(),
+                                'user_id': cur_user_id,
+                                'device_type': device_type,
+                                'last_fetch_time': datetime.datetime.now()}
+        db.session.commit()
         if device_type == 'ios':
             app_store_link = config.IOS_APPSTORE_DEEPLINK
         
