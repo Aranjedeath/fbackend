@@ -1779,7 +1779,8 @@ def get_notifications(cur_user_id, device_id, version_code, notification_categor
                                 'id': get_item_id(),
                                 'user_id': cur_user_id,
                                 'device_type': device_type,
-                                'last_fetch_time': datetime.datetime.now()}
+                                'last_fetch_time': datetime.datetime.now()
+                            })
         db.session.commit()
         if device_type == 'ios':
             app_store_link = config.IOS_APPSTORE_DEEPLINK
