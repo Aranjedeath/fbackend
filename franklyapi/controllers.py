@@ -3095,7 +3095,7 @@ def suggest_answer_author(question_body):
     return {'count':len(users), 'users':[thumb_user_to_dict(user) for user in users]}
 
 
-def update_social_access_token(user_id, social_type, access_token, access_secret=None):
+def update_social_access_token(user_id, social_id, social_type, access_token, access_secret=None):
     user_data = get_data_from_external_access_token(social_type, access_token, access_secret)
     token_valid = str(user_data['social_id']).strip()==str(social_id).strip()
     
@@ -3106,129 +3106,38 @@ def update_social_access_token(user_id, social_type, access_token, access_secret
 
     write_permission = social_helpers.check_for_write_permission(social_type, access_token, access_secret)
 
-    update_dict = {'%s_token' %(social_type): external_access_token, 
+    if social_type == 'facebook':
+        access_token = social_helpers.facebook_helpers.get_extended_graph_token(access_token)
+
+    update_dict = {'%s_token' %(social_type): access_token, 
                     '%s_id' %(social_type): social_id, 
                     '%s_write_permissions' %(social_type): write_permission}
+
 
     if token_type == 'twitter':
         if not access_secret:
             raise CustomExceptions.BadRequestException('Twitter token secret required.')
         update_dict['twitter_secret'] = access_secret
 
-    if social_user and (social_user.id != context_user.id):
-        raise CustomExceptions.BadRequestException('Social account belongs to other email')
-    count = User.query.filter(User.id==context_user.id).update(update_dict)
+    if social_user and (social_user.id != user_id):
+        del update_dict['%s_id' %(social_type)]
+        count = User.query.filter(User.id==user_id).update(update_dict)
+        count = User.query.filter(User.id==social_user.id).update(update_dict)
+    else:
+        count = User.query.filter(User.id==user_id).update(update_dict)
     db.session.commit()
-    return bool(count)
+    return {'success': bool(count)}
 
-
-def login_user_social_with_context(current_user_id, social_user, social_type, social_id, 
-                                    external_access_token, external_token_secret):
-    context_user = User.query.filter(User.id==current_user_id).one()
-
-    update_dict = {'%s_token'%(social_type): external_access_token, 
-                    '%s_id'%(social_type): social_id}
-
-    if token_type == 'twitter':
-        update_dict['twitter_secret'] = external_token_secret
-
-    if social_user:
-        if social_user.id != context_user.id:
-            raise CustomExceptions.BadRequestException('Social account belongs to other email')
+def share_social(user_id, question_id, post_to_facebook, post_to_twitter):
+    post = Post.query.filter(Post.answer_author==user_id, Post.question==question_id).first()
+    if post:
+        social_helpers.share_post(post_id=post_id, user_id=user_id,
+                                post_to_facebook=post_to_facebook,
+                                post_to_twitter=post_to_twitter)
     else:
-        User.query.filter(User.id==context_user.id).update(update_dict)
-        db.session.commit()
-        return {'access_token': access_token, 'id': context_user.id,
-                'username': context_user.username, 'activated_now': activated_now,
-                'new_user': False, 'user_type': context_user.user_type,
-                'user': user_to_dict(context_user)}
-
-def login_user_social(social_type, social_id, external_access_token, device_id, push_id=None, 
-                    external_token_secret=None, user_type=0, user_title=None):
-    user_data = get_data_from_external_access_token(social_type, external_access_token, external_token_secret)
-    token_valid = str(user_data['social_id']).strip()==str(social_id).strip()
-    
-    if not token_valid:    
-        raise CustomExceptions.InvalidTokenException("Could not verify %s token"%social_type)
-
-    user = get_user_from_social_id(social_type, social_id)
-    device_type = get_device_type(device_id)
-        
-    update_dict = {'deleted':False, '%s_token'%(social_type):external_access_token, 
-                    '%s_id'%(social_type):social_id}
-
-    if social_type == 'twitter':
-        update_dict.update({'twitter_secret':external_token_secret})
-        user_data['email'] = get_twitter_email(user_data['social_id'])
-        user_data['social_id'] = str(user_data['social_id']).strip()
-        user = User.query.filter(User.twitter_id==user_data['social_id']).first()
-
-    existing_user = None
-    if social_type in ['facebook', 'google']:
-        existing_user = User.query.filter(User.email==user_data['email']).first()
-
-    if existing_user and not user:
-        user = existing_user
-
-    if user:
-        access_token = generate_access_token(user.id, device_id)
-        set_access_token(device_id, device_type, user.id, access_token, push_id)
-        activated_now=user.deleted
-        User.query.filter(User.id==user.id).update(update_dict)
-        db.session.commit()
-
-        return {'access_token': access_token, 'id':user.id,
-                'username':user.username, 'activated_now': activated_now,
-                'new_user' : False, 'user_type' : user.user_type,
-                'user':user_to_dict(user)
-                }
-    
-    else:
-        username = make_username(user_data['email'], user_data.get('full_name'), user_data.get('social_username'))
-        
-        registered_with = '%s_%s'%(device_type, social_type)
-
-        new_user = User(email=user_data['email'], username=username, first_name=user_data['full_name'], 
-                        registered_with=registered_with, user_type=user_type, gender=user_data.get('gender'), user_title=user_title,
-                        location_name=user_data.get('location_name'), country_name=user_data.get('country_name'),
-                        country_code=user_data.get('country_code'))
-        
-        if user_data.get('profile_picture'):
-            new_user.profile_picture = media_uploader.upload_user_image(user_id=new_user.id, 
-                                                        image_url=user_data['profile_picture'], 
-                                                        image_type='profile_picture')
-        
-        if social_type == 'facebook':
-            new_user.facebook_id = social_id
-            extended_external_token = social_helpers.get_extended_graph_token(external_access_token)
-            new_user.facebook_token = extended_external_token
-
-            allowed_permissions = social_helpers.get_fb_permissions(new_user.facebook_token)
-            if 'publish_actions' in allowed_permissions:
-                new_user.facebook_write_permission = True
-        
-        elif social_type == 'twitter':
-            new_user.twitter_id = social_id
-            new_user.twitter_token = external_access_token
-            new_user.twitter_secret = external_token_secret
-            #twitter write perm check.
-
-
-        elif social_type == 'google':
-            new_user.google_id = social_id
-            new_user.google_token = external_access_token
-
-        db.session.add(new_user)
-        db.session.commit()
-        access_token = generate_access_token(new_user.id, device_id)
-        set_access_token(device_id, device_type, new_user.id, access_token, push_id)
-        new_registration_task(new_user.id)
-
-        return {'access_token': access_token, 'id':new_user.id,
-                'username':new_user.username, 'activated_now':False,
-                'new_user' : True, 'user_type': new_user.user_type,
-                'user':user_to_dict(new_user)
-                } 
+        push_post_perm_settings(user_id=user_id, question_id=question_id, 
+                                post_to_facebook=post_to_facebook,
+                                post_to_twitter=post_to_twitter)
 
 
 def push_post_perm_settings(user_id, question_id, post_to_facebook = False, post_to_twitter = False):
@@ -3238,4 +3147,4 @@ def push_post_perm_settings(user_id, question_id, post_to_facebook = False, post
     json_value = json.dumps(value)
     print "setting ",key,'to',json_value
     redis_post_perms.set(key, json_value)
-    return {'success':True}
+    return {'success': True}

@@ -2752,13 +2752,13 @@ class UpdateToken(restful.Resource):
         """
         args = self.post_parser.parse_args()
         try:
-            if social_type in ['facebook', 'twitter', 'google']:
-                success = controllers.update_social_access_token(user_id=current_user.id,
+            if social_type in ['facebook', 'twitter']:
+                resp = controllers.update_social_access_token(user_id=current_user.id,
                                                                 social_id=social_id,
                                                                 social_type=social_type,
                                                                 access_token=args['access_token'],
                                                                 access_secret=args.get('access_secret'))
-                return {'success': success}
+                return resp
             else:
                 raise CustomExceptions.BadRequestException('URL Not Found.')
         except CustomExceptions.BadRequestException as e:

@@ -44,4 +44,8 @@ def check_twitter_write_permission(token, secret):
 	except:
 		return False
 
+def publish_to_twitter(token, secret, link):
+	api = twitter.Api(app_token,app_secret,access_token,access_secret)
+	api.PostUpdate('I just answered a question on frankly! %s' %link)
+
 
