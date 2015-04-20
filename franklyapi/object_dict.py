@@ -48,19 +48,19 @@ def user_to_dict(user):
         'likes_count': 0,
         'location': location_dict(user.lat, user.lon, user.location_name, user.country_name, user.country_code),
         'last_updated': int(time.mktime(user.last_updated.timetuple())),
-        'facebook_write_permission' : user.facebook_write_permission,
-        'twitter_write_permission': user.twitter_write_permission,
-        'admin_level':1 if user.id in config.ADMIN_USERS else 0,
-        'view_count' : user_stats[user.id]['view_count'],
-        'web_link':'http://frankly.me/{username}'.format(username=user.username),
-        'channel_id':'user_{user_id}'.format(user_id=user.id),
-        'profile_video_requested':user_stats[user.id]['is_requested'],
-        
-        'user_type':user.user_type,
-        'user_title':user.user_title,
+        'facebook_write_permission': user.facebook_write_permission,
+        'twitter_write_permission': bool(user.twitter_token),
+        'admin_level': 1 if user.id in config.ADMIN_USERS else 0,
+        'view_count': user_stats[user.id]['view_count'],
+        'web_link': 'http://frankly.me/{username}'.format(username=user.username),
+        'channel_id': 'user_{user_id}'.format(user_id=user.id),
+        'profile_video_requested': user_stats[user.id]['is_requested'],
+
+        'user_type': user.user_type,
+        'user_title': user.user_title,
         'question_count': user_stats[user.id]['question_count'],
-        'interests':[],
-        'profile_videos':get_video_states({user.profile_video:user.cover_picture})[user.profile_video] if user.profile_video else {}
+        'interests': [],
+        'profile_videos': get_video_states({user.profile_video: user.cover_picture})[user.profile_video] if user.profile_video else {}
     }
 
     if user_dict['profile_video']:
