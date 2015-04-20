@@ -1,12 +1,14 @@
 import sys
 import traceback
+import json
+
 import media_uploader
 import video_encoder
 from configs import config
 from celery import Celery
 from notification.commons import notification_decision
 import video_db
-from app import db, raygun
+from app import db, raygun, redis_post_perms
 
 from models import Post, User, Question
 
@@ -72,6 +74,7 @@ def _encode_video_to_profile(file_path, video_url, profile, log_id, username='')
             print traceback.format_exc(e)
 
     #Post to facebook hook
+
     if result:
         try:
             post_id = video_db.get_post_id_from_video(video_url)
@@ -79,15 +82,21 @@ def _encode_video_to_profile(file_path, video_url, profile, log_id, username='')
                 post = Post.query.filter(Post.id==post_id).one()
                 question = Question.query.filter(Question.id==post.question)
                 user = User.query.filter(User.id == post.answer_author)
-                if user.facebook_write_permission:
-                    message = "I just answered a question on FranklyMe"
-                    post_name = "Frankster's Answer"
-                    post_link = 'www.frankly.me/p/{0}'.format(question.short_id)
-                    post_caption = "Question Answered by {0}".format(user.first_name)
-                    post_description = "Question : {0}".format(question.body)
-                    post_picture = post.thumbnail_url
-                    access_token = user.facebook_token
-                    publish_to_facebook(message, post_name, post_link, post_caption, post_description, post_picture, access_token = access_token)
+
+                redis_key = str(user.id)+'_'+str(question.id)
+
+                perms_data = redis_post_perms.get(redis_key)
+                if perms_data:
+                    permissions = json.loads(perms_data)
+            if post_id and permissions.get('post_facebook') and user.facebook_write_permission:
+                message = "I just answered a question on FranklyMe"
+                post_name = "Frankster's Answer"
+                post_link = 'www.frankly.me/p/{0}'.format(question.short_id)
+                post_caption = "Question Answered by {0}".format(user.first_name)
+                post_description = "Question : {0}".format(question.body)
+                post_picture = post.thumbnail_url
+                access_token = user.facebook_token
+                publish_to_facebook(message, post_name, post_link, post_caption, post_description, post_picture, access_token = access_token)
                 #post response to facebook
         except Exception as e:
             err = sys.exc_info()
@@ -100,3 +109,4 @@ def _encode_video_to_profile(file_path, video_url, profile, log_id, username='')
 @cel.task(queue='encoding_retry')
 def _try_video_again(video_url, username='', profiles=video_encoder.VIDEO_ENCODING_PROFILES.keys()):
     encode_video_task(video_url, username, profiles, queues=dict(promo='encoding_low_priority', opt='encoding_retry', ultralow='encoding_retry', low='encoding_retry', medium='encoding_retry'))
+    
