@@ -35,6 +35,6 @@ def share_post(post_id, user_id, post_to_facebook, post_to_twitter):
                             post_description="Shashank's answer to '%s'" %question.body,
                             access_token=user.facebook_token)
     if post_to_twitter:
-        publish_to_twitter(token=user.twitter_token, secret=user.twitter_secret
+        publish_to_twitter(token=user.twitter_token, secret=user.twitter_secret,
                             link=link)
 

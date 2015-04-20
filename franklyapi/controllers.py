@@ -1744,6 +1744,8 @@ def add_video_post(cur_user_id, question_id, video, answer_type,
             db.session.commit()
             try:
                 notification.new_post(post_id=post.id, question_body=question.body)
+                share_pref = get_post_share_pref(cur_user_id, question.id)
+                share_social(cur_user_id, question.id, post_to_facebook=share_pref['post_facebook'], post_to_twitter=share_pref['post_twitter'])
             except:
                 pass
 
@@ -3129,6 +3131,8 @@ def update_social_access_token(user_id, social_id, social_type, access_token, ac
     return {'success': bool(count)}
 
 def share_social(user_id, question_id, post_to_facebook, post_to_twitter):
+    if not post_to_twitter and not post_to_facebook:
+        return
     post = Post.query.filter(Post.answer_author==user_id, Post.question==question_id).first()
     if post:
         social_helpers.share_post(post_id=post_id, user_id=user_id,
@@ -3139,6 +3143,15 @@ def share_social(user_id, question_id, post_to_facebook, post_to_twitter):
                                 post_to_facebook=post_to_facebook,
                                 post_to_twitter=post_to_twitter)
 
+def get_post_share_pref(user_id, question_id):
+    key= str(user_id)+'_'+str(question_id)
+    data = redis_post_perms.get(key)
+    import json
+    if data:
+        data = json.loads(data)
+    else:
+        data = {'post_facebook':False,'post_twitter':False}
+    return data
 
 def push_post_perm_settings(user_id, question_id, post_to_facebook = False, post_to_twitter = False):
     import json
