@@ -2754,7 +2754,7 @@ class UpdateToken(restful.Resource):
         try:
             if social_type in ['facebook', 'twitter']:
                 resp = controllers.update_social_access_token(user_id=current_user.id,
-                                                                social_id=social_id,
+                                                                social_id=args['social_id'],
                                                                 social_type=social_type,
                                                                 access_token=args['access_token'],
                                                                 access_secret=args.get('access_secret'))
