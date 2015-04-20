@@ -23,3 +23,18 @@ def get_twitter_data(access_token, access_secret, app_token=app_token,app_secret
 	except Exception as e:
 		print traceback.format_exc(e)
 		raise e
+
+def get_twitter_permissions(token, secret):
+	from requests_oauthlib import OAuth1Session
+	url = 'https://api.twitter.com/1.1/account/settings.json'
+	twitter_oauth = OAuth1Session(app_token, client_secret=app_secret,
+                            resource_owner_key='458777371-SVBXWoDlfm1EXDSwE51DBQsvSJinR4ursat1hwUC',
+                            resource_owner_secret='pjXYThTx7V9IIKrFfG8YJl98oKvo5zIIdv6tulu9yRH60')
+	r = twitter_oauth.get(url)
+	print r.status_code
+	if r.status_code != 200:
+		raise Exception('twitter api status code: %s' %r.status_code)
+	permissions_list = r.headers['x-access-level'].split('-')
+	return permissions_list
+
+

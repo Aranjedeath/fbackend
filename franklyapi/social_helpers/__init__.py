@@ -12,3 +12,11 @@ def get_user_data(social_type, access_token, access_secret=None):
 
 	elif social_type == 'google':
 		return get_gplus_data(access_token)
+
+def check_for_write_permission(social_type, access_token, access_secret=None):
+    if social_type == 'facebook':
+        pass
+    elif social_type == 'twitter' and access_secret:
+        pass
+    elif social_type == 'google':
+        pass

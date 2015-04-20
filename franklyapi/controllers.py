@@ -3128,46 +3128,34 @@ def suggest_answer_author(question_body):
 
 
 def update_social_access_token(user_id, social_type, access_token, access_secret=None):
-    try:
-        user_data = get_data_from_external_access_token(social_type, access_token, access_secret)
-        token_valid = str(user_data['social_id']).strip()==str(social_id).strip()
-        
-        if not token_valid:
-            raise CustomExceptions.InvalidTokenException("Could not verify %s token" %social_type)
+    user_data = get_data_from_external_access_token(social_type, access_token, access_secret)
+    token_valid = str(user_data['social_id']).strip()==str(social_id).strip()
+    
+    if not token_valid:
+        raise CustomExceptions.InvalidTokenException("Could not verify %s token" %social_type)
 
-        context_user = User.query.filter(User.id==user_id).first()
-        if not context_user:
-            raise CustomExceptions.BadRequestException('not a valid user')
+    social_user = get_user_from_social_id(social_type, social_id)
 
-        social_user = get_user_from_social_id(social_type, social_id)
+    update_dict = {'%s_token' %(social_type): external_access_token, 
+                    '%s_id' %(social_type): social_id}
 
-        count = 0
+    if token_type == 'twitter':
+        if not access_secret:
+            raise CustomExceptions.BadRequestException('Twitter token secret required.')
+        update_dict['twitter_secret'] = access_secret
 
-        update_dict = {'%s_token'%(social_type): external_access_token, 
-                        '%s_id'%(social_type): social_id}
+    if social_user and (social_user.id != context_user.id):
+        raise CustomExceptions.BadRequestException('Social account belongs to other email')
+    count = User.query.filter(User.id==context_user.id).update(update_dict)
 
-        if token_type == 'twitter':
-            if not access_secret:
-                raise CustomExceptions.BadRequestException('Twitter token secret required.')
-            update_dict['twitter_secret'] = access_secret
-
-        if social_user:
-            if social_user.id != context_user.id:
-                raise CustomExceptions.BadRequestException('Social account belongs to other email')
-            else:
-                count = User.query.filter(User.id==context_user.id).update(update_dict)
-        else:
-
-        if social_type == 'facebook':
-            allowed_permissions = social_helpers.get_fb_permissions(access_token)
-            write_permission = 'publish_actions' in allowed_permissions
-            count = User.query.filter(User.id==user_id, User.facebook_id==user_data['social_id'])
-                                .update({'facebook_token': fb_access_token, 
-                                        'facebook_write_permission': write_permission})
-        db.session.commit()
-        return bool(count)
-    except CustomExceptions.InvalidTokenException:
-        raise CustomExceptions.BadRequestException('invalid token')
+    if social_type == 'facebook':
+        allowed_permissions = social_helpers.get_fb_permissions(access_token)
+        write_permission = 'publish_actions' in allowed_permissions
+        count = User.query.filter(User.id==user_id, User.facebook_id==user_data['social_id'])
+                            .update({'facebook_token': fb_access_token, 
+                                    'facebook_write_permission': write_permission})
+    db.session.commit()
+    return bool(count)
 
 def login_user_social_with_context(current_user_id, social_user, social_type, social_id, 
                                     external_access_token, external_token_secret):
