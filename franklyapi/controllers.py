@@ -3136,8 +3136,11 @@ def update_social_access_token(user_id, social_type, access_token, access_secret
 
     social_user = get_user_from_social_id(social_type, social_id)
 
+    write_permission = social_helpers.check_for_write_permission(social_type, access_token, access_secret)
+
     update_dict = {'%s_token' %(social_type): external_access_token, 
-                    '%s_id' %(social_type): social_id}
+                    '%s_id' %(social_type): social_id, 
+                    '%s_write_permissions' %(social_type): write_permission}
 
     if token_type == 'twitter':
         if not access_secret:
@@ -3147,15 +3150,9 @@ def update_social_access_token(user_id, social_type, access_token, access_secret
     if social_user and (social_user.id != context_user.id):
         raise CustomExceptions.BadRequestException('Social account belongs to other email')
     count = User.query.filter(User.id==context_user.id).update(update_dict)
-
-    if social_type == 'facebook':
-        allowed_permissions = social_helpers.get_fb_permissions(access_token)
-        write_permission = 'publish_actions' in allowed_permissions
-        count = User.query.filter(User.id==user_id, User.facebook_id==user_data['social_id'])
-                            .update({'facebook_token': fb_access_token, 
-                                    'facebook_write_permission': write_permission})
     db.session.commit()
     return bool(count)
+
 
 def login_user_social_with_context(current_user_id, social_user, social_type, social_id, 
                                     external_access_token, external_token_secret):

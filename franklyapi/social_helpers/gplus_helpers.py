@@ -41,4 +41,11 @@ def get_gplus_permissions(access_token):
     permissions = resp.json()['scope'].split()
     permissions = map(lambda x: x.replace('https://www.googleapis.com/auth/', ''), permissions)
     return permissions
+
+def check_gplus_write_permission(access_token):
+    try:
+        permissions = get_gplus_permissions(access_token)
+        return 'plus.login' in permissions
+    except:
+        return False
     
