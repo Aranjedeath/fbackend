@@ -194,7 +194,7 @@ def search(cur_user_id, q, offset, limit):
                         'user_title':row[5],
                         'bio':row[6],
                         'profile_videos':{'thumb': row[7]},
-                        'is_following':row[8],
+                        'is_following':(row[8] == 1),
                         'channel_id':'user_{user_id}'.format(user_id=row[0])
                         }
                 } for row in results]
