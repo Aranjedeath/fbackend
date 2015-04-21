@@ -1778,7 +1778,7 @@ def get_notifications(cur_user_id, device_id, version_code, notification_categor
         db.session.execute(text(''' INSERT INTO user_notification_info (id, user_id, device_type,
                                      last_notification_fetch_time) VALUES
                                      (:id, :user_id, :device_type, :last_fetch_time)
-                                     ON DUPLICATE KEY UPDATE last_fetch_time=:last_fetch_time;'''),
+                                     ON DUPLICATE KEY UPDATE last_notification_fetch_time=:last_fetch_time;'''),
                             params={
                                 'id': get_item_id(),
                                 'user_id': cur_user_id,
