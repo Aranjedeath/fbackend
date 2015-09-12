@@ -324,7 +324,6 @@ BAD_WORDS = [
 'vagina',
 'venus mound',
 'vibrator',
-'violet blue',
 'violet wand',
 'vorarephilia',
 'voyeur',
